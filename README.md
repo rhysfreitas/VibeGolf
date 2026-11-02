@@ -14,7 +14,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 
 - **Online:** https://rhysfreitas.github.io/VibeGolf/ (the repo is [rhysfreitas/VibeGolf](https://github.com/rhysfreitas/VibeGolf))
 - **Locally:** `npm start`, then open http://localhost:8080. Any static server works; the pages use ES modules, so opening them from `file://` does not.
-- **Install as an app:** in Chrome or Edge, use *Install app* from the address bar or browser menu. It runs full screen and works offline after the first visit.
+- **Install as an app:** tap **Install app** on the title screen. Chrome and Edge (desktop and Android) show their install prompt. On iPhone/iPad it is Safari's **Share → Add to Home Screen**, and on a Mac with Safari it is **File → Add to Dock**. Firefox on desktop can't install web apps. Once installed, VibeGolf runs full screen and works offline.
 
 Without an R10 connected, every swing is simulated from tour-average launch data with realistic dispersion. Shot data can be adjusted in the range's **Adjust** panel.
 

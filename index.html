@@ -8,6 +8,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="assets/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>VibeGolf</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=Cormorant+SC:wght@600;700&display=swap">
@@ -50,6 +54,11 @@ a.mode:hover { background: var(--glass-hi); border-color: rgba(245,197,66,0.5); 
 .mode.soon .thumb { display: grid; place-items: center; font-family: var(--f-data); font-size: 12px; letter-spacing: 0.12em; color: var(--mist); text-transform: uppercase; background: rgba(255,255,255,0.05); border: 1px dashed var(--line); }
 #topbar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; padding: 8px 12px; }
 .lm-btn span { font-family: var(--f-data); font-size: 13px; letter-spacing: 0.06em; color: var(--mist); }
+.install { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.install-btn { appearance: none; border: 1px solid rgba(245,197,66,0.6); background: rgba(245,197,66,0.12); color: var(--flag); border-radius: 9px; padding: 10px 16px; cursor: pointer; font-family: var(--f-data); font-weight: 600; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; }
+.install-btn:hover { background: rgba(245,197,66,0.2); }
+.install-help { margin: 0; padding: 10px 12px; font-size: 14px; line-height: 1.45; color: #dfe7e9; max-width: 420px; }
+.install-help b { color: var(--bone); }
 footer { font-family: var(--f-data); font-size: 12px; letter-spacing: 0.08em; color: var(--mist); }
 footer kbd { font-family: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 @media (max-width: 560px) {
@@ -86,10 +95,16 @@ footer kbd { font-family: inherit; border: 1px solid var(--line); border-radius:
       <span><h2>Mini games</h2><p>Closest to the pin, target darts and long drive.</p><span class="meta">Coming next</span></span>
     </div>
   </nav>
-  <footer>v0.1 · Ball flight fit to TrackMan tour averages · Install from your browser menu to play full screen</footer>
+  <div class="install">
+    <button class="install-btn" id="installBtn" hidden>Install app</button>
+    <p class="install-help glass" id="installHelp" hidden></p>
+  </div>
+  <footer>v0.1 · Ball flight fit to TrackMan tour averages</footer>
 </main>
 <script type="module">
   import { mountLaunchMonitorUI } from './src/launch-monitor.js';
+  import { mountInstallButton } from './src/install.js';
+  mountInstallButton(document.getElementById('installBtn'), document.getElementById('installHelp'));
   mountLaunchMonitorUI({ dot: document.getElementById('lmDot'), text: document.getElementById('lmText'), button: document.getElementById('lmBtn') });
 </script>
 <script type="module" src="src/app.js"></script>
