@@ -1,10 +1,10 @@
 {
-  "name": "aerie-golf-bridge",
+  "name": "vibegolf-bridge",
   "version": "0.1.0",
-  "description": "Relays GSPro Open Connect shots (Garmin R10 connectors) to Aerie Golf over a WebSocket.",
+  "description": "Relays GSPro Open Connect shots (Garmin R10 connectors) to VibeGolf over a WebSocket.",
   "type": "module",
   "main": "bridge.js",
-  "bin": { "aerie-bridge": "bridge.js" },
+  "bin": { "vibegolf-bridge": "bridge.js" },
   "scripts": {
     "start": "node bridge.js",
     "test": "node --test ../tests/bridge.test.mjs"

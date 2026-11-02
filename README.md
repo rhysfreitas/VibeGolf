@@ -1,6 +1,6 @@
-# Aerie Golf
+# VibeGolf
 
-A golf simulator for the **Garmin Approach R10**, built as a plain web app with no build step. You can play it in a browser, install it to a PC or phone home screen, and host it on GitHub Pages.
+A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built as a plain web app with no build step. You can play it in a browser, install it to a PC or phone home screen, and host it on GitHub Pages.
 
 ![The Aerie](assets/menu-bg.jpg)
 
@@ -12,7 +12,7 @@ A golf simulator for the **Garmin Approach R10**, built as a plain web app with 
 
 ## Play
 
-- **Online:** https://rhysfreitas.github.io/aerie-golf/
+- **Online:** https://rhysfreitas.github.io/VibeGolf/ (the repo is [rhysfreitas/VibeGolf](https://github.com/rhysfreitas/VibeGolf))
 - **Locally:** `npm start`, then open http://localhost:8080. Any static server works; the pages use ES modules, so opening them from `file://` does not.
 - **Install as an app:** in Chrome or Edge, use *Install app* from the address bar or browser menu. It runs full screen and works offline after the first visit.
 
@@ -35,7 +35,7 @@ A browser can't talk to the R10 over Bluetooth on every platform, and it can't o
 R10 ──Bluetooth──> connector (OpenLaunch Connect, gsp-r10-adapter, …)
                        │ GSPro Open Connect, TCP 921
                        ▼
-                  bridge/  ──WebSocket ws://localhost:8921──> Aerie Golf
+                  bridge/  ──WebSocket ws://localhost:8921──> VibeGolf
 ```
 
 1. Install [Node.js](https://nodejs.org) 18 or newer.

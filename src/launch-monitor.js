@@ -9,7 +9,7 @@
 //   launchMonitor.addEventListener('shot', e => fire(e.detail));   // detail = BallData (mph, deg, rpm)
 //   launchMonitor.setPlayer({ club: '7i' });                        // tells the adapter which club is in hand
 
-const KEY = 'aerie.lm.url';
+const KEY = 'vibegolf.lm.url';
 const DEFAULT_URL = 'ws://localhost:8921';
 
 // GSPro club codes, used when we report the selected club back to the adapter.
@@ -19,7 +19,7 @@ function store(get, val, key = KEY) {
   try { if (get) return localStorage.getItem(key); localStorage.setItem(key, val); } catch (e) { /* storage blocked */ }
   return null;
 }
-const AUTO = 'aerie.lm.auto';
+const AUTO = 'vibegolf.lm.auto';
 
 // Accepts a GSPro Open Connect message, a bare BallData object, or { type: 'shot', ball: {...} }.
 export function parseShot(msg) {

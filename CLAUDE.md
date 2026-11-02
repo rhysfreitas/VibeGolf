@@ -1,4 +1,4 @@
-# Aerie Golf: notes for coding agents
+# VibeGolf: notes for coding agents
 
 Golf simulator for the Garmin Approach R10. Static site served from the repo root by GitHub Pages. There is **no build step and no bundler**.
 

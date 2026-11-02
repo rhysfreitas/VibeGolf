@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Aerie Golf launch-monitor bridge.
+// VibeGolf launch-monitor bridge.
 //
 //   R10 ──BLE──> OpenLaunch Connect / gsp-r10-adapter / any GSPro connector
 //                      │  GSPro Open Connect v1 (TCP, JSON)  → this bridge, port 921
 //                      ▼
-//              bridge.js ──WebSocket (ws://localhost:8921)──> Aerie Golf in the browser
+//              bridge.js ──WebSocket (ws://localhost:8921)──> VibeGolf in the browser
 //
 // The connector thinks it is talking to GSPro. Each shot is acknowledged with Code 200, and
 // the club you pick in the game is sent back as GSPro "player information" (Code 201) so the

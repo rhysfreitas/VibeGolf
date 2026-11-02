@@ -1,6 +1,6 @@
 // Network-first service worker: always try the network (so new pushes appear immediately),
 // fall back to the last cached copy when offline.
-const CACHE = 'aerie-golf-v1';
+const CACHE = 'vibegolf-v1';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {

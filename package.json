@@ -1,5 +1,5 @@
 {
-  "name": "aerie-golf",
+  "name": "vibegolf",
   "version": "0.1.0",
   "private": true,
   "description": "Golf simulator for the Garmin Approach R10. Static site, no build step.",

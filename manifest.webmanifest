@@ -1,6 +1,6 @@
 {
-  "name": "Aerie Golf",
-  "short_name": "Aerie Golf",
+  "name": "VibeGolf",
+  "short_name": "VibeGolf",
   "description": "Golf simulator for the Garmin Approach R10: Woodson Range and The Aerie, a floating sky course.",
   "start_url": "./",
   "scope": "./",
