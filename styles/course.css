@@ -51,42 +51,43 @@ button { font: inherit; color: inherit; }
 /* corner map */
 .minimap { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 50px); width: 96px; height: 136px; padding: 3px; z-index: 4; cursor: pointer; opacity: 0.88; }
 .minimap:hover { opacity: 1; }
+.minimap.active { border-color: var(--flag); opacity: 1; }
 .minimap canvas { display: block; width: 100%; height: 100%; }
 
 /* ---------- bottom HUD ---------- */
 #dock { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
 #dock > * { pointer-events: auto; }
 
-#targetsBox { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); display: flex; flex-direction: column; gap: 5px; max-width: 30vw; }
+/* where to play: under the hole card */
+#targetsBox { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); top: calc(env(safe-area-inset-top, 0px) + 62px); display: flex; flex-direction: column; gap: 5px; max-width: 34vw; }
 #targetsBox > .lbl { text-shadow: 0 1px 3px rgba(0,0,0,0.6); color: var(--bone); padding-left: 2px; }
-.targets { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
-.tgt { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 9px; padding: 5px 10px 6px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; text-align: left; max-width: 100%; }
-.tgt b { font-family: var(--f-data); font-weight: 600; font-size: 13.5px; white-space: nowrap; }
-.tgt span { font-family: var(--f-data); font-size: 11.5px; color: var(--mist); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.targets { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.tgt { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 9px; padding: 4px 10px 5px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; text-align: left; max-width: 100%; }
+.tgt b { font-family: var(--f-data); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.tgt span { font-family: var(--f-data); font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tgt:hover { background: var(--glass-hi); }
 .tgt[aria-pressed="true"] { border-color: var(--flag); background: rgba(40, 36, 14, 0.78); }
 .tgt[aria-pressed="true"] b { color: var(--flag); }
 
-#hitbar { position: fixed; left: 50%; top: 72%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px); }
-#swingUI, #putt { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.preview { display: inline-flex; align-items: center; gap: 7px; font-family: var(--f-data); font-size: 13px; letter-spacing: 0.02em; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+/* bottom-left controls: the ball owns the bottom centre */
+#hitbar { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); width: 196px; }
+#swingUI, #putt { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.preview { display: flex; align-items: center; gap: 7px; font-family: var(--f-data); font-size: 12.5px; letter-spacing: 0.02em; padding: 4px 10px; border-radius: 9px; white-space: nowrap; align-self: flex-start; width: max-content; max-width: 44vw; }
 .preview i { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--mist); }
 .preview small { font-size: 11px; color: var(--mist); margin-left: 1px; }
-.hitrow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; }
-.hrSide { display: flex; gap: 6px; align-items: center; }
-.hrSide.left { justify-content: flex-end; }
-.chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; color: var(--bone); font-family: var(--f-data); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 10px; min-height: 46px; min-width: 50px; }
+.aimrow { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 6px; }
+.chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; color: var(--bone); font-family: var(--f-data); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 8px; min-height: 44px; }
 .chip b { font-size: 17px; font-weight: 700; line-height: 1; color: var(--flag); }
 .chip span { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mist); }
 .chip:hover { background: var(--glass-hi); }
 .chip[aria-expanded="true"] { border-color: var(--flag); }
 .chip.wide { flex-direction: row; min-height: 36px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 14px; }
-.ab { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; width: 40px; min-height: 46px; cursor: pointer; font-size: 15px; color: var(--bone); touch-action: none; }
+.ab { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; min-height: 44px; cursor: pointer; font-size: 15px; color: var(--bone); touch-action: none; }
 .ab:hover { background: var(--glass-hi); }
-#hit, #puttBtn { appearance: none; border: 0; border-radius: 12px; min-height: 46px; min-width: 128px; padding: 0 22px; background: var(--flag); color: var(--flag-ink); cursor: pointer; font-family: var(--f-data); font-weight: 700; font-size: 18px; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+#hit, #puttBtn { appearance: none; border: 0; border-radius: 12px; min-height: 52px; width: 100%; background: var(--flag); color: var(--flag-ink); cursor: pointer; font-family: var(--f-data); font-weight: 700; font-size: 19px; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
 #hit:active, #puttBtn:active { transform: translateY(1px) scale(0.98); }
 #hit[disabled], #puttBtn[disabled] { opacity: 0.35; cursor: default; }
-.gimme { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--mist); padding: 6px 8px; cursor: pointer; white-space: nowrap; }
+.gimme { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mist); padding: 6px 10px; cursor: pointer; white-space: nowrap; }
 .gimme input { accent-color: var(--flag); width: 15px; height: 15px; margin: 0; }
 
 #readout { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); width: 220px; padding: 8px 10px 9px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
@@ -119,6 +120,13 @@ button { font: inherit; color: inherit; }
 .pw { appearance: none; border: 1px solid var(--line); background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px 0; cursor: pointer; font-family: var(--f-data); font-weight: 600; font-size: 13.5px; color: var(--bone); }
 .pw[aria-pressed="true"] { background: var(--bone); border-color: var(--bone); color: var(--ink); }
 .ghost { appearance: none; border: 1px solid var(--line); background: rgba(255,255,255,0.04); border-radius: 9px; padding: 0 14px; min-height: 40px; cursor: pointer; font-family: var(--f-data); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone); }
+
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13.5px; cursor: pointer; font-family: var(--f-body); }
+.soundRow { appearance: none; width: 100%; background: transparent; border: 0; padding: 4px 0; color: var(--bone); }
+.tog { width: 36px; height: 20px; border-radius: 10px; background: rgba(255,255,255,0.18); position: relative; flex: none; transition: background .15s ease; }
+.tog::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--bone); transition: transform .15s ease; }
+.soundRow[aria-pressed="true"] .tog { background: var(--flag); }
+.soundRow[aria-pressed="true"] .tog::after { transform: translateX(16px); background: var(--flag-ink); }
 
 /* ---------- labels, toast, intro ---------- */
 .tag { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 3; font-family: var(--f-data); font-weight: 600; font-size: 12px; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 5px; background: rgba(14,26,32,0.8); color: var(--bone); white-space: nowrap; border: 1px solid var(--line); }
@@ -158,10 +166,11 @@ table.sc td.nm { color: var(--mist); font-size: 13px; text-align: left; padding-
   .m .num { font-size: 18px; }
   .lbl { font-size: 11px; }
   .tgt b { font-size: 15px; } .tgt span { font-size: 12.5px; }
-  .preview { font-size: 14.5px; padding: 4px 12px; }
-  #hit, #puttBtn { min-height: 54px; min-width: 170px; font-size: 21px; }
-  .chip, .ab { min-height: 54px; }
-  .ab { width: 46px; }
+  #targetsBox { top: calc(env(safe-area-inset-top, 0px) + 74px); }
+  #hitbar { width: 240px; }
+  .preview { font-size: 14px; }
+  #hit, #puttBtn { min-height: 58px; font-size: 21px; }
+  .chip, .ab { min-height: 52px; }
   #intro { width: 440px; } #intro p { font-size: 14px; } #intro .holeName { font-size: 30px; }
   .sheet { top: calc(env(safe-area-inset-top, 0px) + 66px); }
 }
@@ -171,14 +180,13 @@ table.sc td.nm { color: var(--mist); font-size: 13px; text-align: left; padding-
   .course { font-size: 9.5px; } .holeName { font-size: 17px; } .stat .num { font-size: 16px; }
   #holeCard { gap: 10px; padding: 4px 8px 5px; }
   .tbtn, .tools .lm-btn span { padding: 6px 6px; font-size: 11px; }
-  .tools [data-cam="chase"] { display: none; }
   .tools .menu-link .mlong { display: none; } .tools .menu-link .mshort { display: inline; }
   #readout { width: 168px; padding: 6px 8px 7px; }
   .carryNum { font-size: 26px; }
-  #targetsBox { max-width: 27vw; }
-  .tgt { padding: 4px 8px 5px; gap: 6px; } .tgt b { font-size: 12.5px; } .tgt span { font-size: 10.5px; }
-  #hit, #puttBtn { min-width: 108px; padding: 0 16px; font-size: 17px; }
-  .ab { width: 36px; } .chip { min-width: 46px; padding: 3px 8px; }
+  #targetsBox { max-width: 30vw; top: calc(env(safe-area-inset-top, 0px) + 56px); }
+  .tgt { padding: 3px 8px 4px; gap: 6px; } .tgt b { font-size: 12px; } .tgt span { font-size: 10.5px; }
+  #hitbar { width: 176px; }
+  #hit, #puttBtn { min-height: 48px; font-size: 17px; }
   .minimap { width: 84px; height: 118px; }
 }
 
@@ -186,16 +194,14 @@ table.sc td.nm { color: var(--mist); font-size: 13px; text-align: left; padding-
 @media (orientation: portrait) {
   #top { flex-direction: column; align-items: stretch; gap: 6px; }
   .tools { justify-content: space-between; }
-  .tools [data-cam="chase"] { display: none; }
   .minimap { top: calc(env(safe-area-inset-top, 0px) + 100px); }
   #readout { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; top: calc(env(safe-area-inset-top, 0px) + 100px); bottom: auto; }
-  #targetsBox { max-width: 60vw; bottom: auto; top: 46%; }
+  #targetsBox { top: calc(env(safe-area-inset-top, 0px) + 200px); max-width: 60vw; }
   .sheet.left { right: max(12px, env(safe-area-inset-right, 0px)); width: auto; top: 30%; }
   #intro { width: auto; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 64px); }
 }
 #rotate { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(300px, calc(100% - 32px)); z-index: 30; padding: 18px; display: flex; flex-direction: column; gap: 8px; text-align: center; }
 #rotate b { font-family: var(--f-data); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; }
 #rotate span { font-size: 13.5px; color: var(--mist); line-height: 1.45; }
-#sabProbe { position: fixed; width: 0; height: env(safe-area-inset-bottom, 0px); visibility: hidden; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 .m .lbl { white-space: nowrap; }

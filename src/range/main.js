@@ -1,6 +1,7 @@
 // Woodson Range — driving range mode.
 import { simulate, airDensity, DEFAULT_COEF } from '../physics.js';
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
+import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
 /* ===================== physics (pure, portable) ===================== */
@@ -403,7 +404,6 @@ const envFmt = () => {
 for (const [s, k] of [['sTemp', 'tempF'], ['sAlt', 'altFt'], ['sLift', 'lift'], ['sDrag', 'drag']]) { $(s).value = state[k]; $(s).addEventListener('input', e => { state[k] = +e.target.value; envFmt(); }); }
 $('sVar').addEventListener('change', e => state.variance = e.target.checked);
 $('btnReset').onclick = () => loadClub(state.club);
-document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => setCam(b.dataset.cam));
 document.querySelectorAll('[data-sun]').forEach(b => b.onclick = () => { setSun(b.dataset.sun); document.querySelectorAll('[data-sun]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
 TRACERS.forEach(c => {
   const b = document.createElement('button'); b.className = 'sw';
@@ -441,7 +441,6 @@ addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
   if (e.code === 'Space' || e.key === 'h' || e.key === 'H') { e.preventDefault(); swing(); }
   else if (/^[1-8]$/.test(e.key) && state.phase === 'idle') loadClub(+e.key - 1);
-  else if (e.key === 'c' || e.key === 'C') { const order = ['tracer', 'auto', 'follow', 'top']; setCam(order[(order.indexOf(state.camMode) + 1) % order.length]); }
   else if (e.key === 'x' || e.key === 'X') clearTracers();
 });
 let toastT = 0; function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
@@ -562,6 +561,7 @@ function placeBallAtAddress() {
   teePeg.visible = tee;
   teePeg.position.set(0, 0.03 + 0.025 * (tee ? 1 : 0), 0);
   ball.position.set(0, (tee ? 0.045 : 0.03) + BALL_RADIUS, 0);
+  addrBall.copy(ball.position);
   ball.scale.setScalar(1); ball.visible = true;
 }
 
@@ -626,7 +626,11 @@ function setCam(mode) {
   state.camMode = mode; camState.cut = true;
   document.querySelectorAll('[data-cam]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cam === mode)));
 }
-const ADDRESS = { pos: new THREE.Vector3(0, 1.0, 4.2), look: new THREE.Vector3(0, -9.5, -150), fov: 40 };
+// Standing over the ball: ball at the bottom centre of the screen (see src/stance.js).
+const ADDRESS = { pos: new THREE.Vector3(0, 1.6, 3.2), look: new THREE.Vector3(0, -9, -100), fov: STANCE.fov };
+const FWD = new THREE.Vector3(0, 0, -1), addrBall = new THREE.Vector3(0, 0.05, 0);
+function stance(keep) { return stanceView(addrBall, FWD, baseFov(STANCE.fov), keep ? { keep } : {}); }
+function updateAddress() { const v = stance(); ADDRESS.pos.copy(v.pos); ADDRESS.look.copy(v.look); }
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
 function hfovToV(hdeg) { const a = camera.aspect; return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hdeg) / 2) / a)); }
 function baseFov(v) { // keep at least ~62° horizontal on portrait screens
@@ -634,11 +638,13 @@ function baseFov(v) { // keep at least ~62° horizontal on portrait screens
 }
 function cameraTarget(dt) {
   const f = state.flight, mode = state.camMode, bp = ball.position;
+  updateAddress();
   let pos = ADDRESS.pos.clone(), look = ADDRESS.look.clone(), fov = ADDRESS.fov, k = 2.2;
   const flying = state.phase === 'flight' || state.phase === 'rest';
   if (mode === 'tracer') {
     // fixed, high behind the bay: the whole flight stays in frame and the tracers stack up
-    pos.set(0, 2.2, 14); look.set(0, 6, -150); fov = 40; k = 3;
+    // fixed behind the ball; the view tips up only as far as needed to keep the ball in frame
+    look.copy(stance(flying ? bp : null).look); k = 3;
   } else if (mode === 'top') {
     const far = Math.max(150, ...state.shots.slice(-12).map(s => s.r.totalDown * 0.9144), f ? -f.r.pts.at(-1).p[2] : 0);
     const cz = -far * 0.5;
@@ -769,29 +775,16 @@ function step(dt) {
     p.needsUpdate = true; fl.geometry.computeVertexNormals();
   }
   updateCamera(dt);
-  placeHitbar();
   // shadow box follows what the camera is looking at
   const focus = state.phase === 'idle' && state.camMode !== 'top' ? tmp.set(0, 0, -50) : tmp.copy(camState.look).lerp(camera.position, 0.35);
   focus.y = 0;
   sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(sunDir, 450);
 }
 
-// Keep the Hit button centred just under the ball while waiting for a swing.
-const hitbar = $('hitbar'), sabProbe = $('sabProbe'), hbV = new THREE.Vector3();
-function placeHitbar() {
-  if (state.phase !== 'idle' && hitbar.dataset.placed) return;
-  const H = innerHeight, hb = hitbar.offsetHeight || 46;
-  hbV.copy(ball.position).project(camera);
-  const ballY = (-hbV.y * 0.5 + 0.5) * H;
-  const onScreen = hbV.z < 1 && Math.abs(hbV.x) < 1 && ballY > 0 && ballY < H;
-  const maxTop = H - hb - 10 - sabProbe.offsetHeight;
-  const top = onScreen ? Math.min(maxTop, Math.max(H * 0.45, ballY + 14)) : maxTop;
-  hitbar.style.top = top.toFixed(0) + 'px'; hitbar.dataset.placed = '1';
-}
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines();
-  ADDRESS.pos.set(0, 1.0, 4.2);
+  updateAddress();
 }
 addEventListener('resize', () => { resize(); if (!$('session').hidden) drawSession(); });
 
@@ -800,8 +793,6 @@ buildGround(); buildTrees(); buildProps();
 setSun('golden');
 resize();
 envFmt(); renderClubs(); loadClub(4);
-camState.pos.copy(ADDRESS.pos); camState.look.copy(ADDRESS.look); camState.fov = baseFov(ADDRESS.fov);
+updateAddress(); camState.pos.copy(ADDRESS.pos); camState.look.copy(ADDRESS.look); camState.fov = baseFov(ADDRESS.fov);
 requestAnimationFrame(t => { last = t; frame(t); });
-// opening shot so the range lands on something live
-if (!window.__lowq) setTimeout(() => { if (state.phase === 'idle') launch(realSwing(state.shotData), false); }, 900);
 document.fonts && document.fonts.ready.then(() => { for (const sg of signs) { sg.board.material.map.dispose(); sg.board.material.map = signTexture(sg.text, 'YARDS'); sg.board.material.needsUpdate = true; } });

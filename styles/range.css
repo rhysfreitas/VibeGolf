@@ -57,16 +57,16 @@ button { font: inherit; color: inherit; }
 #readout:not(.more) .m.x { display: none; }
 
 /* ---------- chips + hit ---------- */
-.chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; color: var(--bone); font-family: var(--f-data); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 4px 12px; min-height: 46px; }
+.chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; color: var(--bone); font-family: var(--f-data); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 4px 12px; min-height: 52px; min-width: 56px; }
 .chip b { font-size: 18px; font-weight: 700; line-height: 1; color: var(--flag); }
 .chip span { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); }
 .chip:hover { background: var(--glass-hi); }
 .chip[aria-expanded="true"] { border-color: var(--flag); }
 .chip.wide { flex-direction: row; justify-content: space-between; min-height: 34px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 10px; }
 .chip.wide .count { font-size: 11px; letter-spacing: 0.06em; text-transform: none; }
-#hitbar { position: fixed; left: 50%; top: 72%; transform: translateX(-50%); display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; z-index: 5; width: max-content; }
-#hitbar .chip { justify-self: end; }
-#hit { appearance: none; border: 0; border-radius: 12px; min-height: 46px; min-width: 132px; padding: 0 22px; background: var(--flag); color: var(--flag-ink); cursor: pointer; font-family: var(--f-data); font-weight: 700; font-size: 18px; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.35); transition: transform .08s ease, opacity .2s ease; }
+/* bottom-left controls: the ball owns the bottom centre */
+#hitbar { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); display: flex; gap: 8px; align-items: stretch; z-index: 5; }
+#hit { appearance: none; border: 0; border-radius: 12px; min-height: 52px; min-width: 140px; padding: 0 22px; background: var(--flag); color: var(--flag-ink); cursor: pointer; font-family: var(--f-data); font-weight: 700; font-size: 18px; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.35); transition: transform .08s ease, opacity .2s ease; }
 #hit:active { transform: translateY(1px) scale(0.98); }
 #hit[disabled] { opacity: 0.35; cursor: default; }
 
@@ -109,6 +109,12 @@ table.gap td:first-child { color: var(--flag); font-weight: 600; }
 .shot .n { color: var(--sage); font-size: 12px; }
 .shot .c { color: var(--flag); font-weight: 600; }
 .empty { font-size: 13px; color: var(--sage); margin: 0; }
+
+.soundRow { appearance: none; width: 100%; background: transparent; border: 0; padding: 4px 0; color: var(--bone); }
+.tog { width: 36px; height: 20px; border-radius: 10px; background: rgba(255,255,255,0.18); position: relative; flex: none; transition: background .15s ease; }
+.tog::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--bone); transition: transform .15s ease; }
+.soundRow[aria-pressed="true"] .tog { background: var(--flag); }
+.soundRow[aria-pressed="true"] .tog::after { transform: translateX(16px); background: var(--flag-ink); }
 
 /* ---------- world-anchored labels, toast ---------- */
 .tag { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; z-index: 3; font-family: var(--f-data); font-weight: 600; font-size: 12px; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 5px; background: rgba(13,27,23,0.78); color: var(--bone); white-space: nowrap; border: 1px solid var(--line); }
@@ -158,6 +164,5 @@ table.gap td:first-child { color: var(--flag); font-weight: 600; }
 #rotate { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(300px, calc(100% - 32px)); z-index: 30; padding: 18px; display: flex; flex-direction: column; gap: 8px; text-align: center; }
 #rotate b { font-family: var(--f-data); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; }
 #rotate span { font-size: 13.5px; color: var(--sage); line-height: 1.45; }
-#sabProbe { position: fixed; width: 0; height: env(safe-area-inset-bottom, 0px); visibility: hidden; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 .m .lbl { white-space: nowrap; }

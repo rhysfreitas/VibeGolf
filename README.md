@@ -20,15 +20,15 @@ Without an R10 connected, every swing is simulated from tour-average launch data
 
 ### Controls
 
-The layout is built for a phone held sideways (landscape), like a launch-monitor setup. It also works on a desktop or tablet, and in portrait.
+The layout is built for a phone held sideways (landscape), like a launch-monitor setup. The camera stands just behind the ball, which sits at the bottom center of the screen, and the controls are on the left. It also works on a desktop or tablet, and in portrait.
 
 | | Range | Course |
 |---|---|---|
-| Hit | **Hit** under the ball, or `Space` | **Hit** under the ball, or `Space` |
-| Club & shot | The club chip beside Hit opens the fly-out: club, simulated swing numbers, tracer, conditions, flight trim | The club chip opens club and swing length |
-| Aim | — | **◀ ▶** beside Hit, `←` `→`, or tap the course to aim at a spot |
+| Hit | **Hit** (bottom left), or `Space` | **Hit** (bottom left), or `Space` |
+| Club & shot | The club chip next to Hit opens the fly-out: club, simulated swing numbers, tracer, sound, conditions, flight trim | The club chip opens club, swing length and sound |
+| Aim | — | **◀ ▶** above Hit, `←` `→`, or tap the course to aim at a spot |
 | Numbers | Readout bottom right. Tap it for direction, axis, descent and hang | Readout bottom right. Tap it for ball speed, launch, spin and axis |
-| More | **Session** (above the readout) opens the dispersion map, gapping and shot list. `C` cycles cameras, `X` clears tracers, `1`–`8` pick clubs | **Play to** (bottom left) picks the target. The corner map opens the full map, and `M` toggles it |
+| More | **Session** (above the readout) opens the dispersion map, gapping and shot list. `X` clears tracers, `1`–`8` pick clubs | **Play to** (under the hole card) picks the target. Tap the corner map, or press `M`, for the whole hole |
 
 ## Connect the R10
 

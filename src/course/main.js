@@ -3,6 +3,7 @@ import { simulate } from '../physics.js';
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
 import { HOLES } from './aerie.js';
 import { createMinimap } from './minimap.js';
+import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
@@ -426,7 +427,7 @@ function buildHole(h) {
   flagMesh = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.75, side: THREE.DoubleSide }));
   flagMesh.position.set(pp.x + 0.014, pp.y + 2.07, pp.z); flagMesh.userData.base = Float32Array.from(fg.attributes.position.array); flagMesh.castShadow = true; holeGroup.add(flagMesh);
   cupMesh = new THREE.Mesh(new THREE.CircleGeometry(0.054, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x0b0f0c })); cupMesh.position.set(pp.x, pp.y + 0.006, pp.z); holeGroup.add(cupMesh);
-  for (const dx of [-3.2, 3.2]) { const tm = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 8), new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.4 })); const tx = h.tee[0] + dx, tz = h.tee[1] - 1; tm.position.set(tx, groundAt(tx, tz) + 0.08, tz); holeGroup.add(tm); }
+  for (const dx of [-4.5, 4.5]) { const tm = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.4 })); const tx = h.tee[0] + dx, tz = h.tee[1] - 2.5; tm.position.set(tx, groundAt(tx, tz) + 0.08, tz); holeGroup.add(tm); }
   const dir = new THREE.Vector2(pp.x - h.tee[0], pp.z - h.tee[1]).normalize(); holeDirU.value.copy(dir);
   // plan view for the corner map
   minimap.setHole({
@@ -469,12 +470,14 @@ function resizeLines() { const w = renderer.domElement.width, h = renderer.domEl
 
 /* ===================== corner map ===================== */
 const minimap = createMinimap(document.getElementById('minimap'));
-document.getElementById('minimapWrap').addEventListener('click', () => setCam('map'));
+// the corner map doubles as the only view switch: tap for the whole hole, tap again to return
+document.getElementById('minimapWrap').addEventListener('click', () => setCam(state.cam === 'map' ? 'tv' : 'map'));
 function groundTrack(W, upto) { const out = []; for (let i = 0; i <= upto; i += 8) out.push({ x: W[i].w.x, z: W[i].w.z }); out.push({ x: W[upto].w.x, z: W[upto].w.z }); return out; }
 let mmFrame = 0;
 function drawMinimap() {
   const wrap = document.getElementById('minimapWrap');
-  const show = !!HOLE && state.phase !== 'intro' && state.cam !== 'map' && document.getElementById('card').hidden;
+  const show = !!HOLE && state.phase !== 'intro' && document.getElementById('card').hidden;
+  wrap.classList.toggle('active', state.cam === 'map');
   if (show && wrap.hidden) { wrap.hidden = false; minimap.resize(); }
   wrap.hidden = !show;
   if (!show || (mmFrame++ & 1)) return; // ~30 fps is plenty
@@ -670,7 +673,7 @@ function setPhaseUI() {
   $('dock').style.visibility = state.phase === 'intro' ? 'hidden' : 'visible';
   $('targetsBox').hidden = state.phase !== 'address';
   if (state.phase !== 'address' && !$('plan').hidden) togglePlan(false);
-  delete $('hitbar').dataset.placed;
+
   $('skip').hidden = state.phase !== 'intro';
   $('intro').hidden = state.phase !== 'intro';
   renderHoleCard();
@@ -900,7 +903,6 @@ function setupFlyover() {
 function hfovToV(h) { return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(h) / 2) / camera.aspect)); }
 const baseFov = v => Math.max(v, Math.min(80, hfovToV(64)));
 function setCam(m) { state.cam = m; camState.cut = true; document.querySelectorAll('[data-cam]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cam === m))); }
-document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => setCam(b.dataset.cam));
 function holeBounds() {
   const b = new THREE.Box3();
   for (const I of ISL) b.expandByPoint(tmp.set(I.x - I.rx, I.top, I.z - I.rz)).expandByPoint(tmp.set(I.x + I.rx, I.top, I.z + I.rz));
@@ -944,27 +946,23 @@ function camTarget(dt) {
       look = bp.clone().lerp(L, ph === 'rest' ? 0 : 0.35); look.y = Math.max(look.y, L.y + 0.3); fov = 40; k = 4;
       return { pos, look, fov, k };
     }
-    // behind the ball, tracking it into the sky
-    pos = f.from.clone().addScaledVector(dirFromYaw(state.yaw), -6).add(tmp.set(0, 2.2, 0));
-    look = camState.addressLook.clone().lerp(bp, 0.65);
-    const dist = Math.max(10, bp.distanceTo(pos));
-    fov = THREE.MathUtils.clamp(2 * THREE.MathUtils.radToDeg(Math.atan(80 / dist)), 26, 50); k = 5;
+    // from where you stood, watching it go: the view tips up only as far as the ball needs
+    const sv = stanceView(f.from, yawDir, baseFov(STANCE.fov), { keep: bp, groundAt });
+    pos = sv.pos; look = sv.look; fov = STANCE.fov; k = 4;
     if (r.outcome === 'void' && state.t > landT * 0.75) { look = bp.clone(); fov = 44; }
     return { pos, look, fov, k, posHold: true };
   }
   if (ph === 'putt' || ph === 'rolling' || ph === 'holed') {
     const d = HOLE.pinPos.clone().sub(state.ball).setY(0); let L = d.length();
     if (L > 0.3) { d.normalize(); camState.puttDir = d.clone(); } else { d.copy(camState.puttDir || dirFromYaw(state.yaw)); L = 3; }
-    pos = state.ball.clone().addScaledVector(d, -Math.max(2.5, L * 0.35)).add(tmp.set(0, 1.1 + L * 0.08, 0));
-    look = state.ball.clone().lerp(HOLE.pinPos, 0.7); look.y -= 0.3; fov = 46; k = 2.5;
-    return { pos, look, fov, k };
+    // standing behind the putt, reading the line to the hole
+    const sv = stanceView(state.ball, d, baseFov(STANCE.fov), { back: 2.2, up: 1.35, ballAt: 0.84, groundAt });
+    return { pos: sv.pos, look: sv.look, fov: STANCE.fov, k: 2.5 };
   }
-  // address: behind the ball looking down the aim line, a little high so the gaps read
-  const aimP = state.previewLand || state.ball.clone().addScaledVector(yawDir, 150);
-  pos = state.ball.clone().addScaledVector(yawDir, -10).add(tmp.set(0, 3.2, 0));
-  look = state.ball.clone().addScaledVector(yawDir, 80); look.y = state.ball.y - 11 + 0.3 * Math.min(0, aimP.y - state.ball.y);
-  camState.addressLook = look.clone();
-  return { pos, look, fov: 50, k: 3 };
+  // address: standing over the ball, looking down the aim line (ball at the bottom centre)
+  const sv = stanceView(state.ball, yawDir, baseFov(STANCE.fov), { groundAt });
+  camState.addressLook = sv.look.clone();
+  return { pos: sv.pos, look: sv.look, fov: STANCE.fov, k: 3 };
 }
 function updateCamera(dt) {
   const t = camTarget(dt);
@@ -1014,19 +1012,6 @@ let rotateDismissed = false;
 const syncRotate = () => { $('rotate').hidden = rotateDismissed || !portraitPhone.matches; };
 portraitPhone.addEventListener?.('change', syncRotate); syncRotate();
 $('rotateOk').onclick = () => { rotateDismissed = true; syncRotate(); };
-// Keep Hit (or Putt) centred just under the ball while it's your shot.
-const hitbar = $('hitbar'), sabProbe = $('sabProbe'), hbV = new THREE.Vector3();
-function placeHitbar() {
-  const waiting = state.phase === 'address' || state.phase === 'putt';
-  if (!waiting && hitbar.dataset.placed) return;
-  const H = innerHeight, hb = hitbar.offsetHeight || 80;
-  hbV.copy(ball.position).project(camera);
-  const ballY = (-hbV.y * 0.5 + 0.5) * H;
-  const onScreen = state.cam !== 'map' && hbV.z < 1 && Math.abs(hbV.x) < 1 && ballY > 0 && ballY < H;
-  const maxTop = H - hb - 10 - sabProbe.offsetHeight;
-  const top = onScreen ? Math.min(maxTop, Math.max(H * 0.4, ballY + 12)) : maxTop;
-  hitbar.style.top = top.toFixed(0) + 'px'; hitbar.dataset.placed = '1';
-}
 $('sound').onclick = e => { state.sound = !state.sound; e.currentTarget.setAttribute('aria-pressed', String(state.sound)); if (audio.ctx) audio.amb.gain.setTargetAtTime(state.sound ? 0.05 : 0, audio.ctx.currentTime, 0.3); };
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
@@ -1094,7 +1079,6 @@ function step(dt) {
   drawMinimap();
   for (const g of oldTracers) g.visible = state.cam === 'map' && g.geometry.attributes.instanceStart && g.geometry.attributes.instanceStart.count > 1;
   updateCamera(dt);
-  placeHitbar();
   const focus = tmp.copy(camState.look).lerp(camera.position, 0.4);
   if (state.phase === 'address' || state.phase === 'putt') focus.copy(state.ball).addScaledVector(dirFromYaw(state.yaw), 60);
   sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(sunDir, 600);

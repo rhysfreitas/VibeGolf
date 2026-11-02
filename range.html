@@ -25,23 +25,15 @@
   </div>
   <div class="tools glass">
     <a class="menu-link" href="./" title="Back to the menu" aria-label="Menu"><span class="mlong">Menu</span><span class="mshort" aria-hidden="true">‹</span></a>
-    <div class="seg" role="group" aria-label="Camera">
-      <button class="tbtn" data-cam="tracer" aria-pressed="true">Tracer</button>
-      <button class="tbtn" data-cam="auto" aria-pressed="false">TV</button>
-      <button class="tbtn" data-cam="follow" aria-pressed="false">Chase</button>
-      <button class="tbtn" data-cam="top" aria-pressed="false">Top</button>
-    </div>
-    <button class="tbtn" id="sound" aria-pressed="true" title="Sound">Sound</button>
   </div>
 </div>
 
-<!-- hit button sits centred just under the ball; script keeps it there -->
+<!-- controls live bottom left so the ball can sit at the bottom centre -->
 <div id="hitbar">
   <button class="chip" id="btnAdjust" aria-expanded="false" aria-controls="adjust" title="Club and shot settings">
     <b id="chipClub">7i</b><span>Shot</span>
   </button>
   <button id="hit">Hit</button>
-  <span aria-hidden="true"></span>
 </div>
 
 <div id="rightDock">
@@ -90,6 +82,9 @@
     <button class="ghost" id="btnClear">Clear tracers</button>
   </div>
   <div class="group">
+    <button class="switch soundRow" id="sound" aria-pressed="true"><span>Sound</span><i class="tog" aria-hidden="true"></i></button>
+  </div>
+  <div class="group">
     <span class="lbl">Conditions</span>
     <div class="row"><label for="sTemp">Temperature</label><output id="oTemp"></output><input type="range" id="sTemp" min="35" max="110" step="1"></div>
     <div class="row"><label for="sAlt">Altitude</label><output id="oAlt"></output><input type="range" id="sAlt" min="0" max="8000" step="10"></div>
@@ -132,7 +127,6 @@
   <span>VibeGolf is laid out for landscape, like a launch monitor setup.</span>
   <button class="ghost" id="rotateOk">Continue anyway</button>
 </div>
-<i id="sabProbe" aria-hidden="true"></i>
 
 <div class="tag" id="tagLand" hidden></div>
 <div class="tag" id="tagRest" hidden></div>
