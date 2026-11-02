@@ -1,0 +1,1081 @@
+// The Aerie — course play mode.
+import { simulate } from '../physics.js';
+import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
+import { HOLES } from './aerie.js';
+import { createMinimap } from './minimap.js';
+
+THREE.ColorManagement.legacyMode = false;
+
+/* ===================== the course ===================== */
+// World units are metres; each hole has its own frame with the tee near the origin and play heading -z.
+const M_PER_YD = 0.9144;
+const CLUBS = [
+  { id: 'DR', name: 'Driver', Speed: 167, VLA: 10.9, TotalSpin: 2686, tee: true },
+  { id: '3W', name: '3 wood', Speed: 158, VLA: 9.2, TotalSpin: 3655, tee: true },
+  { id: 'HY', name: 'Hybrid', Speed: 146, VLA: 10.2, TotalSpin: 4437 },
+  { id: '5i', name: '5 iron', Speed: 132, VLA: 12.1, TotalSpin: 5361 },
+  { id: '7i', name: '7 iron', Speed: 120, VLA: 16.3, TotalSpin: 7097 },
+  { id: '9i', name: '9 iron', Speed: 109, VLA: 20.4, TotalSpin: 8647 },
+  { id: 'PW', name: 'Pitching wedge', Speed: 102, VLA: 24.2, TotalSpin: 9304 },
+  { id: 'SW', name: 'Sand wedge', Speed: 76, VLA: 31, TotalSpin: 9800 },
+];
+const POWERS = [{ k: 1, label: 'Full' }, { k: 0.8, label: '¾' }, { k: 0.6, label: '½' }, { k: 0.4, label: '¼' }, { k: 0.26, label: 'Chip' }];
+
+
+/* ---------- noise ---------- */
+function hash2(i, j) { let h = Math.imul(i | 0, 374761393) + Math.imul(j | 0, 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
+function vnoise(x, z) { const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); const a = hash2(i, j), b = hash2(i + 1, j), c = hash2(i, j + 1), d = hash2(i + 1, j + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
+function fbm(x, z) { return vnoise(x, z) * 0.5 + vnoise(x * 2.03 + 17, z * 2.03 + 5) * 0.25 + vnoise(x * 4.1 + 3, z * 4.1 + 11) * 0.125 + vnoise(x * 8.3, z * 8.3 + 7) * 0.0625; }
+function rng(seed) { let s = seed >>> 0; return () => { s = Math.imul(s ^ (s >>> 15), 2246822507) + 0x6d2b79f5 >>> 0; return (s >>> 8) / 16777216; }; }
+const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+/* ---------- island shape (shared by physics and meshes) ---------- */
+function prepIsland(I) {
+  I.rot = I.rot || 0; I.c = Math.cos(I.rot); I.s = Math.sin(I.rot); I.p = 2.4;
+  I.bound = Math.max(I.rx, I.rz) * 1.25;
+  const sd = I.seed * 1.7;
+  I.wob = th => 1 + 0.06 * Math.sin(3 * th + sd) + 0.04 * Math.sin(7 * th + 2 * sd) + 0.022 * Math.sin(13 * th + 3 * sd);
+  return I;
+}
+function islandF(I, x, z) { // <= 1 inside
+  const dx = x - I.x, dz = z - I.z;
+  const u = dx * I.c + dz * I.s, v = -dx * I.s + dz * I.c;
+  const rho = Math.pow(Math.pow(Math.abs(u) / I.rx, I.p) + Math.pow(Math.abs(v) / I.rz, I.p), 1 / I.p);
+  return rho / I.wob(Math.atan2(v / I.rz, u / I.rx));
+}
+function edgeRadius(I, th) { // world-space distance from centre to rim along local angle th
+  const cu = Math.cos(th), sv = Math.sin(th);
+  const r = 1 / Math.pow(Math.pow(Math.abs(cu) / I.rx, I.p) + Math.pow(Math.abs(sv) / I.rz, I.p), 1 / I.p);
+  const u = cu * r * I.wob(Math.atan2(sv * r / I.rz, cu * r / I.rx)), v = sv * r * I.wob(Math.atan2(sv * r / I.rz, cu * r / I.rx));
+  return { x: I.x + u * I.c - v * I.s, z: I.z + u * I.s + v * I.c };
+}
+function islandH(I, x, z, f) {
+  let h = I.top;
+  if (I.kind === 'green') {
+    const g = I.green, d = Math.hypot(x - g.x, z - g.z);
+    h += 0.35 * (fbm(x / 40 + I.seed, z / 40) - 0.5) + 0.012 * (z - g.z) - 0.008 * (x - g.x);
+    h += 0.6 * sstep(g.r + 1, g.r + 7, d) * (fbm(x / 9, z / 9 + I.seed) - 0.35);
+  } else if (I.kind === 'tee') {
+    h += 0.15 * (fbm(x / 20, z / 20) - 0.5);
+  } else {
+    h += 1.4 * (fbm(x / 32 + I.seed * 3, z / 32) - 0.5);
+  }
+  if (f > 0.9) h -= Math.pow((f - 0.9) / 0.1, 2) * 0.9; // rounded lip
+  return h;
+}
+
+let HOLE = null, ISL = [];
+function groundAt(x, z) {
+  let best = null;
+  for (const I of ISL) {
+    if (Math.abs(x - I.x) > I.bound || Math.abs(z - I.z) > I.bound) continue;
+    const f = islandF(I, x, z);
+    if (f <= 1) { const h = islandH(I, x, z, f); if (best === null || h > best) best = h; }
+  }
+  return best;
+}
+function islandAt(x, z) {
+  for (const I of ISL) { if (Math.abs(x - I.x) > I.bound || Math.abs(z - I.z) > I.bound) continue; if (islandF(I, x, z) <= 1) return I; }
+  return null;
+}
+function surfaceAt(x, z) {
+  const I = islandAt(x, z); if (!I) return 'void';
+  if (I.bunkers) for (const b of I.bunkers) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
+  const f = islandF(I, x, z);
+  if (I.kind === 'green') { const d = Math.hypot(x - I.green.x, z - I.green.z); return d < I.green.r ? 'green' : d < I.green.r + 2 ? 'fairway' : 'rough'; }
+  if (I.kind === 'tee') return (Math.abs(x - HOLE.tee[0]) < 5 && Math.abs(z - HOLE.tee[1]) < 7) ? 'tee' : 'rough';
+  if (I.kind === 'fairway') return f < 0.8 ? 'fairway' : 'rough';
+  return 'rough';
+}
+const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' ? 'fairway' : s === 'void' ? 'rough' : s; };
+
+/* ===================== renderer / scene ===================== */
+const coarse = matchMedia('(pointer: coarse)').matches || !!window.__lowq;
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, coarse ? 2 : 1.75));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.6;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 12000);
+const FOG_COLOR = new THREE.Color(0xbfd0dc);
+scene.fog = new THREE.Fog(FOG_COLOR, 320, 4200);
+const sky = new THREE.Sky(); sky.scale.setScalar(10000); scene.add(sky);
+const skyU = sky.material.uniforms;
+skyU.turbidity.value = 4; skyU.rayleigh.value = 1.6; skyU.mieCoefficient.value = 0.005; skyU.mieDirectionalG.value = 0.85;
+const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 16), THREE.MathUtils.degToRad(48));
+skyU.sunPosition.value.copy(sunDir);
+const sun = new THREE.DirectionalLight(0xffd9b0, 2.4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(coarse ? 2048 : 4096, coarse ? 2048 : 4096);
+const SB = 120; Object.assign(sun.shadow.camera, { left: -SB, right: SB, top: SB, bottom: -SB, near: 1, far: 1400 });
+sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.05;
+scene.add(sun, sun.target);
+const hemi = new THREE.HemisphereLight(0xd6e8ff, 0x6a7a68, 0.45); scene.add(hemi);
+{ // image-based light from the same sky
+  const pm = new THREE.PMREMGenerator(renderer), es = new THREE.Scene(), s2 = new THREE.Sky(); s2.scale.setScalar(1000); es.add(s2);
+  for (const k of ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) s2.material.uniforms[k].value = skyU[k].value;
+  s2.material.uniforms.sunPosition.value.copy(sunDir);
+  scene.environment = pm.fromScene(es, 0.02).texture;
+}
+const clockU = { value: 0 };
+
+/* ---------- cloud sea ---------- */
+const FOG_GLSL_V = `
+#include <fog_pars_vertex>
+`;
+function cloudLayer(y, scale, alpha, speed) {
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, fog: true,
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uSun: { value: sunDir }, uA: { value: alpha }, uS: { value: scale }, uV: { value: speed } }]),
+    vertexShader: `varying vec3 vW; ${FOG_GLSL_V}
+      void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
+#include <fog_vertex>
+}`,
+    fragmentShader: `varying vec3 vW; uniform float uT, uA, uS, uV; uniform vec3 uSun;
+      #include <fog_pars_fragment>
+      float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+      float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
+      float fb(vec2 p){ float a=0.5, s=0.0; for(int i=0;i<6;i++){ s += a*vn(p); p = p*2.03 + 7.1; a *= 0.5; } return s; }
+      void main(){
+        vec2 p = vW.xz * uS + vec2(uT*uV, uT*uV*0.4);
+        float n = fb(p + fb(p*0.5 + uT*0.01)*1.6);
+        float a = smoothstep(0.38, 0.72, n) * uA;
+        float lit = 0.8 + 0.25*smoothstep(0.45, 0.85, fb(p*1.7 + 3.0));
+        vec3 col = mix(vec3(0.72,0.76,0.82), vec3(1.0,0.96,0.9), lit*0.9) * (0.85 + 0.2*uSun.y);
+        gl_FragColor = vec4(col, a);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+        #include <fog_fragment>
+      }`,
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(14000, 14000, 1, 1).rotateX(-Math.PI / 2), mat);
+  m.position.y = y; m.renderOrder = -1; scene.add(m);
+  return mat;
+}
+const cloudMats = [cloudLayer(-320, 0.0016, 1.0, 1.0), cloudLayer(-210, 0.0028, 0.55, 1.8)];
+
+/* ---------- materials ---------- */
+const islandMat = new THREE.MeshStandardMaterial({ roughness: 0.93, metalness: 0, envMapIntensity: 0.6 });
+const holeDirU = { value: new THREE.Vector2(0, -1) };
+islandMat.onBeforeCompile = sh => {
+  sh.uniforms.uDir = holeDirU;
+  sh.vertexShader = sh.vertexShader
+    .replace('#include <common>', '#include <common>\nattribute vec4 aW; attribute float aDepth; varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN;')
+    .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvW4 = aW; vDepth = aDepth; vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
+  sh.fragmentShader = sh.fragmentShader
+    .replace('#include <common>', `#include <common>
+varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN; uniform vec2 uDir;
+float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
+float fb(vec2 p){ return vn(p)*0.5 + vn(p*2.07+3.1)*0.25 + vn(p*4.13+7.7)*0.125 + vn(p*8.4+1.3)*0.0625; }
+vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }`)
+    .replace('#include <map_fragment>', `
+vec3 p = vWPos;
+float camD = length(cameraPosition - p);
+float fine = mix(fb(p.xz*3.0), 0.5, smoothstep(20.0, 80.0, camD));
+float mid = fb(p.xz*0.17);
+float along = dot(p.xz, uDir);
+float stripe = step(0.5, fract(along / 12.0));
+vec3 rough = mix(lin(vec3(0.2,0.37,0.13)), lin(vec3(0.28,0.42,0.16)), mid) * (0.8 + 0.4*fine);
+vec3 fair = mix(lin(vec3(0.3,0.5,0.17)), lin(vec3(0.38,0.58,0.21)), stripe) * (0.9 + 0.18*mid) * (0.92 + 0.16*fine);
+vec3 grn = lin(vec3(0.36,0.61,0.24)) * (0.95 + 0.1*vn(p.xz*0.8)) * (0.97 + 0.06*fine);
+vec3 sand = lin(vec3(0.86,0.79,0.62)) * (0.92 + 0.12*fine);
+vec3 col = rough;
+col = mix(col, fair, vW4.x);
+col = mix(col, grn, vW4.y);
+col = mix(col, sand, vW4.z);
+// rock: pale sandstone with vertical water streaks, strata and moss on ledges
+float ang = atan(p.z, p.x);
+float streak = fb(vec2(p.x*0.35 + p.z*0.35, p.y*0.02));
+float strata = 0.5 + 0.5*sin(p.y*0.45 + fb(p.xz*0.05)*6.0);
+vec3 rock = mix(lin(vec3(0.62,0.57,0.5)), lin(vec3(0.45,0.42,0.38)), streak);
+rock *= 0.86 + 0.14*strata;
+rock = mix(rock, lin(vec3(0.3,0.27,0.24)), smoothstep(0.55, 0.75, fb(vec2(p.x*0.9+p.z*0.9, p.y*0.015))) * 0.6);
+float moss = clamp(smoothstep(0.35, 0.75, vWN.y) + (1.0 - smoothstep(1.5, 7.0, vDepth)) * 0.9, 0.0, 1.0) * smoothstep(0.35, 0.6, fb(p.xz*0.3 + p.y*0.2));
+moss = max(moss, 1.0 - smoothstep(0.5, 3.0, vDepth));
+rock = mix(rock, lin(vec3(0.24,0.36,0.15)) * (0.8+0.4*fine), moss);
+rock *= mix(1.0, 0.42, smoothstep(10.0, 140.0, vDepth));
+col = mix(col, rock, vW4.w);
+diffuseColor.rgb = col;
+`);
+};
+
+/* ---------- island mesh ---------- */
+function buildIsland(I, detail, group, trees) {
+  const N = detail.seg, rings = [0, 0.08, 0.17, 0.27, 0.38, 0.5, 0.6, 0.7, 0.78, 0.85, 0.9, 0.94, 0.97, 0.99, 1];
+  const K = detail.side;
+  const D = I.depth;
+  const rows = rings.length + K;
+  const pos = new Float32Array((N + 1) * rows * 3), aW = new Float32Array((N + 1) * rows * 4), aD = new Float32Array((N + 1) * rows);
+  const R = rng(I.seed * 977 + 13);
+  const lean = [(R() - 0.5) * 0.25, (R() - 0.5) * 0.25];
+  let vi = 0;
+  const rimY = [];
+  for (let j = 0; j <= N; j++) {
+    const th = (j / N) * Math.PI * 2;
+    const e = edgeRadius(I, th);
+    let ry = 0;
+    for (let r = 0; r < rings.length; r++) {
+      const s = rings[r] * 0.999;
+      const x = I.x + (e.x - I.x) * s, z = I.z + (e.z - I.z) * s;
+      const f = islandF(I, x, z);
+      const y = islandH(I, x, z, Math.min(f, 1));
+      pos.set([x, y, z], vi * 3);
+      const sf = I.playable ? surfaceAt(x, z) : 'rough';
+      aW.set([sf === 'fairway' || sf === 'tee' ? 1 : 0, sf === 'green' ? 1 : 0, sf === 'sand' ? 1 : 0, 0], vi * 4);
+      aD[vi] = 0; vi++; ry = y;
+    }
+    rimY[j] = ry;
+    // underside: tapered, fluted columns
+    const arc = th * Math.max(I.rx, I.rz);
+    for (let k = 1; k <= K; k++) {
+      const t = Math.pow(k / K, 1.35), d = t * D;
+      let taper = Math.pow(Math.max(0, 1 - t), 0.75);
+      if (k === 1) taper = 1.035;
+      const flute = 1 + 0.16 * (fbm(arc / 9 + I.seed, d / 45) - 0.5) * 2 + 0.06 * Math.sin(d * 0.12 + th * 5 + I.seed);
+      const sc = taper * (k === 1 ? 1 : flute);
+      const cx = I.x + lean[0] * d, cz = I.z + lean[1] * d;
+      const x = cx + (e.x - I.x) * sc, z = cz + (e.z - I.z) * sc;
+      pos.set([x, ry - d - (k === 1 ? 0.8 : 0), z], vi * 3);
+      aW.set([0, 0, 0, 1], vi * 4); aD[vi] = d + (k === 1 ? 0.8 : 0); vi++;
+    }
+  }
+  const idx = [];
+  for (let j = 0; j < N; j++) for (let r = 0; r < rows - 1; r++) {
+    const a = j * rows + r, b = (j + 1) * rows + r, c = a + 1, d = b + 1;
+    idx.push(a, b, c, b, d, c);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('aW', new THREE.BufferAttribute(aW, 4));
+  geo.setAttribute('aDepth', new THREE.BufferAttribute(aD, 1));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, islandMat);
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  mesh.userData.island = I;
+  group.add(mesh);
+  // hanging vines + moss strands from the rim
+  const vines = [], nV = Math.round(N * 0.45);
+  for (let i = 0; i < nV; i++) {
+    const th = R() * Math.PI * 2, e = edgeRadius(I, th), j = Math.round(th / (Math.PI * 2) * N);
+    const len = 3 + R() * R() * 22, ox = (e.x - I.x), oz = (e.z - I.z), ol = Math.hypot(ox, oz) || 1;
+    const x0 = e.x + ox / ol * 0.6, z0 = e.z + oz / ol * 0.6, y0 = rimY[j] - 0.6;
+    const sway = (R() - 0.5) * 1.2;
+    vines.push(x0, y0, z0, x0 + ox / ol * 0.4 + sway * 0.5, y0 - len * 0.5, z0 + oz / ol * 0.4, x0 + ox / ol * 0.4 + sway * 0.5, y0 - len * 0.5, z0 + oz / ol * 0.4, x0 + ox / ol * 0.2 + sway, y0 - len, z0 + oz / ol * 0.2);
+  }
+  const vg = new THREE.BufferGeometry(); vg.setAttribute('position', new THREE.Float32BufferAttribute(vines, 3));
+  group.add(new THREE.LineSegments(vg, vineMat));
+  // waterfalls
+  for (const th of I.falls || []) group.add(makeFall(I, th));
+  // trees on rough ground
+  const want = I.trees ?? (I.kind === 'rough' ? 4 : I.playable ? 5 : Math.round(I.rx * I.rz / 140));
+  let placed = 0;
+  for (let t = 0; t < want * 12 && placed < want; t++) {
+    const th = R() * Math.PI * 2, s = 0.35 + R() * 0.55, e = edgeRadius(I, th);
+    const x = I.x + (e.x - I.x) * s, z = I.z + (e.z - I.z) * s;
+    if (I.playable && surfaceAt(x, z) !== 'rough') continue;
+    if (I.playable && I.kind !== 'rough' && islandF(I, x, z) < 0.86) continue;
+    if (I.kind === 'tee' && Math.hypot(x - HOLE.tee[0], z - HOLE.tee[1]) < 9) continue;
+    trees.push({ x, y: groundAt2(I, x, z), z, s: (I.playable ? 0.9 : 1.2) + R() * 0.8, type: R() < 0.62 ? 'pine' : 'oak', r: R() });
+    placed++;
+  }
+}
+const groundAt2 = (I, x, z) => islandH(I, x, z, Math.min(1, islandF(I, x, z)));
+const vineMat = new THREE.LineBasicMaterial({ color: 0x2f4a22, transparent: true, opacity: 0.85 });
+
+const fallMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: true,
+  uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: clockU }]),
+  vertexShader: `varying vec2 vUv; ${FOG_GLSL_V}
+    void main(){ vUv = uv; vec4 mvPosition = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mvPosition;
+#include <fog_vertex>
+}`,
+  fragmentShader: `varying vec2 vUv; uniform float uT;
+    #include <fog_pars_fragment>
+    float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+    float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
+    void main(){
+      float x = vUv.x, y = 1.0 - vUv.y;
+      float edge = smoothstep(0.0, 0.18, x) * smoothstep(1.0, 0.82, x);
+      float s = vn(vec2(x*18.0, y*3.0 - uT*2.2)) * 0.6 + vn(vec2(x*40.0, y*7.0 - uT*3.1)) * 0.4;
+      float spread = mix(1.0, 0.0, smoothstep(0.35, 1.0, y));
+      float a = edge * (0.35 + 0.55*s) * mix(1.0, 0.0, smoothstep(0.55, 1.0, y)) * (0.6 + 0.4*spread);
+      vec3 col = mix(vec3(0.86,0.92,0.95), vec3(1.0), s);
+      gl_FragColor = vec4(col, a);
+      #include <tonemapping_fragment>
+      #include <encodings_fragment>
+      #include <fog_fragment>
+    }`,
+});
+function makeFall(I, th) {
+  const e = edgeRadius(I, th), ox = e.x - I.x, oz = e.z - I.z, ol = Math.hypot(ox, oz);
+  const nx = ox / ol, nz = oz / ol, W = 5 + I.seed % 3, L = 170;
+  const geo = new THREE.PlaneGeometry(W, L, 1, 24);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i), t = (L / 2 - y) / L; // 0 at top
+    const out = 1.2 + t * t * 26, w = 1 + t * 1.6;
+    p.setXYZ(i, p.getX(i) * w, -t * L, out);
+  }
+  geo.computeBoundingSphere();
+  const m = new THREE.Mesh(geo, fallMat);
+  const y0 = groundAt2(I, I.x + ox * 0.98, I.z + oz * 0.98);
+  m.position.set(e.x, y0 + 0.2, e.z);
+  m.rotation.y = Math.atan2(nx, nz);
+  m.renderOrder = 1;
+  return m;
+}
+
+/* ---------- trees ---------- */
+const coneGeo = new THREE.ConeGeometry(1, 1, 9, 1); coneGeo.translate(0, 0.5, 0);
+const blobGeo = new THREE.IcosahedronGeometry(1, 2);
+{ const p = blobGeo.attributes.position, nr = blobGeo.attributes.normal; for (let i = 0; i < p.count; i++) { const v = new THREE.Vector3().fromBufferAttribute(p, i); const n = 1 + (hash2(Math.round(v.x * 50), Math.round(v.y * 50 + v.z * 30)) - 0.5) * 0.3; p.setXYZ(i, v.x * n, v.y * n * 0.8, v.z * n); v.normalize(); nr.setXYZ(i, v.x, v.y, v.z); } }
+const trunkGeo = new THREE.CylinderGeometry(0.12, 0.22, 1, 6); trunkGeo.translate(0, 0.5, 0);
+const foliageMat = new THREE.MeshStandardMaterial({ roughness: 0.92, envMapIntensity: 0.5 });
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 });
+function buildTrees(list, group) {
+  const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type === 'oak');
+  const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * 3);
+  const blobs = new THREE.InstancedMesh(blobGeo, foliageMat, oaks.length * 4);
+  const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, list.length);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), c = new THREE.Color();
+  const R = rng(list.length * 31 + 7);
+  let k = 0, ti = 0;
+  for (const t of pines) {
+    const H = 7 * t.s + 4 * t.r, Wd = 2.2 * t.s;
+    m.compose(ps.set(t.x, t.y - 0.3, t.z), q.identity(), sc.set(t.s, H * 0.4, t.s)); trunks.setMatrixAt(ti++, m);
+    for (let i = 0; i < 3; i++) {
+      const y0 = t.y + H * (0.18 + i * 0.22), w = Wd * (1 - i * 0.26), h = H * (0.5 - i * 0.08);
+      q.setFromEuler(new THREE.Euler(0, R() * 6, 0));
+      m.compose(ps.set(t.x, y0, t.z), q, sc.set(w, h, w)); cones.setMatrixAt(k, m);
+      c.set(0x2c4a2a).offsetHSL((R() - 0.5) * 0.03, (R() - 0.5) * 0.08, (R() - 0.5) * 0.06 + i * 0.015); cones.setColorAt(k, c); k++;
+    }
+  }
+  k = 0;
+  for (const t of oaks) {
+    const H = 2.5 * t.s, s = 3 * t.s;
+    m.compose(ps.set(t.x, t.y - 0.3, t.z), q.identity(), sc.set(t.s, H + 1.2, t.s)); trunks.setMatrixAt(ti++, m);
+    const base = [0x3f5a28, 0x4a6230, 0x56692f][Math.floor(R() * 3)];
+    for (let b = 0; b < 4; b++) {
+      const a = R() * 6.28, rr = b === 0 ? 0 : s * (0.35 + R() * 0.3), bs = s * (b === 0 ? 0.8 : 0.5 + R() * 0.25);
+      m.compose(ps.set(t.x + Math.cos(a) * rr, t.y + H + bs * 0.6 + R() * s * 0.3, t.z + Math.sin(a) * rr), q.setFromEuler(new THREE.Euler(R() * 0.4, R() * 6, 0)), sc.set(bs, bs * 0.75, bs));
+      blobs.setMatrixAt(k, m); c.set(base).offsetHSL((R() - 0.5) * 0.03, (R() - 0.5) * 0.08, (R() - 0.5) * 0.06); blobs.setColorAt(k, c); k++;
+    }
+  }
+  for (const im of [cones, blobs, trunks]) { im.castShadow = true; im.receiveShadow = true; if (im.count) group.add(im); }
+}
+
+/* ---------- cloud puffs ---------- */
+const puffTex = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); const R = rng(5);
+  for (let i = 0; i < 26; i++) {
+    const x = 128 + (R() - 0.5) * 120, y = 140 + (R() - 0.5) * 60, r = 30 + R() * 60;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,0.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  }
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return t;
+})();
+
+/* ---------- hole build ---------- */
+let holeGroup = null, pinMesh = null, flagMesh = null, cupMesh = null;
+const poleGeo = new THREE.CylinderGeometry(0.014, 0.014, 2.3, 8); poleGeo.translate(0, 1.15, 0);
+function buildHole(h) {
+  if (holeGroup) { scene.remove(holeGroup); holeGroup.traverse(o => { if (o.geometry && o.geometry !== coneGeo && o.geometry !== blobGeo && o.geometry !== trunkGeo && o.geometry !== poleGeo) o.geometry.dispose(); }); }
+  HOLE = h; holeGroup = new THREE.Group(); scene.add(holeGroup);
+  ISL = h.islands.map(I => prepIsland({ ...I, playable: true }));
+  const pinI = ISL.find(I => I.kind === 'green');
+  h.pinPos = new THREE.Vector3(pinI.pin[0], groundAt(pinI.pin[0], pinI.pin[1]), pinI.pin[1]);
+  const trees = [];
+  for (const I of ISL) buildIsland(I, { seg: coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
+  // decorative spires around the hole, kept clear of the corridor
+  const R = rng(h.par * 101 + h.yards);
+  const a = new THREE.Vector2(0, 0), b = new THREE.Vector2(h.pinPos.x, h.pinPos.z);
+  const segDist = (x, z) => { const ab = b.clone().sub(a), t = THREE.MathUtils.clamp(new THREE.Vector2(x, z).sub(a).dot(ab) / ab.lengthSq(), 0, 1); return new THREE.Vector2(x, z).distanceTo(a.clone().addScaledVector(ab, t)); };
+  const deco = [];
+  for (let i = 0; i < 400 && deco.length < (coarse ? 26 : 38); i++) {
+    const ang = R() * Math.PI * 2, rad = 160 + Math.pow(R(), 0.8) * 1700;
+    const x = b.x * 0.5 + Math.cos(ang) * rad, z = b.y * 0.5 + Math.sin(ang) * rad;
+    if (segDist(x, z) < 120 + rad * 0.05) continue;
+    const size = 18 + R() * 55 + rad * 0.03;
+    if (deco.some(d => Math.hypot(d.x - x, d.z - z) < (d.rx + size) * 1.3)) continue;
+    const top = -70 + R() * 200 + (rad > 900 ? R() * 250 : 0);
+    deco.push(prepIsland({ x, z, rx: size, rz: size * (0.7 + R() * 0.6), rot: R() * 3, top, depth: size * (3 + R() * 4), kind: 'deco', seed: 100 + i, falls: R() < 0.25 ? [R() * 6.28] : [] }));
+  }
+  for (const I of deco) buildIsland(I, { seg: rad2seg(I), side: 18 }, holeGroup, trees);
+  buildTrees(trees, holeGroup);
+  // cloud puffs drifting between islands
+  for (let i = 0; i < (coarse ? 40 : 70); i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, transparent: true, depthWrite: false, opacity: 0.35 + R() * 0.45, fog: true }));
+    const ang = R() * 6.28, rad = 60 + R() * 1400;
+    const x = b.x * 0.5 + Math.cos(ang) * rad, z = b.y * 0.5 + Math.sin(ang) * rad;
+    if (segDist(x, z) < 50) continue;
+    const s = 60 + R() * 220; sp.scale.set(s, s * 0.45, 1);
+    sp.position.set(x, -60 - R() * 180 + (rad > 700 ? R() * 120 : 0), z); sp.userData.v = 0.6 + R(); holeGroup.add(sp);
+  }
+  // pin, flag, cup, tee markers
+  const pp = h.pinPos;
+  pinMesh = new THREE.Mesh(poleGeo, new THREE.MeshStandardMaterial({ color: 0xf4f1e8, roughness: 0.5 })); pinMesh.position.copy(pp); pinMesh.castShadow = true; holeGroup.add(pinMesh);
+  const fg = new THREE.PlaneGeometry(0.62, 0.42, 12, 6); fg.translate(0.31, 0, 0);
+  flagMesh = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.75, side: THREE.DoubleSide }));
+  flagMesh.position.set(pp.x + 0.014, pp.y + 2.07, pp.z); flagMesh.userData.base = Float32Array.from(fg.attributes.position.array); flagMesh.castShadow = true; holeGroup.add(flagMesh);
+  cupMesh = new THREE.Mesh(new THREE.CircleGeometry(0.054, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x0b0f0c })); cupMesh.position.set(pp.x, pp.y + 0.006, pp.z); holeGroup.add(cupMesh);
+  for (const dx of [-3.2, 3.2]) { const tm = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 8), new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.4 })); const tx = h.tee[0] + dx, tz = h.tee[1] - 1; tm.position.set(tx, groundAt(tx, tz) + 0.08, tz); holeGroup.add(tm); }
+  const dir = new THREE.Vector2(pp.x - h.tee[0], pp.z - h.tee[1]).normalize(); holeDirU.value.copy(dir);
+  // plan view for the corner map
+  minimap.setHole({
+    tee: h.tee, pin: [pp.x, pp.z],
+    shapes: ISL.map(I => {
+      const rim = [], fair = [];
+      for (let j = 0; j < 64; j++) { const e = edgeRadius(I, j / 64 * Math.PI * 2); rim.push([e.x, e.z]); fair.push([I.x + (e.x - I.x) * 0.8, I.z + (e.z - I.z) * 0.8]); }
+      return { kind: I.kind, rim, fair: I.kind === 'fairway' ? fair : null, green: I.green || null, bunkers: I.bunkers || [] };
+    }),
+  });
+}
+const rad2seg = I => Math.max(48, Math.min(96, Math.round(I.rx * 1.3)));
+
+/* ---------- ball, shadow, tracer, markers ---------- */
+const BALL_RADIUS = 0.02135;
+const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_RADIUS, 24, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, envMapIntensity: 0.9 }));
+ball.castShadow = true; scene.add(ball);
+const blobTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(0,0,0,0.75)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); })();
+const ballShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }));
+ballShadow.rotation.x = -Math.PI / 2; scene.add(ballShadow);
+const ringGeo = new THREE.RingGeometry(0.86, 1, 48); ringGeo.rotateX(-Math.PI / 2);
+const aimRing = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x8fdc8a, transparent: true, opacity: 0.95, depthWrite: false, depthTest: false, toneMapped: false }));
+const aimFill = new THREE.Mesh(new THREE.CircleGeometry(1, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8fdc8a, transparent: true, opacity: 0.16, depthWrite: false, depthTest: false, toneMapped: false }));
+aimRing.renderOrder = aimFill.renderOrder = 5;
+const restDot = new THREE.Mesh(new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xf2efe6, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, toneMapped: false }));
+restDot.renderOrder = 6;
+scene.add(aimRing, aimFill, restDot);
+function mkLine(color, w, o, dashed) {
+  const mat = new THREE.LineMaterial({ color: new THREE.Color(color), linewidth: w, transparent: true, opacity: o, depthWrite: false, toneMapped: false, dashed: !!dashed, dashSize: 3, gapSize: 2.5 });
+  if (dashed) mat.defines.USE_DASH = '';
+  const l = new THREE.Line2(new THREE.LineGeometry(), mat); l.frustumCulled = false; l.renderOrder = 4; l.visible = false; scene.add(l); return l;
+}
+const previewArc = mkLine('#f2efe6', 1.6, 0.55, true);
+const tracerCore = mkLine('#f5c542', 2.6, 1), tracerGlow = mkLine('#f5c542', 8, 0.25);
+const oldTracers = [];
+function setLine(l, arr) { if (arr.length < 6) { l.visible = false; return; } l.geometry.setPositions(arr); if (l.material.dashed) l.computeLineDistances(); l.visible = true; }
+function resizeLines() { const w = renderer.domElement.width, h = renderer.domElement.height; [previewArc, tracerCore, tracerGlow, ...oldTracers].forEach(l => l.material.resolution.set(w, h)); }
+
+/* ===================== corner map ===================== */
+const minimap = createMinimap(document.getElementById('minimap'));
+document.getElementById('minimapWrap').addEventListener('click', () => setCam('map'));
+function groundTrack(W, upto) { const out = []; for (let i = 0; i <= upto; i += 8) out.push({ x: W[i].w.x, z: W[i].w.z }); out.push({ x: W[upto].w.x, z: W[upto].w.z }); return out; }
+let mmFrame = 0;
+function drawMinimap() {
+  const wrap = document.getElementById('minimapWrap');
+  const show = !!HOLE && state.phase !== 'intro' && state.cam !== 'map' && document.getElementById('card').hidden;
+  if (show && wrap.hidden) { wrap.hidden = false; minimap.resize(); }
+  wrap.hidden = !show;
+  if (!show || (mmFrame++ & 1)) return; // ~30 fps is plenty
+  const f = state.flight, flying = state.phase === 'flight' && f;
+  let live = null, lo = 0;
+  if (flying) { while (lo < f.W.length - 1 && f.W[lo + 1].t <= state.t) lo++; live = groundTrack(f.W, lo); }
+  minimap.draw({
+    ball: flying ? { x: ball.position.x, z: ball.position.z } : { x: state.ball.x, z: state.ball.z },
+    ballVisible: ball.visible || state.phase === 'holed',
+    aim: state.phase === 'address' ? state.previewAim : null,
+    tracks: state.tracks, live,
+  });
+}
+
+/* ===================== game state ===================== */
+const state = {
+  holeIdx: 0, strokes: 0, scores: [], ball: new THREE.Vector3(), lie: 'tee', yaw: 0,
+  club: 0, power: 0, target: 0, tracks: [], previewAim: null, aimCustom: null, phase: 'intro', cam: 'tv', sound: true,
+  flight: null, t: 0, restTimer: 0, preview: null, lastShot: null, puttAnim: null, flyT: 0, lastLie: null,
+};
+const $ = id => document.getElementById(id);
+const yd = m => Math.round(m / M_PER_YD);
+
+function dirFromYaw(y) { return new THREE.Vector3(Math.sin(y), 0, -Math.cos(y)); }
+function rightFromYaw(y) { return new THREE.Vector3(Math.cos(y), 0, Math.sin(y)); }
+function toWorld(origin, yaw, lx, ly, lz, out) {
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  return out.set(origin.x + lx * c - lz * s, origin.y + ly, origin.z + lx * s + lz * c);
+}
+// physics runs in the shot's own frame (ball at origin, aim along -z)
+function shotFrame(origin, yaw) {
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  const wx = (lx, lz) => origin.x + lx * c - lz * s, wz = (lx, lz) => origin.z + lx * s + lz * c;
+  const cupRel = HOLE.pinPos.clone().sub(origin);
+  return {
+    groundAt: (lx, lz) => { const g = groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - origin.y; },
+    surfaceAt: (lx, lz) => physSurface(wx(lx, lz), wz(lx, lz)),
+    cup: { x: cupRel.x * c + cupRel.z * s, z: -cupRel.x * s + cupRel.z * c },
+    voidY: Math.min(...ISL.map(I => I.top)) - 70 - origin.y,
+  };
+}
+function lieAdjust(shot, lie) {
+  const s = { ...shot };
+  if (lie === 'rough') { s.Speed *= 0.95; s.TotalSpin *= 0.72; s.VLA += 0.8; }
+  else if (lie === 'sand') { s.Speed *= 0.86; s.TotalSpin *= 0.65; s.VLA += 2; }
+  return s;
+}
+function clubShot(ci, pk) {
+  const c = CLUBS[ci], k = POWERS[pk].k;
+  return { Speed: c.Speed * k, VLA: c.VLA + (1 - k) * 7, HLA: 0, TotalSpin: c.TotalSpin * (0.65 + 0.35 * k), SpinAxis: 0 };
+}
+const carryCache = new Map();
+function carryFor(ci, pk, dy) { // metres of carry to land at height dy relative to the ball
+  const key = ci + ':' + pk + ':' + Math.round(dy) + ':' + state.lie;
+  if (carryCache.has(key)) return carryCache.get(key);
+  const g = Math.round(dy);
+  // fly through open air and read off where the descending ball passes the target's height
+  const r = simulate(lieAdjust(clubShot(ci, pk), state.lie), { groundAt: (x, z) => (Math.hypot(x, z) < 6 ? 0 : null), voidY: Math.min(g, 0) - 40, altFt: 0 });
+  let v = 0, apexSeen = false;
+  for (let i = 1; i < r.pts.length; i++) {
+    const a = r.pts[i - 1].p, b = r.pts[i].p;
+    if (b[1] < a[1]) apexSeen = true;
+    if (apexSeen && a[1] >= g && b[1] < g) { const f = (a[1] - g) / (a[1] - b[1]); v = Math.hypot(a[0] + (b[0] - a[0]) * f, a[2] + (b[2] - a[2]) * f); break; }
+  }
+  carryCache.set(key, v); return v;
+}
+function suggest(distM, dy) { // pick club + swing length whose carry best matches the target
+  let best = null;
+  const allowDriver = state.lie === 'tee';
+  for (let ci = 0; ci < CLUBS.length; ci++) {
+    if (ci === 0 && !allowDriver) continue;
+    for (let pk = 0; pk < POWERS.length; pk++) {
+      if (pk > 0 && ci < 5) continue; // partial swings only with short irons and wedges
+      const c = carryFor(ci, pk, dy), err = Math.abs(c - distM) + (pk > 0 ? 2 : 0) + (c < distM ? 1.5 : 0);
+      if (!best || err < best.err) best = { ci, pk, err };
+    }
+  }
+  return best;
+}
+
+/* ---------- targets & aim ---------- */
+function targetPoint(i) {
+  const t = HOLE.targets[i];
+  return t.pin ? HOLE.pinPos.clone() : new THREE.Vector3(t.x, groundAt(t.x, t.z) ?? state.ball.y, t.z);
+}
+function availableTargets() { // only those still ahead of the ball
+  const pinD = state.ball.distanceTo(HOLE.pinPos);
+  return HOLE.targets.map((t, i) => ({ t, i, p: targetPoint(i) })).filter(o => o.t.pin || (o.p.distanceTo(HOLE.pinPos) < pinD - 15 && o.p.distanceTo(state.ball) > 25));
+}
+function aimAt(p, autoClub = true) {
+  const d = p.clone().sub(state.ball); d.y = 0;
+  state.yaw = Math.atan2(d.x, -d.z);
+  if (autoClub) {
+    const dist = Math.hypot(d.x, d.z), dy = (p.y - state.ball.y);
+    const s = suggest(dist, dy); state.club = s.ci; state.power = s.pk; state.sugg = s.ci;
+  }
+  updatePreview(); renderPlan();
+}
+function selectTarget(i) { state.target = i; state.aimCustom = null; aimAt(targetPoint(i)); }
+
+/* ---------- preview ---------- */
+let pvTimer = 0;
+function updatePreview() {
+  clearTimeout(pvTimer);
+  pvTimer = setTimeout(() => {
+    const fr = shotFrame(state.ball, state.yaw);
+    const r = simulate(lieAdjust(clubShot(state.club, state.power), state.lie), { ...fr, altFt: 0 });
+    state.preview = r;
+    const pts = r.pts, li = pts.findIndex(p => p.phase !== 'flight');
+    const arr = [], tmpV = new THREE.Vector3();
+    const end = li < 0 ? pts.length - 1 : li;
+    for (let i = 0; i <= end; i += 6) { toWorld(state.ball, state.yaw, pts[i].p[0], pts[i].p[1], pts[i].p[2], tmpV); arr.push(tmpV.x, tmpV.y, tmpV.z); }
+    setLine(previewArc, arr);
+    let landW;
+    if (li >= 0) landW = toWorld(state.ball, state.yaw, ...pts[li].p, new THREE.Vector3());
+    else { // never landed: mark where it passes the ball's height
+      let k = pts.findIndex((p, i) => i > 10 && p.p[1] < 0); if (k < 0) k = pts.length - 1;
+      landW = toWorld(state.ball, state.yaw, ...pts[k].p, new THREE.Vector3());
+    }
+    const surf = r.outcome === 'void' ? 'void' : surfaceAt(landW.x, landW.z);
+    const endW = toWorld(state.ball, state.yaw, ...pts.at(-1).p, new THREE.Vector3());
+    const restSurf = r.outcome === 'void' ? 'void' : r.outcome === 'holed' ? 'holed' : surfaceAt(endW.x, endW.z);
+    const col = { fairway: 0x8fdc8a, tee: 0x8fdc8a, green: 0x8fdc8a, rough: 0xf5c542, sand: 0xe8d29a, void: 0xff7b6b, holed: 0x8fdc8a }[restSurf] ?? 0xf5c542;
+    aimRing.material.color.set(col); aimFill.material.color.set(col);
+    const carryM = Math.hypot(pts[end].p[0], pts[end].p[2]);
+    const latSd = Math.max(1.5, carryM * 0.05), depSd = Math.max(1.5, carryM * 0.045);
+    for (const m of [aimRing, aimFill]) { m.position.copy(landW); m.position.y += 0.05; m.scale.set(latSd * 1.4, 1, depSd * 1.4); m.rotation.y = -state.yaw; m.visible = state.phase === 'address'; }
+    restDot.position.copy(endW); restDot.position.y += 0.05; restDot.visible = state.phase === 'address' && r.outcome !== 'void';
+    state.previewAim = { land: landW.clone(), rest: r.outcome === 'void' ? null : endW.clone(), color: '#' + new THREE.Color(col).getHexString(), lat: latSd * 1.4, dep: depSd * 1.4 };
+    state.previewLand = landW;
+    const names = { fairway: 'Fairway', tee: 'Tee', green: 'Green', rough: 'Rough', sand: 'Bunker', void: 'In the clouds', holed: 'In the hole' };
+    const carryYd = Math.round(r.carry);
+    $('pvText').innerHTML = r.outcome === 'void'
+      ? `<b style="color:var(--bad)">${carryYd > 0 && r.landed ? carryYd + ' carry · ' : ''}Ends in the clouds</b>`
+      : `${carryYd} carry · ${yd(Math.hypot(endW.x - state.ball.x, endW.z - state.ball.z))} total · <b style="color:${restSurf === 'rough' ? 'var(--warn)' : restSurf === 'sand' ? 'var(--sand)' : 'var(--ok)'}">${names[restSurf]}</b>`;
+    $('pvDot').style.background = '#' + new THREE.Color(col).getHexString();
+  }, 30);
+}
+
+/* ===================== UI ===================== */
+function renderPlan() {
+  const tw = $('targets');
+  const av = availableTargets();
+  tw.innerHTML = '';
+  av.forEach(o => {
+    const b = document.createElement('button'); b.className = 'tgt';
+    const d = Math.hypot(o.p.x - state.ball.x, o.p.z - state.ball.z), dy = o.p.y - state.ball.y;
+    b.innerHTML = `<b>${o.t.name}</b><span>${yd(d)} yd${Math.abs(dy) > 2 ? ` · ${dy > 0 ? '↑' : '↓'}${Math.round(Math.abs(dy))} m` : ''}</span>`;
+    b.setAttribute('aria-pressed', String(!state.aimCustom && state.target === o.i));
+    b.onclick = () => { if (state.phase === 'address') selectTarget(o.i); };
+    tw.appendChild(b);
+  });
+  if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
+  const cw = $('clubs');
+  if (!cw.children.length) CLUBS.forEach((c, i) => { const b = document.createElement('button'); b.className = 'club'; b.textContent = c.id; b.title = c.name; b.onclick = () => { if (state.phase !== 'address') return; state.club = i; updatePreview(); renderPlan(); }; cw.appendChild(b); });
+  [...cw.children].forEach((b, i) => { b.setAttribute('aria-pressed', String(i === state.club)); b.classList.toggle('sugg', i === state.sugg); });
+  const pw = $('power');
+  if (!pw.children.length) POWERS.forEach((p, i) => { const b = document.createElement('button'); b.className = 'pw'; b.textContent = p.label; b.title = 'Swing length ' + p.label; b.onclick = () => { if (state.phase !== 'address') return; state.power = i; updatePreview(); renderPlan(); }; pw.appendChild(b); });
+  [...pw.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === state.power)));
+  const lieNames = { tee: 'Tee box', fairway: 'Fairway', rough: 'Rough −5%', sand: 'Bunker −14%', green: 'Green' };
+  $('pvLie').textContent = 'Lie: ' + (lieNames[state.lie] || state.lie);
+  $('vClub').textContent = CLUBS[state.club].name + (state.power ? ' · ' + POWERS[state.power].label : '');
+  if (state.lastSentClub !== state.club) { state.lastSentClub = state.club; launchMonitor.setPlayer({ club: CLUBS[state.club].id }); }
+}
+function renderHoleCard() {
+  const h = HOLE, n = state.holeIdx + 1;
+  $('hName').textContent = h.name;
+  $('hMeta').innerHTML = `Hole <b>${n}</b> · Par <b>${h.par}</b> · <b>${h.yards}</b> yd`;
+  $('hStroke').textContent = state.phase === 'holed' ? state.strokes : state.strokes + 1;
+  const d = Math.hypot(HOLE.pinPos.x - state.ball.x, HOLE.pinPos.z - state.ball.z);
+  $('hPin').innerHTML = state.lie === 'green' ? Math.round(d / 0.3048) + '<small>ft</small>' : yd(d) + '<small>yd</small>';
+}
+function lr(v, unit = '') { const a = Math.abs(v); if (a < 0.5) return '0' + unit; return `${a.toFixed(a < 10 ? 1 : 0)}${unit} <span class="${v < 0 ? 'L' : 'R'}">${v < 0 ? 'L' : 'R'}</span>`; }
+function showReadout(r, shot, res) {
+  $('vCarry').innerHTML = (r.landed ? Math.round(r.carry) : '—') + '<small>yd</small>';
+  $('vTotal').innerHTML = r.outcome === 'void' ? '—' : Math.round(r.total) + '<small>yd</small>';
+  $('vOff').innerHTML = lr(r.offline);
+  $('vApex').innerHTML = Math.round(r.apexFt) + '<small>ft</small>';
+  $('vSpd').innerHTML = shot.Speed.toFixed(1) + '<small>mph</small>';
+  $('vVla').innerHTML = shot.VLA.toFixed(1) + '<small>°</small>';
+  $('vSpin').innerHTML = Math.round(shot.TotalSpin).toLocaleString() + '<small>rpm</small>';
+  $('vAxis').innerHTML = lr(shot.SpinAxis, '°');
+  $('vRes').innerHTML = res || '—';
+}
+let toastT = 0;
+function toast(title, msg, ms = 2600) { const t = $('toast'); t.innerHTML = `<b>${title}</b>${msg || ''}`; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
+function setPhaseUI() {
+  const onGreen = state.phase === 'putt';
+  $('swingUI').hidden = onGreen || state.phase === 'holed' || state.phase === 'rolling'; $('putt').hidden = !(onGreen || state.phase === 'rolling');
+  $('hit').disabled = state.phase !== 'address';
+  $('puttBtn').disabled = state.phase !== 'putt';
+  $('dock').style.visibility = state.phase === 'intro' ? 'hidden' : 'visible';
+  $('skip').hidden = state.phase !== 'intro';
+  $('intro').hidden = state.phase !== 'intro';
+  renderHoleCard();
+}
+
+/* ===================== audio ===================== */
+const audio = { ctx: null };
+// a live shot can arrive before any tap; browsers only let audio start after one
+addEventListener('pointerdown', () => { if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume(); }, { passive: true });
+function initAudio() {
+  if (audio.ctx) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)(); audio.ctx = ctx;
+    const len = ctx.sampleRate * 3, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 340; bp.Q.value = 0.4;
+    const amb = ctx.createGain(); amb.gain.value = 0; src.connect(bp).connect(amb).connect(ctx.destination); src.start();
+    amb.gain.setTargetAtTime(state.sound ? 0.05 : 0, ctx.currentTime, 1);
+    audio.amb = amb; audio.noise = buf;
+  } catch (e) { audio.ctx = null; }
+}
+function strikeSound(wood, q) {
+  const ctx = audio.ctx; if (!ctx || !state.sound) return;
+  const t = ctx.currentTime, n = ctx.createBufferSource(); n.buffer = audio.noise;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = wood ? 3600 : 2600; bp.Q.value = wood ? 1.4 : 0.9;
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+  const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1.8 * q, t + 0.002); g.gain.exponentialRampToValueAtTime(0.001, t + (wood ? 0.16 : 0.09));
+  n.connect(bp).connect(hp).connect(g).connect(ctx.destination); n.start(t, Math.random()); n.stop(t + 0.25);
+  const o = ctx.createOscillator(); o.frequency.setValueAtTime(wood ? 1650 : 980, t); o.frequency.exponentialRampToValueAtTime(wood ? 900 : 380, t + 0.06);
+  const og = ctx.createGain(); og.gain.setValueAtTime(0.0001, t); og.gain.linearRampToValueAtTime(wood ? 0.5 : 0.65, t + 0.003); og.gain.exponentialRampToValueAtTime(0.0001, t + (wood ? 0.22 : 0.08));
+  o.connect(og).connect(ctx.destination); o.start(t); o.stop(t + 0.3);
+}
+function tick(freq, len, vol) {
+  const ctx = audio.ctx; if (!ctx || !state.sound) return;
+  const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.value = freq; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + len + 0.05);
+}
+
+/* ===================== swings ===================== */
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function realSwing(base) {
+  const s = { ...base }, face = gauss() * 1.5, path = gauss() * 2.0, strike = Math.random();
+  if (window.__noVar) return { ...base, HLA: 0, SpinAxis: 0 };
+  s.HLA = face * 0.8 + path * 0.2;
+  s.SpinAxis = (face - path) * 1.6 + gauss() * 1.2;
+  s.Speed = base.Speed * (1 + gauss() * 0.012);
+  s.VLA = base.VLA + gauss() * 0.9;
+  s.TotalSpin = base.TotalSpin * (1 + gauss() * 0.07);
+  if (strike < 0.07) { s.Speed *= 0.93; s.VLA -= 2.5; s.TotalSpin *= 0.78; }
+  else if (strike < 0.12) { s.Speed *= 0.9; s.VLA += 2; s.TotalSpin *= 1.15; }
+  return s;
+}
+// Live launch-monitor entry point (GSPro Open Connect v1 BallData). A local bridge can call this per shot.
+// Real shots from the R10 arrive through the bridge (see src/launch-monitor.js).
+// On the green the app putts for you, since the R10 doesn't read putts well.
+function receiveShot(shot) { initAudio(); if (state.phase === 'address') launch(shot); }
+launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
+mountLaunchMonitorUI({ dot: document.getElementById('lmDot'), text: document.getElementById('lmText'), button: document.getElementById('lmBtn'), compact: true });
+window.Aerie = { receiveShot(msg) { const b = msg.BallData || msg; if (b.Speed > 0) receiveShot({ Speed: +b.Speed, VLA: +b.VLA, HLA: +(b.HLA || 0), TotalSpin: +b.TotalSpin, SpinAxis: +(b.SpinAxis || 0) }); } };
+
+function swing() { if (state.phase !== 'address') return; initAudio(); launch(realSwing(clubShot(state.club, state.power))); }
+function launch(raw) {
+  const shot = lieAdjust(raw, state.lie);
+  const fr = shotFrame(state.ball, state.yaw);
+  const r = simulate(shot, { ...fr, altFt: 0 });
+  const W = r.pts.map(p => ({ t: p.t, phase: p.phase, w: toWorld(state.ball, state.yaw, p.p[0], p.p[1], p.p[2], new THREE.Vector3()) }));
+  const lift = state.lie === 'tee' ? 0.045 : 0.0;
+  W.forEach(p => { p.w.y += lift * Math.max(0, 1 - p.t * 4); });
+  const li = W.findIndex(p => p.phase !== 'flight');
+  r.landIdx = li < 0 ? W.length - 1 : li;
+  r.apexT = W.reduce((b, p) => p.w.y > b.y ? { y: p.w.y, t: p.t } : b, { y: -1e9, t: 0 }).t;
+  state.flight = { r, shot, raw, W, from: state.ball.clone(), fromLie: state.lie, arr: [] };
+  state.t = 0; state.phase = 'flight'; state.strokes++;
+  for (const m of [aimRing, aimFill, restDot]) m.visible = false; previewArc.visible = false;
+  oldTracers.forEach(l => { l.material.opacity *= 0.5; });
+  setPhaseUI();
+  showReadout({ ...r, carry: 0, landed: false, outcome: 'void', total: 0 }, shot, '…');
+  strikeSound(CLUBS[state.club].tee, 1);
+  camState.cut = true; camState.landCut = false;
+  const lp = W[r.landIdx].w;
+  camState.landAt = lp.clone(); camState.landDir = lp.clone().sub(state.ball).setY(0).normalize();
+}
+
+function finishShot() {
+  const f = state.flight, r = f.r, end = f.W.at(-1).w;
+  let res = '';
+  if (r.outcome === 'holed') {
+    state.tracks.push(groundTrack(f.W, f.W.length - 1));
+    state.ball.copy(HOLE.pinPos); res = '<span style="color:var(--ok)">Holed</span>';
+    holeOut(); showReadout(r, f.shot, res); return;
+  }
+  if (r.outcome === 'void') {
+    state.strokes++; // penalty
+    // drop near where it left the islands, never closer to the hole than that point
+    let entry = f.from;
+    for (const p of f.W) if (groundAt(p.w.x, p.w.z) !== null && p.w.distanceTo(f.from) > 15) entry = p.w;
+    const cands = [...HOLE.drops.map(d => new THREE.Vector3(d[0], groundAt(d[0], d[1]), d[1])), f.from.clone()];
+    const entryPin = entry.distanceTo(HOLE.pinPos);
+    const ok = cands.filter(c => c.y !== null && c.distanceTo(HOLE.pinPos) >= Math.min(entryPin, f.from.distanceTo(HOLE.pinPos)) - 5);
+    const drop = (ok.length ? ok : [f.from.clone()]).sort((a, b) => a.distanceTo(entry) - b.distanceTo(entry))[0];
+    const isPrev = drop.distanceTo(f.from) < 1;
+    state.ball.copy(drop); state.lie = isPrev ? f.fromLie : surfaceAt(drop.x, drop.z);
+    toast('Into the clouds', `+1 penalty. ${isPrev ? 'Replaying from where you hit it.' : 'Dropping beside the gap.'}`, 3200);
+    res = '<span style="color:var(--bad)">Void +1</span>';
+  } else {
+    state.ball.copy(end); state.lie = surfaceAt(end.x, end.z);
+    const names = { fairway: 'Fairway', green: 'Green', rough: 'Rough', sand: 'Bunker', tee: 'Tee' };
+    res = `<span style="color:${state.lie === 'rough' ? 'var(--warn)' : state.lie === 'sand' ? 'var(--sand)' : 'var(--ok)'}">${names[state.lie] || state.lie}</span>`;
+  }
+  showReadout(r, f.shot, res);
+  state.tracks.push(groundTrack(f.W, f.W.length - 1));
+  // keep this shot's tracer as a faint ghost
+  const ghost = mkLine('#f5c542', 1.6, 0.35); setLine(ghost, f.arr.slice()); oldTracers.push(ghost); resizeLines();
+  while (oldTracers.length > 3) { const o = oldTracers.shift(); scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
+  nextLie();
+}
+function nextLie() {
+  carryCache.clear();
+  if (state.lie === 'green') { startPutting(); return; }
+  state.phase = 'address'; state.aimCustom = null;
+  const av = availableTargets();
+  // default: the first target the player can actually reach, else the pin
+  const reach = carryFor(state.lie === 'tee' ? 0 : 1, 0, 0);
+  const pinO = av.find(o => o.t.pin), flat = o => Math.hypot(o.p.x - state.ball.x, o.p.z - state.ball.z);
+  let pick = pinO && flat(pinO) < reach * 0.9 ? pinO : (av.find(o => !o.t.pin && flat(o) < reach * 1.02) || pinO);
+  state.target = pick ? pick.i : HOLE.targets.length - 1;
+  placeBall();
+  selectTarget(state.target);
+  setPhaseUI();
+}
+function placeBall() { ball.position.copy(state.ball); ball.position.y += BALL_RADIUS + (state.lie === 'tee' ? 0.045 : 0.003); ball.visible = true; }
+
+/* ---------- putting ---------- */
+const MAKE = [[2, 0.99], [3, 0.96], [4, 0.88], [5, 0.77], [6, 0.66], [8, 0.5], [10, 0.4], [15, 0.23], [20, 0.15], [30, 0.07], [40, 0.045], [60, 0.025], [90, 0.01]];
+function makeProb(ft) { if (ft <= MAKE[0][0]) return MAKE[0][1]; for (let i = 1; i < MAKE.length; i++) if (ft <= MAKE[i][0]) { const [a, pa] = MAKE[i - 1], [b, pb] = MAKE[i]; return pa + (pb - pa) * (ft - a) / (b - a); } return 0.008; }
+function startPutting() {
+  state.phase = 'putt'; placeBall();
+  const ft = state.ball.distanceTo(HOLE.pinPos) / 0.3048;
+  if ($('gimme').checked && ft <= 3) { state.strokes++; toast('Gimme', 'Picked up and counted.'); holeOut(); return; }
+  $('puttDist').innerHTML = (ft < 10 ? ft.toFixed(1) : Math.round(ft)) + '<small>ft</small>';
+  $('puttOdds').textContent = `Tour make rate ${Math.round(makeProb(ft) * 100)}%`;
+  for (const m of [aimRing, aimFill, restDot]) m.visible = false; previewArc.visible = false;
+  setPhaseUI();
+}
+function putt() {
+  if (state.phase !== 'putt') return; initAudio();
+  const from = state.ball.clone(), to = HOLE.pinPos.clone(), dist = from.distanceTo(to), ft = dist / 0.3048;
+  const made = Math.random() < makeProb(ft);
+  let end;
+  if (made) end = to.clone();
+  else {
+    const leftover = Math.max(0.35, (0.4 + Math.abs(gauss()) * 0.9 + ft * 0.045) * 0.3048);
+    const dir = to.clone().sub(from).setY(0).normalize(), side = new THREE.Vector3(-dir.z, 0, dir.x);
+    const long = Math.random() < 0.6 ? 1 : -1;
+    end = to.clone().addScaledVector(dir, long * leftover * 0.8).addScaledVector(side, gauss() * leftover * 0.6);
+    if (long < 0) end = to.clone().addScaledVector(dir, -leftover * 0.9).addScaledVector(side, gauss() * leftover * 0.5);
+    end.y = groundAt(end.x, end.z) ?? to.y;
+  }
+  state.strokes++;
+  state.puttAnim = { from, end, made, t: 0, dur: Math.min(4, 1.1 + Math.sqrt(dist) * 0.55) };
+  state.phase = 'rolling'; setPhaseUI();
+  tick(520, 0.06, 0.35);
+}
+
+/* ---------- hole flow ---------- */
+function holeOut() {
+  state.phase = 'holed'; ball.visible = false;
+  state.scores[state.holeIdx] = state.strokes;
+  const diff = state.strokes - HOLE.par;
+  const word = state.strokes === 1 ? 'Hole in one' : ({ '-3': 'Albatross', '-2': 'Eagle', '-1': 'Birdie', '0': 'Par', '1': 'Bogey', '2': 'Double bogey' }[diff] || `+${diff}`);
+  toast(word, `${state.strokes} strokes on ${HOLE.name}`, 2800);
+  tick(220, 0.12, 0.6); setTimeout(() => tick(180, 0.15, 0.5), 90);
+  setPhaseUI();
+  setTimeout(() => showCard(true), 2400);
+}
+function showCard(afterHole) {
+  const rows = HOLES.map((h, i) => { const s = state.scores[i]; const d = s != null ? s - h.par : null; return `<tr><td>${i + 1}</td><td class="nm">${h.name}</td><td>${h.yards}</td><td>${h.par}</td><td class="${d < 0 ? 'u' : d > 0 ? 'o' : ''}">${s ?? '—'}</td></tr>`; }).join('');
+  const played = state.scores.filter(s => s != null), parPlayed = HOLES.filter((h, i) => state.scores[i] != null).reduce((a, h) => a + h.par, 0);
+  const tot = played.reduce((a, b) => a + b, 0), rel = tot - parPlayed;
+  $('scTable').innerHTML = `<thead><tr><th>Hole</th><th></th><th>Yds</th><th>Par</th><th>Score</th></tr></thead><tbody>${rows}<tr><td></td><td class="nm">Total</td><td>${HOLES.reduce((a, h) => a + h.yards, 0)}</td><td>${HOLES.reduce((a, h) => a + h.par, 0)}</td><td class="${rel < 0 ? 'u' : rel > 0 ? 'o' : ''}">${played.length ? tot + ` (${rel === 0 ? 'E' : rel > 0 ? '+' + rel : rel})` : '—'}</td></tr></tbody>`;
+  const last = state.holeIdx === HOLES.length - 1 && afterHole;
+  $('cardSub').textContent = afterHole ? `Hole ${state.holeIdx + 1} complete` : 'Scorecard';
+  $('cardTitle').textContent = last ? 'Round complete' : 'The Aerie';
+  $('cardNext').textContent = last ? 'Play again' : 'Next hole';
+  $('cardNext').hidden = !afterHole;
+  $('card').hidden = false;
+}
+$('cardNext').onclick = () => { $('card').hidden = true; if (state.holeIdx === HOLES.length - 1) { state.scores = []; startHole(0); } else startHole(state.holeIdx + 1); };
+$('cardClose').onclick = () => { $('card').hidden = true; };
+$('btnCard').onclick = () => showCard(false);
+
+function startHole(i) {
+  state.holeIdx = i; state.strokes = 0; state.tracks = []; state.previewAim = null;
+  oldTracers.forEach(o => { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }); oldTracers.length = 0;
+  tracerCore.visible = tracerGlow.visible = false;
+  buildHole(HOLES[i]);
+  state.ball.set(HOLE.tee[0], groundAt(HOLE.tee[0], HOLE.tee[1]), HOLE.tee[1]); state.lie = 'tee';
+  placeBall();
+  $('iMeta').textContent = `Hole ${i + 1} · Par ${HOLE.par} · ${HOLE.yards} yd`; $('iName').textContent = HOLE.name; $('iText').textContent = HOLE.blurb;
+  state.phase = 'intro'; state.flyT = 0; setupFlyover();
+  setPhaseUI();
+  showReadout({ landed: false, carry: 0, total: 0, outcome: 'void', offline: 0, apexFt: 0 }, { Speed: 0, VLA: 0, TotalSpin: 0, SpinAxis: 0 }, '—');
+  ['vCarry', 'vTotal', 'vOff', 'vApex', 'vSpd', 'vVla', 'vSpin', 'vAxis'].forEach(id => $(id).innerHTML = '—');
+}
+function endIntro() { if (state.phase !== 'intro') return; state.phase = 'address'; camState.cut = true; nextLie(); }
+$('skip').onclick = endIntro;
+
+/* ===================== cameras ===================== */
+const camState = { pos: new THREE.Vector3(0, 30, 60), look: new THREE.Vector3(0, 0, -200), fov: 50, cut: true, landCut: false, landAt: null, landDir: null };
+const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+let fly = null;
+function setupFlyover() {
+  const t0 = new THREE.Vector3(HOLE.tee[0], 0, HOLE.tee[1]), p = HOLE.pinPos, d = p.clone().sub(t0).setY(0), L = d.length(); d.normalize();
+  const side = new THREE.Vector3(-d.z, 0, d.x);
+  const mid = t0.clone().lerp(p, 0.5);
+  fly = {
+    pts: [t0.clone().addScaledVector(d, -55).add(new THREE.Vector3(0, 32, 0)).addScaledVector(side, -20),
+          mid.clone().addScaledVector(side, -L * 0.35).add(new THREE.Vector3(0, 70 + L * 0.08, 0)),
+          p.clone().addScaledVector(d, 50).addScaledVector(side, 35).add(new THREE.Vector3(0, 28, 0))],
+    looks: [t0.clone().addScaledVector(d, L * 0.45).setY(-10), mid.clone().setY(-20), p.clone().setY(p.y - 2)],
+    dur: Math.min(9, 5.5 + L / 160),
+  };
+  fly.curve = new THREE.CatmullRomCurve3(fly.pts); fly.lookCurve = new THREE.CatmullRomCurve3(fly.looks);
+}
+function hfovToV(h) { return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(h) / 2) / camera.aspect)); }
+const baseFov = v => Math.max(v, Math.min(80, hfovToV(64)));
+function setCam(m) { state.cam = m; camState.cut = true; document.querySelectorAll('[data-cam]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cam === m))); }
+document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => setCam(b.dataset.cam));
+function holeBounds() {
+  const b = new THREE.Box3();
+  for (const I of ISL) b.expandByPoint(tmp.set(I.x - I.rx, I.top, I.z - I.rz)).expandByPoint(tmp.set(I.x + I.rx, I.top, I.z + I.rz));
+  return b;
+}
+function camTarget(dt) {
+  if (window.__pose) { const p = window.__pose; return { pos: new THREE.Vector3(...p.pos), look: new THREE.Vector3(...p.look), fov: p.fov || 50, k: 3, hard: true }; } // screenshot hook
+  const ph = state.phase, bp = ball.position;
+  const yawDir = dirFromYaw(state.yaw);
+  let pos, look, fov = 50, k = 3, hard = false;
+  if (ph === 'intro' && fly) {
+    state.flyT += dt;
+    const u = Math.min(1, state.flyT / fly.dur), e = u * u * (3 - 2 * u);
+    pos = fly.curve.getPoint(e); look = fly.lookCurve.getPoint(Math.min(1, e * 1.05)); fov = 52; hard = true;
+    if (u >= 1) endIntro();
+    return { pos, look, fov, k, hard };
+  }
+  if (state.cam === 'map' && ph !== 'flight') {
+    const b = holeBounds(), c = b.getCenter(new THREE.Vector3()), sz = b.getSize(new THREE.Vector3());
+    const span = Math.max(sz.z, sz.x / Math.max(0.5, camera.aspect)) * (camera.aspect < 1 ? 1.05 : 0.88) + 40;
+    const sh = span * (camera.aspect < 1 ? 0.3 : 0.14); // lift the hole above the dock
+    pos = new THREE.Vector3(c.x, c.y + span * 1.35, c.z + span * 0.32 + sh); look = new THREE.Vector3(c.x, c.y - 8, c.z - span * 0.03 + sh);
+    return { pos, look, fov: 46, k: 2.5 };
+  }
+  if (ph === 'flight' || ph === 'rest') {
+    const f = state.flight, r = f.r;
+    const landT = f.W[r.landIdx].t;
+    if (state.cam === 'chase' || state.cam === 'map') {
+      const v = tmp2.copy(bp).sub(camState.prevBall || bp).setY(0);
+      const dir = v.lengthSq() > 1e-4 ? v.normalize() : yawDir;
+      pos = bp.clone().addScaledVector(dir, -15).add(tmp.set(0, 5 + Math.max(0, bp.y - (groundAt(bp.x, bp.z) ?? bp.y)) * 0.1, 0));
+      look = bp.clone().addScaledVector(dir, 12); fov = 50; k = 3;
+      return { pos, look, fov, k };
+    }
+    const landing = state.t > Math.max(r.apexT, landT * 0.6) || ph === 'rest';
+    if (landing && r.outcome !== 'void' && camState.landAt) {
+      if (!camState.landCut) { camState.landCut = true; camState.cut = true; }
+      const L = camState.landAt, d = camState.landDir, side = new THREE.Vector3(-d.z, 0, d.x);
+      // hang in the air short of the landing spot, off to one side, so the cliff and the drop read
+      pos = L.clone().addScaledVector(d, -32).addScaledVector(side, (f.r.offline > 0 ? -1 : 1) * 16); pos.y = L.y + 9;
+      look = bp.clone().lerp(L, ph === 'rest' ? 0 : 0.35); look.y = Math.max(look.y, L.y + 0.3); fov = 40; k = 4;
+      return { pos, look, fov, k };
+    }
+    // behind the ball, tracking it into the sky
+    pos = f.from.clone().addScaledVector(dirFromYaw(state.yaw), -6).add(tmp.set(0, 2.2, 0));
+    look = camState.addressLook.clone().lerp(bp, 0.65);
+    const dist = Math.max(10, bp.distanceTo(pos));
+    fov = THREE.MathUtils.clamp(2 * THREE.MathUtils.radToDeg(Math.atan(80 / dist)), 26, 50); k = 5;
+    if (r.outcome === 'void' && state.t > landT * 0.75) { look = bp.clone(); fov = 44; }
+    return { pos, look, fov, k, posHold: true };
+  }
+  if (ph === 'putt' || ph === 'rolling' || ph === 'holed') {
+    const d = HOLE.pinPos.clone().sub(state.ball).setY(0); let L = d.length();
+    if (L > 0.3) { d.normalize(); camState.puttDir = d.clone(); } else { d.copy(camState.puttDir || dirFromYaw(state.yaw)); L = 3; }
+    pos = state.ball.clone().addScaledVector(d, -Math.max(2.5, L * 0.35)).add(tmp.set(0, 1.1 + L * 0.08, 0));
+    look = state.ball.clone().lerp(HOLE.pinPos, 0.7); look.y -= 0.3; fov = 46; k = 2.5;
+    return { pos, look, fov, k };
+  }
+  // address: behind the ball looking down the aim line, a little high so the gaps read
+  const aimP = state.previewLand || state.ball.clone().addScaledVector(yawDir, 150);
+  pos = state.ball.clone().addScaledVector(yawDir, -9).add(tmp.set(0, 4.2, 0));
+  look = state.ball.clone().addScaledVector(yawDir, 80); look.y = Math.min(state.ball.y, aimP.y) - 6;
+  camState.addressLook = look.clone();
+  return { pos, look, fov: 50, k: 3 };
+}
+function updateCamera(dt) {
+  const t = camTarget(dt);
+  const fov = t.hard ? baseFov(t.fov) : (state.cam === 'map' && state.phase !== 'flight' ? t.fov : baseFov(t.fov));
+  if (camState.cut || t.hard) { camState.pos.copy(t.pos); camState.look.copy(t.look); camState.fov = fov; }
+  else {
+    if (!t.posHold) camState.pos.lerp(t.pos, 1 - Math.exp(-t.k * 0.7 * dt)); else camState.pos.copy(t.pos);
+    camState.look.lerp(t.look, 1 - Math.exp(-t.k * dt));
+    camState.fov += (fov - camState.fov) * (1 - Math.exp(-t.k * dt));
+  }
+  camState.cut = false;
+  camera.position.copy(camState.pos); camera.lookAt(camState.look);
+  if (Math.abs(camera.fov - camState.fov) > 1e-3) { camera.fov = camState.fov; camera.updateProjectionMatrix(); }
+}
+if (!camState.addressLook) camState.addressLook = new THREE.Vector3(0, -10, -100);
+
+/* ---------- tap to aim ---------- */
+const ray = new THREE.Raycaster(); let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8 || state.phase !== 'address') return;
+  const r = renderer.domElement.getBoundingClientRect();
+  ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }, camera);
+  const hits = ray.intersectObjects(holeGroup.children.filter(o => o.userData.island && o.userData.island.playable), false);
+  let p = hits.length ? hits[0].point : null;
+  if (!p) { const pl = new THREE.Plane(new THREE.Vector3(0, 1, 0), -state.ball.y); p = ray.ray.intersectPlane(pl, new THREE.Vector3()); }
+  if (!p || p.distanceTo(state.ball) < 3) return;
+  state.aimCustom = p.clone(); aimAt(p);
+});
+let aimHold = 0;
+function nudge(d) { if (state.phase !== 'address') return; state.yaw += d; state.aimCustom = state.aimCustom || state.ball.clone().addScaledVector(dirFromYaw(state.yaw), 100); updatePreview(); renderPlan(); }
+for (const [id, d] of [['aimL', -1], ['aimR', 1]]) {
+  const b = $(id);
+  b.addEventListener('pointerdown', e => { e.preventDefault(); nudge(d * 0.004); clearInterval(aimHold); aimHold = setInterval(() => nudge(d * 0.004), 70); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => clearInterval(aimHold));
+}
+$('hit').onclick = swing; $('puttBtn').onclick = putt;
+$('sound').onclick = e => { state.sound = !state.sound; e.currentTarget.setAttribute('aria-pressed', String(state.sound)); if (audio.ctx) audio.amb.gain.setTargetAtTime(state.sound ? 0.05 : 0, audio.ctx.currentTime, 0.3); };
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); if (state.phase === 'intro') endIntro(); else if (state.phase === 'putt') putt(); else swing(); }
+  else if (e.key === 'ArrowLeft') nudge(-0.006); else if (e.key === 'ArrowRight') nudge(0.006);
+  else if (/^[1-8]$/.test(e.key) && state.phase === 'address') { state.club = +e.key - 1; updatePreview(); renderPlan(); }
+  else if (e.key === 'm' || e.key === 'M') setCam(state.cam === 'map' ? 'tv' : 'map');
+});
+
+/* ===================== frame loop ===================== */
+function projectTag(el, v) {
+  tmp.copy(v).project(camera);
+  if (tmp.z > 1 || tmp.z < -1) { el.style.visibility = 'hidden'; return; }
+  el.style.visibility = 'visible';
+  el.style.transform = `translate(${(tmp.x * 0.5 + 0.5) * innerWidth}px, ${(-tmp.y * 0.5 + 0.5) * innerHeight - 10}px) translate(-50%, -100%)`;
+}
+let last = performance.now(), clock = 0;
+function step(dt) {
+  clock += dt; clockU.value = clock; cloudMats.forEach(m => m.uniforms.uT.value = clock);
+  camState.prevBall = (camState.prevBall || new THREE.Vector3()).copy(ball.position);
+  const f = state.flight;
+  if (state.phase === 'flight') {
+    state.t += dt;
+    const W = f.W; let lo = 0, hi = W.length - 1;
+    if (state.t >= W[hi].t) lo = hi; else { while (hi - lo > 1) { const m = (lo + hi) >> 1; if (W[m].t <= state.t) lo = m; else hi = m; } }
+    const a = W[lo], b = W[Math.min(lo + 1, W.length - 1)], u = b.t > a.t ? (state.t - a.t) / (b.t - a.t) : 0;
+    ball.position.lerpVectors(a.w, b.w, Math.min(1, u)); ball.position.y += BALL_RADIUS;
+    const upto = Math.min(lo, f.r.landIdx), arr = f.arr; arr.length = 0;
+    for (let i = 0; i <= upto; i += 3) arr.push(W[i].w.x, W[i].w.y, W[i].w.z);
+    if (lo <= f.r.landIdx) arr.push(ball.position.x, ball.position.y, ball.position.z);
+    setLine(tracerCore, arr); setLine(tracerGlow, arr);
+    if (lo >= f.r.landIdx && $('tagLand').hidden && f.r.landed) { $('tagLand').innerHTML = `<b>${Math.round(f.r.carry)}</b> carry`; $('tagLand').hidden = false; camState.landTag = W[f.r.landIdx].w.clone(); tick(140, 0.1, 0.25); }
+    if (state.t >= W.at(-1).t) { state.phase = 'rest'; state.restTimer = 0; if (f.r.outcome === 'void') ball.visible = false; }
+  } else if (state.phase === 'rest') {
+    state.restTimer += dt;
+    if (state.restTimer > (f.r.outcome === 'void' ? 0.8 : 2.2)) { $('tagLand').hidden = true; tracerCore.visible = tracerGlow.visible = false; finishShot(); }
+  } else if (state.phase === 'rolling') {
+    const pa = state.puttAnim; pa.t += dt;
+    const u = Math.min(1, pa.t / pa.dur), e = 1 - Math.pow(1 - u, 2.2);
+    ball.position.lerpVectors(pa.from, pa.end, e); ball.position.y = (groundAt(ball.position.x, ball.position.z) ?? pa.end.y) + BALL_RADIUS;
+    if (u >= 1) {
+      state.ball.copy(pa.end);
+      if (pa.made) { ball.position.y -= 0.06; tick(300, 0.08, 0.6); holeOut(); }
+      else { toast('Missed', `${(pa.end.distanceTo(HOLE.pinPos) / 0.3048).toFixed(1)} ft left`, 1600); startPutting(); }
+    }
+  }
+  // ball footprint, shadow
+  const camD = camera.position.distanceTo(ball.position);
+  const pxPerM = innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camD);
+  ball.scale.setScalar(Math.max(1, 1.6 / (BALL_RADIUS * 2 * pxPerM)));
+  const gy = groundAt(ball.position.x, ball.position.z);
+  if (gy !== null && ball.visible) {
+    const hgt = Math.max(0, ball.position.y - gy);
+    const sx = ball.position.x - sunDir.x / sunDir.y * hgt, sz = ball.position.z - sunDir.z / sunDir.y * hgt, sgy = groundAt(sx, sz);
+    ballShadow.visible = sgy !== null;
+    if (sgy !== null) { ballShadow.position.set(sx, sgy + 0.012, sz); const bs = BALL_RADIUS * 3.2 * ball.scale.x * (1 + hgt * 0.02); ballShadow.scale.set(bs, bs, 1); ballShadow.material.opacity = Math.max(0, 0.75 - hgt / 40); }
+  } else ballShadow.visible = false;
+  // aim marker size stays readable
+  if (aimRing.visible) { const s = THREE.MathUtils.clamp(camera.position.distanceTo(aimRing.position) * 0.004, 0.2, 1.4); restDot.scale.setScalar(s * 0.9); }
+  if (!$('tagLand').hidden && camState.landTag) projectTag($('tagLand'), camState.landTag);
+  // flag
+  if (flagMesh) { const p = flagMesh.geometry.attributes.position, b = flagMesh.userData.base; for (let i = 0; i < p.count; i++) { const x = b[i * 3]; p.setZ(i, Math.sin(x * 9 - clock * 5.5) * 0.07 * x + Math.sin(x * 4 + clock * 2.3) * 0.035 * x); } p.needsUpdate = true; flagMesh.geometry.computeVertexNormals(); }
+  // drifting puffs
+  if (holeGroup) for (const o of holeGroup.children) if (o.isSprite) o.position.x += o.userData.v * dt;
+  drawMinimap();
+  for (const g of oldTracers) g.visible = state.cam === 'map' && g.geometry.attributes.instanceStart && g.geometry.attributes.instanceStart.count > 1;
+  updateCamera(dt);
+  const focus = tmp.copy(camState.look).lerp(camera.position, 0.4);
+  if (state.phase === 'address' || state.phase === 'putt') focus.copy(state.ball).addScaledVector(dirFromYaw(state.yaw), 60);
+  sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(sunDir, 600);
+}
+function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
+window.__advance = sec => { for (let i = 0; i < sec * 30; i++) step(1 / 30); renderer.render(scene, camera); };
+window.__state = state; window.__startHole = i => startHole(i);
+
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines(); }
+addEventListener('resize', resize);
+
+/* ===================== boot ===================== */
+resize();
+startHole(0);
+renderPlan();
+requestAnimationFrame(t => { last = t; frame(t); });

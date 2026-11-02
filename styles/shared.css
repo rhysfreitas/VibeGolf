@@ -1,0 +1,19 @@
+/* Shared pieces used by every mode: launch-monitor popover, menu link, status dot. Uses each page's own tokens. */
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #7d8a78; box-shadow: 0 0 0 3px rgba(125,138,120,0.2); flex: none; display: inline-block; }
+.dot.wait { background: var(--flag); box-shadow: 0 0 0 3px rgba(245,197,66,0.25); }
+.dot.live { background: #6ee38a; box-shadow: 0 0 0 3px rgba(110,227,138,0.25); }
+.lm-btn { appearance: none; border: 0; background: transparent; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 7px; color: inherit; font: inherit; text-align: left; }
+.lm-btn:hover span { color: var(--bone); }
+.menu-link { appearance: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sage, var(--mist)); padding: 7px 10px; border-radius: 7px; }
+.menu-link:hover { color: var(--bone); background: rgba(255,255,255,0.06); }
+.lm-pop { position: fixed; z-index: 20; left: max(16px, env(safe-area-inset-left, 0px)); top: calc(env(safe-area-inset-top, 0px) + 84px); width: min(360px, calc(100% - 32px)); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.lm-head { display: flex; justify-content: space-between; align-items: center; font-family: var(--f-data); font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; }
+.lm-x { appearance: none; border: 0; background: transparent; color: var(--sage, var(--mist)); font-size: 20px; cursor: pointer; padding: 2px 6px; }
+.lm-note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--sage, var(--mist)); }
+.lm-lbl { font-family: var(--f-data); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage, var(--mist)); }
+.lm-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.lm-row input { min-width: 0; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 8px; color: var(--bone); font-family: var(--f-data); font-size: 15px; padding: 9px 10px; }
+.lm-go { appearance: none; border: 0; border-radius: 8px; background: var(--flag); color: var(--flag-ink); padding: 0 14px; font-family: var(--f-data); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.lm-state { margin: 0; font-family: var(--f-data); font-size: 13.5px; color: var(--bone); }
+.menu-link .mshort { display: none; font-size: 20px; line-height: 0.8; }
+@media (max-width: 560px) { .menu-link .mlong { display: none; } .menu-link .mshort { display: inline; } }

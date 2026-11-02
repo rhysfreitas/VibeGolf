@@ -1,0 +1,17 @@
+{
+  "name": "aerie-golf-bridge",
+  "version": "0.1.0",
+  "description": "Relays GSPro Open Connect shots (Garmin R10 connectors) to Aerie Golf over a WebSocket.",
+  "type": "module",
+  "main": "bridge.js",
+  "bin": { "aerie-bridge": "bridge.js" },
+  "scripts": {
+    "start": "node bridge.js",
+    "test": "node --test ../tests/bridge.test.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "license": "MIT"
+}

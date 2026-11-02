@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101c22">
+<meta name="description" content="Golf simulator for the Garmin Approach R10: Woodson Range and The Aerie, a floating sky course.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<title>Aerie Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=Cormorant+SC:wght@600;700&display=swap">
+<style>
+/* Title screen: full-bleed course still, left-weighted column of mode tiles. */
+:root {
+  color-scheme: dark;
+  --ink: #101c22;
+  --glass: rgba(14, 26, 32, 0.72);
+  --glass-hi: rgba(26, 42, 50, 0.88);
+  --line: rgba(214, 228, 232, 0.16);
+  --bone: #f2efe6;
+  --mist: #a9bcc2;
+  --flag: #f5c542;
+  --flag-ink: #2a2206;
+  --f-title: "Cormorant SC", "Cormorant Garamond", Georgia, serif;
+  --f-data: "Saira Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { margin: 0; background: #101c22 url(assets/menu-bg.jpg) center / cover no-repeat fixed; color: var(--bone); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0; background: linear-gradient(90deg, rgba(10,18,22,0.82) 0%, rgba(10,18,22,0.55) 38%, rgba(10,18,22,0) 70%); pointer-events: none; }
+.glass { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px) saturate(1.2); }
+:focus-visible { outline: 2px solid var(--flag); outline-offset: 3px; }
+main { position: relative; min-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 28px; max-width: 520px; padding-block: calc(env(safe-area-inset-top, 0px) + 72px) calc(env(safe-area-inset-bottom, 0px) + 40px); padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-direction: column; gap: 6px; }
+h1 { margin: 0; font-family: var(--f-title); font-weight: 700; font-size: clamp(48px, 9vw, 76px); line-height: 0.92; letter-spacing: 0.02em; text-wrap: balance; }
+.tagline { margin: 0; font-family: var(--f-data); font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mist); }
+nav { display: flex; flex-direction: column; gap: 10px; }
+.mode { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px; text-decoration: none; color: inherit; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
+a.mode:hover { background: var(--glass-hi); border-color: rgba(245,197,66,0.5); transform: translateX(3px); }
+.thumb { width: 112px; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 8px; background: #22343c center / cover no-repeat; }
+.mode h2 { margin: 0; font-family: var(--f-title); font-weight: 700; font-size: 26px; line-height: 1; letter-spacing: 0.02em; }
+.mode p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.4; color: #d3dde0; }
+.mode .meta { display: block; margin-top: 6px; font-family: var(--f-data); font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--flag); }
+.mode.soon { opacity: 0.72; }
+.mode.soon .meta { color: var(--mist); }
+.mode.soon .thumb { display: grid; place-items: center; font-family: var(--f-data); font-size: 12px; letter-spacing: 0.12em; color: var(--mist); text-transform: uppercase; background: rgba(255,255,255,0.05); border: 1px dashed var(--line); }
+#topbar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; padding: 8px 12px; }
+.lm-btn span { font-family: var(--f-data); font-size: 13px; letter-spacing: 0.06em; color: var(--mist); }
+footer { font-family: var(--f-data); font-size: 12px; letter-spacing: 0.08em; color: var(--mist); }
+footer kbd { font-family: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+@media (max-width: 560px) {
+  body::before { background: linear-gradient(180deg, rgba(10,18,22,0.35) 0%, rgba(10,18,22,0.8) 55%); }
+  main { justify-content: flex-end; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mode { grid-template-columns: 88px minmax(0, 1fr); }
+  .thumb { width: 88px; }
+  .mode h2 { font-size: 23px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<link rel="stylesheet" href="styles/shared.css">
+</head>
+<body>
+<div id="topbar" class="glass">
+  <button class="lm-btn" id="lmBtn" title="Launch monitor"><i class="dot" id="lmDot"></i><span id="lmText">R10 offline</span></button>
+</div>
+<main>
+  <header>
+    <h1>Aerie Golf</h1>
+    <p class="tagline">Simulator for the Garmin Approach R10</p>
+  </header>
+  <nav aria-label="Modes">
+    <a class="mode glass" href="range.html">
+      <span class="thumb" style="background-image:url(assets/thumb-range.jpg)" role="img" aria-label="Woodson Range at golden hour"></span>
+      <span><h2>Woodson Range</h2><p>Practice bay with shot tracers, dispersion and club gapping.</p><span class="meta">Range</span></span>
+    </a>
+    <a class="mode glass" href="course.html">
+      <span class="thumb" style="background-image:url(assets/thumb-aerie.jpg)" role="img" aria-label="Floating island holes above the clouds"></span>
+      <span><h2>The Aerie</h2><p>Floating islands over the clouds. Play it safe, or carry the gap.</p><span class="meta">3 holes · Par 12 · 1,117 yd</span></span>
+    </a>
+    <div class="mode glass soon" aria-disabled="true">
+      <span class="thumb">Next</span>
+      <span><h2>Mini games</h2><p>Closest to the pin, target darts and long drive.</p><span class="meta">Coming next</span></span>
+    </div>
+  </nav>
+  <footer>v0.1 · Ball flight fit to TrackMan tour averages · Install from your browser menu to play full screen</footer>
+</main>
+<script type="module">
+  import { mountLaunchMonitorUI } from './src/launch-monitor.js';
+  mountLaunchMonitorUI({ dot: document.getElementById('lmDot'), text: document.getElementById('lmText'), button: document.getElementById('lmBtn') });
+</script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

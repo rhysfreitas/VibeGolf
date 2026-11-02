@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101c22">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<title>The Aerie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=Cormorant+SC:wght@600;700&display=swap">
+<link rel="stylesheet" href="styles/course.css">
+<link rel="stylesheet" href="styles/shared.css">
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="top">
+  <div id="holeCard" class="glass">
+    <span class="course">The Aerie</span>
+    <div>
+      <div class="holeName" id="hName">The Shelf</div>
+      <div class="holeMeta" id="hMeta">Hole <b>1</b> · Par <b>4</b> · <b>408</b> yd</div>
+    </div>
+    <div class="stat"><span class="lbl">Stroke</span><span class="num" id="hStroke">1</span></div>
+    <div class="stat" id="pinStat"><span class="lbl">To pin</span><span class="num" id="hPin">—</span></div>
+  </div>
+  <div class="tools glass">
+    <a class="menu-link" href="./" title="Back to the menu" aria-label="Menu"><span class="mlong">Menu</span><span class="mshort" aria-hidden="true">‹</span></a>
+    <div class="seg" role="group" aria-label="Camera">
+      <button class="tbtn" data-cam="tv" aria-pressed="true">TV</button>
+      <button class="tbtn" data-cam="chase" aria-pressed="false">Chase</button>
+      <button class="tbtn" data-cam="map" aria-pressed="false">Map</button>
+    </div>
+    <button class="tbtn" id="btnCard">Card</button>
+    <button class="tbtn" id="sound" aria-pressed="true">Sound</button>
+    <button class="tbtn lm-btn" id="lmBtn" title="Launch monitor"><i class="dot" id="lmDot"></i><span id="lmText">R10 off</span></button>
+  </div>
+</div>
+
+<button class="minimap glass" id="minimapWrap" hidden aria-label="Hole map. Tap for the full map."><canvas id="minimap"></canvas></button>
+
+<div id="dock">
+  <section id="readout" class="glass" aria-live="polite">
+    <div class="carry">
+      <span class="lbl">Carry</span>
+      <span class="num" id="vCarry">—<small>yd</small></span>
+      <span class="club" id="vClub">Driver</span>
+    </div>
+    <div class="metrics">
+      <div class="m"><span class="lbl">Total</span><span class="num" id="vTotal">—</span></div>
+      <div class="m"><span class="lbl">Offline</span><span class="num" id="vOff">—</span></div>
+      <div class="m"><span class="lbl">Apex</span><span class="num" id="vApex">—</span></div>
+      <div class="m x"><span class="lbl">Ball spd</span><span class="num" id="vSpd">—</span></div>
+      <div class="m x"><span class="lbl">Launch</span><span class="num" id="vVla">—</span></div>
+      <div class="m x"><span class="lbl">Spin</span><span class="num" id="vSpin">—</span></div>
+      <div class="m x"><span class="lbl">Axis</span><span class="num" id="vAxis">—</span></div>
+      <div class="m"><span class="lbl">Result</span><span class="num" id="vRes">—</span></div>
+    </div>
+  </section>
+  <section id="plan" class="glass" aria-label="Plan the shot">
+    <div id="swingUI" class="col" style="display:flex;flex-direction:column;gap:8px">
+      <div class="targets" id="targets" role="group" aria-label="Target"></div>
+      <div class="preview" id="preview"><i id="pvDot"></i><span id="pvText">—</span><span class="lie" id="pvLie"></span></div>
+      <div class="clubs" id="clubs" role="group" aria-label="Club"></div>
+      <div class="row2">
+        <div class="power" role="group" aria-label="Swing length" id="power"></div>
+        <div class="aim" role="group" aria-label="Aim">
+          <button class="ab" id="aimL" aria-label="Aim left">◀</button>
+          <button class="ab" id="aimR" aria-label="Aim right">▶</button>
+        </div>
+        <button id="hit">Hit</button>
+      </div>
+    </div>
+    <div id="putt" hidden>
+      <div class="puttline"><span class="lbl">On the green</span><span class="num" id="puttDist">—<small>ft</small></span></div>
+      <div class="puttline"><span class="lbl" id="puttOdds">—</span>
+        <label class="switch" for="gimme"><input type="checkbox" id="gimme" checked> Gimmes inside 3 ft</label></div>
+      <button id="puttBtn" class="primary" style="min-height:50px">Putt</button>
+    </div>
+  </section>
+</div>
+
+<div id="intro" class="glass" hidden>
+  <span class="lbl" id="iMeta">Hole 1 · Par 4</span>
+  <span class="holeName" id="iName">The Shelf</span>
+  <p id="iText"></p>
+</div>
+<button class="ghost" id="skip" hidden>Skip flyover</button>
+
+<div class="tag" id="tagLand" hidden></div>
+<div class="tag" id="tagAim" hidden></div>
+<div id="toast" class="glass"></div>
+
+<div id="card" hidden>
+  <div class="glass" role="dialog" aria-labelledby="cardTitle">
+    <div><div class="sub" id="cardSub">Scorecard</div><h2 id="cardTitle">The Aerie</h2></div>
+    <table class="sc" id="scTable"></table>
+    <div class="cardBtns"><button class="ghost" id="cardClose">Close</button><button class="primary" id="cardNext">Next hole</button></div>
+  </div>
+</div>
+
+<script src="vendor/three-r147/three.min.js"></script>
+<script src="vendor/three-r147/Sky.js"></script>
+<script src="vendor/three-r147/lines/LineSegmentsGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineMaterial.js"></script>
+<script src="vendor/three-r147/lines/LineSegments2.js"></script>
+<script src="vendor/three-r147/lines/Line2.js"></script>
+<script type="module" src="src/course/main.js"></script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>
