@@ -282,7 +282,7 @@ function buildIsland(I, detail, group, trees) {
     const x = I.x + (e.x - I.x) * s, z = I.z + (e.z - I.z) * s;
     if (I.playable && surfaceAt(x, z) !== 'rough') continue;
     if (I.playable && I.kind !== 'rough' && islandF(I, x, z) < 0.86) continue;
-    if (I.kind === 'tee' && Math.hypot(x - HOLE.tee[0], z - HOLE.tee[1]) < 9) continue;
+    if (I.kind === 'tee' && (Math.hypot(x - HOLE.tee[0], z - HOLE.tee[1]) < 12 || z > HOLE.tee[1] - 4)) continue; // keep the tee and the camera behind it clear
     trees.push({ x, y: groundAt2(I, x, z), z, s: (I.playable ? 0.9 : 1.2) + R() * 0.8, type: R() < 0.62 ? 'pine' : 'oak', r: R() });
     placed++;
   }
@@ -455,14 +455,16 @@ const restDot = new THREE.Mesh(new THREE.CircleGeometry(1, 24).rotateX(-Math.PI 
 restDot.renderOrder = 6;
 scene.add(aimRing, aimFill, restDot);
 function mkLine(color, w, o, dashed) {
-  const mat = new THREE.LineMaterial({ color: new THREE.Color(color), linewidth: w, transparent: true, opacity: o, depthWrite: false, toneMapped: false, dashed: !!dashed, dashSize: 3, gapSize: 2.5 });
+  const mat = new THREE.LineMaterial({ color: new THREE.Color(color), linewidth: w * renderer.getPixelRatio(), transparent: true, opacity: o, depthWrite: false, toneMapped: false, dashed: !!dashed, dashSize: 3, gapSize: 2.5 });
   if (dashed) mat.defines.USE_DASH = '';
   const l = new THREE.Line2(new THREE.LineGeometry(), mat); l.frustumCulled = false; l.renderOrder = 4; l.visible = false; scene.add(l); return l;
 }
 const previewArc = mkLine('#f2efe6', 1.6, 0.55, true);
 const tracerCore = mkLine('#f5c542', 2.6, 1), tracerGlow = mkLine('#f5c542', 8, 0.25);
 const oldTracers = [];
-function setLine(l, arr) { if (arr.length < 6) { l.visible = false; return; } l.geometry.setPositions(arr); if (l.material.dashed) l.computeLineDistances(); l.visible = true; }
+// Three.js caches a line's segment count the first time it draws it; clear that after each
+// update or growing tracers (and changing preview arcs) stay frozen at their first length.
+function setLine(l, arr) { if (arr.length < 6) { l.visible = false; return; } l.geometry.setPositions(arr); l.geometry._maxInstanceCount = undefined; if (l.material.dashed) l.computeLineDistances(); l.visible = true; }
 function resizeLines() { const w = renderer.domElement.width, h = renderer.domElement.height; [previewArc, tracerCore, tracerGlow, ...oldTracers].forEach(l => l.material.resolution.set(w, h)); }
 
 /* ===================== corner map ===================== */
@@ -635,12 +637,13 @@ function renderPlan() {
   const lieNames = { tee: 'Tee box', fairway: 'Fairway', rough: 'Rough −5%', sand: 'Bunker −14%', green: 'Green' };
   $('pvLie').textContent = 'Lie: ' + (lieNames[state.lie] || state.lie);
   $('vClub').textContent = CLUBS[state.club].name + (state.power ? ' · ' + POWERS[state.power].label : '');
+  $('chipClub').textContent = CLUBS[state.club].id; $('chipPow').textContent = POWERS[state.power].label;
   if (state.lastSentClub !== state.club) { state.lastSentClub = state.club; launchMonitor.setPlayer({ club: CLUBS[state.club].id }); }
 }
 function renderHoleCard() {
   const h = HOLE, n = state.holeIdx + 1;
   $('hName').textContent = h.name;
-  $('hMeta').innerHTML = `Hole <b>${n}</b> · Par <b>${h.par}</b> · <b>${h.yards}</b> yd`;
+  $('hMeta').textContent = `Hole ${n} · Par ${h.par} · ${h.yards} yd`;
   $('hStroke').textContent = state.phase === 'holed' ? state.strokes : state.strokes + 1;
   const d = Math.hypot(HOLE.pinPos.x - state.ball.x, HOLE.pinPos.z - state.ball.z);
   $('hPin').innerHTML = state.lie === 'green' ? Math.round(d / 0.3048) + '<small>ft</small>' : yd(d) + '<small>yd</small>';
@@ -665,6 +668,9 @@ function setPhaseUI() {
   $('hit').disabled = state.phase !== 'address';
   $('puttBtn').disabled = state.phase !== 'putt';
   $('dock').style.visibility = state.phase === 'intro' ? 'hidden' : 'visible';
+  $('targetsBox').hidden = state.phase !== 'address';
+  if (state.phase !== 'address' && !$('plan').hidden) togglePlan(false);
+  delete $('hitbar').dataset.placed;
   $('skip').hidden = state.phase !== 'intro';
   $('intro').hidden = state.phase !== 'intro';
   renderHoleCard();
@@ -955,8 +961,8 @@ function camTarget(dt) {
   }
   // address: behind the ball looking down the aim line, a little high so the gaps read
   const aimP = state.previewLand || state.ball.clone().addScaledVector(yawDir, 150);
-  pos = state.ball.clone().addScaledVector(yawDir, -9).add(tmp.set(0, 4.2, 0));
-  look = state.ball.clone().addScaledVector(yawDir, 80); look.y = Math.min(state.ball.y, aimP.y) - 6;
+  pos = state.ball.clone().addScaledVector(yawDir, -10).add(tmp.set(0, 3.2, 0));
+  look = state.ball.clone().addScaledVector(yawDir, 80); look.y = state.ball.y - 11 + 0.3 * Math.min(0, aimP.y - state.ball.y);
   camState.addressLook = look.clone();
   return { pos, look, fov: 50, k: 3 };
 }
@@ -979,6 +985,7 @@ if (!camState.addressLook) camState.addressLook = new THREE.Vector3(0, -10, -100
 const ray = new THREE.Raycaster(); let down = null;
 renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
 renderer.domElement.addEventListener('pointerup', e => {
+  if (!$('plan').hidden) { togglePlan(false); return; }
   if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8 || state.phase !== 'address') return;
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }, camera);
@@ -996,6 +1003,30 @@ for (const [id, d] of [['aimL', -1], ['aimR', 1]]) {
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => clearInterval(aimHold));
 }
 $('hit').onclick = swing; $('puttBtn').onclick = putt;
+// club & swing-length fly-out
+function togglePlan(open = $('plan').hidden) { $('plan').hidden = !open; $('btnClub').setAttribute('aria-expanded', String(open)); }
+$('btnClub').onclick = () => togglePlan();
+document.querySelector('[data-close="plan"]').onclick = () => togglePlan(false);
+$('readout').addEventListener('click', () => $('readout').classList.toggle('more'));
+// portrait nudge (phones only; dismissible)
+const portraitPhone = matchMedia('(orientation: portrait) and (pointer: coarse)');
+let rotateDismissed = false;
+const syncRotate = () => { $('rotate').hidden = rotateDismissed || !portraitPhone.matches; };
+portraitPhone.addEventListener?.('change', syncRotate); syncRotate();
+$('rotateOk').onclick = () => { rotateDismissed = true; syncRotate(); };
+// Keep Hit (or Putt) centred just under the ball while it's your shot.
+const hitbar = $('hitbar'), sabProbe = $('sabProbe'), hbV = new THREE.Vector3();
+function placeHitbar() {
+  const waiting = state.phase === 'address' || state.phase === 'putt';
+  if (!waiting && hitbar.dataset.placed) return;
+  const H = innerHeight, hb = hitbar.offsetHeight || 80;
+  hbV.copy(ball.position).project(camera);
+  const ballY = (-hbV.y * 0.5 + 0.5) * H;
+  const onScreen = state.cam !== 'map' && hbV.z < 1 && Math.abs(hbV.x) < 1 && ballY > 0 && ballY < H;
+  const maxTop = H - hb - 10 - sabProbe.offsetHeight;
+  const top = onScreen ? Math.min(maxTop, Math.max(H * 0.4, ballY + 12)) : maxTop;
+  hitbar.style.top = top.toFixed(0) + 'px'; hitbar.dataset.placed = '1';
+}
 $('sound').onclick = e => { state.sound = !state.sound; e.currentTarget.setAttribute('aria-pressed', String(state.sound)); if (audio.ctx) audio.amb.gain.setTargetAtTime(state.sound ? 0.05 : 0, audio.ctx.currentTime, 0.3); };
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
@@ -1063,12 +1094,14 @@ function step(dt) {
   drawMinimap();
   for (const g of oldTracers) g.visible = state.cam === 'map' && g.geometry.attributes.instanceStart && g.geometry.attributes.instanceStart.count > 1;
   updateCamera(dt);
+  placeHitbar();
   const focus = tmp.copy(camState.look).lerp(camera.position, 0.4);
   if (state.phase === 'address' || state.phase === 'putt') focus.copy(state.ball).addScaledVector(dirFromYaw(state.yaw), 60);
   sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(sunDir, 600);
 }
 function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
-window.__advance = sec => { for (let i = 0; i < sec * 30; i++) step(1 / 30); renderer.render(scene, camera); };
+// test hooks: step the sim; pass everyFrame=N to render every Nth step like real play
+window.__advance = (sec, everyFrame) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (everyFrame && i % everyFrame === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
 window.__state = state; window.__startHole = i => startHole(i);
 
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines(); }

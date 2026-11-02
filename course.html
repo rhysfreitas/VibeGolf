@@ -20,10 +20,9 @@
 
 <div id="top">
   <div id="holeCard" class="glass">
-    <span class="course">The Aerie</span>
-    <div>
-      <div class="holeName" id="hName">The Shelf</div>
-      <div class="holeMeta" id="hMeta">Hole <b>1</b> · Par <b>4</b> · <b>408</b> yd</div>
+    <div class="hcMain">
+      <span class="course">The Aerie · <span id="hMeta">Hole 1 · Par 4 · 408 yd</span></span>
+      <span class="holeName" id="hName">The Shelf</span>
     </div>
     <div class="stat"><span class="lbl">Stroke</span><span class="num" id="hStroke">1</span></div>
     <div class="stat" id="pinStat"><span class="lbl">To pin</span><span class="num" id="hPin">—</span></div>
@@ -44,11 +43,40 @@
 <button class="minimap glass" id="minimapWrap" hidden aria-label="Hole map. Tap for the full map."><canvas id="minimap"></canvas></button>
 
 <div id="dock">
-  <section id="readout" class="glass" aria-live="polite">
-    <div class="carry">
-      <span class="lbl">Carry</span>
-      <span class="num" id="vCarry">—<small>yd</small></span>
-      <span class="club" id="vClub">Driver</span>
+  <!-- course management: where to play this shot -->
+  <section id="targetsBox" aria-label="Play to">
+    <span class="lbl">Play to</span>
+    <div class="targets" id="targets" role="group" aria-label="Target"></div>
+  </section>
+
+  <!-- hit button sits centred just under the ball; script keeps it there -->
+  <div id="hitbar">
+    <div id="swingUI">
+      <div class="hitrow">
+        <div class="hrSide left">
+          <button class="chip" id="btnClub" aria-expanded="false" aria-controls="plan" title="Club and swing length"><b id="chipClub">DR</b><span id="chipPow">Full</span></button>
+          <button class="ab" id="aimL" aria-label="Aim left">◀</button>
+        </div>
+        <button id="hit">Hit</button>
+        <div class="hrSide"><button class="ab" id="aimR" aria-label="Aim right">▶</button></div>
+      </div>
+      <div class="preview glass" id="preview"><i id="pvDot"></i><span id="pvText">—</span></div>
+    </div>
+    <div id="putt" hidden>
+      <div class="hitrow">
+        <div class="hrSide left"><label class="gimme glass" for="gimme"><input type="checkbox" id="gimme" checked> Gimmes ≤ 3 ft</label></div>
+        <button id="puttBtn">Putt</button>
+        <div class="hrSide"></div>
+      </div>
+      <div class="preview glass"><span><b class="num" id="puttDist">—<small>ft</small></b> · <span id="puttOdds">—</span></span></div>
+    </div>
+  </div>
+
+  <section id="readout" class="glass" aria-live="polite" title="Tap for more numbers">
+    <div class="carryRow">
+      <span class="num carryNum" id="vCarry">—<small>yd</small></span>
+      <span class="carryMeta"><span class="lbl">Carry</span><span class="clubName" id="vClub">Driver</span></span>
+      <span class="num result" id="vRes">—</span>
     </div>
     <div class="metrics">
       <div class="m"><span class="lbl">Total</span><span class="num" id="vTotal">—</span></div>
@@ -58,38 +86,39 @@
       <div class="m x"><span class="lbl">Launch</span><span class="num" id="vVla">—</span></div>
       <div class="m x"><span class="lbl">Spin</span><span class="num" id="vSpin">—</span></div>
       <div class="m x"><span class="lbl">Axis</span><span class="num" id="vAxis">—</span></div>
-      <div class="m"><span class="lbl">Result</span><span class="num" id="vRes">—</span></div>
-    </div>
-  </section>
-  <section id="plan" class="glass" aria-label="Plan the shot">
-    <div id="swingUI" class="col" style="display:flex;flex-direction:column;gap:8px">
-      <div class="targets" id="targets" role="group" aria-label="Target"></div>
-      <div class="preview" id="preview"><i id="pvDot"></i><span id="pvText">—</span><span class="lie" id="pvLie"></span></div>
-      <div class="clubs" id="clubs" role="group" aria-label="Club"></div>
-      <div class="row2">
-        <div class="power" role="group" aria-label="Swing length" id="power"></div>
-        <div class="aim" role="group" aria-label="Aim">
-          <button class="ab" id="aimL" aria-label="Aim left">◀</button>
-          <button class="ab" id="aimR" aria-label="Aim right">▶</button>
-        </div>
-        <button id="hit">Hit</button>
-      </div>
-    </div>
-    <div id="putt" hidden>
-      <div class="puttline"><span class="lbl">On the green</span><span class="num" id="puttDist">—<small>ft</small></span></div>
-      <div class="puttline"><span class="lbl" id="puttOdds">—</span>
-        <label class="switch" for="gimme"><input type="checkbox" id="gimme" checked> Gimmes inside 3 ft</label></div>
-      <button id="puttBtn" class="primary" style="min-height:50px">Putt</button>
     </div>
   </section>
 </div>
+
+<aside class="sheet left glass" id="plan" hidden aria-label="Club and swing length">
+  <h2>Club <button class="x" data-close="plan" aria-label="Close">×</button></h2>
+  <div class="group">
+    <div class="clubs" id="clubs" role="group" aria-label="Club"></div>
+    <p class="note">The underlined club is the suggestion for your target.</p>
+  </div>
+  <div class="group">
+    <span class="lbl">Swing length</span>
+    <div class="power" role="group" aria-label="Swing length" id="power"></div>
+  </div>
+  <div class="group">
+    <span class="lbl" id="pvLie">Lie: Tee box</span>
+    <p class="note">Rough takes about 5% off ball speed and a quarter of the spin. Sand takes more. Tap the course to aim at any spot, or use the arrows beside Hit.</p>
+  </div>
+</aside>
 
 <div id="intro" class="glass" hidden>
   <span class="lbl" id="iMeta">Hole 1 · Par 4</span>
   <span class="holeName" id="iName">The Shelf</span>
   <p id="iText"></p>
 </div>
-<button class="ghost" id="skip" hidden>Skip flyover</button>
+<button class="chip wide" id="skip" hidden>Skip flyover</button>
+
+<div id="rotate" class="glass" hidden>
+  <b>Turn your phone sideways</b>
+  <span>VibeGolf is laid out for landscape, like a launch monitor setup.</span>
+  <button class="ghost" id="rotateOk">Continue anyway</button>
+</div>
+<i id="sabProbe" aria-hidden="true"></i>
 
 <div class="tag" id="tagLand" hidden></div>
 <div class="tag" id="tagAim" hidden></div>

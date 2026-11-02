@@ -342,10 +342,11 @@ landRing.visible = restDisc.visible = false; scene.add(landRing, restDisc);
 const TRACERS = ['#ff5a36', '#f5c542', '#7fd3ff', '#f1eee3', 'club'];
 const CLUB_COLORS = ['#ff6b4a', '#ff9f43', '#ffd36e', '#c5e478', '#7fe0b0', '#7fd3ff', '#9fa8ff', '#e09cff'];
 const tracers = []; // newest first: { core, glow, club, apex }
+const PR = () => renderer.getPixelRatio(); // line widths are in device pixels
 const tracerColor = club => state.tracer === 'club' ? CLUB_COLORS[club] : state.tracer;
 function makeTracer(club) {
   const mk = (w, o) => { const mat = new THREE.LineMaterial({ color: new THREE.Color(tracerColor(club)), linewidth: w, transparent: true, opacity: o, depthWrite: false, toneMapped: false }); const l = new THREE.Line2(new THREE.LineGeometry(), mat); l.frustumCulled = false; l.renderOrder = 2; l.visible = false; scene.add(l); return l; };
-  const t = { core: mk(3, 1), glow: mk(10, 0.3), club };
+  const t = { core: mk(2.6 * PR(), 1), glow: mk(7 * PR(), 0.3), club };
   tracers.unshift(t);
   trimTracers();
   resizeLines();
@@ -357,12 +358,15 @@ function trimTracers() {
   tracers.forEach((tr, i) => {
     const f = i === 0 ? 1 : Math.max(0.16, 0.6 * (1 - i / Math.max(2, state.tracerKeep)));
     tr.core.material.opacity = f; tr.glow.material.opacity = (i === 0 ? 0.3 : 0.12) * f;
-    tr.core.material.linewidth = i === 0 ? 3 : 2; tr.glow.material.linewidth = i === 0 ? 10 : 6;
+    tr.core.material.linewidth = (i === 0 ? 2.6 : 1.8) * PR(); tr.glow.material.linewidth = (i === 0 ? 7 : 4) * PR();
   });
 }
 function clearTracers() { while (tracers.length) disposeTracer(tracers.pop()); apexDot.visible = false; $('tagApex').hidden = true; }
 function recolorTracers() { tracers.forEach(t => { const c = tracerColor(t.club); t.core.material.color.set(c); t.glow.material.color.set(c); }); }
-function setTracerPts(t, arr) { if (arr.length < 6) return; t.core.geometry.setPositions(arr); t.glow.geometry.setPositions(arr); t.core.visible = t.glow.visible = true; }
+// Three.js caches a line's segment count the first time it draws it, so a tracer that grows
+// every frame would stay frozen at its first few points. Clear the cache after each update.
+function setLinePositions(line, arr) { line.geometry.setPositions(arr); line.geometry._maxInstanceCount = undefined; }
+function setTracerPts(t, arr) { if (arr.length < 6) return; setLinePositions(t.core, arr); setLinePositions(t.glow, arr); t.core.visible = t.glow.visible = true; }
 function resizeLines() { const w = renderer.domElement.width, h = renderer.domElement.height; for (const t of tracers) { t.core.material.resolution.set(w, h); t.glow.material.resolution.set(w, h); } }
 const apexDot = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false }));
 apexDot.visible = false; apexDot.renderOrder = 3; scene.add(apexDot);
@@ -382,6 +386,7 @@ function renderClubs() {
   if (!wrap.children.length) CLUBS.forEach((c, i) => { const b = document.createElement('button'); b.className = 'club'; b.textContent = c.id; b.title = c.name; b.onclick = () => { if (state.phase === 'idle') loadClub(i); }; wrap.appendChild(b); });
   [...wrap.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === state.club)));
   $('vClub').textContent = CLUBS[state.club].name;
+  $('chipClub').textContent = CLUBS[state.club].id;
 }
 const SL = [
   ['sSpeed', 'oSpeed', v => v.toFixed(1) + ' mph', 'Speed'], ['sVla', 'oVla', v => v.toFixed(1) + '°', 'VLA'],
@@ -417,11 +422,20 @@ function togglePanel(id) {
   const p = $(id), open = p.hidden;
   $(other).hidden = true; $('btn' + other[0].toUpperCase() + other.slice(1)).setAttribute('aria-expanded', 'false');
   p.hidden = !open; $('btn' + id[0].toUpperCase() + id.slice(1)).setAttribute('aria-expanded', String(open));
-  if (open && id === 'session') drawSession();
+  if (open && id === 'session') requestAnimationFrame(drawSession);
 }
 $('btnAdjust').onclick = () => togglePanel('adjust');
 $('btnSession').onclick = () => togglePanel('session');
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => togglePanel(b.dataset.close));
+// tapping the range closes an open sheet; tapping the readout shows the extra numbers
+renderer.domElement.addEventListener('pointerdown', () => { for (const id of ['adjust', 'session']) if (!$(id).hidden) togglePanel(id); });
+$('readout').addEventListener('click', () => $('readout').classList.toggle('more'));
+// portrait nudge (phones only; dismissible)
+const portraitPhone = matchMedia('(orientation: portrait) and (pointer: coarse)');
+let rotateDismissed = false;
+const syncRotate = () => { $('rotate').hidden = rotateDismissed || !portraitPhone.matches; };
+portraitPhone.addEventListener?.('change', syncRotate); syncRotate();
+$('rotateOk').onclick = () => { rotateDismissed = true; syncRotate(); };
 $('hit').onclick = () => swing();
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
@@ -451,26 +465,37 @@ function showReadout(r, shot, partial) {
 
 /* ---------- session panel ---------- */
 function drawSession() {
-  const cv = $('disp'), g = cv.getContext('2d'), W = cv.width, H = cv.height;
-  g.clearRect(0, 0, W, H);
+  // Size the canvas to its box; draw downrange to the right when the box is wide (landscape).
+  const cv = $('disp'), dpr = Math.min(devicePixelRatio || 1, 2);
+  const cw = Math.max(120, cv.clientWidth), ch = Math.max(120, cv.clientHeight);
+  if (cv.width !== Math.round(cw * dpr) || cv.height !== Math.round(ch * dpr)) { cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cw, ch);
+  const wide = cw > ch * 1.1;
   const maxYd = Math.max(140, ...state.shots.map(s => s.r.totalDown)) + 25;
-  const sx = W / 2, sy = H - 26, k = (H - 50) / maxYd;
-  g.font = '500 20px "Saira Semi Condensed", "Arial Narrow", sans-serif'; g.textAlign = 'left';
+  const maxLat = Math.max(20, ...state.shots.map(s => Math.abs(s.r.offline)), ...state.shots.map(s => Math.abs(s.r.carryOffline))) * 1.25;
+  const pad = 14, along = (wide ? cw : ch) - pad * 2 - 30, across = (wide ? ch : cw) - pad * 2;
+  const k = along / maxYd, kl = Math.min(k * 2, across / 2 / maxLat); // lateral can be stretched up to 2x so spread reads
+  const P = (d, l) => wide ? [pad + 22 + d * k, ch / 2 + l * kl] : [cw / 2 + l * kl, ch - pad - 22 - d * k];
+  g.font = '500 12px "Saira Semi Condensed", "Arial Narrow", sans-serif';
   for (let d = 50; d < maxYd; d += 50) {
-    const y = sy - d * k; g.strokeStyle = 'rgba(214,226,205,0.13)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(16, y); g.lineTo(W - 16, y); g.stroke();
-    g.fillStyle = 'rgba(163,181,156,0.85)'; g.fillText(d + ' yd', 18, y - 6);
+    const [x0, y0] = P(d, -maxLat), [x1, y1] = P(d, maxLat);
+    g.strokeStyle = 'rgba(214,226,205,0.13)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    g.fillStyle = 'rgba(163,181,156,0.85)'; g.textAlign = wide ? 'center' : 'left';
+    if (wide) g.fillText(d + ' yd', x0, ch - 4); else g.fillText(d + ' yd', 4, y0 - 4);
   }
-  g.strokeStyle = 'rgba(245,197,66,0.5)'; g.setLineDash([6, 8]); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx, 20); g.stroke(); g.setLineDash([]);
-  const cols = ['#ff8f6b', '#ffd36e', '#c5e478', '#7fe0b0', '#7fd3ff', '#9fa8ff', '#e09cff', '#ff9cc8'];
+  const [ax, ay] = P(0, 0), [tx, ty] = P(maxYd, 0);
+  g.strokeStyle = 'rgba(245,197,66,0.5)'; g.setLineDash([5, 7]); g.beginPath(); g.moveTo(ax, ay); g.lineTo(tx, ty); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#f1eee3'; g.beginPath(); g.arc(ax, ay, 3, 0, 7); g.fill();
   state.shots.forEach((s, i) => {
     const last = i === state.shots.length - 1;
-    const x = sx + s.r.offline * k * 1.6, y = sy - s.r.totalDown * k;
-    const lx = sx + s.r.carryOffline * k * 1.6, ly = sy - s.r.carry * k;
-    g.strokeStyle = 'rgba(241,238,227,0.18)'; g.lineWidth = 2; g.beginPath(); g.moveTo(lx, ly); g.lineTo(x, y); g.stroke();
-    g.fillStyle = cols[s.club]; g.globalAlpha = last ? 1 : 0.75; g.beginPath(); g.arc(x, y, last ? 9 : 6, 0, 7); g.fill(); g.globalAlpha = 1;
-    if (last) { g.strokeStyle = '#f1eee3'; g.lineWidth = 2.5; g.beginPath(); g.arc(x, y, 13, 0, 7); g.stroke(); }
+    const [x, y] = P(s.r.totalDown, s.r.offline), [lx, ly] = P(s.r.carry, s.r.carryOffline);
+    g.strokeStyle = 'rgba(241,238,227,0.2)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(lx, ly); g.lineTo(x, y); g.stroke();
+    g.fillStyle = CLUB_COLORS[s.club]; g.globalAlpha = last ? 1 : 0.8; g.beginPath(); g.arc(x, y, last ? 5.5 : 4, 0, 7); g.fill(); g.globalAlpha = 1;
+    if (last) { g.strokeStyle = '#f1eee3'; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, 8.5, 0, 7); g.stroke(); }
   });
-  g.fillStyle = 'rgba(163,181,156,0.85)'; g.textAlign = 'right'; g.fillText('lateral ×1.6', W - 18, H - 6);
+  g.fillStyle = 'rgba(163,181,156,0.85)'; g.textAlign = 'right';
+  if (kl / k > 1.05) g.fillText(`lateral ×${(kl / k).toFixed(1)}`, cw - 6, 14);
+  if (!state.shots.length) { g.textAlign = 'center'; g.fillStyle = 'rgba(241,238,227,0.7)'; g.font = '500 14px "Hanken Grotesk", sans-serif'; g.fillText('Hit a few shots to see your dispersion', cw / 2, ch / 2 - 18); }
   // gapping
   const by = {};
   state.shots.forEach(s => { (by[s.club] ||= []).push(s.r); });
@@ -578,6 +603,7 @@ function finishShot() {
   const f = state.flight, r = f.r;
   state.seq++;
   state.shots.push({ n: state.seq, club: state.club, r, shot: f.shot });
+  $('shotCount').textContent = state.shots.length === 1 ? '1 shot' : state.shots.length + ' shots';
   showReadout(r, f.shot, false);
   const end = r.pts.at(-1).p;
   restDisc.position.set(end[0], end[1] + 0.03, end[2]); restDisc.visible = true;
@@ -612,7 +638,7 @@ function cameraTarget(dt) {
   const flying = state.phase === 'flight' || state.phase === 'rest';
   if (mode === 'tracer') {
     // fixed, high behind the bay: the whole flight stays in frame and the tracers stack up
-    pos.set(0, 2.6, 14); look.set(0, 5, -150); fov = 40; k = 3;
+    pos.set(0, 2.2, 14); look.set(0, 6, -150); fov = 40; k = 3;
   } else if (mode === 'top') {
     const far = Math.max(150, ...state.shots.slice(-12).map(s => s.r.totalDown * 0.9144), f ? -f.r.pts.at(-1).p[2] : 0);
     const cz = -far * 0.5;
@@ -680,7 +706,8 @@ function frame(now) {
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
-window.__advance = (sec) => { for (let i = 0; i < sec * 30; i++) step(1 / 30); renderer.render(scene, camera); }; // test hook
+// test hooks: step the sim; pass everyFrame=N to render every Nth step like real play
+window.__advance = (sec, everyFrame) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (everyFrame && i % everyFrame === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
 function step(dt) {
   clock += dt;
   const f = state.flight;
@@ -742,18 +769,31 @@ function step(dt) {
     p.needsUpdate = true; fl.geometry.computeVertexNormals();
   }
   updateCamera(dt);
+  placeHitbar();
   // shadow box follows what the camera is looking at
   const focus = state.phase === 'idle' && state.camMode !== 'top' ? tmp.set(0, 0, -50) : tmp.copy(camState.look).lerp(camera.position, 0.35);
   focus.y = 0;
   sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(sunDir, 450);
 }
 
+// Keep the Hit button centred just under the ball while waiting for a swing.
+const hitbar = $('hitbar'), sabProbe = $('sabProbe'), hbV = new THREE.Vector3();
+function placeHitbar() {
+  if (state.phase !== 'idle' && hitbar.dataset.placed) return;
+  const H = innerHeight, hb = hitbar.offsetHeight || 46;
+  hbV.copy(ball.position).project(camera);
+  const ballY = (-hbV.y * 0.5 + 0.5) * H;
+  const onScreen = hbV.z < 1 && Math.abs(hbV.x) < 1 && ballY > 0 && ballY < H;
+  const maxTop = H - hb - 10 - sabProbe.offsetHeight;
+  const top = onScreen ? Math.min(maxTop, Math.max(H * 0.45, ballY + 14)) : maxTop;
+  hitbar.style.top = top.toFixed(0) + 'px'; hitbar.dataset.placed = '1';
+}
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines();
   ADDRESS.pos.set(0, 1.0, 4.2);
 }
-addEventListener('resize', resize);
+addEventListener('resize', () => { resize(); if (!$('session').hidden) drawSession(); });
 
 /* ===================== boot ===================== */
 buildGround(); buildTrees(); buildProps();

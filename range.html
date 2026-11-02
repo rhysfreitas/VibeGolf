@@ -20,62 +20,74 @@
 
 <div id="top">
   <div class="brand glass">
-    <b>WOODSON RANGE</b>
+    <b>Woodson Range</b>
     <button class="lm-btn status" id="lmBtn" title="Launch monitor"><i class="dot" id="lmDot"></i><span id="lmText">R10 offline · simulated swings</span></button>
   </div>
   <div class="tools glass">
     <a class="menu-link" href="./" title="Back to the menu" aria-label="Menu"><span class="mlong">Menu</span><span class="mshort" aria-hidden="true">‹</span></a>
     <div class="seg" role="group" aria-label="Camera">
       <button class="tbtn" data-cam="tracer" aria-pressed="true">Tracer</button>
-      <button class="tbtn" data-cam="auto" aria-pressed="false"><span class="long">Broadcast</span><span class="short">TV</span></button>
+      <button class="tbtn" data-cam="auto" aria-pressed="false">TV</button>
       <button class="tbtn" data-cam="follow" aria-pressed="false">Chase</button>
-      <button class="tbtn" data-cam="top" aria-pressed="false"><span class="long">Overhead</span><span class="short">Top</span></button>
+      <button class="tbtn" data-cam="top" aria-pressed="false">Top</button>
     </div>
     <button class="tbtn" id="sound" aria-pressed="true" title="Sound">Sound</button>
   </div>
 </div>
 
-<div id="dock">
-  <section id="readout" class="glass" aria-live="polite">
-    <div class="carry">
-      <span class="lbl">Carry</span>
-      <span class="num" id="vCarry">—<small>yd</small></span>
-      <span class="club"><span id="vClub">7 iron</span> <span class="src" id="vSrc">Sim</span></span>
+<!-- hit button sits centred just under the ball; script keeps it there -->
+<div id="hitbar">
+  <button class="chip" id="btnAdjust" aria-expanded="false" aria-controls="adjust" title="Club and shot settings">
+    <b id="chipClub">7i</b><span>Shot</span>
+  </button>
+  <button id="hit">Hit</button>
+  <span aria-hidden="true"></span>
+</div>
+
+<div id="rightDock">
+  <button class="chip wide" id="btnSession" aria-expanded="false" aria-controls="session">Session <span class="count" id="shotCount">0 shots</span></button>
+  <section id="readout" class="glass" aria-live="polite" title="Tap for more numbers">
+    <div class="carryRow">
+      <span class="num carryNum" id="vCarry">—<small>yd</small></span>
+      <span class="carryMeta"><span class="lbl">Carry</span><span class="clubName"><span id="vClub">7 iron</span> <span class="src" id="vSrc">Sim</span></span></span>
     </div>
     <div class="metrics">
       <div class="m"><span class="lbl">Total</span><span class="num" id="vTotal">—</span></div>
       <div class="m"><span class="lbl">Offline</span><span class="num" id="vOff">—</span></div>
       <div class="m"><span class="lbl">Apex</span><span class="num" id="vApex">—</span></div>
-      <div class="m launch"><span class="lbl">Descent</span><span class="num" id="vDesc">—</span></div>
-      <div class="m launch"><span class="lbl">Hang</span><span class="num" id="vHang">—</span></div>
-      <div class="m launch"><span class="lbl">Ball spd</span><span class="num" id="vSpd">—</span></div>
-      <div class="m launch"><span class="lbl">Launch</span><span class="num" id="vVla">—</span></div>
-      <div class="m launch"><span class="lbl">Direction</span><span class="num" id="vHla">—</span></div>
+      <div class="m"><span class="lbl">Ball spd</span><span class="num" id="vSpd">—</span></div>
+      <div class="m"><span class="lbl">Launch</span><span class="num" id="vVla">—</span></div>
       <div class="m"><span class="lbl">Spin</span><span class="num" id="vSpin">—</span></div>
-      <div class="m"><span class="lbl">Axis</span><span class="num" id="vAxis">—</span></div>
+      <div class="m x"><span class="lbl">Direction</span><span class="num" id="vHla">—</span></div>
+      <div class="m x"><span class="lbl">Axis</span><span class="num" id="vAxis">—</span></div>
+      <div class="m x"><span class="lbl">Descent</span><span class="num" id="vDesc">—</span></div>
+      <div class="m x"><span class="lbl">Hang</span><span class="num" id="vHang">—</span></div>
     </div>
   </section>
-  <div id="controls">
-    <div class="clubs glass" role="group" aria-label="Club" id="clubs"></div>
-    <div class="actions">
-      <button class="ghost" id="btnAdjust" aria-expanded="false" aria-controls="adjust">Adjust</button>
-      <button class="ghost" id="btnSession" aria-expanded="false" aria-controls="session">Session</button>
-      <button id="hit">Hit<kbd>space</kbd></button>
-    </div>
-  </div>
 </div>
 
-<aside class="panel glass" id="adjust" hidden aria-label="Adjust shot">
-  <h2>Shot data <button class="x" data-close="adjust" aria-label="Close">×</button></h2>
+<aside class="sheet left glass" id="adjust" hidden aria-label="Club and shot settings">
+  <h2>Club &amp; shot <button class="x" data-close="adjust" aria-label="Close">×</button></h2>
   <div class="group">
-    <p class="note">Simulated swings use these numbers. A live R10 feed replaces them shot by shot.</p>
+    <div class="clubs" role="group" aria-label="Club" id="clubs"></div>
+  </div>
+  <div class="group">
+    <span class="lbl">Simulated swing</span>
+    <p class="note">Hit uses these numbers. A live R10 shot replaces them.</p>
     <div class="row"><label for="sSpeed">Ball speed</label><output id="oSpeed"></output><input type="range" id="sSpeed" min="50" max="190" step="0.5"></div>
     <div class="row"><label for="sVla">Launch angle</label><output id="oVla"></output><input type="range" id="sVla" min="2" max="40" step="0.1"></div>
     <div class="row"><label for="sHla">Launch direction</label><output id="oHla"></output><input type="range" id="sHla" min="-10" max="10" step="0.1"></div>
     <div class="row"><label for="sSpin">Total spin</label><output id="oSpin"></output><input type="range" id="sSpin" min="1200" max="12000" step="10"></div>
     <div class="row"><label for="sAxis">Spin axis</label><output id="oAxis"></output><input type="range" id="sAxis" min="-30" max="30" step="0.5"></div>
     <label class="switch" for="sVar"><span>Natural dispersion<br><span class="note">Each swing varies like a real one</span></span><input type="checkbox" id="sVar" checked></label>
-    <button class="ghost" id="btnReset" style="min-height:40px">Reset to club averages</button>
+    <button class="ghost" id="btnReset">Reset to club averages</button>
+  </div>
+  <div class="group">
+    <span class="lbl">Tracer</span>
+    <div class="swatches" id="tracerSw"></div>
+    <div class="row"><label for="sKeep">Tracers on screen</label>
+      <select id="sKeep"><option value="1">Last shot</option><option value="5">Last 5</option><option value="10">Last 10</option><option value="25">Last 25</option><option value="100">Whole session</option></select></div>
+    <button class="ghost" id="btnClear">Clear tracers</button>
   </div>
   <div class="group">
     <span class="lbl">Conditions</span>
@@ -86,13 +98,8 @@
     <div class="seg" role="group" aria-label="Time of day" id="sunSeg">
       <button class="tbtn" data-sun="morning" aria-pressed="false">Morning</button>
       <button class="tbtn" data-sun="midday" aria-pressed="false">Midday</button>
-      <button class="tbtn" data-sun="golden" aria-pressed="true">Golden hour</button>
+      <button class="tbtn" data-sun="golden" aria-pressed="true">Golden</button>
     </div>
-    <span class="lbl">Tracer</span>
-    <div class="swatches" id="tracerSw"></div>
-    <div class="row"><label for="sKeep">Tracers on screen</label>
-      <select id="sKeep"><option value="1">Last shot</option><option value="5">Last 5</option><option value="10">Last 10</option><option value="25">Last 25</option><option value="100">Whole session</option></select></div>
-    <button class="ghost" id="btnClear" style="min-height:40px">Clear tracers</button>
   </div>
   <div class="group">
     <span class="lbl">Flight model trim</span>
@@ -102,19 +109,30 @@
   </div>
 </aside>
 
-<aside class="panel glass" id="session" hidden aria-label="Session">
+<aside class="sheet right glass" id="session" hidden aria-label="Session">
   <h2>Session <button class="x" data-close="session" aria-label="Close">×</button></h2>
-  <canvas id="disp" width="600" height="630" aria-label="Dispersion, top-down"></canvas>
-  <div class="group">
-    <span class="lbl">Gapping</span>
-    <div id="gapping"></div>
+  <div class="sessionBody">
+    <canvas id="disp" width="600" height="630" aria-label="Dispersion, top-down"></canvas>
+    <div class="sessionSide">
+      <div class="group">
+        <span class="lbl">Gapping</span>
+        <div id="gapping"></div>
+      </div>
+      <div class="group">
+        <span class="lbl">Shots</span>
+        <div class="shots" id="shotList"></div>
+      </div>
+      <button class="ghost" id="btnClear2">Clear tracers</button>
+    </div>
   </div>
-  <div class="group">
-    <span class="lbl">Shots</span>
-    <div class="shots" id="shotList"></div>
-  </div>
-  <button class="ghost" id="btnClear2" style="min-height:40px">Clear tracers</button>
 </aside>
+
+<div id="rotate" class="glass" hidden>
+  <b>Turn your phone sideways</b>
+  <span>VibeGolf is laid out for landscape, like a launch monitor setup.</span>
+  <button class="ghost" id="rotateOk">Continue anyway</button>
+</div>
+<i id="sabProbe" aria-hidden="true"></i>
 
 <div class="tag" id="tagLand" hidden></div>
 <div class="tag" id="tagRest" hidden></div>
