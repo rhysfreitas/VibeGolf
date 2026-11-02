@@ -84,6 +84,8 @@ export function createMinimap(canvas) {
 
   // d = { ball:{x,z}, ballVisible, aim:{land:{x,z}, rest:{x,z}|null, color, lat, dep, yaw}|null, tracks:[[{x,z}]], live:[{x,z}] }
   function draw(d) {
+    const r = canvas.getBoundingClientRect();                 // re-fit if the box changed (rotation)
+    if (Math.round(r.width) !== W || Math.round(r.height) !== H) size();
     if (!view || !staticLayer) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);

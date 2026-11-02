@@ -1083,13 +1083,26 @@ function step(dt) {
   if (state.phase === 'address' || state.phase === 'putt') focus.copy(state.ball).addScaledVector(dirFromYaw(state.yaw), 60);
   sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(sunDir, 600);
 }
-function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
+function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; fitToScreen(); step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 // test hooks: step the sim; pass everyFrame=N to render every Nth step like real play
 window.__advance = (sec, everyFrame) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (everyFrame && i % everyFrame === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
 window.__state = state; window.__startHole = i => startHole(i);
 
-function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines(); }
-addEventListener('resize', resize);
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; fitW = w; fitH = h; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines(); minimap.resize(); }
+// Fit the renderer to the screen. Phones (iOS especially) fire 'resize' on rotation before
+// the new layout is measurable, so besides the events we compare the real size every frame
+// and re-fit the moment it changes. That keeps the scene from staying stretched or squashed.
+let fitW = 0, fitH = 0;
+function fitToScreen() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h || (w === fitW && h === fitH)) return false;
+  fitW = w; fitH = h; resize(); return true;
+}
+const refit = () => { fitToScreen(); requestAnimationFrame(fitToScreen); setTimeout(fitToScreen, 250); setTimeout(fitToScreen, 700); };
+addEventListener('orientationchange', refit);
+if (window.visualViewport) visualViewport.addEventListener('resize', refit);
+if (window.ResizeObserver) new ResizeObserver(refit).observe(stage);
+addEventListener('resize', refit);
 
 /* ===================== boot ===================== */
 resize();
