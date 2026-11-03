@@ -5,6 +5,8 @@ import { simulate } from '../physics.js';
 import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createDeadFarm } from './scenes/dead-farm.js';
+import { createHorde } from './zombie-horde.js';
+import { createAmbience } from './night-ambience.js';
 import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
 import {
@@ -15,7 +17,8 @@ import {
 const stage = document.getElementById('stage');
 const world = createDeadFarm(stage);
 const { renderer, scene, camera, groundAt } = world;
-const sv = createShotView(world, { tracerColor: '#ffd59a' });
+// stand a little taller with a slightly longer lens, so the field reads at night instead of squeezing into the horizon
+const sv = createShotView(world, { tracerColor: '#ffd59a', stance: { back: 5.5, up: 3.4, ballAt: 0.92, fov: 38 } });
 
 const kit = createKit({
   id: 'zombie-siege', title: 'Zombie Siege', accent: '#9dff5a', mode: 'run', idealShot: true, clubs: CLUBS,
@@ -32,39 +35,11 @@ const kit = createKit({
 });
 const fmtTime = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-/* ===================== zombie models ===================== */
-const skin = [0x7d8f6a, 0x8a9a74, 0x6e7f5c, 0x94a07a], cloth = [0x3d4652, 0x5a4636, 0x4a3a4a, 0x2f3a2f, 0x6a5a40, 0x50303a];
-const box = (w, h, d, ty = 0) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, ty, 0); return g; };
-const GEO = { leg: box(0.2, 0.85, 0.22, -0.42), torso: box(0.5, 0.7, 0.3, 0.35), arm: box(0.15, 0.7, 0.15, -0.33), head: box(0.3, 0.32, 0.3, 0.16), belly: new THREE.SphereGeometry(0.42, 12, 10), eye: new THREE.SphereGeometry(0.035, 6, 4) };
-const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffe25a, toneMapped: false });
-const matCache = {};
-const mat = (c, extra) => { const k = c + (extra || ''); return matCache[k] || (matCache[k] = new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 })); };
-
-function makeZombie(z) {
-  const T = TYPES[z.type], g = new THREE.Group(), r = () => Math.random();
-  const skinC = z.type === 'bloater' ? 0x9ab04a : skin[Math.floor(r() * skin.length)];
-  const shirt = z.type === 'tank' ? 0x2a2a30 : cloth[Math.floor(r() * cloth.length)], pants = cloth[Math.floor(r() * cloth.length)];
-  // each zombie gets its own materials so it can tint (wounded / frozen) on its own
-  const mSkin = new THREE.MeshStandardMaterial({ color: skinC, roughness: 0.9 }), mShirt = new THREE.MeshStandardMaterial({ color: shirt, roughness: 1 }), mPants = new THREE.MeshStandardMaterial({ color: pants, roughness: 1 });
-  const hips = new THREE.Group(); hips.position.y = 0.9; g.add(hips);
-  const legL = new THREE.Mesh(GEO.leg, mPants), legR = new THREE.Mesh(GEO.leg, mPants); legL.position.x = -0.13; legR.position.x = 0.13; hips.add(legL, legR);
-  const torso = new THREE.Group(); hips.add(torso);
-  const body = z.type === 'bloater' ? new THREE.Mesh(GEO.belly, mSkin) : new THREE.Mesh(GEO.torso, mShirt);
-  if (z.type === 'bloater') { body.position.y = 0.35; body.scale.set(1.15, 1.05, 1.1); } torso.add(body);
-  const head = new THREE.Mesh(GEO.head, mSkin); head.position.y = z.type === 'bloater' ? 0.78 : 0.72; torso.add(head);
-  for (const ex of [-0.07, 0.07]) { const e = new THREE.Mesh(GEO.eye, eyeMat); e.position.set(ex, 0.19, 0.155); head.add(e); }
-  const armL = new THREE.Mesh(GEO.arm, mSkin), armR = new THREE.Mesh(GEO.arm, mSkin);
-  armL.position.set(-0.33, 0.62, 0); armR.position.set(0.33, 0.62, 0); torso.add(armL, armR);
-  const s = T.scale * (z.type === 'tank' ? 1 : 0.95 + r() * 0.12); g.scale.setScalar(s);
-  if (z.type === 'tank') { body.scale.set(1.5, 1.15, 1.4); armL.scale.set(1.5, 1.1, 1.5); armR.scale.set(1.5, 1.1, 1.5); armL.position.x = -0.45; armR.position.x = 0.45; }
-  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  g.rotation.y = Math.PI; // face the tee
-  g.userData = { z, hips, torso, head, legL, legR, armL, armR, mats: [mSkin, mShirt, mPants], base: s, ph: r() * 6, dead: null };
-  g.visible = false;
-  scene.add(g);
-  return g;
-}
-const tint = (g, hex, k) => g.userData.mats.forEach(m => m.emissive.setHex(hex).multiplyScalar(k));
+/* ===================== zombies and night sounds ===================== */
+const horde = createHorde(scene, { groundAt, camera, renderer });
+const amb = createAmbience(() => kit.sfx.on);
+world.onThunder = d => amb.thunder(d);
+world.onSpark = () => amb.crackle();
 
 /* ===================== effects ===================== */
 const sparkTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.3, 'rgba(255,255,255,0.7)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); })();
@@ -82,7 +57,7 @@ function particles(at, { n = 120, colors = [0xffb040, 0xff5a20], speed = 14, up 
   const p = new THREE.Points(geo, m); p.frustumCulled = false; p.renderOrder = 5; scene.add(p);
   fx.push({ kind: 'pts', obj: p, vel, age: 0, life, gravity, size });
 }
-const flash = new THREE.PointLight(0xffa040, 0, 120, 1.6); scene.add(flash);
+const flash = new THREE.PointLight(0xffa040, 0, 220, 1.4); scene.add(flash);
 let flashT = 0, shake = 0;
 const ringGeo = new THREE.RingGeometry(0.92, 1, 64).rotateX(-Math.PI / 2);
 function explosion(at, radiusM, { big = true } = {}) {
@@ -100,7 +75,10 @@ function explosion(at, radiusM, { big = true } = {}) {
   sc.position.set(at.x, groundAt(at.x, at.z) + 0.05, at.z); scene.add(sc); fx.push({ kind: 'scorch', obj: sc, age: 0, life: 14 });
   particles(at, { n: big ? 180 : 70, speed: Math.max(8, radiusM * 0.9), up: 14, size: big ? 2.6 : 1.4 });
   particles(at, { n: 70, colors: [0x3a2c20, 0x5a4630], speed: Math.max(6, radiusM * 0.6), up: 14, size: 1.2, life: 1.8, additive: false });
-  flash.position.set(at.x, at.y + 4, at.z); flash.intensity = big ? 9 : 4; flashT = 0.5;
+  flash.position.set(at.x, at.y + 4, at.z); flash.intensity = big ? 14 : 6; flashT = 0.5;
+  world.flashFog(at, big ? 1.6 : 0.8);
+  // at night a blast leaves a little fire burning for a few seconds
+  world.addFire(at.x + (Math.random() - 0.5) * 2, at.z + (Math.random() - 0.5) * 2, { life: big ? 7 : 4, size: big ? 0.9 : 0.6, rate: big ? 34 : 20, glowSize: big ? 5 : 3 });
   shake = Math.max(shake, big ? 0.35 : 0.15);
   kit.sfx.boom();
 }
@@ -136,7 +114,7 @@ function makeCrateObj(c) {
 
 /* ===================== state ===================== */
 const G = {
-  zombies: [], models: new Map(), crates: [], wave: 0, waveT: 0, nextWaveIn: 0, hp: FENCE_HP, time: 0, running: false,
+  zombies: [], crates: [], wave: 0, waveT: 0, nextWaveIn: 0, hp: FENCE_HP, time: 0, running: false,
   frozen: 0, target: null, custom: null, solve: null, solveKey: '', lastBlast: null, land: null, airstrike: null, over: false,
 };
 let blastYd = 12;
@@ -149,8 +127,7 @@ const chevron = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.4, 4), new THREE.Me
 reticle.renderOrder = reticleDot.renderOrder = 7; scene.add(reticle, reticleDot, beacon, chevron); reticle.visible = reticleDot.visible = beacon.visible = chevron.visible = false;
 
 function resetRun() {
-  for (const g of G.models.values()) scene.remove(g);
-  G.models.clear(); G.zombies = [];
+  horde.clear(); G.zombies = [];
   for (const c of G.crates) scene.remove(c.obj); G.crates = [];
   Object.assign(G, { wave: 0, waveT: 0, nextWaveIn: 2.5, hp: FENCE_HP, time: 0, running: true, frozen: 0, custom: null, lastBlast: null, land: null, airstrike: null, over: false });
   world.setFenceDamage(0); renderFence();
@@ -161,7 +138,8 @@ function resetRun() {
 function startWave() {
   G.wave++; G.waveT = 0;
   const list = waveSpawns(G.wave);
-  for (const z of list) { G.zombies.push(z); G.models.set(z.id, makeZombie(z)); }
+  for (const z of list) { G.zombies.push(z); horde.add(z); }
+  amb.bell();
   kit.statMax('wave', G.wave);
   kit.splash(`WAVE ${G.wave}`, { sub: G.wave % 3 === 0 ? 'Horde incoming' : `${list.length} zombies` });
   kit.sfx.tone(110, { len: 0.9, vol: 0.25, type: 'sawtooth', slide: 0.6 });
@@ -276,7 +254,7 @@ function blast(at) {
   (G.log = G.log || []).push({ tx: G.target && Math.round(G.target.x), tz: G.target && Math.round(G.target.z), lx: Math.round(at.x), lz: Math.round(at.z), k: res.kills.length, near: Math.round(res.nearestYd), src: G.shot.src }); // for tuning
   const pts = blastPoints(res);
   for (const z of res.kills) killZombie(z, at);
-  for (const z of res.wounded) { const m = G.models.get(z.id); if (m) { tint(m, 0xff2010, 0.6); m.userData.wounded = true; } }
+  for (const z of res.wounded) horde.wound(z.id);
   // bloater chain bursts get their own little booms
   res.chain.filter(z => z.type === 'bloater').forEach((z, i) => setTimeout(() => explosion(new THREE.Vector3(z.x, 0.8, z.z), CHAIN_YD * YD * 0.7, { big: false }), 180 + i * 140));
   let total = 0;
@@ -308,17 +286,15 @@ function blast(at) {
 }
 
 function killZombie(z, from) {
-  const m = G.models.get(z.id); if (!m) return;
-  const dir = new THREE.Vector3(z.x - from.x, 0, z.z - from.z); const d = dir.length() || 1; dir.divideScalar(d);
-  const power = Math.max(4, 16 - d * 0.8);
-  m.userData.dead = { v: dir.multiplyScalar(power).add(new THREE.Vector3(0, 6 + Math.random() * 6, 0)), spin: new THREE.Vector3((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 10), t: 0, landed: false };
+  if (!horde.has(z.id)) return;
+  horde.kill(z.id, from);
   goo(new THREE.Vector3(z.x, 1.2, z.z));
 }
 
 function grabCrate(c) {
   c.alive = false; scene.remove(c.obj); kit.stat('crates'); kit.sfx.star();
   if (c.kind === 'repair') { G.hp = Math.min(FENCE_HP, G.hp + CRATES.repair.hp); world.setFenceDamage(1 - G.hp / FENCE_HP); renderFence(); kit.splash('REPAIRED', { sub: `Fence +${CRATES.repair.hp}%` }); }
-  if (c.kind === 'freeze') { G.frozen = CRATES.freeze.seconds; for (const m of G.models.values()) if (!m.userData.dead) tint(m, 0x40c0ff, 0.5); kit.splash('FREEZE', { sub: `${CRATES.freeze.seconds} seconds` }); kit.sfx.tone(2600, { len: 0.6, vol: 0.12, slide: 0.5 }); }
+  if (c.kind === 'freeze') { G.frozen = CRATES.freeze.seconds; kit.splash('FREEZE', { sub: `${CRATES.freeze.seconds} seconds` }); kit.sfx.tone(2600, { len: 0.6, vol: 0.12, slide: 0.5 }); }
   if (c.kind === 'airstrike') {
     const lane = bestLane(G.zombies); G.airstrike = { lane, t: -1.2, n: 0 };
     kit.splash('AIRSTRIKE', { sub: ['Left', 'Centre', 'Right'][lane] + ' lane' });
@@ -354,7 +330,7 @@ kit.on('turn', () => { sv.address(false); updateTarget(true); });
 function stepGame(dt) {
   if (!G.running || G.over || kit.phase === 'setup' || kit.phase === 'over') return;
   G.time += dt; kit.player.stats.time = G.time;
-  if (G.frozen > 0) { G.frozen -= dt; if (G.frozen <= 0) for (const m of G.models.values()) if (!m.userData.dead) tint(m, m.userData.wounded ? 0xff2010 : 0x000000, m.userData.wounded ? 0.6 : 0); }
+  if (G.frozen > 0) G.frozen -= dt;
   // waves
   if (G.nextWaveIn > 0) { G.nextWaveIn -= dt; if (G.nextWaveIn <= 0) startWave(); }
   else {
@@ -367,7 +343,7 @@ function stepGame(dt) {
     } else if (G.waveT > WAVE_TIMEOUT) G.nextWaveIn = 0.01;
   }
   const out = stepZombies(G.zombies, dt, { frozen: G.frozen > 0 });
-  for (const id of out.bursts) { const z = G.zombies.find(q => q.id === id); explosion(new THREE.Vector3(z.x, 0.8, z.z), 6, { big: false }); const m = G.models.get(id); if (m) killZombie(z, new THREE.Vector3(z.x, 0, z.z - 2)); }
+  for (const id of out.bursts) { const z = G.zombies.find(q => q.id === id); explosion(new THREE.Vector3(z.x, 0.8, z.z), 6, { big: false }); killZombie(z, new THREE.Vector3(z.x, 0, z.z - 2)); }
   if (out.damage > 0) { G.hp -= out.damage; world.setFenceDamage(1 - Math.max(0, G.hp) / FENCE_HP); renderFence(); if (Math.random() < dt * 3) kit.sfx.noise(0.12, 500, 0.15); }
   stepAirstrike(dt);
   const left = G.zombies.filter(z => z.alive).length;
@@ -389,36 +365,9 @@ function fenceFalls() {
 /* ===================== zombie animation ===================== */
 const tmpV = new THREE.Vector3();
 function animateZombies(dt, t) {
-  const H = innerHeight, tanF = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-  for (const [id, m] of G.models) {
-    const u = m.userData, z = u.z;
-    if (u.dead) {
-      const D = u.dead; D.t += dt;
-      if (!D.landed) { D.v.y -= 22 * dt; m.position.addScaledVector(D.v, dt); m.rotation.x += D.spin.x * dt; m.rotation.z += D.spin.z * dt; if (m.position.y <= 0.1 && D.v.y < 0) { D.landed = true; m.position.y = 0.1; m.rotation.x = Math.PI / 2 * Math.sign(m.rotation.x || 1); } }
-      else m.position.y -= dt * 0.5;
-      if (D.t > 3.5) { scene.remove(m); G.models.delete(id); }
-      continue;
-    }
-    if (z.delay > 0) { m.visible = false; continue; }
-    m.visible = true;
-    m.position.set(z.x, groundAt(z.x, z.z), z.z);
-    // keep far zombies a readable size on a phone screen
-    const d = camera.position.distanceTo(m.position), px = 1.8 * u.base * H / (2 * tanF * d);
-    m.scale.setScalar(u.base * Math.max(1, 18 / px));
-    if (G.frozen > 0) continue;
-    const ph = t * (z.type === 'tank' ? 4 : 5.5) + u.ph;
-    if (z.state === 'walk') {
-      u.legL.rotation.x = Math.sin(ph) * 0.55; u.legR.rotation.x = -Math.sin(ph) * 0.55;
-      u.armL.rotation.x = -1.35 + Math.sin(ph * 0.5) * 0.15; u.armR.rotation.x = -1.4 + Math.cos(ph * 0.5) * 0.15;
-      u.torso.rotation.x = 0.18 + Math.sin(ph * 2) * 0.04; u.torso.rotation.z = Math.sin(ph) * 0.08; u.head.rotation.z = 0.25 * Math.sin(ph * 0.3 + u.ph);
-      u.hips.position.y = 0.9 + Math.abs(Math.sin(ph)) * 0.04;
-    } else { // clawing at the fence
-      u.legL.rotation.x = u.legR.rotation.x = 0;
-      u.armL.rotation.x = -1.6 + Math.sin(ph * 2.2) * 0.6; u.armR.rotation.x = -1.6 + Math.cos(ph * 2.2) * 0.6;
-      u.torso.rotation.x = 0.35 + Math.sin(ph * 2.2) * 0.08;
-    }
-    if (u.wounded) tint(m, 0xff2010, 0.4 + 0.3 * Math.sin(t * 8));
-  }
+  horde.update(dt, t, { frozen: G.frozen > 0 });
+  const live = active(G.zombies); let nearest = Infinity; for (const z of live) nearest = Math.min(nearest, FENCE_Z - z.z);
+  amb.update(dt, { count: live.length, nearest });
   for (const c of G.crates) if (c.alive && c.beam) { c.beam.material.opacity = 0.18 + 0.12 * Math.sin(t * 3 + c.id); c.obj.rotation.y += dt * 0.6; }
 }
 
@@ -454,7 +403,7 @@ function step(dt) {
 }
 function frame(now) { const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; fitToScreen(); step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 window.__advance = (sec, n) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (n && i % n === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
-window.__zs = G; window.__kit = kit;
+window.__zs = G; window.__kit = kit; window.__horde = horde; window.__world = world;
 
 resize();
 sv.address(false);

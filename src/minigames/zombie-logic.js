@@ -6,6 +6,7 @@ export const YD = 0.9144;
 export const FENCE_Z = -14;            // ≈15 yd in front of the tee
 export const SPAWN_Z = [-275, -255];   // edge of the cornfield, ≈280–300 yd
 export const FIELD_X = 52;             // zombies spawn within ±this
+export const GRAVEYARD = { x: [-48, -28], z: [-250, -238] }; // a family plot in front of the corn: some walkers climb out of it
 export const DIRECT_YD = 2;            // landing this close to a zombie is a DIRECT HIT
 export const CHAIN_YD = 8;             // a bloater's burst radius
 export const FENCE_HP = 100;
@@ -60,7 +61,11 @@ export function waveSpawns(n, rand = Math.random) {
   const walkers = Math.round((3 + 2 * n) * k), packs = n >= 2 ? Math.round((n >= 5 ? 2 : 1) * k) : 0;
   const tanks = n >= 3 ? Math.round(Math.floor((n - 1) / 2) * k) : 0, bloaters = n >= 2 ? Math.round(Math.ceil(n / 2) * k) : 0;
   const spread = 34; // seconds over which a wave walks out of the corn (a real swing comes every ~20 s)
-  for (let i = 0; i < walkers; i++) { const [x, z] = at(); list.push(spawnOne('walker', x, z, rand, { delay: rand() * spread })); }
+  const grave = () => [GRAVEYARD.x[0] + rand() * (GRAVEYARD.x[1] - GRAVEYARD.x[0]), GRAVEYARD.z[0] + rand() * (GRAVEYARD.z[1] - GRAVEYARD.z[0])];
+  for (let i = 0; i < walkers; i++) {
+    const fromGrave = rand() < 0.25, [x, z] = fromGrave ? grave() : at();
+    list.push(spawnOne('walker', x, z, rand, { delay: rand() * spread, grave: fromGrave }));
+  }
   for (let p = 0; p < packs; p++) {
     const [x, z] = at(), size = 5 + Math.floor(rand() * 2), d = rand() * spread, pid = nextId;
     for (let i = 0; i < size; i++) list.push(spawnOne('pack', x + (rand() - 0.5) * 9, z + (rand() - 0.5) * 9, rand, { delay: d, pack: pid, speed: TYPES.pack.speed }));

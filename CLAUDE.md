@@ -32,6 +32,7 @@ How a mini game is put together (Shape It is the reference):
 - Each game has its own scene in `src/minigames/scenes/`, built on `src/world/stage.js` (renderer, sky, sun, fog, noise helpers, `terrainMesh`). A scene returns `{ renderer, scene, camera, sunDir, groundAt, surfaceAt, aimShadows, animate }`. Range-like games can use `src/world/range-world.js` instead.
 - `src/world/shot-view.js` gives every range-based game the ball, shadow, growing tracer, flight playback and stand-over-ball camera (`stance: { back, up, ballAt }` raises the view for games like Island Hopper where targets sit below you; `fov` narrows the lens so far targets read bigger, as in Golf HORSE).
 - `src/minigames/aim.js` `solveShot()` finds ball data that reaches a target for simulated Hit / Ideal shot. Measure carry as true distance to the landing point, not downrange `r.carry`, or wide targets go badly wrong.
+- Draw crowds with instanced meshes, one draw per body part, as Zombie Siege does in `src/minigames/zombie-horde.js`, not a group of meshes per character.
 - Keep game rules pure in `<game>-logic.js` and test them in `tests/` (see `tests/shape-it.test.mjs`).
 - Simulated swings should miss like a decent amateur (start direction σ≈3°, spin axis σ≈6.5°), so Beginner is generous but not automatic.
 - Real-time `setTimeout` gaps between shots mean headless tests need `WAIT` steps between swings, not just `__advance`.

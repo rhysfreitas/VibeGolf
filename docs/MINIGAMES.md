@@ -13,7 +13,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 | Game | Scene |
 |---|---|
 | Shape It | **Sunset Mesa**: a fairway on a red-rock mesa high above a desert valley, pink and violet sunset sky, so the glowing rings pop. |
-| Zombie Siege | **Dead farm at dusk**: ground fog, a blood-orange moon, a sagging barn, dead trees, crows on the fence, flickering floodlights; zombies shamble out of a cornfield. |
+| Zombie Siege | **Dead farm at night**: a huge low moon, stars and drifting clouds, distant lightning. Floodlights cut beams through rolling ground fog. Your fence has sandbags, barbed wire and burning barrels, and the field has an overturned pickup with its headlights on, a burning tractor, a graveyard some zombies climb out of, a barn, an abandoned farmhouse, a windmill, jack-o'-lanterns and a far church steeple. Synthesised night sounds (wind, crickets, groans that grow as they near, crows, thunder, a bell each wave). Spooky, not gory. |
 | Carnival Booth | **Night fairground**: string lights, a striped tent behind the booth, a Ferris wheel turning on the horizon. |
 | Island Hopper | **The Aerie**'s floating sky world. |
 | Golf HORSE | **The Cul-de-sac**: a giant suburban cul-de-sac just after sunset under Topgolf-style floodlights. You hit from a bay on the first garage roof. Seven LED target rings sit in the street and lawns, a basketball court is painted in the bulb under a giant driveway hoop, and a basketball scoreboard shows the call. |
