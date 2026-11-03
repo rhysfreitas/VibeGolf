@@ -261,7 +261,7 @@ diffuseColor.rgb = c;
     floodU.push(new THREE.Vector4(aim[0], aim[1], len * 0.2, 1));
     return f;
   }
-  flood(-58, FENCE_Z + 3, [-20, -50]); flood(58, FENCE_Z + 3, [24, -98]);
+  flood(-58, FENCE_Z + 3, [-20, -50]); flood(58, FENCE_Z + 3, [12, -106]);
   flood(-72, -140, [-16, -165], 24); flood(74, -150, [26, -232], 24).flicker = true;
 
   /* ---------------- rolling ground fog, lit by the floodlights and fires ---------------- */
@@ -571,20 +571,58 @@ diffuseColor.rgb = c;
   for (let i = 0; i < 7; i++) { const b = new THREE.Sprite(new THREE.SpriteMaterial({ map: batTex, fog: false, depthWrite: false, transparent: true })); b.visible = false; scene.add(b); bats.push({ s: b, ph: R() * 6, off: new THREE.Vector3((R() - 0.5) * 50, (R() - 0.5) * 30, (R() - 0.5) * 20) }); }
   let batT = 6, batRun = null;
 
-  /* ---------------- lit yardage signs every 50 yd (both sides, sized to read from the tee) ---------------- */
-  const signs = [];
+  /* ---------------- yardage headstones every 50 yd, lit by candles at their feet ---------------- */
+  // The number is carved into the stone and catches a little candlelight, so it reads without
+  // shouting. Real size up close; far ones grow with distance so the carving stays readable.
+  function stoneTextures(text) {
+    const W = 256, H = 352, cv = document.createElement('canvas'), em = document.createElement('canvas');
+    cv.width = em.width = W; cv.height = em.height = H;
+    const g = cv.getContext('2d'), e = em.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#5a5c5c'); gr.addColorStop(1, '#3c3e3e'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(${R() < 0.5 ? '30,30,30' : '200,200,195'},${0.04 + R() * 0.08})`; g.fillRect(R() * W, R() * H, 1 + R() * 3, 1 + R() * 3); }
+    for (let i = 0; i < 14; i++) { g.fillStyle = `rgba(40,44,30,${0.08 + R() * 0.12})`; g.beginPath(); g.ellipse(R() * W, H - R() * 70, 10 + R() * 30, 5 + R() * 14, 0, 0, 7); g.fill(); } // moss and grime at the foot
+    g.strokeStyle = 'rgba(30,30,30,0.45)'; g.lineWidth = 1.5; g.beginPath(); let cx = W * (0.2 + R() * 0.6), cy = 0; g.moveTo(cx, cy); for (let i = 0; i < 7; i++) { cx += (R() - 0.5) * 30; cy += 18 + R() * 18; g.lineTo(cx, cy); } g.stroke(); // a crack
+    const carve = (ctx, fill, shadow) => {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.font = `700 ${text.length > 2 ? 150 : 170}px "Cormorant SC", "Cormorant Garamond", Georgia, serif`;
+      if (shadow) { ctx.fillStyle = 'rgba(210,210,205,0.3)'; ctx.fillText(text, W / 2 + 2, 222 + 3); }   // lit lower lip of the groove
+      ctx.fillStyle = fill; ctx.fillText(text, W / 2, 222);
+      ctx.font = '700 34px "Cormorant SC", "Cormorant Garamond", Georgia, serif'; ctx.fillText('YDS', W / 2, 270);
+      ctx.fillRect(W * 0.32, 84, W * 0.36, 3);
+    };
+    carve(g, '#121212', true);
+    // glow: candlelight washing up the stone from below, catching in the carving
+    e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
+    const up = e.createLinearGradient(0, H, 0, H * 0.35); up.addColorStop(0, 'rgba(255,150,60,0.55)'); up.addColorStop(1, 'rgba(255,150,60,0)'); e.fillStyle = up; e.fillRect(0, 0, W, H);
+    carve(e, 'rgba(255,170,90,0.85)', false);
+    const tex = c => { const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; t.repeat.set(1 / 0.8, 1 / 1.1); t.offset.set(0.5, 0); return t; };
+    return { map: tex(cv), emissiveMap: tex(em) };
+  }
+  const arch = new THREE.Shape(); arch.moveTo(-0.4, 0); arch.lineTo(0.4, 0); arch.lineTo(0.4, 0.72); arch.absarc(0, 0.72, 0.4, 0, Math.PI, false); arch.lineTo(-0.4, 0);
+  const ydStoneGeo = new THREE.ExtrudeGeometry(arch, { depth: 0.18, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 2, curveSegments: 16 });
+  const decalTex = radialTex([[0, 'rgba(255,170,90,0.5)'], [0.5, 'rgba(255,150,70,0.14)'], [1, 'rgba(255,140,60,0)']]);
+  const candleGeo = new THREE.CylinderGeometry(0.035, 0.038, 1, 8); candleGeo.translate(0, 0.5, 0);
+  const candleMat = std(0xe8dcc0, { emissive: 0x3a2410 }), flameGeo = new THREE.SphereGeometry(0.03, 6, 5); flameGeo.scale(0.8, 1.7, 0.8);
+  const signs = [], candleFlames = [];
+  // spread by angle from the tee so a near stone never hides a far one; the right side stays inside the map panel
+  const ANG = { left: { 50: 28, 100: 24, 150: 20, 200: 17, 250: 15 }, right: { 50: 20, 100: 18, 150: 15.5, 200: 13.5, 250: 12 } };
   [50, 100, 150, 200, 250].forEach(yd => {
     for (const side of [-1, 1]) {
-      // spread by angle from the tee so near signs never hide far ones, and clear of the side panels
-      const z = -yd * YD, ang = { 50: 24, 100: 20, 150: 16.5, 200: 14, 250: 12 }[yd] * Math.PI / 180;
-      const x = side * Math.tan(ang) * (-z + 5.5), d = Math.hypot(x, z), k = 0.8 + d / 150, y = groundAt(x, z);
-      const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = Math.atan2(-x, 4 - z); g.scale.setScalar(k); scene.add(g);
-      for (const px of [-1.1, 1.1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.12), woodDark); post.position.set(px, 1.3, -0.05); g.add(post); }
-      const board = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.75), new THREE.MeshBasicMaterial({ map: signTexture(String(yd), 'YARDS', { bg: '#1e1612', fg: '#ffd9a0' }), toneMapped: false, color: 0xb8b0a0 }));
-      board.position.y = 2.3; g.add(board);
-      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.25), basic(0xffe0b0)); lamp.position.set(0, 3.3, 0.25); g.add(lamp);
-      const lg = glowSprite(0xffc070, 2.2, { opacity: 0.55 }); lg.position.set(0, 3.25, 0.4); g.add(lg);
-      signs.push({ board, text: String(yd) });
+      const z = -yd * YD, ang = ANG[side < 0 ? 'left' : 'right'][yd] * Math.PI / 180;
+      const x = side * Math.tan(ang) * (-z + 5.5), d = Math.hypot(x, z), k = 1 + d / 70, y = groundAt(x, z);
+      const g = new THREE.Group(); g.position.set(x, y - 0.05, z); g.rotation.set(-0.06 - R() * 0.08, Math.atan2(-x, 4 - z) + (R() - 0.5) * 0.25, (R() - 0.5) * 0.1); g.scale.setScalar(k); scene.add(g);
+      const tx = stoneTextures(String(yd));
+      const mat = new THREE.MeshStandardMaterial({ map: tx.map, emissiveMap: tx.emissiveMap, emissive: 0xffffff, emissiveIntensity: 0.9, roughness: 1 });
+      const stone = new THREE.Mesh(ydStoneGeo, mat); stone.position.z = -0.09; stone.castShadow = true; g.add(stone);
+      // candles at its feet, a soft glow and a warm patch on the ground
+      [[-0.22, 0.26, 0.17], [0.05, 0.3, 0.12], [0.26, 0.22, 0.2]].forEach(([cxp, cz, h]) => {
+        const c = new THREE.Mesh(candleGeo, candleMat); c.scale.y = h; c.position.set(cxp, 0, cz); g.add(c);
+        const f = new THREE.Mesh(flameGeo, basic(0xffc060)); f.position.set(cxp, h + 0.04, cz); g.add(f); candleFlames.push(f);
+      });
+      const cg = glowSprite(0xffa050, 1.3, { opacity: 0.55 }); cg.position.set(0, 0.28, 0.3); g.add(cg);
+      const dec = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), new THREE.MeshBasicMaterial({ map: decalTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+      dec.rotation.x = -Math.PI / 2; dec.position.set(0, 0.08, 0.35); g.add(dec);
+      signs.push({ mat, text: String(yd), glow: cg, ph: R() * 6 });
     }
   });
 
@@ -599,6 +637,8 @@ diffuseColor.rgb = c;
       const dt = Math.min(0.1, Math.max(0, clock - lastClock)); lastClock = clock;
       skyU.uT.value = clock; fogU.uT.value = clock;
       stepPuffs(dt);
+      for (const sg of signs) { const f = 0.8 + 0.12 * Math.sin(clock * 9 + sg.ph) * Math.sin(clock * 5.7 + sg.ph * 2); sg.mat.emissiveIntensity = 0.9 * f; sg.glow.material.opacity = 0.55 * f; }
+      for (let i = 0; i < candleFlames.length; i++) candleFlames[i].scale.y = 0.85 + 0.2 * Math.sin(clock * 13 + i * 1.7);
       fogU.uFlash.value.w *= Math.exp(-5 * dt);
       for (const c of crows) { c.userData.head.position.y = 0.1 + 0.02 * Math.max(0, Math.sin(clock * 3 + c.userData.ph * 3)); c.rotation.y += Math.sin(clock * 0.5 + c.userData.ph) * 0.002; }
       // the far floodlight is on its last legs
@@ -664,7 +704,7 @@ diffuseColor.rgb = c;
       }
       skyU.uFlash.value = flash; fogU.uSky.value = flash * 0.5; st.hemi.intensity = hemiBase + flash * 1.4;
     },
-    refreshSigns() { for (const s of signs) { s.board.material.map.dispose(); s.board.material.map = signTexture(s.text, 'YARDS', { bg: '#1e1612', fg: '#ffd9a0' }); s.board.material.needsUpdate = true; } },
+    refreshSigns() { for (const s of signs) { const t = stoneTextures(s.text); s.mat.map.dispose(); s.mat.emissiveMap.dispose(); s.mat.map = t.map; s.mat.emissiveMap = t.emissiveMap; s.mat.needsUpdate = true; } },
   };
   return api;
 }
