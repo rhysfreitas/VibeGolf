@@ -138,6 +138,9 @@ button { font: inherit; color: inherit; }
 .mg-notes b { color: var(--bone); font-weight: 600; }
 .mg-pl input { min-width: 0; background: rgba(0,0,0,0.28); border: 1px solid var(--line); border-radius: 8px; color: var(--bone); font-family: var(--f-data); font-size: 15px; padding: 7px 9px; }
 .mg-pl button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--mist); border-radius: 8px; width: 34px; cursor: pointer; font-size: 18px; }
+.mg-pl.cpu { grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; }
+.mg-pl.cpu input { color: var(--mist); font-style: italic; }
+.mg-cpuTag { font-style: normal; font-family: var(--f-data); font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent, var(--flag)); border: 1px solid currentColor; border-radius: 999px; padding: 2px 7px; }
 .mg-add { appearance: none; border: 1px dashed var(--line); background: transparent; color: var(--mist); border-radius: 8px; padding: 7px; cursor: pointer; font-family: var(--f-data); font-size: 13px; letter-spacing: 0.06em; }
 .mg-chal, .mg-rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .mg-chal li { display: flex; gap: 8px; align-items: baseline; font-family: var(--f-data); font-size: 14px; }

@@ -60,8 +60,12 @@ export function createKit(cfg) {
   const {
     id, title, blurb = '', shotsPerPlayer = 10, difficulties, challenges: pool = [], clubs = [],
     rules = [], accent, idealShot = false, mode = 'shots', summary = null,
+    minPlayers = 1, cpu = null, rankBy = null, options = [], board = true,
   } = cfg;
-  const RUN = mode === 'run'; // 'shots': N shots each, round robin · 'run': each player plays until their run ends
+  // 'shots': N shots each, round robin · 'run': each player plays until their run ends ·
+  // 'manual': the game decides who plays next (kit.turnTo) and when it ends (kit.finishGame)
+  const RUN = mode === 'run', MANUAL = mode === 'manual';
+  // cpu: { name, diff } adds a computer player when there aren't `minPlayers` people
   const handlers = {};
   const emit = (ev, d) => (handlers[ev] || []).forEach(f => f(d));
   const sfx = createSfx();
@@ -120,7 +124,15 @@ export function createKit(cfg) {
   const S = {
     roster: names.map((name, i) => ({ name, diff: difficulties.some(d => d.id === savedDiffs[i]) ? savedDiffs[i] : lastDiff })),
     players: [], cur: 0, challenges: [], phase: 'setup', shotLabel: '',
+    opts: Object.fromEntries(options.map(o => [o.id, store.get(`mg.${id}.opt.${o.id}`, o.def)])),
   };
+  const humans = () => S.roster.filter(r => !r.cpu).length;
+  function fillCpu() { // keep the computer player in the roster while it's needed to make up the numbers
+    if (!cpu) return;
+    const has = S.roster.some(r => r.cpu);
+    if (!has && humans() < minPlayers) S.roster.push({ name: cpu.name, diff: store.get(`mg.${id}.cpuDiff`, cpu.diff || difficulties[0].id), cpu: true, auto: true });
+  }
+  fillCpu();
   const findDiff = idd => difficulties.find(d => d.id === idd) || difficulties[0];
   const diffObj = () => (player() ? player().difficulty : findDiff(S.roster[0] && S.roster[0].diff));
   const player = () => S.players[S.cur];
@@ -154,11 +166,11 @@ export function createKit(cfg) {
     const p = player(); if (!p) return;
     R.diff.textContent = p.difficulty.label;
     R.player.textContent = p.name;
-    R.shot.textContent = RUN ? S.shotLabel : `Shot ${Math.min(p.shots + 1, shotsPerPlayer)} of ${shotsPerPlayer}`;
+    R.shot.textContent = RUN || MANUAL ? S.shotLabel : `Shot ${Math.min(p.shots + 1, shotsPerPlayer)} of ${shotsPerPlayer}`;
     const m = mult();
     R.mult.textContent = '×' + m; R.mult.dataset.level = m; R.mult.classList.toggle('live', m > 1);
     R.stars.innerHTML = S.challenges.map((c, i) => `<i class="${p.done[i] ? 'on' : ''}" title="${esc(c.text)}">★</i>`).join('');
-    if (S.players.length > 1) {
+    if (board && S.players.length > 1) {
       R.board.hidden = false;
       R.board.innerHTML = S.players.map((q, i) => `<li class="${i === S.cur ? 'cur' : ''}"><span>${esc(q.name)}</span><b class="num">${fmt(q.score)}</b></li>`).join('');
     } else R.board.hidden = true;
@@ -198,21 +210,24 @@ export function createKit(cfg) {
   }
 
   /* ---------- scoring ---------- */
-  function award(base, { label = '' } = {}) {
-    const p = player(), m = mult(), pts = Math.round(base * m);
-    p.score += pts; p.shotPts += pts; p.stats.score = p.score;
-    countUpTo(p.score); checkChallenges(); renderHud();
+  // `to`: award another player (e.g. the setter in HORSE when someone misses their call)
+  function award(base, { to = S.cur } = {}) {
+    const p = S.players[to], m = Math.min(MAX_MULT, 1 + p.streak), pts = Math.round(base * m);
+    p.score += pts; p.stats.score = p.score;
+    if (to === S.cur) { p.shotPts += pts; countUpTo(p.score); }
+    checkChallenges(to); renderHud();
     return pts;
   }
-  function stat(key, n = 1) { const p = player(); p.stats[key] = (p.stats[key] || 0) + n; checkChallenges(); }
-  function statMax(key, v) { const p = player(); p.stats[key] = Math.max(p.stats[key] || 0, v); checkChallenges(); }
-  function checkChallenges() {
-    const p = player();
+  function stat(key, n = 1, to = S.cur) { const p = S.players[to]; p.stats[key] = (p.stats[key] || 0) + n; checkChallenges(to); }
+  function statMax(key, v, to = S.cur) { const p = S.players[to]; p.stats[key] = Math.max(p.stats[key] || 0, v); checkChallenges(to); }
+  function checkChallenges(to = S.cur) {
+    const p = S.players[to];
     S.challenges.forEach((c, i) => {
       if (p.done[i]) return;
       if ((p.stats[c.key] || 0) >= c.goal) {
-        p.done[i] = true; sfx.star();
-        toast(`<span class="mg-starPop">★</span> Challenge complete · ${esc(c.text)}`, 2400);
+        p.done[i] = true; if (p.cpu) return;
+        sfx.star();
+        toast(`<span class="mg-starPop">★</span> ${S.players.length > 1 ? esc(p.name) + ' · ' : ''}Challenge complete · ${esc(c.text)}`, 2400);
       }
     });
   }
@@ -223,7 +238,7 @@ export function createKit(cfg) {
     else p.streak = 0;
     S.phase = 'between'; R.hit.disabled = true; R.ideal.disabled = true;
     renderHud();
-    const last = !RUN && S.players.every(q => q.shots >= shotsPerPlayer);
+    const last = !RUN && !MANUAL && S.players.every(q => q.shots >= shotsPerPlayer);
     return { last };
   }
   // run mode: the current player's run is over (e.g. the fence fell)
@@ -233,6 +248,7 @@ export function createKit(cfg) {
 
   /* ---------- turn flow ---------- */
   function next() {
+    if (MANUAL) { emit('advance', { player: player(), index: S.cur }); return true; }
     if (S.players.every(isDone)) { finish(); return false; }
     if (RUN && !player().finished) { beginTurn(false); return true; }       // same run continues
     // round robin; skip anyone who has finished
@@ -241,22 +257,26 @@ export function createKit(cfg) {
     beginTurn(S.players.length > 1);
     return true;
   }
-  function beginTurn(announce) {
+  function beginTurn(announce, sub = null) {
     const p = player(); p.shotPts = 0;
     if (Math.round(shownScore) !== p.score) showScore(p.score);
-    S.phase = 'aim'; R.hit.disabled = false; R.ideal.disabled = false; renderHud();
+    S.phase = p.cpu ? 'cpu' : 'aim'; R.hit.disabled = R.ideal.disabled = !!p.cpu; renderHud();
     if (announce) {
-      R.bannerName.textContent = `${p.name}`; R.bannerSub.textContent = RUN ? `your run · ${p.difficulty.label}` : `your turn · shot ${p.shots + 1} of ${shotsPerPlayer}`;
+      R.bannerName.textContent = `${p.name}`; R.bannerSub.textContent = sub != null ? sub : RUN ? `your run · ${p.difficulty.label}` : `your turn · shot ${p.shots + 1} of ${shotsPerPlayer}`;
       R.banner.hidden = false; R.banner.classList.remove('go'); void R.banner.offsetWidth; R.banner.classList.add('go');
       setTimeout(() => { R.banner.hidden = true; }, 1600);
     }
     emit('turn', { player: p, index: S.cur, shot: p.shots });
   }
+  // manual mode: hand the next shot to player i
+  function turnTo(i, { announce = S.players.length > 1, sub = null } = {}) {
+    S.cur = i; showScore(player().score); beginTurn(announce, sub);
+  }
 
   /* ---------- start screen ---------- */
   const usedDiffs = () => [...new Set(S.roster.map(r => r.diff))];
   function pickChallenges() {
-    const used = usedDiffs();
+    const used = [...new Set(S.roster.filter(r => !r.cpu).map(r => r.diff))];
     const avail = pool.filter(c => !c.only || used.every(d => c.only.includes(d)));
     const pick = [], a = avail.slice();
     while (pick.length < 3 && a.length) pick.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
@@ -264,17 +284,18 @@ export function createKit(cfg) {
   }
   function renderStart() {
     const used = usedDiffs(), all = used.length === 1 ? used[0] : null;
-    const bests = used.map(d => ({ d: findDiff(d), b: store.get(`best.${id}.${d}`, null) }));
+    const bests = [...new Set(S.roster.filter(r => !r.cpu).map(r => r.diff))].map(d => ({ d: findDiff(d), b: store.get(`best.${id}.${d}`, null) }));
     R.startPanel.innerHTML = `
       <div class="mg-sTitle"><span class="lbl">Mini game</span><h1>${esc(title)}</h1><p>${esc(blurb)}</p></div>
       <div class="mg-sGrid">
         <div class="mg-sCol">
           <span class="lbl">Players &amp; difficulty</span>
-          <div class="mg-players">${S.roster.map((r, i) => `<div class="mg-pl"><input id="pl${i}" value="${esc(r.name)}" maxlength="14" aria-label="Player ${i + 1} name">
+          <div class="mg-players">${S.roster.map((r, i) => `<div class="mg-pl${r.cpu ? ' cpu' : ''}"${r.cpu ? ' data-cpu' : ''}${r.auto ? ' data-auto' : ''}><input id="pl${i}" value="${esc(r.name)}" maxlength="14" aria-label="Player ${i + 1} name"${r.cpu ? ' readonly title="Computer player"' : ''}>${r.cpu ? '<em class="mg-cpuTag">CPU</em>' : ''}
             <select id="pd${i}" aria-label="${esc(r.name)} difficulty">${difficulties.map(d => `<option value="${d.id}" ${d.id === r.diff ? 'selected' : ''}>${esc(d.label)}</option>`).join('')}</select>
-            ${S.roster.length > 1 ? `<button data-rm="${i}" aria-label="Remove player">×</button>` : ''}</div>`).join('')}
-          ${S.roster.length < 4 ? '<button class="mg-add" data-add>+ Add player</button>' : ''}</div>
+            ${S.roster.length > 1 && !(r.cpu && humans() < minPlayers) ? `<button data-rm="${i}" aria-label="Remove player">×</button>` : ''}</div>`).join('')}
+          ${S.roster.length < 4 ? '<button class="mg-add" data-add>+ Add player</button>' : ''}${cpu && S.roster.length < 4 && !S.roster.some(r => r.cpu) ? `<button class="mg-add" data-addcpu>+ Add ${esc(cpu.name)} (computer)</button>` : ''}</div>
           ${S.roster.length > 1 ? `<span class="lbl">Set everyone to</span><div class="mg-seg">${difficulties.map(d => `<button class="${d.id === all ? 'on' : ''}" data-diff="${d.id}">${esc(d.label)}</button>`).join('')}</div>` : ''}
+          ${options.map(o => `<span class="lbl">${esc(o.label)}</span><div class="mg-seg">${o.choices.map(c => `<button class="${S.opts[o.id] === c.id ? 'on' : ''}" data-opt="${o.id}" data-val="${c.id}">${esc(c.label)}</button>`).join('')}</div>`).join('')}
           <div class="mg-notes">${used.map(d => `<p class="note"><b>${esc(findDiff(d).label)}:</b> ${esc(findDiff(d).note || '')}</p>`).join('')}</div>
         </div>
         <div class="mg-sCol">
@@ -289,26 +310,39 @@ export function createKit(cfg) {
     const reroll = () => { S.challenges = pickChallenges(); renderStart(); };
     P.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { readRoster(); S.roster.forEach(r => { r.diff = b.dataset.diff; }); reroll(); });
     P.querySelectorAll('.mg-pl select').forEach(sel => sel.onchange = () => { readRoster(); reroll(); });
-    P.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { readRoster(); S.roster.splice(+b.dataset.rm, 1); reroll(); });
-    const add = P.querySelector('[data-add]'); if (add) add.onclick = () => { readRoster(); S.roster.push({ name: `Player ${S.roster.length + 1}`, diff: S.roster[S.roster.length - 1].diff }); renderStart(); };
+    P.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { readRoster(); S.roster.splice(+b.dataset.rm, 1); fillCpu(); reroll(); });
+    const add = P.querySelector('[data-add]'); if (add) add.onclick = () => {
+      readRoster();
+      // a computer player that only joined to make up the numbers steps aside for a real one
+      if (humans() + 1 >= minPlayers) S.roster = S.roster.filter(r => !r.auto);
+      const nm = `Player ${humans() + 1}`, last = S.roster.filter(r => !r.cpu).pop(), at = S.roster.findIndex(r => r.cpu);
+      const row = { name: nm, diff: last ? last.diff : difficulties[0].id };
+      if (at >= 0) S.roster.splice(at, 0, row); else S.roster.push(row);
+      renderStart();
+    };
+    const addCpu = P.querySelector('[data-addcpu]'); if (addCpu) addCpu.onclick = () => { readRoster(); S.roster.push({ name: cpu.name, diff: store.get(`mg.${id}.cpuDiff`, cpu.diff || difficulties[0].id), cpu: true }); reroll(); };
+    P.querySelectorAll('[data-opt]').forEach(b => b.onclick = () => { readRoster(); S.opts[b.dataset.opt] = b.dataset.val; store.set(`mg.${id}.opt.${b.dataset.opt}`, b.dataset.val); renderStart(); });
     P.querySelector('#mgSound').onchange = e => { sfx.on = e.target.checked; };
     P.querySelector('[data-go]').onclick = () => { sfx.init(); readRoster(); beginGame(); };
   }
   function readRoster() {
     const rows = R.startPanel.querySelectorAll('.mg-pl');
-    if (rows.length) S.roster = [...rows].map((row, i) => ({ name: row.querySelector('input').value.trim() || `Player ${i + 1}`, diff: row.querySelector('select').value }));
+    if (rows.length) S.roster = [...rows].map((row, i) => ({ name: row.querySelector('input').value.trim() || `Player ${i + 1}`, diff: row.querySelector('select').value, cpu: row.hasAttribute('data-cpu'), auto: row.hasAttribute('data-auto') }));
   }
   function showStart() {
     S.phase = 'setup'; S.challenges = pickChallenges(); renderStart();
     R.endScr.hidden = true; R.startScr.hidden = false; R.play.hidden = true; R.result.hidden = true;
   }
   function beginGame() {
-    store.set('players', S.roster.map(r => r.name));
-    store.set(`mg.${id}.diffs`, S.roster.map(r => r.diff)); store.set(`mg.${id}.diff`, S.roster[0].diff);
-    S.players = S.roster.map(r => ({ name: r.name, difficulty: findDiff(r.diff), score: 0, shots: 0, streak: 0, stats: {}, done: [false, false, false], shotPts: 0, finished: false }));
+    const people = S.roster.filter(r => !r.cpu), bot = S.roster.find(r => r.cpu);
+    store.set('players', people.map(r => r.name));
+    store.set(`mg.${id}.diffs`, people.map(r => r.diff)); if (people[0]) store.set(`mg.${id}.diff`, people[0].diff);
+    if (bot) store.set(`mg.${id}.cpuDiff`, bot.diff);
+    S.players = S.roster.map(r => ({ name: r.name, difficulty: findDiff(r.diff), score: 0, shots: 0, streak: 0, stats: {}, done: [false, false, false], shotPts: 0, finished: false, cpu: !!r.cpu }));
     S.cur = 0; showScore(0);
     R.startScr.hidden = true; R.endScr.hidden = true; R.play.hidden = false; R.result.hidden = true;
-    emit('start', { players: S.players });
+    emit('start', { players: S.players, options: { ...S.opts } });
+    if (MANUAL) return; // the game calls turnTo()
     if (RUN) emit('runStart', { player: player(), index: 0 });
     beginTurn(S.players.length > 1);
   }
@@ -316,18 +350,20 @@ export function createKit(cfg) {
   /* ---------- end screen ---------- */
   function finish() {
     S.phase = 'over'; R.play.hidden = true;
-    const ranked = S.players.map((p, i) => ({ ...p, i, stars: p.done.filter(Boolean).length })).sort((a, b) => b.score - a.score);
-    // bests are kept per difficulty; each player can set one on their own level
+    const ranked = S.players.map((p, i) => ({ ...p, i, stars: p.done.filter(Boolean).length })).sort(rankBy || ((a, b) => b.score - a.score));
+    // bests are kept per difficulty; each player can set one on their own level (not the computer)
     ranked.forEach(p => {
+      if (p.cpu) { p.newBest = false; return; }
       const key = `best.${id}.${p.difficulty.id}`, best = store.get(key, null);
       p.newBest = !best || p.score > best.score;
       p.prevBest = best;
       if (p.newBest || (best && p.stars > (best.stars || 0))) store.set(key, { score: Math.max(p.score, best ? best.score : 0), stars: Math.max(p.stars, best ? best.stars || 0 : 0), name: p.name });
     });
     const top = ranked[0], solo = S.players.length === 1;
+    const youLost = !solo && top.cpu && S.players.filter(p => !p.cpu).length === 1;
     sfx.fanfare();
     R.endPanel.innerHTML = `
-      <div class="mg-sTitle"><span class="lbl">${esc(title)}${solo ? ' · ' + esc(top.difficulty.label) : ''}</span><h1>${solo ? (RUN ? 'Run over' : 'Round complete') : `${esc(top.name)} wins`}</h1>
+      <div class="mg-sTitle"><span class="lbl">${esc(title)}${solo ? ' · ' + esc(top.difficulty.label) : ''}</span><h1>${solo ? (RUN ? 'Run over' : 'Round complete') : youLost ? `${esc(top.name)} wins this time` : `${esc(top.name)} wins`}</h1>
       ${solo ? (top.newBest ? '<div class="mg-newBest">NEW BEST!</div>' : top.prevBest ? `<p>Best: <b class="num">${fmt(top.prevBest.score)}</b></p>` : '') : ''}</div>
       <ol class="mg-standings">${ranked.map((p, r) => `<li class="${r === 0 ? 'win' : ''}"><span class="pos">${r + 1}</span><span class="nm">${esc(p.name)}<small>${esc(p.difficulty.label)}${summary ? ' · ' + esc(summary(p)) : ''}</small></span><span class="st">${!solo && p.newBest ? '<em class="nb">NEW BEST</em>' : ''}${'<i class="on">★</i>'.repeat(p.stars)}${'<i>★</i>'.repeat(3 - p.stars)}</span><b class="num">${fmt(p.score)}</b></li>`).join('')}</ol>
       <ul class="mg-chal done">${S.challenges.map((c, i) => `<li class="${S.players.some(p => p.done[i]) ? 'got' : ''}"><i>★</i>${esc(c.text)}${!solo ? ` <small>${S.players.filter(p => p.done[i]).map(p => esc(p.name)).join(', ')}</small>` : ''}</li>`).join('')}</ul>
@@ -340,10 +376,12 @@ export function createKit(cfg) {
 
   return {
     on(ev, f) { (handlers[ev] = handlers[ev] || []).push(f); return this; },
-    showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, finishRun,
-    setShotLabel(t) { S.shotLabel = t; if (RUN) R.shot.textContent = t; },
+    showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, finishRun, turnTo,
+    finishGame: () => finish(),
+    setShotLabel(t) { S.shotLabel = t; if (RUN || MANUAL) R.shot.textContent = t; },
     setPrompt(html) { R.prompt.innerHTML = html; },
     get phase() { return S.phase; }, set phase(v) { S.phase = v; R.hit.disabled = R.ideal.disabled = v !== 'aim'; },
+    get current() { return S.cur; },
     get player() { return player(); }, get players() { return S.players; },
     get multiplier() { return mult(); }, get difficulty() { return diffObj(); },
     get club() { return clubIdx; }, sfx, els: R,

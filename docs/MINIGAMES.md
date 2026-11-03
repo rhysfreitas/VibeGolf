@@ -16,7 +16,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 | Zombie Siege | **Dead farm at dusk**: ground fog, a blood-orange moon, a sagging barn, dead trees, crows on the fence, flickering floodlights; zombies shamble out of a cornfield. |
 | Carnival Booth | **Night fairground**: string lights, a striped tent behind the booth, a Ferris wheel turning on the horizon. |
 | Island Hopper | **The Aerie**'s floating sky world. |
-| Golf HORSE | **Woodson Range at twilight** under floodlights. |
+| Golf HORSE | **The Cul-de-sac**: a giant suburban cul-de-sac just after sunset under Topgolf-style floodlights. You hit from a bay on the first garage roof. Seven LED target rings sit in the street and lawns, a basketball court is painted in the bulb under a giant driveway hoop, and a basketball scoreboard shows the call. |
 | Golf Bowling | **Neon roadside lane**: a 1950s bowling lane laid down a desert valley floor. |
 | Wedge Ladder | **Practice academy**: a crisp morning, banded target greens, a coach's board. |
 | Glass Tower | **Downtown plaza at dusk**: the target tower lit among other skyscrapers. |
@@ -102,15 +102,17 @@ Hop across floating islands of The Aerie without falling into the clouds.
 ## 5. Golf HORSE
 Call a shot and make the others copy it. 2–4 players.
 
-- **The call:** the setter picks a carry (e.g. 150 yd), a shape (straight, draw or fade) and optionally a height (normal or high). They must make it first, or the turn passes.
+- **Targets:** seven Topgolf-style LED rings at 60, 90, 120, 150, 180, 210 and 240 yd, each with its own color, flag and bullseye. The 240 is the **Hoop**, under the giant driveway hoop. Any ring a ball lands in lights up (flash, fast LED chase, sparkles, chime), called or not.
+- **The call**, made on the basketball scoreboard: a target ring, a shape (Any, Straight, Draw or Fade) and a height (Any, High or Low). Shape is read from the spin axis. High and Low compare the apex with a normal shot to that target, and the board shows the line (e.g. APEX ≥ 96 FT).
+- **The setter** must make their own call. Make it and everyone else has to match it, and the setter calls again. Miss it and the call passes to the next player, with no letters.
 - **Matching:**
-  - Each other player has to land within tolerance, and **MATCHED** stamps on screen.
-  - Within half the tolerance is a **PERFECT MATCH**.
-  - A miss earns a letter, which stamps on with an animation, plus "So close · 3 yd long" style feedback.
-- **Difficulty:** tolerance.
-- **Word length:** HORSE, or PIG for a quick game.
-- **End screen:** the last player standing wins. The streak here counts how many players the setter stumps in a row.
-- **Challenges** (per player)**, e.g.:** stump everyone once · 2 perfect matches · win without a letter.
+  - Land in the ring with the right shape and height: **MATCHED** (or **PERFECT MATCH** in the bullseye, 40% of the ring).
+  - A miss earns a letter, which stamps onto the scoreboard, plus "So close · 3 yd long" style feedback.
+- **Difficulty:** each player's ring size (about 20 / 15 / 11 / 8 yd across at 150 yd) and how clearly a shape or height has to show.
+- **Word length:** HORSE, or PIG for a quick game. The last player standing wins (after 24 made calls, fewest letters wins).
+- **Scoring (bragging rights):** a made call or match is worth 100, +50 for a shape, +50 for a height, double in the bullseye. The setter gets 150 for each player they stump. The usual streak applies. A ball that drops through the giant hoop's rim is a **SWISH!** (+300).
+- **Solo:** Dusty, the kid from down the street, joins as a computer player (with his own difficulty) and swings like a decent amateur.
+- **Challenges** (per player)**:** stump everyone on one call · 2 bullseyes · win without a letter · match 3 calls · make 3 of your own calls · make or match 2 draws or fades · a High or Low call · land in the Hoop.
 
 ## 6. Golf Bowling
 Giant pins down the fairway. Ten frames, real bowling scoring.
@@ -148,5 +150,5 @@ Smash the windows of a glass skyscraper.
 ## Build order
 1. **Shape It plus the shared kit:** the mini games menu, players and turns, difficulty, run challenges, splash words, the end screen and bests.
 2. **Zombie Siege.**
-3. **Island Hopper** (reuses The Aerie's islands), then **Golf HORSE**.
+3. **Island Hopper** (reuses The Aerie's islands), then **Golf HORSE**. *(Done.)*
 4. **Carnival Booth**, **Wedge Ladder**, **Golf Bowling**, **Glass Tower**.

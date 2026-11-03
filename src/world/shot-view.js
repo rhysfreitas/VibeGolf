@@ -13,7 +13,7 @@ export const BALL_RADIUS = 0.02135;
 export function createShotView(world, opts = {}) {
   const { renderer, scene, camera, groundAt, sunDir } = world;
   const color = opts.tracerColor || '#f5c542';
-  const stanceOpts = opts.stance || {};   // e.g. { back, up, ballAt } to stand a little higher for a game
+  const stanceOpts = opts.stance || {};   // e.g. { back, up, ballAt, fov } to stand a little higher for a game
   const PR = () => renderer.getPixelRatio();
 
   const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_RADIUS, 24, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, envMapIntensity: 0.9 }));
@@ -36,7 +36,9 @@ export function createShotView(world, opts = {}) {
   const addrBall = new THREE.Vector3(), FWD = new THREE.Vector3(0, 0, -1);
   const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), init: false };
   let flight = null, keepPoint = null, tmp = new THREE.Vector3();
-  const vfov = () => { const h = THREE.MathUtils.degToRad(62); return Math.max(STANCE.fov, Math.min(78, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(h / 2) / camera.aspect)))); };
+  // stance.fov (optional) zooms the view: a narrower lens makes far targets bigger (Golf HORSE)
+  const baseFov = stanceOpts.fov || STANCE.fov, hfov = 62 * baseFov / STANCE.fov;
+  const vfov = () => { const h = THREE.MathUtils.degToRad(hfov); return Math.max(baseFov, Math.min(78, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(h / 2) / camera.aspect)))); };
 
   function address(onTee) {
     teePeg.visible = !!onTee; teePeg.position.set(0, 0.055, 0);
