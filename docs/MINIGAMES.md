@@ -6,6 +6,23 @@ Eight mini games, all gamified at the **same level**. That level is a fun sweet 
 
 ---
 
+## Scenes: every game has its own world
+
+The scoring, feedback, players and end screen are shared, but each game has its **own scene** that fits it. All scenes keep the same camera ("standing over the ball", bottom centre) and HUD layout, and each scene sits on the shared base stage (`src/world/stage.js`: renderer, sky, sun, fog).
+
+| Game | Scene |
+|---|---|
+| Shape It | **Sunset Mesa**: a fairway on a red-rock mesa high above a desert valley, pink and violet sunset sky, so the glowing rings pop. |
+| Zombie Siege | **Dead farm at dusk**: ground fog, a blood-orange moon, a sagging barn, dead trees, crows on the fence, flickering floodlights; zombies shamble out of a cornfield. |
+| Carnival Booth | **Night fairground**: string lights, a striped tent behind the booth, a Ferris wheel turning on the horizon. |
+| Island Hopper | **The Aerie**'s floating sky world. |
+| Golf HORSE | **Woodson Range at twilight** under floodlights. |
+| Golf Bowling | **Neon roadside lane**: a 1950s bowling lane laid down a desert valley floor. |
+| Wedge Ladder | **Practice academy**: a crisp morning, banded target greens, a coach's board. |
+| Glass Tower | **Downtown plaza at dusk**: the target tower lit among other skyscrapers. |
+
+---
+
 ## Shared kit (every game)
 
 | Piece | What it does |

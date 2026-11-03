@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101c22">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<title>Mini Games · VibeGolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&family=Cormorant+SC:wght@600;700&display=swap">
+<style>
+/* Mini games menu: a grid of game tiles over the title backdrop. Playable games link; the rest show "Coming soon". */
+:root {
+  color-scheme: dark;
+  --ink: #101c22; --glass: rgba(14, 26, 32, 0.74); --glass-hi: rgba(26, 42, 50, 0.9);
+  --line: rgba(214, 228, 232, 0.16); --bone: #f2efe6; --mist: #a9bcc2; --flag: #f5c542; --flag-ink: #2a2206;
+  --f-title: "Cormorant SC", "Cormorant Garamond", Georgia, serif;
+  --f-data: "Saira Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: #101c22 url(assets/menu-bg.jpg) center / cover no-repeat fixed; color: var(--bone); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0; background: rgba(10,18,22,0.62); pointer-events: none; }
+:focus-visible { outline: 2px solid var(--flag); outline-offset: 3px; }
+.glass { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px) saturate(1.2); }
+main { position: relative; max-width: 1080px; margin: 0 auto; padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 20px); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font-family: var(--f-title); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1; letter-spacing: 0.02em; }
+.back { text-decoration: none; color: var(--mist); font-family: var(--f-data); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 12px; }
+.back:hover { color: var(--bone); }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit; transition: transform .15s ease, border-color .15s ease, background .15s ease; }
+a.tile:hover { transform: translateY(-2px); border-color: rgba(245,197,66,0.55); background: var(--glass-hi); }
+.thumb { aspect-ratio: 16 / 9; max-width: 100%; background: center / cover no-repeat; position: relative; }
+.thumb.soon { background: linear-gradient(135deg, var(--a, #33424a), var(--b, #1b262c)); display: grid; place-items: center; }
+.thumb.soon span { font-family: var(--f-data); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 3px 10px; }
+.body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 3px; }
+.body h2 { margin: 0; font-family: var(--f-data); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase; }
+.body p { margin: 0; font-size: 12.5px; line-height: 1.35; color: #d3dde0; }
+.body .meta { font-family: var(--f-data); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--flag); margin-top: 2px; }
+.tile.soon .meta { color: var(--mist); }
+.best { font-family: var(--f-data); font-size: 12px; color: var(--mist); }
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .body p { display: none; } }
+@media (max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Mini games</h1><a class="back glass" href="./">‹ Menu</a></header>
+  <div class="grid">
+    <a class="tile glass" href="shape-it.html">
+      <span class="thumb" style="background-image:url(assets/thumb-shape-it.jpg)" role="img" aria-label="Glowing rings over a desert mesa"></span>
+      <span class="body"><h2>Shape It</h2><p>Fly through rings that trace a shot shape.</p><span class="meta">Play</span><span class="best" data-best="shape-it"></span></span>
+    </a>
+    <div class="tile glass soon" style="--a:#3c2a2a;--b:#141010"><span class="thumb soon"><span>Coming soon</span></span>
+      <span class="body"><h2>Zombie Siege</h2><p>Bomb the horde before it reaches your fence.</p><span class="meta">Next up</span></span></div>
+    <div class="tile glass soon" style="--a:#3a5f7a;--b:#1b2a36"><span class="thumb soon"><span>Coming soon</span></span>
+      <span class="body"><h2>Island Hopper</h2><p>Land island to island above the clouds.</p><span class="meta">Coming soon</span></span></div>
+    <div class="tile glass soon" style="--a:#3f4d36;--b:#1a2016"><span class="thumb soon"><span>Coming soon</span></span>
+      <span class="body"><h2>Golf HORSE</h2><p>Call a shot. Make your friends copy it.</p><span class="meta">Coming soon</span></span></div>
+    <div class="tile glass soon" style="--a:#5a2f46;--b:#1d1018"><span class="thumb soon"><span>Coming soon</span></span>
+      <span class="body"><h2>Carnival Booth</h2><p>Cans, boards, ducks and the prize bell.</p><span class="meta">Coming soon</span></span></div>
+    <div class="tile glass soon" style="--a:#34523f;--b:#142019"><span class="thumb soon"><span>Coming soon</span></span>
+      <span class="body"><h2>Wedge Ladder</h2><p>Climb the carry ladder with your wedges.</p><span class="meta">Coming soon</span></span></div>
+    <div class="tile glass soon" style="--a:#5a4a2a;--b:#201a10"><span class="thumb soon"><span>Coming soon</span></span>
+      <span class="body"><h2>Golf Bowling</h2><p>Giant pins, real ten-frame scoring.</p><span class="meta">Coming soon</span></span></div>
+    <div class="tile glass soon" style="--a:#2f3c5a;--b:#10141f"><span class="thumb soon"><span>Coming soon</span></span>
+      <span class="body"><h2>Glass Tower</h2><p>Smash the lit windows of a skyscraper.</p><span class="meta">Coming soon</span></span></div>
+  </div>
+</main>
+<script>
+  // personal best on each playable tile
+  document.querySelectorAll('[data-best]').forEach(el => {
+    let best = null;
+    try { for (const d of ['beginner', 'amateur', 'pro', 'tour']) { const v = JSON.parse(localStorage.getItem(`vibegolf.best.${el.dataset.best}.${d}`)); if (v) best = { d, ...v }; } } catch (e) { /* storage blocked */ }
+    if (best) el.textContent = `Best ${best.score.toLocaleString()} · ${best.d[0].toUpperCase() + best.d.slice(1)}`;
+  });
+</script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

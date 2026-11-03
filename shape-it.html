@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<title>Shape It · VibeGolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles/minigame.css">
+<link rel="stylesheet" href="styles/shared.css">
+<style>
+/* Shape It extras: the ring map under the tools (top view above, side view below) */
+.si-map { width: 128px; height: 168px; padding: 4px; }
+.si-map canvas { display: block; width: 100%; height: 100%; }
+@media (min-height: 560px) and (min-width: 900px) { .si-map { width: 170px; height: 220px; } }
+@media (max-width: 760px) and (orientation: landscape) { .si-map { width: 112px; height: 148px; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="vendor/three-r147/three.min.js"></script>
+<script src="vendor/three-r147/Sky.js"></script>
+<script src="vendor/three-r147/lines/LineSegmentsGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineMaterial.js"></script>
+<script src="vendor/three-r147/lines/LineSegments2.js"></script>
+<script src="vendor/three-r147/lines/Line2.js"></script>
+<script type="module" src="src/minigames/shape-it.js"></script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>
