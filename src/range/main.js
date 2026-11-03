@@ -1,7 +1,8 @@
 // Woodson Range — driving range mode.
 import { simulate, airDensity, DEFAULT_COEF } from '../physics.js';
-import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
+import { launchMonitor, mountLaunchMonitorUI, parseShot } from '../launch-monitor.js';
 import { STANCE, stanceView } from '../stance.js';
+import { CLUB_DELIVERY, deliveryFromBall, renderShotDetail } from './shot-detail.js';
 
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
 /* ===================== physics (pure, portable) ===================== */
@@ -420,6 +421,7 @@ $('sound').onclick = e => { state.sound = !state.sound; e.currentTarget.setAttri
 function togglePanel(id) {
   const other = id === 'adjust' ? 'session' : 'adjust';
   const p = $(id), open = p.hidden;
+  if (open) closeDetail();
   $(other).hidden = true; $('btn' + other[0].toUpperCase() + other.slice(1)).setAttribute('aria-expanded', 'false');
   p.hidden = !open; $('btn' + id[0].toUpperCase() + id.slice(1)).setAttribute('aria-expanded', String(open));
   if (open && id === 'session') requestAnimationFrame(drawSession);
@@ -428,8 +430,8 @@ $('btnAdjust').onclick = () => togglePanel('adjust');
 $('btnSession').onclick = () => togglePanel('session');
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => togglePanel(b.dataset.close));
 // tapping the range closes an open sheet; tapping the readout shows the extra numbers
-renderer.domElement.addEventListener('pointerdown', () => { for (const id of ['adjust', 'session']) if (!$(id).hidden) togglePanel(id); });
-$('readout').addEventListener('click', () => $('readout').classList.toggle('more'));
+renderer.domElement.addEventListener('pointerdown', () => { for (const id of ['adjust', 'session']) if (!$(id).hidden) togglePanel(id); closeDetail(); });
+$('readout').addEventListener('click', () => ($('detail').hidden ? openDetail() : closeDetail()));
 // portrait nudge (phones only; dismissible)
 const portraitPhone = matchMedia('(orientation: portrait) and (pointer: coarse)');
 let rotateDismissed = false;
@@ -447,20 +449,40 @@ let toastT = 0; function toast(msg) { const t = $('toast'); t.textContent = msg;
 
 const yd = v => Math.round(v);
 function lr(v, unit = '') { const a = Math.abs(v); if (a < 0.5) return '0' + unit; return `${a.toFixed(a < 10 ? 1 : 0)}${unit} <span class="${v < 0 ? 'L' : 'R'}">${v < 0 ? 'L' : 'R'}</span>`; }
+// Standard readout: the numbers you glance at after every swing. Tap it for the full detail.
 function showReadout(r, shot, partial) {
+  const c = shot.Club, measured = c && +c.Speed > 0;
+  const clubSpd = measured ? +c.Speed : shot.Speed / CLUB_DELIVERY[CLUBS[state.club].id].smash;
   $('vCarry').innerHTML = (partial ? '—' : yd(r.carry)) + '<small>yd</small>';
   $('vSrc').textContent = state.flight && state.flight.live ? 'R10' : 'Sim';
   $('vTotal').innerHTML = partial ? '—' : yd(r.totalDown) + '<small>yd</small>';
   $('vOff').innerHTML = partial ? '—' : lr(r.offline);
-  $('vApex').innerHTML = Math.round(r.apexFt) + '<small>ft</small>';
-  $('vDesc').innerHTML = r.descent.toFixed(0) + '<small>°</small>';
-  $('vHang').innerHTML = r.flightTime.toFixed(1) + '<small>s</small>';
   $('vSpd').innerHTML = shot.Speed.toFixed(1) + '<small>mph</small>';
+  $('vClubSpd').innerHTML = (measured ? '' : '≈') + clubSpd.toFixed(1) + '<small>mph</small>';
   $('vVla').innerHTML = shot.VLA.toFixed(1) + '<small>°</small>';
-  $('vHla').innerHTML = lr(shot.HLA, '°');
   $('vSpin').innerHTML = Math.round(shot.TotalSpin).toLocaleString() + '<small>rpm</small>';
-  $('vAxis').innerHTML = lr(shot.SpinAxis, '°');
 }
+
+/* ---------- shot detail sheet ---------- */
+let detailIdx = -1; // index into state.shots, -1 = latest
+function showDetail(i = detailIdx) {
+  const n = state.shots.length;
+  if (!n) { $('detailBody').innerHTML = '<p class="empty">Hit a shot to see its club, launch and spin numbers.</p>'; $('dTitle').textContent = 'Shot detail'; $('dPrev').disabled = $('dNext').disabled = true; return; }
+  const idx = i < 0 || i >= n ? n - 1 : i; detailIdx = idx === n - 1 ? -1 : idx;
+  const rec = state.shots[idx];
+  $('dTitle').textContent = `Shot ${rec.n} of ${state.shots[n - 1].n}`;
+  $('detailBody').innerHTML = renderShotDetail(rec, CLUBS[rec.club].name, CLUBS[rec.club].id);
+  $('dPrev').disabled = idx === 0; $('dNext').disabled = idx === n - 1;
+}
+function openDetail(i) {
+  for (const id of ['adjust', 'session']) if (!$(id).hidden) togglePanel(id);
+  detailIdx = i ?? -1; $('detail').hidden = false; showDetail();
+}
+function closeDetail() { $('detail').hidden = true; }
+$('shotList').addEventListener('click', e => { const b = e.target.closest('.shot'); if (b) openDetail(+b.dataset.i); });
+$('dPrev').onclick = () => { const n = state.shots.length; showDetail((detailIdx < 0 ? n - 1 : detailIdx) - 1); };
+$('dNext').onclick = () => { const n = state.shots.length; showDetail((detailIdx < 0 ? n - 1 : detailIdx) + 1); };
+document.querySelector('[data-close="detail"]').onclick = closeDetail;
 
 /* ---------- session panel ---------- */
 function drawSession() {
@@ -500,7 +522,7 @@ function drawSession() {
   state.shots.forEach(s => { (by[s.club] ||= []).push(s.r); });
   const keys = Object.keys(by).map(Number).sort((a, b) => a - b);
   $('gapping').innerHTML = keys.length ? `<table class="gap"><thead><tr><th>Club</th><th>Shots</th><th>Carry</th><th>Total</th><th>Spread</th></tr></thead><tbody>${keys.map(c => { const a = by[c], m = f => a.reduce((s, r) => s + f(r), 0) / a.length; const off = a.map(r => r.offline); const spread = a.length > 1 ? Math.max(...off) - Math.min(...off) : 0; return `<tr><td>${CLUBS[c].id}</td><td>${a.length}</td><td>${yd(m(r => r.carry))}</td><td>${yd(m(r => r.totalDown))}</td><td>${a.length > 1 ? yd(spread) : '—'}</td></tr>`; }).join('')}</tbody></table>` : '<p class="empty">Hit a few shots to build your gapping.</p>';
-  $('shotList').innerHTML = state.shots.length ? state.shots.slice().reverse().slice(0, 30).map(s => `<div class="shot"><span class="n">#${s.n}</span><span class="c">${CLUBS[s.club].id}</span><span>${yd(s.r.carry)} <span class="n">carry</span></span><span>${yd(s.r.totalDown)}</span><span>${lr(s.r.offline)}</span></div>`).join('') : '';
+  $('shotList').innerHTML = state.shots.length ? state.shots.map((s, i) => [s, i]).reverse().slice(0, 30).map(([s, i]) => `<button class="shot" data-i="${i}" title="Shot detail"><span class="n">#${s.n}</span><span class="c">${CLUBS[s.club].id}</span><span>${yd(s.r.carry)} <span class="n">carry</span></span><span>${yd(s.r.totalDown)}</span><span>${lr(s.r.offline)}</span></button>`).join('') : '';
 }
 
 /* ===================== audio ===================== */
@@ -542,8 +564,14 @@ function thudSound(gain) {
 
 /* ===================== shots ===================== */
 function gauss(R = Math.random) { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+// Simulated club delivery to go with a simulated ball (tour smash and attack angle per club).
+function simClub(ball, face, path, smashMul = 1) {
+  const def = CLUB_DELIVERY[CLUBS[state.club].id];
+  const clubSpeed = ball.Speed / (def.smash * smashMul);
+  return { Speed: clubSpeed, Path: path, FaceToTarget: face, AngleOfAttack: def.aoa + (state.variance ? gauss() * 1.1 : 0) };
+}
 function realSwing(base) {
-  if (!state.variance) return { ...base };
+  if (!state.variance) { const s = { ...base }; const d = deliveryFromBall(s); s.Club = simClub(s, d.face, d.path); return s; }
   const s = { ...base };
   const strike = Math.random();
   const face = gauss() * 1.9, path = gauss() * 2.4;
@@ -552,8 +580,11 @@ function realSwing(base) {
   s.Speed = base.Speed * (1 + gauss() * 0.012);
   s.VLA = base.VLA + gauss() * 0.9;
   s.TotalSpin = base.TotalSpin * (1 + gauss() * 0.07);
-  if (strike < 0.08) { s.Speed *= 0.93; s.VLA -= 2.5; s.TotalSpin *= 0.78; }          // thin
-  else if (strike < 0.13) { s.Speed *= 0.9; s.VLA += 2; s.TotalSpin *= 1.15; }       // heavy
+  let smashMul = 1 + gauss() * 0.006;
+  if (strike < 0.08) { s.Speed *= 0.93; s.VLA -= 2.5; s.TotalSpin *= 0.78; smashMul = 0.93; }          // thin
+  else if (strike < 0.13) { s.Speed *= 0.9; s.VLA += 2; s.TotalSpin *= 1.15; smashMul = 0.9; }        // heavy
+  s.Club = simClub({ Speed: s.Speed / smashMul }, base.HLA + face, base.HLA + path, 1); // same club speed, worse strike
+  s.Club.Speed = base.Speed / CLUB_DELIVERY[CLUBS[state.club].id].smash * (1 + gauss() * 0.01);
   return s;
 }
 function placeBallAtAddress() {
@@ -573,7 +604,7 @@ function receiveShot(shot) {
 }
 launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
 mountLaunchMonitorUI({ dot: $('lmDot'), text: $('lmText'), button: $('lmBtn') });
-window.WoodsonRange = { receiveShot: msg => { const b = msg.BallData || msg; if (b.Speed > 0) receiveShot({ Speed: +b.Speed, VLA: +b.VLA, HLA: +(b.HLA || 0), TotalSpin: +b.TotalSpin, SpinAxis: +(b.SpinAxis || 0) }); } };
+window.WoodsonRange = { receiveShot: msg => { const shot = parseShot(msg); if (shot) receiveShot(shot); } };
 
 function swing() { if (state.phase !== 'idle') return; initAudio(); launch(realSwing(state.shotData), false); }
 
@@ -602,7 +633,8 @@ function launch(shot, live) {
 function finishShot() {
   const f = state.flight, r = f.r;
   state.seq++;
-  state.shots.push({ n: state.seq, club: state.club, r, shot: f.shot });
+  state.shots.push({ n: state.seq, club: state.club, r, shot: f.shot, live: !!f.live });
+  if (!$('detail').hidden && detailIdx < 0) showDetail();
   $('shotCount').textContent = state.shots.length === 1 ? '1 shot' : state.shots.length + ' shots';
   showReadout(r, f.shot, false);
   const end = r.pts.at(-1).p;

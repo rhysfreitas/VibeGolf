@@ -24,7 +24,7 @@ const AUTO = 'vibegolf.lm.auto';
 // Accepts a GSPro Open Connect message, a bare BallData object, or { type: 'shot', ball: {...} }.
 export function parseShot(msg) {
   if (!msg || typeof msg !== 'object') return null;
-  if (msg.type === 'shot' && msg.ball) msg = { BallData: msg.ball };
+  if (msg.type === 'shot' && msg.ball) msg = { BallData: msg.ball, ClubData: msg.club };
   const opts = msg.ShotDataOptions;
   if (opts && (opts.IsHeartBeat || opts.ContainsBallData === false)) return null;
   const b = msg.BallData || (msg.Speed !== undefined ? msg : null);
@@ -32,7 +32,14 @@ export function parseShot(msg) {
   const back = +b.BackSpin || 0, side = +b.SideSpin || 0;
   let total = +b.TotalSpin || Math.hypot(back, side);
   let axis = b.SpinAxis !== undefined ? +b.SpinAxis : (back ? Math.atan2(side, back) * 180 / Math.PI : 0);
-  return { Speed: +b.Speed, VLA: +b.VLA || 0, HLA: +b.HLA || 0, TotalSpin: total, SpinAxis: axis };
+  const shot = { Speed: +b.Speed, VLA: +b.VLA || 0, HLA: +b.HLA || 0, TotalSpin: total, SpinAxis: axis };
+  // Club data (GSPro ClubData: Speed mph, Path, FaceToTarget, AngleOfAttack, Loft... in degrees)
+  const c = msg.ClubData;
+  if (c && typeof c === 'object' && (opts?.ContainsClubData !== false) && Object.keys(c).length) {
+    const num = k => (c[k] === undefined || c[k] === null || c[k] === '' ? undefined : +c[k]);
+    shot.Club = { Speed: num('Speed'), Path: num('Path'), FaceToTarget: num('FaceToTarget'), AngleOfAttack: num('AngleOfAttack'), Loft: num('Loft') };
+  }
+  return shot;
 }
 
 class LaunchMonitor extends EventTarget {

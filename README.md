@@ -27,7 +27,7 @@ The layout is built for a phone held sideways (landscape), like a launch-monitor
 | Hit | **Hit** (bottom left), or `Space` | **Hit** (bottom left), or `Space` |
 | Club & shot | The club chip next to Hit opens the fly-out: club, simulated swing numbers, tracer, sound, conditions, flight trim | The club chip opens club, swing length and sound |
 | Aim | — | **◀ ▶** above Hit, `←` `→`, or tap the course to aim at a spot |
-| Numbers | Readout bottom right. Tap it for direction, axis, descent and hang | Readout bottom right. Tap it for ball speed, launch, spin and axis |
+| Numbers | Readout bottom right: carry, total, offline, launch, ball and club speed, spin. Tap it for the shot detail: club (speed, smash, path, face, face to path, attack), launch and spin (backspin, sidespin, axis), with diagrams. ‹ › steps through shots, and tapping a shot in Session opens it | Readout bottom right. Tap it for ball speed, launch, spin and axis |
 | More | **Session** (above the readout) opens the dispersion map, gapping and shot list. `X` clears tracers, `1`–`8` pick clubs | **Play to** (under the hole card) picks the target. Tap the corner map, or press `M`, for the whole hole |
 
 ## Connect the R10

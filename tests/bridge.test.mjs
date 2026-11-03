@@ -48,3 +48,13 @@ test('relays a GSPro Open Connect shot to the game and acks the connector', asyn
 
   sock.destroy(); ws.close(); await bridge.close();
 });
+
+test('club data from the connector reaches the game', async () => {
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const { parseShot } = await import('../src/launch-monitor.js');
+  const shot = parseShot({ type: 'shot', ball: { Speed: 158.4, VLA: 12.2, HLA: 2.4, TotalSpin: 2950, SpinAxis: 7.5 }, club: { Speed: 106.9, Path: -1.8, FaceToTarget: 2.6, AngleOfAttack: 1.2 } });
+  assert.equal(shot.Club.Speed, 106.9);
+  assert.equal(shot.Club.Path, -1.8);
+  assert.equal(shot.Club.AngleOfAttack, 1.2);
+  assert.equal(parseShot({ BallData: { Speed: 120, VLA: 16, TotalSpin: 7000 } }).Club, undefined);
+});

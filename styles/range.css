@@ -54,7 +54,8 @@ button { font: inherit; color: inherit; }
 .m .num { font-size: 15px; line-height: 1.1; white-space: nowrap; }
 .m .num small { font-size: 10px; color: var(--sage); font-weight: 500; margin-left: 1px; }
 .L { color: var(--left); } .R { color: var(--right); }
-#readout:not(.more) .m.x { display: none; }
+.carryRow .more { margin-left: auto; align-self: center; font-size: 22px; line-height: 1; color: var(--sage); padding-left: 4px; }
+#readout:hover .more { color: var(--flag); }
 
 /* ---------- chips + hit ---------- */
 .chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; color: var(--bone); font-family: var(--f-data); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 4px 12px; min-height: 52px; min-width: 56px; }
@@ -94,6 +95,56 @@ button { font: inherit; color: inherit; }
 .club { appearance: none; border: 1px solid var(--line); padding: 9px 0; border-radius: 8px; background: rgba(255,255,255,0.03); cursor: pointer; font-family: var(--f-data); font-weight: 600; font-size: 15px; color: var(--bone); }
 .club:hover { background: rgba(255,255,255,0.08); }
 .club[aria-pressed="true"] { background: var(--flag); border-color: var(--flag); color: var(--flag-ink); }
+
+/* shot detail sheet: header numbers, then club / launch / spin cards with illustrations */
+.sheet.center { left: 50%; transform: translateX(-50%); width: min(880px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); gap: 10px; }
+.dNav { display: flex; align-items: center; gap: 4px; }
+.navb { appearance: none; border: 1px solid var(--line); background: rgba(255,255,255,0.04); color: var(--bone); border-radius: 7px; width: 32px; height: 28px; font-size: 18px; line-height: 1; cursor: pointer; }
+.navb:disabled { opacity: 0.3; cursor: default; }
+.dHead { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; padding-bottom: 2px; }
+.dBig { display: flex; align-items: baseline; gap: 4px; }
+.dBig .num { font-size: 34px; line-height: 0.9; }
+.dBig small { font-family: var(--f-data); font-size: 12px; color: var(--sage); letter-spacing: 0.04em; }
+.dSmall { display: flex; gap: 16px; }
+.dShape { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.dShape b { font-family: var(--f-data); font-size: 18px; font-weight: 700; color: var(--flag); letter-spacing: 0.04em; line-height: 1; }
+.dShape span { font-family: var(--f-data); font-size: 11.5px; color: var(--sage); letter-spacing: 0.06em; text-transform: uppercase; }
+.dGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.dCard { background: rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dCard h3 { margin: 0; font-family: var(--f-data); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sage); }
+.dCard .note { font-size: 11px; }
+.dMetrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 10px; }
+.dm { display: flex; flex-direction: column; min-width: 0; }
+.dm .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm .num { font-size: 15px; line-height: 1.15; white-space: nowrap; }
+.dm .num small { font-size: 10px; color: var(--sage); font-weight: 500; margin-left: 1px; }
+.dm em { font-style: normal; font-size: 10.5px; font-weight: 500; color: var(--sage); margin-left: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+.dm em.L { color: var(--left); } .dm em.R { color: var(--right); }
+.estMark { font-style: normal; color: var(--sage); margin-right: 1px; }
+.dIll { width: 100%; height: auto; max-height: 112px; display: block; overflow: visible; }
+.dIll text { font-family: var(--f-data); font-size: 9.5px; fill: var(--sage); letter-spacing: 0.04em; }
+.dIll .val { fill: var(--bone); font-weight: 600; font-size: 10.5px; }
+.dIll .tgt { stroke: rgba(241,238,227,0.35); stroke-width: 1; stroke-dasharray: 3 4; }
+.dIll .ground { stroke: rgba(241,238,227,0.3); stroke-width: 1; }
+.dIll .path { stroke: var(--left); stroke-width: 2.5; stroke-linecap: round; }
+.dIll .pathHead { fill: var(--left); }
+.dIll .face { stroke: var(--flag); stroke-width: 4; stroke-linecap: round; }
+.dIll .ballLine { fill: none; stroke: var(--bone); stroke-width: 1.5; stroke-dasharray: 2 3; }
+.dIll .ballHead { fill: var(--bone); }
+.dIll .ball { fill: #ffffff; stroke: rgba(0,0,0,0.4); stroke-width: 0.8; }
+.dIll .traj { fill: none; stroke: var(--flag); stroke-width: 2; stroke-linejoin: round; }
+.dIll .launchLine { stroke: var(--bone); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7; }
+.dIll .apexDot { fill: var(--flag); }
+.dIll .ballBig { fill: #f4f2ec; }
+.dIll .dimples circle { fill: rgba(13,27,23,0.09); }
+.dIll .axis { stroke: var(--right); stroke-width: 2.5; stroke-linecap: round; }
+.dIll .spinRing { fill: none; stroke: var(--left); stroke-width: 1.8; }
+.dIll .ringHead { fill: var(--left); }
+.dIll .comp { stroke: var(--bone); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.75; }
+.dIll .legend text { font-size: 9.5px; fill: var(--sage); }
+.dIll .lgPath { fill: var(--left); } .dIll .lgFace { fill: var(--flag); } .dIll .lgBall { fill: var(--bone); }
+button.shot { appearance: none; background: transparent; border: 0; border-top: 1px solid var(--line); color: inherit; width: 100%; text-align: left; cursor: pointer; }
+button.shot:hover { background: rgba(255,255,255,0.05); }
 
 /* session sheet: map on the left, numbers on the right */
 .sessionBody { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; min-height: 0; flex: 1; }
@@ -152,6 +203,12 @@ table.gap td:first-child { color: var(--flag); font-weight: 600; }
   .tools .menu-link .mlong { display: none; } .tools .menu-link .mshort { display: inline; }
 }
 
+@media (max-height: 420px) {
+  .dBig .num { font-size: 28px; }
+  .dIll { max-height: 92px; }
+  .dCard { padding: 6px 8px 8px; gap: 4px; }
+  .dm .num { font-size: 14px; }
+}
 /* ---------- portrait phones: it still works, with a nudge to rotate ---------- */
 @media (orientation: portrait) {
   #rightDock { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: auto; top: calc(env(safe-area-inset-top, 0px) + 96px); bottom: auto; flex-direction: column-reverse; }
@@ -159,6 +216,8 @@ table.gap td:first-child { color: var(--flag); font-weight: 600; }
   .tools { justify-content: space-between; }
   .sheet.left, .sheet.right { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: auto; top: 30%; }
   .sessionBody { grid-template-columns: minmax(0, 1fr); }
+  .dGrid { grid-template-columns: minmax(0, 1fr); }
+  .sheet.center { top: calc(env(safe-area-inset-top, 0px) + 96px); }
   #disp { height: 300px; }
 }
 #rotate { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(300px, calc(100% - 32px)); z-index: 30; padding: 18px; display: flex; flex-direction: column; gap: 8px; text-align: center; }

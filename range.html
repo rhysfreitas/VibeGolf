@@ -38,22 +38,19 @@
 
 <div id="rightDock">
   <button class="chip wide" id="btnSession" aria-expanded="false" aria-controls="session">Session <span class="count" id="shotCount">0 shots</span></button>
-  <section id="readout" class="glass" aria-live="polite" title="Tap for more numbers">
+  <section id="readout" class="glass" aria-live="polite" title="Tap for shot detail">
     <div class="carryRow">
       <span class="num carryNum" id="vCarry">—<small>yd</small></span>
       <span class="carryMeta"><span class="lbl">Carry</span><span class="clubName"><span id="vClub">7 iron</span> <span class="src" id="vSrc">Sim</span></span></span>
+      <span class="more" aria-hidden="true">›</span>
     </div>
     <div class="metrics">
       <div class="m"><span class="lbl">Total</span><span class="num" id="vTotal">—</span></div>
       <div class="m"><span class="lbl">Offline</span><span class="num" id="vOff">—</span></div>
-      <div class="m"><span class="lbl">Apex</span><span class="num" id="vApex">—</span></div>
-      <div class="m"><span class="lbl">Ball spd</span><span class="num" id="vSpd">—</span></div>
       <div class="m"><span class="lbl">Launch</span><span class="num" id="vVla">—</span></div>
+      <div class="m"><span class="lbl">Ball spd</span><span class="num" id="vSpd">—</span></div>
+      <div class="m"><span class="lbl">Club spd</span><span class="num" id="vClubSpd">—</span></div>
       <div class="m"><span class="lbl">Spin</span><span class="num" id="vSpin">—</span></div>
-      <div class="m x"><span class="lbl">Direction</span><span class="num" id="vHla">—</span></div>
-      <div class="m x"><span class="lbl">Axis</span><span class="num" id="vAxis">—</span></div>
-      <div class="m x"><span class="lbl">Descent</span><span class="num" id="vDesc">—</span></div>
-      <div class="m x"><span class="lbl">Hang</span><span class="num" id="vHang">—</span></div>
     </div>
   </section>
 </div>
@@ -120,6 +117,12 @@
       <button class="ghost" id="btnClear2">Clear tracers</button>
     </div>
   </div>
+</aside>
+
+<aside class="sheet center glass" id="detail" hidden aria-label="Shot detail">
+  <h2><span id="dTitle">Shot detail</span>
+    <span class="dNav"><button class="navb" id="dPrev" aria-label="Previous shot">‹</button><button class="navb" id="dNext" aria-label="Next shot">›</button><button class="x" data-close="detail" aria-label="Close">×</button></span></h2>
+  <div id="detailBody"></div>
 </aside>
 
 <div id="rotate" class="glass" hidden>
