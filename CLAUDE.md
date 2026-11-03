@@ -22,3 +22,6 @@ Serve the folder (`npm start`) and drive it headlessly with Playwright. Set `win
 
 ## Course data
 `src/course/aerie.js` holds `HOLES`. Islands are superellipses (`rx`, `rz`, `rot`, `top`, `depth`, `kind`) with optional `green`, `pin`, `bunkers`, `falls` and `trees`. `targets` are the course-management picks, and `drops` are the penalty drop spots. Keep that format stable, because the planned course builder will read and write it.
+
+## Mini games
+The design for all eight mini games, and the shared gamification kit they must use, is in `docs/MINIGAMES.md`. Build to that spec and keep every game at the same level. Don't add slot or card reveals, unlocks, boss stages, or fast-moving targets.
