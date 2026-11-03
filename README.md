@@ -86,7 +86,7 @@ tests/                physics calibration and bridge tests (`npm test`)
 
 ## Roadmap
 
-- Mini games: closest to the pin, target darts, long drive
+- Mini games: build the eight in docs/MINIGAMES.md, starting with Shape It
 - Course builder that reads and writes the hole format
 - The rest of The Aerie (holes 4–18)
 - Live wind, and a putting green that uses the R10's putt data
