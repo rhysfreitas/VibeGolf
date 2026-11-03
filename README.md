@@ -8,7 +8,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 |---|---|
 | **Woodson Range** | Driving range with stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. |
 | **The Aerie** | Three holes on floating sky islands. Each hole has a safe route and a carry-the-gap route. Target picks, a shot preview, a corner hole map, penalty drops and auto-putting. |
-| **Mini games** | **Shape It** (fly through rings that trace a shot shape on Sunset Mesa) and **Zombie Siege** (bomb the horde before it breaks your fence, on a dead farm at dusk) and **Island Hopper** (hop floating islands above the clouds, three lives) are playable, for 1–4 players, each with their own difficulty. Next up are Golf HORSE, Carnival Booth, Wedge Ladder, Golf Bowling and Glass Tower. Design in [docs/MINIGAMES.md](docs/MINIGAMES.md). |
+| **Mini games** | **Shape It** (fly through rings that trace a shot shape on Sunset Mesa), **Zombie Siege** (bomb the horde before it breaks your fence, on a dead farm at dusk) and **Island Hopper** (hop floating islands above the clouds, three lives) are playable, for 1–4 players, each with their own difficulty. Next up are Golf HORSE, Carnival Booth, Wedge Ladder, Golf Bowling and Glass Tower. Design in [docs/MINIGAMES.md](docs/MINIGAMES.md). |
 
 ## Play
 
