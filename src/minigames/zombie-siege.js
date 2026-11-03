@@ -18,7 +18,7 @@ const stage = document.getElementById('stage');
 const world = createDeadFarm(stage);
 const { renderer, scene, camera, groundAt } = world;
 // stand a little taller with a slightly longer lens, so the field reads at night instead of squeezing into the horizon
-const sv = createShotView(world, { tracerColor: '#ffd59a', stance: { back: 5.5, up: 3.4, ballAt: 0.92, fov: 38 } });
+const sv = createShotView(world, { tracerColor: '#ffd59a', stance: { back: 5.5, up: 2.4, ballAt: 0.95, fov: 38 } });
 
 const kit = createKit({
   id: 'zombie-siege', title: 'Zombie Siege', accent: '#9dff5a', mode: 'run', idealShot: true, clubs: CLUBS,
@@ -363,7 +363,6 @@ function fenceFalls() {
 }
 
 /* ===================== zombie animation ===================== */
-const tmpV = new THREE.Vector3();
 function animateZombies(dt, t) {
   horde.update(dt, t, { frozen: G.frozen > 0 });
   const live = active(G.zombies); let nearest = Infinity; for (const z of live) nearest = Math.min(nearest, FENCE_Z - z.z);
@@ -395,8 +394,7 @@ function step(dt) {
     beacon.position.set(G.target.x, y, G.target.z); beacon.scale.set(k, 10 * k, k);
     chevron.position.set(G.target.x, y + 10 * k + 1.2 * k + Math.sin(clock * 3) * 0.4 * k, G.target.z); chevron.scale.setScalar(k); chevron.rotation.y += 0.03;
   }
-  // the address view frames the target
-  if (G.target) sv.keepInView(tmpV.set(G.target.x, 6, G.target.z));
+  // the address view stays fixed (the whole field is in it); it only follows the ball in flight
   sv.update(dt); world.animate(clock);
   if (shake > 0) { shake = Math.max(0, shake - dt * 0.9); camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake; }
   mapT -= dt; if (mapT <= 0) { mapT = 1 / 12; drawMap(); }

@@ -10,7 +10,7 @@ export const GRAVEYARD = { x: [-48, -28], z: [-250, -238] }; // a family plot in
 export const DIRECT_YD = 2;            // landing this close to a zombie is a DIRECT HIT
 export const CHAIN_YD = 8;             // a bloater's burst radius
 export const FENCE_HP = 100;
-export const WAVE_TIMEOUT = 100;        // the next wave comes after this many seconds even if some survive
+export const WAVE_TIMEOUT = 65;         // the next wave comes after this many seconds even if some survive
 
 export const DIFFICULTIES = [
   { id: 'easy', label: 'Easy', blastYd: 20, note: '20 yd blast radius. Big booms, forgiving aim.' },
@@ -21,10 +21,10 @@ export const DIFFICULTIES = [
 
 // speed m/s, hp, damage to the fence per second while attacking (bloaters burst once instead)
 export const TYPES = {
-  walker:  { name: 'Walker', speed: 1.5, hp: 1, dps: 1.2, points: 50, scale: 1 },
-  pack:    { name: 'Pack', speed: 1.4, hp: 1, dps: 1.2, points: 50, scale: 1 },
-  tank:    { name: 'Tank', speed: 1.0, hp: 2, dps: 3.5, points: 200, hitPoints: 25, scale: 1.45 },
-  bloater: { name: 'Bloater', speed: 1.2, hp: 1, dps: 0, burst: 14, points: 100, scale: 1.2 },
+  walker:  { name: 'Walker', speed: 1.95, hp: 1, dps: 1.2, points: 50, scale: 1 },
+  pack:    { name: 'Pack', speed: 1.8, hp: 1, dps: 1.2, points: 50, scale: 1 },
+  tank:    { name: 'Tank', speed: 1.3, hp: 2, dps: 3.5, points: 200, hitPoints: 25, scale: 1.45 },
+  bloater: { name: 'Bloater', speed: 1.55, hp: 1, dps: 0, burst: 14, points: 100, scale: 1.2 },
 };
 
 export const POINTS = { double: 100, triple: 250, massacre: 600, wavePer: 100, perSecond: 2, crate: 75 };
@@ -60,7 +60,8 @@ export function waveSpawns(n, rand = Math.random) {
   const at = () => [(rand() * 2 - 1) * FIELD_X, SPAWN_Z[0] + rand() * (SPAWN_Z[1] - SPAWN_Z[0])];
   const walkers = Math.round((3 + 2 * n) * k), packs = n >= 2 ? Math.round((n >= 5 ? 2 : 1) * k) : 0;
   const tanks = n >= 3 ? Math.round(Math.floor((n - 1) / 2) * k) : 0, bloaters = n >= 2 ? Math.round(Math.ceil(n / 2) * k) : 0;
-  const spread = 34; // seconds over which a wave walks out of the corn (a real swing comes every ~20 s)
+  const spread = 24; // seconds over which a wave walks out of the corn (a real swing comes every ~20 s)
+  // tuned for a ~3½ minute run on Normal at a real swing every ~20 s (was ~5½ with slower walkers)
   const grave = () => [GRAVEYARD.x[0] + rand() * (GRAVEYARD.x[1] - GRAVEYARD.x[0]), GRAVEYARD.z[0] + rand() * (GRAVEYARD.z[1] - GRAVEYARD.z[0])];
   for (let i = 0; i < walkers; i++) {
     const fromGrave = rand() < 0.25, [x, z] = fromGrave ? grave() : at();

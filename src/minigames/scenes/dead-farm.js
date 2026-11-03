@@ -102,7 +102,7 @@ void main(){
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
       .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform vec4 uFlood[4];' + GLSL_NOISE + GLSL_POOLS)
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform vec4 uFlood[4];\nfloat gChalk;' + GLSL_NOISE + GLSL_POOLS)
       .replace('#include <map_fragment>', `
 vec3 p = vWPos;
 float camD = length(cameraPosition - p);
@@ -124,10 +124,11 @@ float onField = step(abs(p.x), 62.0) * step(30.0, yd) * step(yd, 290.0) * (1.0 -
 float yl = (1.0 - smoothstep(0.0, lineW, abs(mod(yd + 12.5, 25.0) - 12.5))) * onField * (0.55 + 0.45*fb(p.xz*0.6));
 float cl = (1.0 - smoothstep(0.12, 0.12 + 0.02*camD, abs(p.x))) * step(0.5, fract(yd / 4.0)) * onField * 0.7;
 c = mix(c, lin(vec3(0.82,0.82,0.76)), max(yl, cl) * fade);
+gChalk = max(yl, cl * 0.6) * (1.0 - smoothstep(200.0, 420.0, camD));
 c = mix(c, lin(vec3(0.16,0.17,0.12)) * (0.8 + 0.3*big), smoothstep(1.5, 8.0, p.y));
 diffuseColor.rgb = c;
 `)
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * poolLight(vWPos.xz) * 1.1;\nfor (int i = 0; i < 4; i++){ vec2 fd = vWPos.xz - uFlood[i].xy; totalEmissiveRadiance += diffuseColor.rgb * vec3(0.75, 0.8, 1.0) * 2.4 * uFlood[i].w * exp(-dot(fd, fd) / (uFlood[i].z * uFlood[i].z)); }');
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * poolLight(vWPos.xz) * 1.1 + vec3(0.07, 0.08, 0.075) * gChalk;\nfor (int i = 0; i < 4; i++){ vec2 fd = vWPos.xz - uFlood[i].xy; totalEmissiveRadiance += diffuseColor.rgb * vec3(0.75, 0.8, 1.0) * 2.4 * uFlood[i].w * exp(-dot(fd, fd) / (uFlood[i].z * uFlood[i].z)); }');
   };
   const ground = new THREE.Mesh(geo, mat); ground.receiveShadow = true; scene.add(ground);
 
@@ -294,6 +295,49 @@ diffuseColor.rgb = c;
     const f = new THREE.Mesh(new THREE.PlaneGeometry(1500, 1500).rotateX(-Math.PI / 2), fogMat); f.position.set(0, y, -250); f.scale.setScalar(s); f.renderOrder = 3; scene.add(f);
   }
 
+  // fog banks: soft camera-facing patches drifting low across the field. Flat layers vanish when seen
+  // edge-on from the tee; these read at any angle, and pick up the floodlights and fires.
+  const NPUFF = st.coarse ? 70 : 90;
+  const puffGeo = new THREE.InstancedBufferGeometry(); puffGeo.index = new THREE.PlaneGeometry(1, 1).index;
+  { const pl = new THREE.PlaneGeometry(1, 1); puffGeo.setAttribute('position', pl.attributes.position); puffGeo.setAttribute('uv', pl.attributes.uv); }
+  const pOff = new Float32Array(NPUFF * 3), pSz = new Float32Array(NPUFF * 2), pSeed = new Float32Array(NPUFF), puffs = [];
+  for (let i = 0; i < NPUFF; i++) {
+    const z = -26 - Math.pow(R(), 0.8) * 250, thick = z < -170 ? 1.3 : 1;
+    puffs.push({ x: (R() - 0.5) * 170, y: 0.6 + R() * 1.6, z, v: 0.6 + R() * 0.9 });
+    pSz.set([(16 + R() * 22) * thick, (4 + R() * 4) * thick], i * 2); pSeed[i] = R() * 50;
+  }
+  puffGeo.setAttribute('aOff', new THREE.InstancedBufferAttribute(pOff, 3)); puffGeo.setAttribute('aSize', new THREE.InstancedBufferAttribute(pSz, 2)); puffGeo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(pSeed, 1));
+  puffGeo.instanceCount = NPUFF;
+  const puffMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, fog: false, uniforms: fogU,
+    vertexShader: `attribute vec3 aOff; attribute vec2 aSize; attribute float aSeed; varying vec2 vUv; varying vec3 vW; varying float vSeed, vCam;
+      void main(){ vUv = uv; vW = aOff; vSeed = aSeed; vec4 mv = viewMatrix * vec4(aOff, 1.0); vCam = -mv.z;
+        mv.xy += position.xy * aSize; mv.y += aSize.y * 0.3; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec2 vUv; varying vec3 vW; varying float vSeed, vCam; uniform float uT, uSky; uniform vec4 uFlood[4]; uniform vec4 uFlash;
+      ${GLSL_NOISE}
+      ${GLSL_POOLS}
+      void main(){
+        vec2 q = (vUv - 0.5) * 2.0;
+        float edge = (1.0 - smoothstep(0.35, 1.0, length(q * vec2(1.0, 1.15)))) * smoothstep(-1.0, -0.55, q.y);
+        float n = fb(vUv * vec2(3.0, 1.4) + vec2(vSeed + uT * 0.02, vSeed * 0.7));
+        float a = edge * smoothstep(0.28, 0.7, n) * 0.34;
+        a *= smoothstep(18.0, 45.0, vCam) * (1.0 - smoothstep(260.0, 380.0, vCam));
+        vec3 c = vec3(0.06, 0.07, 0.095);
+        for (int i = 0; i < 4; i++){ vec2 d = vW.xz - uFlood[i].xy; c += vec3(0.2, 0.21, 0.26) * uFlood[i].w * exp(-dot(d, d) / (uFlood[i].z * uFlood[i].z * 1.6)); }
+        c += poolLight(vW.xz) * 0.25;
+        vec2 fd = vW.xz - uFlash.xy; c += vec3(0.6, 0.3, 0.1) * uFlash.w * exp(-dot(fd, fd) / 1200.0);
+        c += vec3(0.12, 0.13, 0.17) * uSky;
+        gl_FragColor = vec4(c, a);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }`,
+  });
+  const puffMesh = new THREE.Mesh(puffGeo, puffMat); puffMesh.frustumCulled = false; puffMesh.renderOrder = 3; scene.add(puffMesh);
+  function stepPuffs(dt) {
+    for (let i = 0; i < NPUFF; i++) { const p = puffs[i]; p.x += p.v * dt; if (p.x > 95) p.x -= 190; pOff.set([p.x, groundAt(p.x, p.z) + p.y, p.z], i * 3); }
+    puffGeo.attributes.aOff.needsUpdate = true;
+  }
+
   /* ---------------- barn and silo (a lantern in the hayloft) ---------------- */
   const barnRed = std(0x4a201c, { roughness: 0.95 }), roofMat = std(0x232220, { roughness: 0.9 });
   const barn = new THREE.Group(); barn.position.set(-78, groundAt(-78, -95), -95); barn.rotation.y = 0.35; scene.add(barn);
@@ -330,7 +374,7 @@ diffuseColor.rgb = c;
   const winGlow = glowSprite(0xff9a3a, 3.5, { opacity: 0.6 }); winGlow.position.set(4, 5.6, 5.4); house.add(winGlow);
 
   /* ---------------- overturned pickup, headlights still on ---------------- */
-  const truck = new THREE.Group(); truck.position.set(-30, groundAt(-30, -108) + 0.95, -108); truck.rotation.set(0, 0.75, Math.PI / 2 - 0.06); scene.add(truck);
+  const truck = new THREE.Group(); truck.position.set(-30, groundAt(-30, -108) + 1.2, -108); truck.rotation.set(0, 0.75, Math.PI / 2 - 0.06); truck.scale.setScalar(1.22); scene.add(truck);
   const paint = std(0x5a2420, { metalness: 0.4, roughness: 0.5 });
   const tb = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.9, 5.4), paint); tb.position.y = 0.2; tb.castShadow = true; truck.add(tb);
   const cab = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.9, 1.9), paint); cab.position.set(0, 1.05, 0.6); truck.add(cab);
@@ -527,14 +571,20 @@ diffuseColor.rgb = c;
   for (let i = 0; i < 7; i++) { const b = new THREE.Sprite(new THREE.SpriteMaterial({ map: batTex, fog: false, depthWrite: false, transparent: true })); b.visible = false; scene.add(b); bats.push({ s: b, ph: R() * 6, off: new THREE.Vector3((R() - 0.5) * 50, (R() - 0.5) * 30, (R() - 0.5) * 20) }); }
   let batT = 6, batRun = null;
 
-  /* ---------------- yard flags every 50 yd ---------------- */
+  /* ---------------- lit yardage signs every 50 yd (both sides, sized to read from the tee) ---------------- */
   const signs = [];
   [50, 100, 150, 200, 250].forEach(yd => {
     for (const side of [-1, 1]) {
-      const x = side * 64, z = -yd * YD, y = groundAt(x, z);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.4, 0.12), woodDark); post.position.set(x, y + 1.2, z); post.castShadow = true; scene.add(post);
-      const board = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5), new THREE.MeshStandardMaterial({ map: signTexture(String(yd), 'YARDS', { bg: '#2a201a', fg: '#e8dcc0' }), roughness: 0.9, emissive: 0x2a2620 }));
-      board.position.set(x - side * 0.1, y + 2.2, z); board.rotation.y = Math.atan2(-x, -z) + Math.PI; scene.add(board); signs.push({ board, text: String(yd) });
+      // spread by angle from the tee so near signs never hide far ones, and clear of the side panels
+      const z = -yd * YD, ang = { 50: 24, 100: 20, 150: 16.5, 200: 14, 250: 12 }[yd] * Math.PI / 180;
+      const x = side * Math.tan(ang) * (-z + 5.5), d = Math.hypot(x, z), k = 0.8 + d / 150, y = groundAt(x, z);
+      const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = Math.atan2(-x, 4 - z); g.scale.setScalar(k); scene.add(g);
+      for (const px of [-1.1, 1.1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.12), woodDark); post.position.set(px, 1.3, -0.05); g.add(post); }
+      const board = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.75), new THREE.MeshBasicMaterial({ map: signTexture(String(yd), 'YARDS', { bg: '#1e1612', fg: '#ffd9a0' }), toneMapped: false, color: 0xb8b0a0 }));
+      board.position.y = 2.3; g.add(board);
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.25), basic(0xffe0b0)); lamp.position.set(0, 3.3, 0.25); g.add(lamp);
+      const lg = glowSprite(0xffc070, 2.2, { opacity: 0.55 }); lg.position.set(0, 3.25, 0.4); g.add(lg);
+      signs.push({ board, text: String(yd) });
     }
   });
 
@@ -548,6 +598,7 @@ diffuseColor.rgb = c;
     animate(clock) {
       const dt = Math.min(0.1, Math.max(0, clock - lastClock)); lastClock = clock;
       skyU.uT.value = clock; fogU.uT.value = clock;
+      stepPuffs(dt);
       fogU.uFlash.value.w *= Math.exp(-5 * dt);
       for (const c of crows) { c.userData.head.position.y = 0.1 + 0.02 * Math.max(0, Math.sin(clock * 3 + c.userData.ph * 3)); c.rotation.y += Math.sin(clock * 0.5 + c.userData.ph) * 0.002; }
       // the far floodlight is on its last legs
@@ -613,7 +664,7 @@ diffuseColor.rgb = c;
       }
       skyU.uFlash.value = flash; fogU.uSky.value = flash * 0.5; st.hemi.intensity = hemiBase + flash * 1.4;
     },
-    refreshSigns() { for (const s of signs) { s.board.material.map.dispose(); s.board.material.map = signTexture(s.text, 'YARDS', { bg: '#2a201a', fg: '#e8dcc0' }); s.board.material.needsUpdate = true; } },
+    refreshSigns() { for (const s of signs) { s.board.material.map.dispose(); s.board.material.map = signTexture(s.text, 'YARDS', { bg: '#1e1612', fg: '#ffd9a0' }); s.board.material.needsUpdate = true; } },
   };
   return api;
 }

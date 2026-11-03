@@ -181,7 +181,7 @@ export function createHorde(scene, { groundAt, camera, renderer }) {
       let x = z.x, y = groundAt(z.x, z.z), zz = z.z;
       // keep far zombies a readable size on a phone screen
       const d = Math.hypot(camera.position.x - x, camera.position.y - y, camera.position.z - zz);
-      const px = 1.8 * h.base * H / (2 * tanF * d), S = h.base * Math.max(1, 18 / px);
+      const px = 1.8 * h.base * H / (2 * tanF * d), S = h.base * Math.min(1.6, Math.max(1, 11 / px)); // far ones grow a little to stay readable; the eye glints do the rest
       const still = frozen && !h.dead;
       if (!still) h.ph += dt * (tank ? 4 : 5.2) * (z.speed / 1.4);
       const ph = h.ph;
