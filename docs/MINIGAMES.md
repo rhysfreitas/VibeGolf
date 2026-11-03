@@ -38,6 +38,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 | **End screen** | Score, stars, personal best, a **NEW BEST!** banner, and Play again. Bests are saved per game and difficulty. |
 | **Players** | 1–4 players with names, a turn banner and a live scoreboard (hot-seat). |
 | **Help** | A suggested club for each target, the corner map (top view, plus a side view where height matters), and live R10 or simulated swings. |
+| **Test swings** | Without a live R10, **Hit** is a simulated golfer *attempting* the shot (a realistic amateur spread), and a dashed **Ideal shot** button hits the exact shot the target was built from. It's hidden while the R10 is live. |
 
 **Difficulty** changes one obvious thing per game, usually target size or tolerance, never the speed of moving things. Beginner should feel generous.
 

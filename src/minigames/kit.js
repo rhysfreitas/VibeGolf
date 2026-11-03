@@ -59,7 +59,7 @@ function createSfx() {
 export function createKit(cfg) {
   const {
     id, title, blurb = '', shotsPerPlayer = 10, difficulties, challenges: pool = [], clubs = [],
-    rules = [], accent,
+    rules = [], accent, idealShot = false,
   } = cfg;
   const handlers = {};
   const emit = (ev, d) => (handlers[ev] || []).forEach(f => f(d));
@@ -89,9 +89,10 @@ export function createKit(cfg) {
   </div>
   <div class="mg-play" data-r="play">
     <div class="mg-prompt glass" data-r="prompt"></div>
+    <button class="mg-ideal" data-r="ideal" hidden title="Hits the exact shot the target was built from (simulated)">Ideal shot <small>test</small></button>
     <div class="mg-hitrow">
       <button class="mg-chip" data-r="clubBtn" aria-expanded="false" title="Club"><b data-r="club">7i</b><span>Club</span></button>
-      <button class="mg-hit" data-r="hit">Hit</button>
+      <button class="mg-hit" data-r="hit" title="A simulated golfer attempts the shot">Hit</button>
     </div>
   </div>
   <div class="mg-result glass" data-r="result" hidden></div>
@@ -133,6 +134,10 @@ export function createKit(cfg) {
   R.clubBtn.onclick = () => toggleClubs(); R.clubX.onclick = () => toggleClubs(false);
   R.clubBtn.hidden = !clubs.length;
   R.hit.onclick = () => { sfx.init(); if (S.phase === 'aim') emit('hit'); };
+  // test helper: the ideal shot is only offered while swings are simulated (no live R10)
+  const syncIdeal = () => { R.ideal.hidden = !idealShot || launchMonitor.status === 'ready'; };
+  launchMonitor.addEventListener('status', syncIdeal); syncIdeal();
+  R.ideal.onclick = () => { sfx.init(); if (S.phase === 'aim') emit('ideal'); };
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
     if (e.code === 'Space' && S.phase === 'aim') { e.preventDefault(); sfx.init(); emit('hit'); }
@@ -206,7 +211,7 @@ export function createKit(cfg) {
     p.shots++;
     if (scored) { p.streak = Math.min(MAX_MULT - 1, p.streak + 1); statMax('mult', Math.min(MAX_MULT, 1 + p.streak)); }
     else p.streak = 0;
-    S.phase = 'between'; R.hit.disabled = true;
+    S.phase = 'between'; R.hit.disabled = true; R.ideal.disabled = true;
     renderHud();
     const last = S.players.every(q => q.shots >= shotsPerPlayer);
     return { last };
@@ -223,7 +228,7 @@ export function createKit(cfg) {
   }
   function beginTurn(announce) {
     const p = player(); p.shotPts = 0;
-    S.phase = 'aim'; R.hit.disabled = false; renderHud();
+    S.phase = 'aim'; R.hit.disabled = false; R.ideal.disabled = false; renderHud();
     if (announce) {
       R.bannerName.textContent = `${p.name}`; R.bannerSub.textContent = `your turn · shot ${p.shots + 1} of ${shotsPerPlayer}`;
       R.banner.hidden = false; R.banner.classList.remove('go'); void R.banner.offsetWidth; R.banner.classList.add('go');
@@ -308,7 +313,7 @@ export function createKit(cfg) {
     on(ev, f) { (handlers[ev] = handlers[ev] || []).push(f); return this; },
     showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub,
     setPrompt(html) { R.prompt.innerHTML = html; },
-    get phase() { return S.phase; }, set phase(v) { S.phase = v; R.hit.disabled = v !== 'aim'; },
+    get phase() { return S.phase; }, set phase(v) { S.phase = v; R.hit.disabled = R.ideal.disabled = v !== 'aim'; },
     get player() { return player(); }, get players() { return S.players; },
     get multiplier() { return mult(); }, get difficulty() { return diffObj(); },
     get club() { return clubIdx; }, sfx, els: R,

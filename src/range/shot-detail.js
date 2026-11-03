@@ -51,7 +51,9 @@ export function shotShape(start, axis) {
   const s = start < -1.5 ? 'Pull' : start > 1.5 ? 'Push' : '';
   const c = axis < -8 ? 'hook' : axis < -2.5 ? 'draw' : axis > 8 ? 'slice' : axis > 2.5 ? 'fade' : '';
   if (!s && !c) return 'Straight';
-  if (!s) return c[0].toUpperCase() + c.slice(1);
+  // a ball that starts one side and curves back toward the target is just a draw/fade/hook/slice
+  const curvesBack = c && ((start < 0 && axis > 0) || (start > 0 && axis < 0));
+  if (!s || curvesBack) return c[0].toUpperCase() + c.slice(1);
   return c ? `${s} ${c}` : s;
 }
 

@@ -58,3 +58,13 @@ test('shape picker never repeats the last shape', () => {
   let last = null;
   for (let i = 0; i < 200; i++) { const k = pickShape(Math.random, last); assert.notEqual(k, last); last = k; }
 });
+
+test('shot names: curving back is a plain draw/fade, same-side curve keeps push/pull', async () => {
+  globalThis.THREE = globalThis.THREE || {};
+  const { shotShape } = await import('../src/range/shot-detail.js');
+  assert.equal(shotShape(-2.4, 6.5), 'Fade');
+  assert.equal(shotShape(2.4, -6.5), 'Draw');
+  assert.equal(shotShape(3, 6), 'Push fade');
+  assert.equal(shotShape(-3, -5), 'Pull draw');
+  assert.equal(shotShape(4, 0), 'Push');
+});

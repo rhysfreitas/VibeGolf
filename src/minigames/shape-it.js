@@ -23,7 +23,7 @@ const kit = createKit({
     'Consecutive scoring shots build a streak up to <b>×4</b>. A full miss resets it.',
     '10 shots each. The map shows where the rings are, from above and from the side.',
   ],
-  shotsPerPlayer: 10, difficulties: DIFFICULTIES, challenges: CHALLENGES, clubs: CLUBS,
+  shotsPerPlayer: 10, difficulties: DIFFICULTIES, challenges: CHALLENGES, clubs: CLUBS, idealShot: true,
 });
 
 /* ===================== rings ===================== */
@@ -185,6 +185,8 @@ let diff = DIFFICULTIES[0];
 kit.on('start', ({ difficulty }) => { diff = difficulty; cur.lastShape = null; sv.clearGhosts(); });
 kit.on('turn', () => newShape());
 kit.on('hit', () => swing());
+// test helper: the exact reference shot the rings were built from (always threads them dead centre)
+kit.on('ideal', () => launch(shapeBall(CLUBS[cur.refClub], cur.shape), false, true));
 kit.on('club', i => { cur.club = i; sv.address(CLUBS[i].tee); });
 
 function newShape() {
@@ -194,7 +196,7 @@ function newShape() {
   const clubId = shape.clubs[Math.floor(Math.random() * shape.clubs.length)];
   const club = CLUBS[clubIndex(clubId)];
   const res = simulate(shapeBall(club, key), { groundAt: () => 0 });
-  cur.shape = key; cur.club = clubIndex(clubId); cur.ref = res.pts;
+  cur.shape = key; cur.club = cur.refClub = clubIndex(clubId); cur.ref = res.pts;
   rings = buildRings(res.pts, diff); makeRings(rings);
   // guide line through the rings (Beginner, Amateur)
   if (!guide) { guide = sv.mkLine(1.4, 0.45); guide.material.color.set(CYAN); guide.material.dashed = true; guide.material.dashSize = 2.5; guide.material.gapSize = 2.5; guide.material.defines.USE_DASH = ''; }
@@ -213,7 +215,7 @@ function newShape() {
 
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 function swing() {
-  // a simulated golfer trying the shape with the chosen club
+  // a simulated golfer *attempting* the shape with the chosen club: sometimes pure, sometimes not
   const b = shapeBall(CLUBS[cur.club], cur.shape);
   // a decent amateur's spread: on Beginner most swings find a ring or two, perfects are earned
   b.HLA += gauss() * 3.0; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1;
@@ -221,8 +223,8 @@ function swing() {
 }
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, true); });
 
-function launch(ball, live) {
-  kit.phase = 'flight';
+function launch(ball, live, ideal = false) {
+  kit.phase = 'flight'; cur.ideal = ideal;
   const r = simulate(ball, { groundAt, surfaceAt });
   cur.results = testRings(r.pts, rings); cur.step = 0; cur.ball = ball; cur.live = live; cur.r = r;
   cur.events = cur.results.map((res, i) => ({ i, res, t: res.t ?? Infinity, done: false })).filter(e => Number.isFinite(e.t));
@@ -266,7 +268,7 @@ function finishShot() {
   kit.showResult(`
     <div class="top"><span class="lbl">${SHAPES[cur.shape].name} · ${pl.name}</span><span class="pts ${shotPts ? '' : 'zero'}">${shotPts ? '+' + shotPts : '0'}</span></div>
     <div class="items">${cur.results.map((r, i) => `<span>Ring ${i + 1} · ${r.hit ? `<b>${r.perfect ? 'Perfect' : 'Through'}</b>` : Number.isFinite(r.missYd) ? `missed by ${r.missYd < 10 ? r.missYd.toFixed(1) : Math.round(r.missYd)} yd` : 'not reached'}</span>`).join('')}</div>
-    <div class="meta"><span>You hit <b>${hit}</b></span><span><b>${Math.round(cur.r.carry)}</b> yd ${cur.live ? '· R10' : ''}</span></div>`);
+    <div class="meta"><span>You hit <b>${hit}</b></span><span><b>${Math.round(cur.r.carry)}</b> yd ${cur.live ? '· R10' : cur.ideal ? '· Ideal' : '· Sim'}</span></div>`);
   drawMap(cur.r.pts);
   setTimeout(() => kit.next(), end.last ? 1600 : 2200);
 }

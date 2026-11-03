@@ -77,6 +77,9 @@ button { font: inherit; color: inherit; }
 .mg-hit { appearance: none; border: 0; border-radius: 12px; min-height: 52px; background: var(--gold); color: var(--flag-ink); cursor: pointer; font-family: var(--f-data); font-weight: 700; font-size: 19px; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
 .mg-hit:active { transform: translateY(1px) scale(0.98); }
 .mg-hit:disabled { opacity: 0.35; cursor: default; }
+.mg-ideal { appearance: none; border: 1px dashed rgba(255,210,87,0.55); background: rgba(16,18,28,0.6); color: var(--gold); border-radius: 9px; min-height: 32px; cursor: pointer; font-family: var(--f-data); font-weight: 600; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; }
+.mg-ideal small { font-size: 9.5px; letter-spacing: 0.14em; color: var(--mist); margin-left: 4px; }
+.mg-ideal:disabled { opacity: 0.35; cursor: default; }
 
 /* ---------- bottom right: last shot ---------- */
 .mg-result { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); width: 210px; padding: 8px 10px 9px; z-index: 5; display: flex; flex-direction: column; gap: 5px; }
