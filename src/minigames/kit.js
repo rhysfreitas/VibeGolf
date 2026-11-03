@@ -59,8 +59,9 @@ function createSfx() {
 export function createKit(cfg) {
   const {
     id, title, blurb = '', shotsPerPlayer = 10, difficulties, challenges: pool = [], clubs = [],
-    rules = [], accent, idealShot = false,
+    rules = [], accent, idealShot = false, mode = 'shots', summary = null,
   } = cfg;
+  const RUN = mode === 'run'; // 'shots': N shots each, round robin · 'run': each player plays until their run ends
   const handlers = {};
   const emit = (ev, d) => (handlers[ev] || []).forEach(f => f(d));
   const sfx = createSfx();
@@ -112,12 +113,16 @@ export function createKit(cfg) {
   mountLaunchMonitorUI({ dot: R.lmDot, text: R.lmText, button: R.lmBtn, compact: true });
 
   /* ---------- state ---------- */
+  // the roster: names are shared across games, each player's difficulty is remembered per game
+  const names = store.get('players', ['Player 1']).map(n => (typeof n === 'string' ? n : n.name));
+  const lastDiff = store.get(`mg.${id}.diff`, difficulties[0].id);
+  const savedDiffs = store.get(`mg.${id}.diffs`, []);
   const S = {
-    difficulty: store.get(`mg.${id}.diff`, difficulties[0].id),
-    names: store.get('players', ['Player 1']),
-    players: [], cur: 0, shot: 0, streak: 0, challenges: [], phase: 'setup', shotHits: 0,
+    roster: names.map((name, i) => ({ name, diff: difficulties.some(d => d.id === savedDiffs[i]) ? savedDiffs[i] : lastDiff })),
+    players: [], cur: 0, challenges: [], phase: 'setup', shotLabel: '',
   };
-  const diffObj = () => difficulties.find(d => d.id === S.difficulty) || difficulties[0];
+  const findDiff = idd => difficulties.find(d => d.id === idd) || difficulties[0];
+  const diffObj = () => (player() ? player().difficulty : findDiff(S.roster[0] && S.roster[0].diff));
   const player = () => S.players[S.cur];
   const mult = () => Math.min(MAX_MULT, 1 + player().streak);
 
@@ -147,9 +152,9 @@ export function createKit(cfg) {
   let shownScore = 0, scoreAnim = null;
   function renderHud() {
     const p = player(); if (!p) return;
-    R.diff.textContent = diffObj().label;
+    R.diff.textContent = p.difficulty.label;
     R.player.textContent = p.name;
-    R.shot.textContent = `Shot ${Math.min(p.shots + 1, shotsPerPlayer)} of ${shotsPerPlayer}`;
+    R.shot.textContent = RUN ? S.shotLabel : `Shot ${Math.min(p.shots + 1, shotsPerPlayer)} of ${shotsPerPlayer}`;
     const m = mult();
     R.mult.textContent = '×' + m; R.mult.dataset.level = m; R.mult.classList.toggle('live', m > 1);
     R.stars.innerHTML = S.challenges.map((c, i) => `<i class="${p.done[i] ? 'on' : ''}" title="${esc(c.text)}">★</i>`).join('');
@@ -158,16 +163,21 @@ export function createKit(cfg) {
       R.board.innerHTML = S.players.map((q, i) => `<li class="${i === S.cur ? 'cur' : ''}"><span>${esc(q.name)}</span><b class="num">${fmt(q.score)}</b></li>`).join('');
     } else R.board.hidden = true;
   }
+  // Roll the score up to `target`. Uses performance.now() for both ends of the timing: some iPhones
+  // hand requestAnimationFrame a timestamp on a different clock, which made the roll-up never end
+  // (and the number climb forever).
   function countUpTo(target) {
     cancelAnimationFrame(scoreAnim);
-    const from = shownScore, t0 = performance.now(), dur = Math.min(900, 300 + (target - from) * 0.8);
-    const stepF = now => {
-      const u = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 3);
+    const from = shownScore, t0 = performance.now(), dur = Math.max(1, Math.min(900, 300 + Math.abs(target - from) * 0.8));
+    const stepF = () => {
+      const u = Math.max(0, Math.min(1, (performance.now() - t0) / dur)), e = 1 - Math.pow(1 - u, 3);
       shownScore = from + (target - from) * e; R.score.textContent = fmt(shownScore);
-      if (u < 1) scoreAnim = requestAnimationFrame(stepF); else { shownScore = target; R.score.classList.remove('bump'); }
+      if (u < 1) scoreAnim = requestAnimationFrame(stepF); else { shownScore = target; R.score.textContent = fmt(target); R.score.classList.remove('bump'); }
     };
     R.score.classList.add('bump'); scoreAnim = requestAnimationFrame(stepF);
   }
+  // show a player's own score immediately when their turn starts
+  function showScore(v) { cancelAnimationFrame(scoreAnim); shownScore = v; R.score.textContent = fmt(v); R.score.classList.remove('bump'); }
 
   /* ---------- feedback ---------- */
   let splashT = 0, closeT = 0, toastT = 0;
@@ -213,24 +223,30 @@ export function createKit(cfg) {
     else p.streak = 0;
     S.phase = 'between'; R.hit.disabled = true; R.ideal.disabled = true;
     renderHud();
-    const last = S.players.every(q => q.shots >= shotsPerPlayer);
+    const last = !RUN && S.players.every(q => q.shots >= shotsPerPlayer);
     return { last };
   }
+  // run mode: the current player's run is over (e.g. the fence fell)
+  function finishRun() { player().finished = true; S.phase = 'between'; R.hit.disabled = true; R.ideal.disabled = true; renderHud(); }
+  const isDone = q => (RUN ? q.finished : q.shots >= shotsPerPlayer);
   function showResult(html) { R.result.innerHTML = html; R.result.hidden = false; }
 
   /* ---------- turn flow ---------- */
   function next() {
-    if (S.players.every(q => q.shots >= shotsPerPlayer)) { finish(); return false; }
+    if (S.players.every(isDone)) { finish(); return false; }
+    if (RUN && !player().finished) { beginTurn(false); return true; }       // same run continues
     // round robin; skip anyone who has finished
-    do { S.cur = (S.cur + 1) % S.players.length; } while (player().shots >= shotsPerPlayer);
+    do { S.cur = (S.cur + 1) % S.players.length; } while (isDone(player()));
+    if (RUN) { showScore(player().score); emit('runStart', { player: player(), index: S.cur }); }
     beginTurn(S.players.length > 1);
     return true;
   }
   function beginTurn(announce) {
     const p = player(); p.shotPts = 0;
+    if (Math.round(shownScore) !== p.score) showScore(p.score);
     S.phase = 'aim'; R.hit.disabled = false; R.ideal.disabled = false; renderHud();
     if (announce) {
-      R.bannerName.textContent = `${p.name}`; R.bannerSub.textContent = `your turn · shot ${p.shots + 1} of ${shotsPerPlayer}`;
+      R.bannerName.textContent = `${p.name}`; R.bannerSub.textContent = RUN ? `your run · ${p.difficulty.label}` : `your turn · shot ${p.shots + 1} of ${shotsPerPlayer}`;
       R.banner.hidden = false; R.banner.classList.remove('go'); void R.banner.offsetWidth; R.banner.classList.add('go');
       setTimeout(() => { R.banner.hidden = true; }, 1600);
     }
@@ -238,70 +254,83 @@ export function createKit(cfg) {
   }
 
   /* ---------- start screen ---------- */
+  const usedDiffs = () => [...new Set(S.roster.map(r => r.diff))];
   function pickChallenges() {
-    const avail = pool.filter(c => !c.only || c.only.includes(S.difficulty));
+    const used = usedDiffs();
+    const avail = pool.filter(c => !c.only || used.every(d => c.only.includes(d)));
     const pick = [], a = avail.slice();
     while (pick.length < 3 && a.length) pick.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
     return pick;
   }
   function renderStart() {
-    const best = store.get(`best.${id}.${S.difficulty}`, null);
+    const used = usedDiffs(), all = used.length === 1 ? used[0] : null;
+    const bests = used.map(d => ({ d: findDiff(d), b: store.get(`best.${id}.${d}`, null) }));
     R.startPanel.innerHTML = `
       <div class="mg-sTitle"><span class="lbl">Mini game</span><h1>${esc(title)}</h1><p>${esc(blurb)}</p></div>
       <div class="mg-sGrid">
         <div class="mg-sCol">
-          <span class="lbl">Difficulty</span>
-          <div class="mg-seg">${difficulties.map(d => `<button class="${d.id === S.difficulty ? 'on' : ''}" data-diff="${d.id}">${esc(d.label)}</button>`).join('')}</div>
-          <p class="note">${esc(diffObj().note || '')}</p>
-          <span class="lbl">Players</span>
-          <div class="mg-players">${S.names.map((n, i) => `<div class="mg-pl"><input id="pl${i}" value="${esc(n)}" maxlength="14" aria-label="Player ${i + 1} name">${S.names.length > 1 ? `<button data-rm="${i}" aria-label="Remove player">×</button>` : ''}</div>`).join('')}
-          ${S.names.length < 4 ? '<button class="mg-add" data-add>+ Add player</button>' : ''}</div>
+          <span class="lbl">Players &amp; difficulty</span>
+          <div class="mg-players">${S.roster.map((r, i) => `<div class="mg-pl"><input id="pl${i}" value="${esc(r.name)}" maxlength="14" aria-label="Player ${i + 1} name">
+            <select id="pd${i}" aria-label="${esc(r.name)} difficulty">${difficulties.map(d => `<option value="${d.id}" ${d.id === r.diff ? 'selected' : ''}>${esc(d.label)}</option>`).join('')}</select>
+            ${S.roster.length > 1 ? `<button data-rm="${i}" aria-label="Remove player">×</button>` : ''}</div>`).join('')}
+          ${S.roster.length < 4 ? '<button class="mg-add" data-add>+ Add player</button>' : ''}</div>
+          ${S.roster.length > 1 ? `<span class="lbl">Set everyone to</span><div class="mg-seg">${difficulties.map(d => `<button class="${d.id === all ? 'on' : ''}" data-diff="${d.id}">${esc(d.label)}</button>`).join('')}</div>` : ''}
+          <div class="mg-notes">${used.map(d => `<p class="note"><b>${esc(findDiff(d).label)}:</b> ${esc(findDiff(d).note || '')}</p>`).join('')}</div>
         </div>
         <div class="mg-sCol">
           <span class="lbl">This run's challenges</span>
           <ul class="mg-chal">${S.challenges.map(c => `<li><i>★</i>${esc(c.text)}</li>`).join('')}</ul>
           ${rules.length ? `<span class="lbl">How it works</span><ul class="mg-rules">${rules.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
-          <p class="mg-best">${best ? `Best on ${esc(diffObj().label)}: <b class="num">${fmt(best.score)}</b> · ${'★'.repeat(best.stars || 0)}${'☆'.repeat(3 - (best.stars || 0))}` : `No best yet on ${esc(diffObj().label)}`}</p>
+          <p class="mg-best">${bests.map(({ d, b }) => b ? `Best on ${esc(d.label)}: <b class="num">${fmt(b.score)}</b> ${'★'.repeat(b.stars || 0)}${'☆'.repeat(3 - (b.stars || 0))}` : `No best yet on ${esc(d.label)}`).join('<br>')}</p>
         </div>
       </div>
       <div class="mg-sBtns"><label class="mg-snd"><input type="checkbox" id="mgSound" ${sfx.on ? 'checked' : ''}> Sound</label><button class="mg-go" data-go>Start</button></div>`;
     const P = R.startPanel;
-    P.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { S.difficulty = b.dataset.diff; store.set(`mg.${id}.diff`, S.difficulty); readNames(); S.challenges = pickChallenges(); renderStart(); });
-    P.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { readNames(); S.names.splice(+b.dataset.rm, 1); renderStart(); });
-    const add = P.querySelector('[data-add]'); if (add) add.onclick = () => { readNames(); S.names.push(`Player ${S.names.length + 1}`); renderStart(); };
+    const reroll = () => { S.challenges = pickChallenges(); renderStart(); };
+    P.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { readRoster(); S.roster.forEach(r => { r.diff = b.dataset.diff; }); reroll(); });
+    P.querySelectorAll('.mg-pl select').forEach(sel => sel.onchange = () => { readRoster(); reroll(); });
+    P.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { readRoster(); S.roster.splice(+b.dataset.rm, 1); reroll(); });
+    const add = P.querySelector('[data-add]'); if (add) add.onclick = () => { readRoster(); S.roster.push({ name: `Player ${S.roster.length + 1}`, diff: S.roster[S.roster.length - 1].diff }); renderStart(); };
     P.querySelector('#mgSound').onchange = e => { sfx.on = e.target.checked; };
-    P.querySelector('[data-go]').onclick = () => { sfx.init(); readNames(); beginGame(); };
+    P.querySelector('[data-go]').onclick = () => { sfx.init(); readRoster(); beginGame(); };
   }
-  function readNames() {
-    const ins = R.startPanel.querySelectorAll('.mg-pl input');
-    if (ins.length) S.names = [...ins].map((el, i) => el.value.trim() || `Player ${i + 1}`);
+  function readRoster() {
+    const rows = R.startPanel.querySelectorAll('.mg-pl');
+    if (rows.length) S.roster = [...rows].map((row, i) => ({ name: row.querySelector('input').value.trim() || `Player ${i + 1}`, diff: row.querySelector('select').value }));
   }
   function showStart() {
     S.phase = 'setup'; S.challenges = pickChallenges(); renderStart();
     R.endScr.hidden = true; R.startScr.hidden = false; R.play.hidden = true; R.result.hidden = true;
   }
-  function beginGame(same) {
-    store.set('players', S.names);
-    S.players = S.names.map(name => ({ name, score: 0, shots: 0, streak: 0, stats: {}, done: [false, false, false], shotPts: 0 }));
-    S.cur = 0; shownScore = 0; R.score.textContent = '0';
+  function beginGame() {
+    store.set('players', S.roster.map(r => r.name));
+    store.set(`mg.${id}.diffs`, S.roster.map(r => r.diff)); store.set(`mg.${id}.diff`, S.roster[0].diff);
+    S.players = S.roster.map(r => ({ name: r.name, difficulty: findDiff(r.diff), score: 0, shots: 0, streak: 0, stats: {}, done: [false, false, false], shotPts: 0, finished: false }));
+    S.cur = 0; showScore(0);
     R.startScr.hidden = true; R.endScr.hidden = true; R.play.hidden = false; R.result.hidden = true;
-    emit('start', { difficulty: diffObj(), players: S.players });
+    emit('start', { players: S.players });
+    if (RUN) emit('runStart', { player: player(), index: 0 });
     beginTurn(S.players.length > 1);
   }
 
   /* ---------- end screen ---------- */
   function finish() {
     S.phase = 'over'; R.play.hidden = true;
-    const key = `best.${id}.${S.difficulty}`, best = store.get(key, null);
     const ranked = S.players.map((p, i) => ({ ...p, i, stars: p.done.filter(Boolean).length })).sort((a, b) => b.score - a.score);
-    const top = ranked[0], newBest = !best || top.score > best.score;
-    if (newBest || (best && top.stars > (best.stars || 0))) store.set(key, { score: Math.max(top.score, best ? best.score : 0), stars: Math.max(top.stars, best ? best.stars || 0 : 0), name: top.name });
+    // bests are kept per difficulty; each player can set one on their own level
+    ranked.forEach(p => {
+      const key = `best.${id}.${p.difficulty.id}`, best = store.get(key, null);
+      p.newBest = !best || p.score > best.score;
+      p.prevBest = best;
+      if (p.newBest || (best && p.stars > (best.stars || 0))) store.set(key, { score: Math.max(p.score, best ? best.score : 0), stars: Math.max(p.stars, best ? best.stars || 0 : 0), name: p.name });
+    });
+    const top = ranked[0], solo = S.players.length === 1;
     sfx.fanfare();
     R.endPanel.innerHTML = `
-      <div class="mg-sTitle"><span class="lbl">${esc(title)} · ${esc(diffObj().label)}</span><h1>${S.players.length > 1 ? `${esc(top.name)} wins` : 'Round complete'}</h1>
-      ${newBest ? '<div class="mg-newBest">NEW BEST!</div>' : best ? `<p>Best: <b class="num">${fmt(best.score)}</b>${best.name && S.players.length > 1 ? ' · ' + esc(best.name) : ''}</p>` : ''}</div>
-      <ol class="mg-standings">${ranked.map((p, r) => `<li class="${r === 0 ? 'win' : ''}"><span class="pos">${r + 1}</span><span class="nm">${esc(p.name)}</span><span class="st">${'<i class="on">★</i>'.repeat(p.stars)}${'<i>★</i>'.repeat(3 - p.stars)}</span><b class="num">${fmt(p.score)}</b></li>`).join('')}</ol>
-      <ul class="mg-chal done">${S.challenges.map((c, i) => `<li class="${S.players.some(p => p.done[i]) ? 'got' : ''}"><i>★</i>${esc(c.text)}${S.players.length > 1 ? ` <small>${S.players.filter(p => p.done[i]).map(p => esc(p.name)).join(', ')}</small>` : ''}</li>`).join('')}</ul>
+      <div class="mg-sTitle"><span class="lbl">${esc(title)}${solo ? ' · ' + esc(top.difficulty.label) : ''}</span><h1>${solo ? (RUN ? 'Run over' : 'Round complete') : `${esc(top.name)} wins`}</h1>
+      ${solo ? (top.newBest ? '<div class="mg-newBest">NEW BEST!</div>' : top.prevBest ? `<p>Best: <b class="num">${fmt(top.prevBest.score)}</b></p>` : '') : ''}</div>
+      <ol class="mg-standings">${ranked.map((p, r) => `<li class="${r === 0 ? 'win' : ''}"><span class="pos">${r + 1}</span><span class="nm">${esc(p.name)}<small>${esc(p.difficulty.label)}${summary ? ' · ' + esc(summary(p)) : ''}</small></span><span class="st">${!solo && p.newBest ? '<em class="nb">NEW BEST</em>' : ''}${'<i class="on">★</i>'.repeat(p.stars)}${'<i>★</i>'.repeat(3 - p.stars)}</span><b class="num">${fmt(p.score)}</b></li>`).join('')}</ol>
+      <ul class="mg-chal done">${S.challenges.map((c, i) => `<li class="${S.players.some(p => p.done[i]) ? 'got' : ''}"><i>★</i>${esc(c.text)}${!solo ? ` <small>${S.players.filter(p => p.done[i]).map(p => esc(p.name)).join(', ')}</small>` : ''}</li>`).join('')}</ul>
       <div class="mg-sBtns"><a class="mg-ghost" href="games.html">Mini games</a><button class="mg-ghost" data-setup>Change setup</button><button class="mg-go" data-again>Play again</button></div>`;
     R.endPanel.querySelector('[data-again]').onclick = () => { S.challenges = pickChallenges(); beginGame(); };
     R.endPanel.querySelector('[data-setup]').onclick = showStart;
@@ -311,7 +340,8 @@ export function createKit(cfg) {
 
   return {
     on(ev, f) { (handlers[ev] = handlers[ev] || []).push(f); return this; },
-    showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub,
+    showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, finishRun,
+    setShotLabel(t) { S.shotLabel = t; if (RUN) R.shot.textContent = t; },
     setPrompt(html) { R.prompt.innerHTML = html; },
     get phase() { return S.phase; }, set phase(v) { S.phase = v; R.hit.disabled = R.ideal.disabled = v !== 'aim'; },
     get player() { return player(); }, get players() { return S.players; },

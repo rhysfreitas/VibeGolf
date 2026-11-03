@@ -130,7 +130,10 @@ button { font: inherit; color: inherit; }
 .mg-seg button { appearance: none; border: 0; background: transparent; border-radius: 7px; padding: 7px 4px; cursor: pointer; font-family: var(--f-data); font-weight: 600; font-size: 13px; letter-spacing: 0.04em; color: var(--mist); }
 .mg-seg button.on { background: var(--bone); color: var(--ink); }
 .mg-players { display: flex; flex-direction: column; gap: 4px; }
-.mg-pl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
+.mg-pl { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px; }
+.mg-pl select { background: rgba(0,0,0,0.28); border: 1px solid var(--line); border-radius: 8px; color: var(--bone); font-family: var(--f-data); font-size: 14px; padding: 6px 6px; }
+.mg-notes { display: flex; flex-direction: column; gap: 3px; }
+.mg-notes b { color: var(--bone); font-weight: 600; }
 .mg-pl input { min-width: 0; background: rgba(0,0,0,0.28); border: 1px solid var(--line); border-radius: 8px; color: var(--bone); font-family: var(--f-data); font-size: 15px; padding: 7px 9px; }
 .mg-pl button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--mist); border-radius: 8px; width: 34px; cursor: pointer; font-size: 18px; }
 .mg-add { appearance: none; border: 1px dashed var(--line); background: transparent; color: var(--mist); border-radius: 8px; padding: 7px; cursor: pointer; font-family: var(--f-data); font-size: 13px; letter-spacing: 0.06em; }
@@ -153,7 +156,9 @@ button { font: inherit; color: inherit; }
 .mg-standings li { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 9px; background: rgba(0,0,0,0.2); font-family: var(--f-data); }
 .mg-standings li.win { background: rgba(255,210,87,0.12); border: 1px solid rgba(255,210,87,0.35); }
 .mg-standings .pos { color: var(--mist); font-size: 13px; }
-.mg-standings .nm { font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-standings .nm { font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; flex-direction: column; }
+.mg-standings .nm small { font-size: 11.5px; font-weight: 500; color: var(--mist); letter-spacing: 0.04em; }
+.mg-standings .nb { font-style: normal; font-size: 10px; letter-spacing: 0.12em; color: #1a1206; background: var(--gold); border-radius: 999px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; }
 .mg-standings .st i { font-style: normal; color: rgba(255,255,255,0.2); font-size: 15px; }
 .mg-standings .st i.on { color: var(--gold); }
 .mg-standings b { font-size: 20px; }

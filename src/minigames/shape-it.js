@@ -182,7 +182,7 @@ function drawMap(shot) {
 const cur = { shape: null, club: 0, ref: [], results: null, events: [], step: 0, lastShape: null, flight: null, live: false };
 let diff = DIFFICULTIES[0];
 
-kit.on('start', ({ difficulty }) => { diff = difficulty; cur.lastShape = null; sv.clearGhosts(); });
+kit.on('start', () => { cur.lastShape = null; sv.clearGhosts(); });
 kit.on('turn', () => newShape());
 kit.on('hit', () => swing());
 // test helper: the exact reference shot the rings were built from (always threads them dead centre)
@@ -190,6 +190,7 @@ kit.on('ideal', () => launch(shapeBall(CLUBS[cur.refClub], cur.shape), false, tr
 kit.on('club', i => { cur.club = i; sv.address(CLUBS[i].tee); });
 
 function newShape() {
+  diff = kit.player.difficulty; // each player can play their own level
   sv.clearGhosts();
   const key = pickShape(Math.random, cur.lastShape); cur.lastShape = key;
   const shape = SHAPES[key];
@@ -288,7 +289,7 @@ function step(dt) {
   sv.update(dt); world.animate(clock);
   if (sv.flight && !sv.flight.done && Math.floor(clock * 15) !== Math.floor((clock - dt) * 15)) drawMap(sv.flight.pts.slice(0, Math.max(2, sv.flight.pts.findIndex(q => q.t > sv.flight.t))));
 }
-function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; fitToScreen(); step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
+function frame(now) { const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; fitToScreen(); step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 window.__advance = (sec, n) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (n && i % n === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
 window.__shape = cur; window.__kit = kit;
 
