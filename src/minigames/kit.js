@@ -72,7 +72,7 @@ export function createKit(cfg) {
   hud.innerHTML = `
   <div class="mg-tl">
     <div class="mg-card glass">
-      <div class="mg-game">${esc(title)} <span class="mg-diff" data-r="diff"></span></div>
+      <div class="mg-game"><span class="mg-title">${esc(title)}</span><span class="mg-diff" data-r="diff"></span></div>
       <div class="mg-row"><span class="mg-player" data-r="player"></span><span class="mg-shot" data-r="shot"></span></div>
       <div class="mg-row mg-scoreRow">
         <span class="num mg-score" data-r="score">0</span>

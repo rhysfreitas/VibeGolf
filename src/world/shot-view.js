@@ -13,6 +13,7 @@ export const BALL_RADIUS = 0.02135;
 export function createShotView(world, opts = {}) {
   const { renderer, scene, camera, groundAt, sunDir } = world;
   const color = opts.tracerColor || '#f5c542';
+  const stanceOpts = opts.stance || {};   // e.g. { back, up, ballAt } to stand a little higher for a game
   const PR = () => renderer.getPixelRatio();
 
   const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_RADIUS, 24, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, envMapIntensity: 0.9 }));
@@ -85,7 +86,7 @@ export function createShotView(world, opts = {}) {
     const bs = BALL_RADIUS * 3.2 * ball.scale.x * (1 + h * 0.02);
     shadow.scale.set(bs, bs, 1); shadow.material.opacity = flight ? Math.max(0, 0.75 - h / 40) : 0;
     // camera: standing over the ball; tips up only as far as the ball (or a kept target) needs
-    const v = stanceView(addrBall, FWD, vfov(), { keep: flight && !flight.done ? ball.position : keepPoint });
+    const v = stanceView(addrBall, FWD, vfov(), { ...stanceOpts, keep: flight && !flight.done ? ball.position : keepPoint });
     if (!cam.init) { cam.pos.copy(v.pos); cam.look.copy(v.look); cam.init = true; }
     cam.pos.lerp(v.pos, 1 - Math.exp(-6 * dt)); cam.look.lerp(v.look, 1 - Math.exp(-3 * dt));
     camera.fov = vfov(); camera.updateProjectionMatrix();

@@ -30,7 +30,8 @@ How a mini game is put together (Shape It is the reference):
 - `games.html` is the menu. Each game is its own page (`shape-it.html`) loading `styles/minigame.css` and one module.
 - `src/minigames/kit.js` is the shared kit: start screen (difficulty, players, three run challenges, best), turns and scoreboard, `award()` with the ×4 streak, `splash()`, `soClose()`, `stat()` → challenge stars, `endShot()` / `next()`, end screen and bests (localStorage `vibegolf.best.<game>.<difficulty>`), the bottom-left prompt + club chip + Hit, the bottom-right result card, and synthesised sounds (`kit.sfx`).
 - Each game has its own scene in `src/minigames/scenes/`, built on `src/world/stage.js` (renderer, sky, sun, fog, noise helpers, `terrainMesh`). A scene returns `{ renderer, scene, camera, sunDir, groundAt, surfaceAt, aimShadows, animate }`. Range-like games can use `src/world/range-world.js` instead.
-- `src/world/shot-view.js` gives every range-based game the ball, shadow, growing tracer, flight playback and stand-over-ball camera.
+- `src/world/shot-view.js` gives every range-based game the ball, shadow, growing tracer, flight playback and stand-over-ball camera (`stance: { back, up, ballAt }` raises the view for games like Island Hopper where targets sit below you).
+- `src/minigames/aim.js` `solveShot()` finds ball data that reaches a target for simulated Hit / Ideal shot. Measure carry as true distance to the landing point, not downrange `r.carry`, or wide targets go badly wrong.
 - Keep game rules pure in `<game>-logic.js` and test them in `tests/` (see `tests/shape-it.test.mjs`).
 - Simulated swings should miss like a decent amateur (start direction σ≈3°, spin axis σ≈6.5°), so Beginner is generous but not automatic.
 - Real-time `setTimeout` gaps between shots mean headless tests need `WAIT` steps between swings, not just `__advance`.

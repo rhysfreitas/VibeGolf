@@ -37,8 +37,10 @@ button { font: inherit; color: inherit; }
 /* ---------- top left: game card + scoreboard ---------- */
 .mg-tl { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 8px); left: max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 6px; z-index: 5; width: 210px; }
 .mg-card { padding: 6px 10px 7px; display: flex; flex-direction: column; gap: 1px; }
-.mg-game { font-family: var(--f-data); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); display: flex; justify-content: space-between; gap: 8px; }
+.mg-game { font-family: var(--f-data); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; align-items: baseline; text-transform: uppercase; color: var(--accent); display: flex; justify-content: space-between; gap: 8px; }
 .mg-diff { font-weight: 500; color: var(--mist); font-size: 10.5px; letter-spacing: 0.1em; }
+.mg-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.mg-diff { flex: none; }
 .mg-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .mg-player { font-family: var(--f-data); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mg-shot { font-family: var(--f-data); font-size: 11.5px; color: var(--mist); white-space: nowrap; }
