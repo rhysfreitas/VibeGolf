@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<title>Zombie Siege · VibeGolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles/minigame.css">
+<link rel="stylesheet" href="styles/shared.css">
+<style>
+/* Zombie Siege extras: fence health (top centre) and the field map under the tools */
+.zs-fence { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
+.zs-bar { width: 150px; height: 9px; border-radius: 6px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.zs-bar i { display: block; height: 100%; width: 100%; border-radius: 6px; background: linear-gradient(90deg, #6dff6d, #b8ff5a); transition: width .25s ease; }
+.zs-fence[data-level="warn"] .zs-bar i { background: linear-gradient(90deg, #ffb040, #ffd257); }
+.zs-fence[data-level="bad"] .zs-bar i { background: linear-gradient(90deg, #ff3a3a, #ff6a4a); animation: zsPulse 0.8s ease-in-out infinite; }
+.zs-fence b { font-size: 14px; min-width: 3.2ch; text-align: right; }
+@keyframes zsPulse { 50% { opacity: 0.55; } }
+.zs-map { width: 116px; height: 190px; padding: 4px; cursor: crosshair; }
+.zs-map canvas { display: block; width: 100%; height: 100%; }
+@media (min-height: 560px) and (min-width: 900px) { .zs-map { width: 150px; height: 250px; } .zs-bar { width: 220px; } }
+@media (max-width: 760px) and (orientation: landscape) { .zs-map { width: 100px; height: 170px; } .zs-bar { width: 96px; } .zs-fence { padding: 5px 9px; gap: 6px; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="vendor/three-r147/three.min.js"></script>
+<script src="vendor/three-r147/Sky.js"></script>
+<script src="vendor/three-r147/lines/LineSegmentsGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineMaterial.js"></script>
+<script src="vendor/three-r147/lines/LineSegments2.js"></script>
+<script src="vendor/three-r147/lines/Line2.js"></script>
+<script type="module" src="src/minigames/zombie-siege.js"></script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

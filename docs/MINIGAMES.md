@@ -36,7 +36,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 | **Splash words** | One short word per big moment (PERFECT, SHAPE!, TRIPLE, STRIKE…). One at a time and brief. |
 | **Run challenges** | Three optional goals shown at the start of each run. Each completed one is worth a star (max 3). |
 | **End screen** | Score, stars, personal best, a **NEW BEST!** banner, and Play again. Bests are saved per game and difficulty. |
-| **Players** | 1–4 players with names, a turn banner and a live scoreboard (hot-seat). |
+| **Players** | 1–4 players with names, **each with their own difficulty**, a turn banner and a live scoreboard (hot-seat). Bests are kept per difficulty. Shot games take turns. Survival games (`mode: 'run'`) give each player a full run in turn. |
 | **Help** | A suggested club for each target, the corner map (top view, plus a side view where height matters), and live R10 or simulated swings. |
 | **Test swings** | Without a live R10, **Hit** is a simulated golfer *attempting* the shot (a realistic amateur spread), and a dashed **Ideal shot** button hits the exact shot the target was built from. It's hidden while the R10 is live. |
 

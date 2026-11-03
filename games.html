@@ -58,10 +58,12 @@ a.tile:hover { transform: translateY(-2px); border-color: rgba(245,197,66,0.55);
       <span class="thumb" style="background-image:url(assets/thumb-shape-it.jpg)" role="img" aria-label="Glowing rings over a desert mesa"></span>
       <span class="body"><h2>Shape It</h2><p>Fly through rings that trace a shot shape.</p><span class="meta">Play</span><span class="best" data-best="shape-it"></span></span>
     </a>
-    <div class="tile glass soon" style="--a:#3c2a2a;--b:#141010"><span class="thumb soon"><span>Coming soon</span></span>
-      <span class="body"><h2>Zombie Siege</h2><p>Bomb the horde before it reaches your fence.</p><span class="meta">Next up</span></span></div>
+    <a class="tile glass" href="zombie-siege.html">
+      <span class="thumb" style="background-image:url(assets/thumb-zombie-siege.jpg)" role="img" aria-label="Zombies on a farm at dusk"></span>
+      <span class="body"><h2>Zombie Siege</h2><p>Bomb the horde before it reaches your fence.</p><span class="meta">Play</span><span class="best" data-best="zombie-siege"></span></span>
+    </a>
     <div class="tile glass soon" style="--a:#3a5f7a;--b:#1b2a36"><span class="thumb soon"><span>Coming soon</span></span>
-      <span class="body"><h2>Island Hopper</h2><p>Land island to island above the clouds.</p><span class="meta">Coming soon</span></span></div>
+      <span class="body"><h2>Island Hopper</h2><p>Land island to island above the clouds.</p><span class="meta">Next up</span></span></div>
     <div class="tile glass soon" style="--a:#3f4d36;--b:#1a2016"><span class="thumb soon"><span>Coming soon</span></span>
       <span class="body"><h2>Golf HORSE</h2><p>Call a shot. Make your friends copy it.</p><span class="meta">Coming soon</span></span></div>
     <div class="tile glass soon" style="--a:#5a2f46;--b:#1d1018"><span class="thumb soon"><span>Coming soon</span></span>
@@ -78,7 +80,7 @@ a.tile:hover { transform: translateY(-2px); border-color: rgba(245,197,66,0.55);
   // personal best on each playable tile
   document.querySelectorAll('[data-best]').forEach(el => {
     let best = null;
-    try { for (const d of ['beginner', 'amateur', 'pro', 'tour']) { const v = JSON.parse(localStorage.getItem(`vibegolf.best.${el.dataset.best}.${d}`)); if (v) best = { d, ...v }; } } catch (e) { /* storage blocked */ }
+    try { for (const d of ['beginner', 'amateur', 'pro', 'tour', 'easy', 'normal', 'hard', 'nightmare']) { const v = JSON.parse(localStorage.getItem(`vibegolf.best.${el.dataset.best}.${d}`)); if (v) best = { d, ...v }; } } catch (e) { /* storage blocked */ }
     if (best) el.textContent = `Best ${best.score.toLocaleString()} · ${best.d[0].toUpperCase() + best.d.slice(1)}`;
   });
 </script>
