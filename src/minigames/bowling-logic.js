@@ -59,9 +59,10 @@ export const CHALLENGES = [
   { id: 'strikes2', text: 'Bowl 2 strikes in a game', key: 'strikes', goal: 2, only: ['pro', 'tour'] },
   { id: 'marks3', text: 'Mark 3 frames in a row', key: 'markRun', goal: 3, only: ['beginner'] },
   { id: 'marks2', text: 'Mark 2 frames in a row', key: 'markRun', goal: 2, only: ['amateur', 'pro', 'tour'] },
-  { id: 's120', text: 'Score 120+', key: 'score', goal: 120, only: ['beginner'] },
-  { id: 's100', text: 'Score 100+', key: 'score', goal: 100, only: ['amateur'] },
-  { id: 's80', text: 'Score 80+', key: 'score', goal: 80, only: ['pro', 'tour'] },
+  { id: 's140', text: 'Score 140+', key: 'score', goal: 140, only: ['beginner'] },
+  { id: 's120', text: 'Score 120+', key: 'score', goal: 120, only: ['amateur'] },
+  { id: 's90', text: 'Score 90+', key: 'score', goal: 90, only: ['pro'] },
+  { id: 's75', text: 'Score 75+', key: 'score', goal: 75, only: ['tour'] },
 ];
 
 /* ===================== the rack ===================== */

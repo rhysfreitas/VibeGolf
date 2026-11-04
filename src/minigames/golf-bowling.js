@@ -89,7 +89,7 @@ function refresh() {
   sol = aimFor(p.up, d); kit.setClub(sol.sugg, true); kit.setClub(sol.club);
   world.setGuide(d.guide ? sol.x : null, sol.cross.slope);
   kit.setShotLabel(`Frame ${f + 1} · Ball ${fr.length + 1}`);
-  const full = p.up.length === 10, how = sol.club < sol.sugg ? ' punch' : sol.k < 0.97 ? ` ${Math.round(sol.k * 100)}%` : '';
+  const full = p.up.length === 10, how = sol.club < sol.sugg || sol.k < 0.8 ? ' punch' : sol.k < 0.97 ? ' ¾' : ''; // below full, the sim hits it lower and flatter
   kit.setPrompt(`<span class="kick">Frame ${f + 1} · Ball ${fr.length + 1}</span>
     <span class="bw-row"><span class="big">${full ? `${d.lane} <small>yd</small>` : `${p.up.length} <small>pin${p.up.length === 1 ? '' : 's'} left</small>`}</span>${pinDiag(p.up)}</span>
     <span class="sub">${full ? 'Fly it into the pocket' : p.splits[f] ? 'A split: clip one into the other' : 'Pick up the spare'} · <b>${CLUBS[sol.club].id}</b>${how} ${SHAPES[shapeI].name.toLowerCase()}</span>`);
