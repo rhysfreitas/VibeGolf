@@ -3,6 +3,7 @@
 // Design: docs/MINIGAMES.md §3. A life-size tin shooting gallery: cans, bullseye boards, a rail of
 // ducks gliding slowly across, and the prize bell. Difficulty sets target size.
 
+import { toolBall } from './aim.js';
 export const YD = 0.9144;
 export const SHOTS = 12;
 
@@ -161,22 +162,29 @@ export function aimPoint(row, lay, state, now, flightTime = 5) {
 }
 
 // Ball data whose flight passes through `aim` (a point on a vertical target). sim(ball) → physics result.
-export function solveAim(sim, clubs, aim) {
-  const D = Math.hypot(aim.x, aim.z), hla = Math.atan2(aim.x, -aim.z) * 180 / Math.PI;
-  const ball = (c, k) => ({ Speed: c.Speed * k, VLA: c.VLA + (1 - k) * 7, HLA: hla, TotalSpin: c.TotalSpin * (0.65 + 0.35 * k), SpinAxis: 0 });
-  // height of the ball when it's D metres out (or -1 if it never gets there in the air)
-  const heightAt = r => {
+export function solveAim(sim, clubs, aim, { club = null, traj = 'normal', axis = 0 } = {}) {
+  const D = Math.hypot(aim.x, aim.z), bearing = Math.atan2(aim.x, -aim.z);
+  let hla = bearing * 180 / Math.PI;
+  const ball = (c, k) => toolBall(c, k, hla, { traj, axis });
+  // where the ball is when it's D metres out (y = -1 if it never gets there in the air)
+  const at = r => {
     const P = r.pts;
     for (let i = 1; i < P.length; i++) {
       const a = Math.hypot(P[i - 1].p[0], P[i - 1].p[2]), b = Math.hypot(P[i].p[0], P[i].p[2]);
-      if (b >= D) { const f = (D - a) / ((b - a) || 1); return { y: P[i - 1].p[1] + (P[i].p[1] - P[i - 1].p[1]) * f, t: P[i - 1].t + (P[i].t - P[i - 1].t) * f }; }
+      if (b >= D) { const f = (D - a) / ((b - a) || 1), q = j => P[i - 1].p[j] + (P[i].p[j] - P[i - 1].p[j]) * f; return { y: q(1), x: q(0), z: q(2), t: P[i - 1].t + (P[i].t - P[i - 1].t) * f }; }
     }
     return { y: -1, t: r.flightTime };
   };
-  let ci = 0;
-  for (let i = clubs.length - 1; i >= 0; i--) { if (heightAt(sim(ball(clubs[i], 1))).y >= aim.y) { ci = i; break; } }
+  let ci = club;
+  if (ci == null) { ci = 0; for (let i = clubs.length - 1; i >= 0; i--) { if (at(sim(ball(clubs[i], 1))).y >= aim.y) { ci = i; break; } } }
   const c = clubs[ci];
-  let lo = 0.3, hi = 1, k = 1, h = heightAt(sim(ball(c, 1)));
-  if (h.y > aim.y) { for (let it = 0; it < 16; it++) { k = (lo + hi) / 2; h = heightAt(sim(ball(c, k))); if (h.y > aim.y) hi = k; else lo = k; } k = (lo + hi) / 2; h = heightAt(sim(ball(c, k))); }
+  let k = 1, h;
+  for (let pass = 0; pass < 3; pass++) {
+    let lo = 0.3, hi = 1; k = 1; h = at(sim(ball(c, 1)));
+    if (h.y > aim.y) { for (let it = 0; it < 16; it++) { k = (lo + hi) / 2; h = at(sim(ball(c, k))); if (h.y > aim.y) hi = k; else lo = k; } k = (lo + hi) / 2; h = at(sim(ball(c, k))); }
+    if (h.y < 0 || !axis) break;                         // straight shots start on line already
+    const err = bearing - Math.atan2(h.x, -h.z); if (Math.abs(err) < 0.001) break;
+    hla += err * 180 / Math.PI;                          // aim off so the curve brings it back
+  }
   return { club: ci, k, ball: ball(c, k), timeToTarget: h.t };
 }

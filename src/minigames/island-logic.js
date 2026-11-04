@@ -2,6 +2,7 @@
 // World frame: x right, y up, -z ahead, metres. Each hop starts from where the ball came to rest.
 // Design: docs/MINIGAMES.md §4. Difficulty sets island size; islands shrink as the run goes on.
 
+import { toolBall } from './aim.js';
 export const YD = 0.9144;
 export const LIVES = 3;
 export const PAD_FRAC = 0.22;     // the glowing pad is this share of the island's radius
@@ -118,20 +119,28 @@ export function nearestMiss(pts, from, options) {
 
 /* ---------- aiming help (simulated Hit / Ideal shot) ---------- */
 // Ball data that comes to rest near the centre of island `I` from `from`, using the real islands.
-export function solveHop(simulate, clubs, from, I, islands) {
-  const tx = I.x - from.x, tz = I.z - from.z, dist = Math.hypot(tx, tz);
-  const hla = Math.atan2(tx, -tz) * 180 / Math.PI;
+// o: the simulated-shot tool's settings ({ club, traj, axis }); club null = shortest that gets there
+export function solveHop(simulate, clubs, from, I, islands, { club = null, traj = 'normal', axis = 0 } = {}) {
+  const tx = I.x - from.x, tz = I.z - from.z, dist = Math.hypot(tx, tz), bearing = Math.atan2(tx, -tz);
+  let hla = bearing * 180 / Math.PI;
   const g = (x, z) => { const v = groundAt(islands, x + from.x, z + from.z); return v === null ? null : v - from.y; };
-  const ball = (c, k) => ({ Speed: c.Speed * k, VLA: c.VLA + (1 - k) * 7, HLA: hla, TotalSpin: c.TotalSpin * (0.65 + 0.35 * k), SpinAxis: 0 });
+  const ball = (c, k) => toolBall(c, k, hla, { traj, axis });
   const run = b => simulate(b, { groundAt: g, voidY: VOID_Y });
-  const along = r => { const p = r.pts[r.pts.length - 1].p; return (p[0] * tx + p[2] * tz) / dist; };
-  let ci = 0;                                    // longest club if nothing shorter gets there
-  for (let i = clubs.length - 1; i >= 0; i--) { if (along(run(ball(clubs[i], 1))) >= dist) { ci = i; break; } }
+  const end = r => r.pts[r.pts.length - 1].p;
+  const along = r => { const p = end(r); return (p[0] * tx + p[2] * tz) / dist; };
+  let ci = club;                                  // longest club if nothing shorter gets there
+  if (ci == null) { ci = 0; for (let i = clubs.length - 1; i >= 0; i--) { if (along(run(ball(clubs[i], 1))) >= dist) { ci = i; break; } } }
   const c = clubs[ci];
-  let lo = 0.3, hi = 1, k = 1, r = run(ball(c, 1));
-  if (along(r) > dist) {
-    for (let it = 0; it < 16; it++) { k = (lo + hi) / 2; r = run(ball(c, k)); if (along(r) > dist) hi = k; else lo = k; }
-    k = (lo + hi) / 2; r = run(ball(c, k));
+  let k = 1, r;
+  for (let pass = 0; pass < 3; pass++) {
+    let lo = 0.3, hi = 1; k = 1; r = run(ball(c, 1));
+    if (along(r) > dist) {
+      for (let it = 0; it < 16; it++) { k = (lo + hi) / 2; r = run(ball(c, k)); if (along(r) > dist) hi = k; else lo = k; }
+      k = (lo + hi) / 2; r = run(ball(c, k));
+    }
+    if (!axis) break;                              // straight shots start on line already
+    const p = end(r), err = bearing - Math.atan2(p[0], -p[2]); if (Math.abs(err) < 0.002) break;
+    hla += err * 180 / Math.PI;                    // aim off so the curve brings it back
   }
   return { club: ci, k, ball: ball(c, k), flightTime: r.flightTime, outcome: r.outcome };
 }

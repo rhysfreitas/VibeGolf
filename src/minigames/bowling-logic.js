@@ -333,8 +333,11 @@ export function bestLine(up, { L, pinMass = 1, slope = 0, speed = 14, h = AIM_H,
 /* ===================== aiming the simulated / ideal shot ===================== */
 // A swing with club c at effort k (1 = full). Below full, a longer club is hit as a knockdown:
 // lower launch, a little less speed and spin, so it comes in low and hot.
-export function swing(c, k, hla, axis = 0) {
-  return { Speed: c.Speed * (0.8 + 0.2 * k), VLA: c.VLA * (0.4 + 0.6 * k), HLA: hla, TotalSpin: c.TotalSpin * (0.6 + 0.4 * k), SpinAxis: axis };
+// traj: the simulated-shot tool's Normal / Punch / Stinger (lower launch and spin on top).
+const TRAJ = { normal: [1, 1], punch: [0.75, 0.8], stinger: [0.55, 0.65] };
+export function swing(c, k, hla, axis = 0, traj = 'normal') {
+  const [v, sp] = TRAJ[traj] || TRAJ.normal;
+  return { Speed: c.Speed * (0.8 + 0.2 * k), VLA: c.VLA * (0.4 + 0.6 * k) * v, HLA: hla, TotalSpin: c.TotalSpin * (0.6 + 0.4 * k) * sp, SpinAxis: axis };
 }
 // where a flight (physics points) crosses the head pin's row: height, x, slope, speed, descent.
 // A ball that comes down short gets a negative height (how far short), so it stays monotonic.
@@ -349,8 +352,8 @@ export function crossing(pts, L) {
 // into clubs, or null for the shortest club whose full swing gets there at that height.
 // flight(ball) must return physics points on flat ground (flightOnly).
 // Pass k (a swing effort already solved for this club, shape and lane) to only re-aim sideways.
-export function solveInto(flight, clubs, { L, x = 0, h = AIM_H, axis = 0, club = null, k: k0 = null }) {
-  const at = (c, k, hla) => crossing(flight(swing(c, k, hla, axis)), L);
+export function solveInto(flight, clubs, { L, x = 0, h = AIM_H, axis = 0, traj = 'normal', club = null, k: k0 = null }) {
+  const at = (c, k, hla) => crossing(flight(swing(c, k, hla, axis, traj)), L);
   let hla = Math.atan2(x, L) * 180 / Math.PI;
   let ci = club;
   if (ci == null) { ci = 0; for (let i = clubs.length - 1; i >= 0; i--) if (at(clubs[i], 1, hla).y >= h) { ci = i; break; } }
@@ -364,5 +367,5 @@ export function solveInto(flight, clubs, { L, x = 0, h = AIM_H, axis = 0, club =
   }
   for (let it = 0; it < 2; it++) { cr = at(c, k, hla); hla += Math.atan2(x - cr.x, L) * 180 / Math.PI; }
   cr = at(c, k, hla);
-  return { club: ci, k, ball: swing(c, k, hla, axis), cross: cr };
+  return { club: ci, k, ball: swing(c, k, hla, axis, traj), cross: cr };
 }

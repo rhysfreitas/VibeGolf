@@ -8,6 +8,7 @@ import { createSkyIslands } from './scenes/sky-islands.js';
 import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
 import { YD, LIVES, VOID_Y, DIFFICULTIES, CHALLENGES, BANDS, band, startIsland, makeOptions, resolveHop, solveHop, distYd, padRadius, teeSpot } from './island-logic.js';
+import { amateurMiss } from './aim.js';
 
 const stage = document.getElementById('stage');
 const world = createSkyIslands(stage);
@@ -57,14 +58,19 @@ function drawMap() {
   }
   if (G.track && G.track.length > 1) { g.strokeStyle = '#fff3c4'; g.lineWidth = 1.4; g.beginPath(); G.track.forEach((p, i) => { const [x, y] = mapXY(p[0] + G.from.x, p[2] + G.from.z, W, H); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
   const [bx, by] = mapXY(G.from.x, G.from.z, W, H); g.fillStyle = '#fff'; g.beginPath(); g.arc(bx, by, 2.4, 0, 7); g.fill();
+  if (kit.spot) { const [sx, sy] = mapXY(G.from.x + kit.spot.x, G.from.z + kit.spot.z, W, H); kit.drawSpot(g, sx, sy); }
 }
 mapCv.addEventListener('click', e => {
   if (kit.phase !== 'aim') return;
   const r = mapCv.getBoundingClientRect(), W = r.width, H = r.height;
   let best = null, bd = Infinity;
-  for (const I of G.options) { const [x, y] = mapXY(I.x, I.z, W, H), d = Math.hypot(x - (e.clientX - r.left), y - (e.clientY - r.top)); if (d < bd) { bd = d; best = I; } }
-  if (best) selectTarget(best);
+  for (const I of G.options) { const [x, y] = mapXY(I.x, I.z, W, H), d = Math.hypot(x - (e.clientX - r.left), y - (e.clientY - r.top)) - Math.max(3, I.r * (H - 14) / (MAPYD * YD)); if (d < bd) { bd = d; best = I; } }
+  if (best && bd < 10) { selectTarget(best); return; }
+  // anywhere else: the next simulated shot goes to that spot
+  const k = (H - 14) / (MAPYD * YD), x = (e.clientX - r.left - W / 2) / k, z = -(H - 8 - (e.clientY - r.top)) / k;
+  if (-z > 5) kit.mapSpot(x, z);
 });
+kit.on('spot', () => drawMap());
 const ray = new THREE.Raycaster(); let down = null;
 renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
 renderer.domElement.addEventListener('pointerup', e => {
@@ -118,13 +124,15 @@ function renderPrompt() {
 
 /* ===================== shots ===================== */
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-kit.on('hit', () => {
-  if (!G.solve) return;
-  const b = { ...G.solve.ball }; // a decent amateur attempting it (CLAUDE.md "Mini games")
-  b.HLA += gauss() * 3.0; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1;
-  launch(b, 'Sim');
-});
-kit.on('ideal', () => { if (G.solve) launch({ ...G.solve.ball }, 'Ideal'); });
+// simulated shots: the tool's club, trajectory and shape, to the island (or a spot tapped on the map)
+function toolSolve(s) {
+  const plain = s.clubAuto && s.axisAuto && s.traj === 'normal' && !s.target;
+  if (plain) return G.solve;
+  const I = s.target ? { x: G.from.x + s.target.x, z: G.from.z + s.target.z } : G.target;
+  return solveHop(simulate, CLUBS, G.from, I, [G.current, ...G.options], { club: s.clubAuto ? null : s.club, traj: s.traj, axis: s.axis });
+}
+kit.on('hit', s => { const sol = G.target && toolSolve(s); if (sol) launch(amateurMiss(sol.ball), 'Sim'); });
+kit.on('ideal', s => { const sol = G.target && toolSolve(s); if (sol) launch({ ...sol.ball }, 'Ideal'); });
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 
 function launch(ball, src) {

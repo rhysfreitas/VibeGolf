@@ -3,6 +3,8 @@ import { simulate } from '../physics.js';
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
 import { HOLES } from './aerie.js';
 import { createMinimap } from './minimap.js';
+import { createSimTool } from '../sim-tool.js';
+import { TRAJ_MUL } from '../minigames/aim.js';
 import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
@@ -471,7 +473,16 @@ function resizeLines() { const w = renderer.domElement.width, h = renderer.domEl
 /* ===================== corner map ===================== */
 const minimap = createMinimap(document.getElementById('minimap'));
 // the corner map doubles as the only view switch: tap for the whole hole, tap again to return
-document.getElementById('minimapWrap').addEventListener('click', () => setCam(state.cam === 'map' ? 'tv' : 'map'));
+// tap a spot on the corner map to aim there (club and swing length follow); ⤢ shows the whole hole
+document.getElementById('mmExpand').addEventListener('click', e => { e.stopPropagation(); setCam(state.cam === 'map' ? 'tv' : 'map'); });
+document.getElementById('minimap').addEventListener('click', e => {
+  if (state.phase !== 'address') return;
+  const r = e.currentTarget.getBoundingClientRect(), w = minimap.toWorld(e.clientX - r.left, e.clientY - r.top);
+  if (!w) return;
+  const p = new THREE.Vector3(w[0], groundAt(w[0], w[1]) ?? state.ball.y, w[1]);
+  if (p.distanceTo(state.ball) < 3) return;
+  state.aimCustom = p.clone(); aimAt(p);
+});
 function groundTrack(W, upto) { const out = []; for (let i = 0; i <= upto; i += 8) out.push({ x: W[i].w.x, z: W[i].w.z }); out.push({ x: W[upto].w.x, z: W[upto].w.z }); return out; }
 let mmFrame = 0;
 function drawMinimap() {
@@ -499,6 +510,14 @@ const state = {
   flight: null, t: 0, restTimer: 0, preview: null, lastShot: null, puttAnim: null, flyT: 0, lastLie: null,
 };
 const $ = id => document.getElementById(id);
+// the simulated-shot tool: club (Auto = the suggestion), Normal / Punch / Stinger, shape, Ideal / Hit
+const lieLine = document.createElement('p'); lieLine.className = 'st-note'; lieLine.id = 'pvLie';
+const tool = createSimTool($('simMount'), {
+  clubs: CLUBS, extra: lieLine,
+  note: 'Tap the course or the corner map to aim at a spot; the arrows fine-tune. Your R10 shots fly as you hit them.',
+  onChange: () => { if (state.phase === 'address') applyTool(); },
+  onShot: s => swing(s),
+});
 const yd = m => Math.round(m / M_PER_YD);
 
 function dirFromYaw(y) { return new THREE.Vector3(Math.sin(y), 0, -Math.cos(y)); }
@@ -572,9 +591,27 @@ function aimAt(p, autoClub = true) {
   state.yaw = Math.atan2(d.x, -d.z);
   if (autoClub) {
     const dist = Math.hypot(d.x, d.z), dy = (p.y - state.ball.y);
-    const s = suggest(dist, dy); state.club = s.ci; state.power = s.pk; state.sugg = s.ci;
+    const s = suggest(dist, dy); state.club = s.ci; state.power = s.pk; state.sugg = s.ci; state.suggPow = s.pk;
+    state.aimDist = dist; state.aimDy = dy;
+    tool.suggest({ club: s.ci });
+  }
+  applyTool();
+}
+// The simulated-shot tool: Auto plays the suggested club and swing length; a club you pick gets
+// the swing length that best reaches your target. Trajectory and shape change the ball itself.
+function applyTool() {
+  const s = tool.settings;
+  if (s.clubAuto) { state.club = state.sugg ?? state.club; state.power = state.suggPow ?? state.power; }
+  else {
+    state.club = s.club; let best = 0, be = Infinity;
+    for (let pk = 0; pk < POWERS.length; pk++) { const e = Math.abs(carryFor(s.club, pk, state.aimDy || 0) - (state.aimDist || 0)); if (e < be - 1) { be = e; best = pk; } }
+    state.power = best;
   }
   updatePreview(); renderPlan();
+}
+function planShot() {
+  const s = tool.settings, b = clubShot(state.club, state.power), t = TRAJ_MUL[s.traj] || TRAJ_MUL.normal;
+  return { Speed: b.Speed * t.speed, VLA: b.VLA * t.vla, HLA: -s.axis * 0.37, TotalSpin: b.TotalSpin * t.spin, SpinAxis: s.axis };
 }
 function selectTarget(i) { state.target = i; state.aimCustom = null; aimAt(targetPoint(i)); }
 
@@ -584,7 +621,7 @@ function updatePreview() {
   clearTimeout(pvTimer);
   pvTimer = setTimeout(() => {
     const fr = shotFrame(state.ball, state.yaw);
-    const r = simulate(lieAdjust(clubShot(state.club, state.power), state.lie), { ...fr, altFt: 0 });
+    const r = simulate(lieAdjust(planShot(), state.lie), { ...fr, altFt: 0 });
     state.preview = r;
     const pts = r.pts, li = pts.findIndex(p => p.phase !== 'flight');
     const arr = [], tmpV = new THREE.Vector3();
@@ -631,16 +668,9 @@ function renderPlan() {
     tw.appendChild(b);
   });
   if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
-  const cw = $('clubs');
-  if (!cw.children.length) CLUBS.forEach((c, i) => { const b = document.createElement('button'); b.className = 'club'; b.textContent = c.id; b.title = c.name; b.onclick = () => { if (state.phase !== 'address') return; state.club = i; updatePreview(); renderPlan(); }; cw.appendChild(b); });
-  [...cw.children].forEach((b, i) => { b.setAttribute('aria-pressed', String(i === state.club)); b.classList.toggle('sugg', i === state.sugg); });
-  const pw = $('power');
-  if (!pw.children.length) POWERS.forEach((p, i) => { const b = document.createElement('button'); b.className = 'pw'; b.textContent = p.label; b.title = 'Swing length ' + p.label; b.onclick = () => { if (state.phase !== 'address') return; state.power = i; updatePreview(); renderPlan(); }; pw.appendChild(b); });
-  [...pw.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === state.power)));
   const lieNames = { tee: 'Tee box', fairway: 'Fairway', rough: 'Rough −5%', sand: 'Bunker −14%', green: 'Green' };
-  $('pvLie').textContent = 'Lie: ' + (lieNames[state.lie] || state.lie);
+  $('pvLie').textContent = `${CLUBS[state.club].name}${state.power ? ' · ' + POWERS[state.power].label : ''} · Lie: ${lieNames[state.lie] || state.lie}`;
   $('vClub').textContent = CLUBS[state.club].name + (state.power ? ' · ' + POWERS[state.power].label : '');
-  $('chipClub').textContent = CLUBS[state.club].id; $('chipPow').textContent = POWERS[state.power].label;
   if (state.lastSentClub !== state.club) { state.lastSentClub = state.club; launchMonitor.setPlayer({ club: CLUBS[state.club].id }); }
 }
 function renderHoleCard() {
@@ -668,11 +698,11 @@ function toast(title, msg, ms = 2600) { const t = $('toast'); t.innerHTML = `<b>
 function setPhaseUI() {
   const onGreen = state.phase === 'putt';
   $('swingUI').hidden = onGreen || state.phase === 'holed' || state.phase === 'rolling'; $('putt').hidden = !(onGreen || state.phase === 'rolling');
-  $('hit').disabled = state.phase !== 'address';
+  tool.setEnabled(state.phase === 'address');
   $('puttBtn').disabled = state.phase !== 'putt';
   $('dock').style.visibility = state.phase === 'intro' ? 'hidden' : 'visible';
   $('targetsBox').hidden = state.phase !== 'address';
-  if (state.phase !== 'address' && !$('plan').hidden) togglePlan(false);
+  if (state.phase !== 'address' && tool.isOpen) tool.open(false);
 
   $('skip').hidden = state.phase !== 'intro';
   $('intro').hidden = state.phase !== 'intro';
@@ -719,8 +749,8 @@ function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v 
 function realSwing(base) {
   const s = { ...base }, face = gauss() * 1.5, path = gauss() * 2.0, strike = Math.random();
   if (window.__noVar) return { ...base, HLA: 0, SpinAxis: 0 };
-  s.HLA = face * 0.8 + path * 0.2;
-  s.SpinAxis = (face - path) * 1.6 + gauss() * 1.2;
+  s.HLA = (base.HLA || 0) + face * 0.8 + path * 0.2;
+  s.SpinAxis = (base.SpinAxis || 0) + (face - path) * 1.6 + gauss() * 1.2;
   s.Speed = base.Speed * (1 + gauss() * 0.012);
   s.VLA = base.VLA + gauss() * 0.9;
   s.TotalSpin = base.TotalSpin * (1 + gauss() * 0.07);
@@ -736,7 +766,7 @@ launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
 mountLaunchMonitorUI({ dot: document.getElementById('lmDot'), text: document.getElementById('lmText'), button: document.getElementById('lmBtn'), compact: true });
 window.Aerie = { receiveShot(msg) { const b = msg.BallData || msg; if (b.Speed > 0) receiveShot({ Speed: +b.Speed, VLA: +b.VLA, HLA: +(b.HLA || 0), TotalSpin: +b.TotalSpin, SpinAxis: +(b.SpinAxis || 0) }); } };
 
-function swing() { if (state.phase !== 'address') return; initAudio(); launch(realSwing(clubShot(state.club, state.power))); }
+function swing(s = { ideal: false }) { if (state.phase !== 'address') return; initAudio(); launch(s.ideal ? planShot() : realSwing(planShot())); }
 function launch(raw) {
   const shot = lieAdjust(raw, state.lie);
   const fr = shotFrame(state.ball, state.yaw);
@@ -983,7 +1013,7 @@ if (!camState.addressLook) camState.addressLook = new THREE.Vector3(0, -10, -100
 const ray = new THREE.Raycaster(); let down = null;
 renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
 renderer.domElement.addEventListener('pointerup', e => {
-  if (!$('plan').hidden) { togglePlan(false); return; }
+  if (tool.isOpen) { tool.open(false); return; }
   if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8 || state.phase !== 'address') return;
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }, camera);
@@ -1000,11 +1030,7 @@ for (const [id, d] of [['aimL', -1], ['aimR', 1]]) {
   b.addEventListener('pointerdown', e => { e.preventDefault(); nudge(d * 0.004); clearInterval(aimHold); aimHold = setInterval(() => nudge(d * 0.004), 70); });
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => clearInterval(aimHold));
 }
-$('hit').onclick = swing; $('puttBtn').onclick = putt;
-// club & swing-length fly-out
-function togglePlan(open = $('plan').hidden) { $('plan').hidden = !open; $('btnClub').setAttribute('aria-expanded', String(open)); }
-$('btnClub').onclick = () => togglePlan();
-document.querySelector('[data-close="plan"]').onclick = () => togglePlan(false);
+$('puttBtn').onclick = putt;
 $('readout').addEventListener('click', () => $('readout').classList.toggle('more'));
 // portrait nudge (phones only; dismissible)
 const portraitPhone = matchMedia('(orientation: portrait) and (pointer: coarse)');
@@ -1012,12 +1038,12 @@ let rotateDismissed = false;
 const syncRotate = () => { $('rotate').hidden = rotateDismissed || !portraitPhone.matches; };
 portraitPhone.addEventListener?.('change', syncRotate); syncRotate();
 $('rotateOk').onclick = () => { rotateDismissed = true; syncRotate(); };
-$('sound').onclick = e => { state.sound = !state.sound; e.currentTarget.setAttribute('aria-pressed', String(state.sound)); if (audio.ctx) audio.amb.gain.setTargetAtTime(state.sound ? 0.05 : 0, audio.ctx.currentTime, 0.3); };
+$('sound').onclick = e => { state.sound = !state.sound; e.currentTarget.setAttribute('aria-pressed', String(state.sound)); e.currentTarget.classList.toggle('off', !state.sound); if (audio.ctx) audio.amb.gain.setTargetAtTime(state.sound ? 0.05 : 0, audio.ctx.currentTime, 0.3); };
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if (e.code === 'Space') { e.preventDefault(); if (state.phase === 'intro') endIntro(); else if (state.phase === 'putt') putt(); else swing(); }
+  if (e.code === 'Space') { e.preventDefault(); if (state.phase === 'intro') endIntro(); else if (state.phase === 'putt') putt(); else tool.shoot(false); }
   else if (e.key === 'ArrowLeft') nudge(-0.006); else if (e.key === 'ArrowRight') nudge(0.006);
-  else if (/^[1-8]$/.test(e.key) && state.phase === 'address') { state.club = +e.key - 1; updatePreview(); renderPlan(); }
+  else if (/^[1-8]$/.test(e.key) && state.phase === 'address') { tool.setClub(+e.key - 1); applyTool(); }
   else if (e.key === 'm' || e.key === 'M') setCam(state.cam === 'map' ? 'tv' : 'map');
 });
 

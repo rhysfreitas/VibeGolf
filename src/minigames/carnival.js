@@ -9,6 +9,7 @@ import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
 import { createCalliope } from './calliope.js';
 import { YD, SHOTS, DIFFICULTIES, CHALLENGES, ROWS, ROW_IDS, PRIZES, layout, duckX, duckLap, findHit, bounceOff, scoreHit, aimPoint, solveAim, prizeFor, nextPrize } from './carnival-logic.js';
+import { amateurMiss } from './aim.js';
 
 // the painted signs use a carnival typeface: give it a moment to arrive before drawing them
 if (document.fonts) await Promise.race([document.fonts.load('40px "Rye"'), new Promise(r => setTimeout(r, 1500))]).catch(() => {});
@@ -57,9 +58,10 @@ let clock = 0;
 const fsim = b => simulate(b, { groundAt, flightOnly: true });
 const state = () => ({ cansDown: G.cans[kit.current] || [], ducksDown: G.ducksDown, t0: clock });
 
-function solveNow() {
-  const lay = G.lay; let aim = aimPoint(G.row, lay, state(), clock), sol = solveAim(fsim, CLUBS, aim);
-  if (G.row === 'ducks') { aim = aimPoint('ducks', lay, state(), clock, sol.timeToTarget); sol = solveAim(fsim, CLUBS, aim); }
+function solveNow(s = null) { // s: the simulated-shot tool's settings (club, trajectory, shape)
+  const o = s ? { club: s.clubAuto ? null : s.club, traj: s.traj, axis: s.axis } : {};
+  const lay = G.lay; let aim = aimPoint(G.row, lay, state(), clock), sol = solveAim(fsim, CLUBS, aim, o);
+  if (G.row === 'ducks') { aim = aimPoint('ducks', lay, state(), clock, sol.timeToTarget); sol = solveAim(fsim, CLUBS, aim, o); }
   return { aim, sol };
 }
 function refreshAim() {
@@ -90,9 +92,8 @@ renderer.domElement.addEventListener('pointerup', e => {
 });
 
 /* ===================== shots ===================== */
-function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-kit.on('hit', () => { const { sol } = solveNow(); const b = { ...sol.ball }; b.HLA += gauss() * 3; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1; launch(b, 'Sim'); });
-kit.on('ideal', () => { const { sol } = solveNow(); launch({ ...sol.ball }, 'Ideal'); });
+kit.on('hit', s => { const { sol } = solveNow(s); launch(amateurMiss(sol.ball), 'Sim'); });
+kit.on('ideal', s => { const { sol } = solveNow(s); launch({ ...sol.ball }, 'Ideal'); });
 kit.on('club', i => { sv.address(CLUBS[i].tee); });
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 

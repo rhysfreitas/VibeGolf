@@ -3,6 +3,7 @@
 // The street below is TEE_H lower (a Topgolf-style bay above the first garage).
 // Design: docs/MINIGAMES.md §5. The setter calls a target, a shape and a height; everyone else copies it.
 
+import { toolBall } from './aim.js';
 export const YD = 0.9144;
 export const FT = 0.3048;
 export const TEE_H = 11;         // the deck is this far above the street (a top-floor bay)
@@ -159,20 +160,22 @@ export function cpuCall(rand = Math.random) {
 
 /* ---------- aiming help (Ideal shot, simulated Hit, the computer player) ---------- */
 // Ball data for a call to target T. `sim(ball)` returns a physics result over the real street.
-export function solveCall(sim, clubs, T, call) {
+// o (optional): the simulated-shot tool's own club / trajectory / shape, overriding the call's
+export function solveCall(sim, clubs, T, call, o = null) {
   const sh = SHAPE_MODS[call.shape] || {}, hm = HEIGHT_MODS[call.height] || {};
   const dist = Math.hypot(T.px, T.pz), aim = Math.atan2(T.px, -T.pz) * 180 / Math.PI;
-  const ball = (c, k, hla) => ({
+  const ball = o ? (c, k, hla) => toolBall(c, k, hla, o) : (c, k, hla) => ({
     Speed: c.Speed * k * (hm.speed || 1), VLA: c.VLA + (1 - k) * 7 + (hm.vla || 0), HLA: hla,
     TotalSpin: c.TotalSpin * (0.65 + 0.35 * k) * (hm.spin || 1), SpinAxis: sh.axis || 0,
   });
   // r.carry / r.carryOffline are measured at the first bounce, so `sim` may stop there (flightOnly)
   const land = b => { const r = sim(b), x = r.carryOffline * YD, z = -r.carry * YD; return { r, x, z, carry: Math.hypot(x, z) }; };
-  let hla = aim + (sh.hla || 0);
+  let hla = aim + (o ? 0 : sh.hla || 0);
   // shortest club whose full swing gets there; a Low call takes one more club and swings easier
   let ci = 0;
   for (let i = clubs.length - 1; i >= 0; i--) { if (land(ball(clubs[i], 1, hla)).carry >= dist) { ci = i; break; } }
-  if (call.height === 'low' && ci > 0) ci--;
+  if (call.height === 'low' && ci > 0 && !o) ci--;
+  if (o && o.club != null) ci = o.club;
   const c = clubs[ci];
   let k = 1, out = null;
   for (let pass = 0; pass < 3; pass++) {

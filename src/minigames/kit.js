@@ -2,15 +2,16 @@
 // mini game uses, so all games feel like one family:
 //   start screen (difficulty, players, this run's challenges, best) · turn banner · score + streak
 //   PERFECT / So close / splash words · score count-up · run challenges → stars · end screen + bests
-//   bottom-left prompt + club chip + Hit · bottom-right last-shot card · sounds
+//   bottom-left prompt + the simulated-shot tool (src/sim-tool.js) · bottom-right last-shot card · sounds
 //
 //   const kit = createKit({ id, title, blurb, shotsPerPlayer, difficulties, challenges, clubs });
 //   kit.on('start', ({ difficulty, players }) => ...);  kit.on('turn', ({ player, shot }) => ...)
-//   kit.on('hit', () => swing());  kit.on('club', i => ...)
+//   kit.on('hit', s => swing(s)); kit.on('ideal', s => ...)  (s: the tool's club / traj / axis / target)
 //   during a shot: kit.award(points, opts) / kit.splash(word) / kit.soClose(yd) / kit.stat(key, n)
 //   when the shot is over: kit.endShot(scored) → then kit.next()
 
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
+import { createSimTool } from '../sim-tool.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const store = {
@@ -97,18 +98,9 @@ export function createKit(cfg) {
   </div>
   <div class="mg-play" data-r="play">
     <div class="mg-prompt glass" data-r="prompt"></div>
-    <button class="mg-ideal" data-r="ideal" hidden title="Hits the exact shot the target was built from (simulated)">Ideal shot <small>test</small></button>
-    <div class="mg-hitrow">
-      <button class="mg-chip" data-r="clubBtn" aria-expanded="false" title="Club"><b data-r="club">7i</b><span>Club</span></button>
-      <button class="mg-hit" data-r="hit" title="A simulated golfer attempts the shot">Hit</button>
-    </div>
+    <div class="mg-hitrow" data-r="hitrow"></div>
   </div>
   <div class="mg-result glass" data-r="result" hidden></div>
-  <aside class="mg-sheet glass" data-r="clubSheet" hidden aria-label="Club">
-    <h2>Club <button class="x" data-r="clubX" aria-label="Close">×</button></h2>
-    <div class="mg-clubs" data-r="clubs"></div>
-    <p class="note">The suggested club is underlined. With your R10 connected, hit any club you like: the ball flight comes from the R10.</p>
-  </aside>
   <div class="mg-splash" data-r="splash" aria-live="polite"></div>
   <div class="mg-close" data-r="close"></div>
   <div class="mg-toast glass" data-r="toast"></div>
@@ -141,26 +133,31 @@ export function createKit(cfg) {
   const player = () => S.players[S.cur];
   const mult = () => (multiplier ? Math.min(MAX_MULT, 1 + player().streak) : 1);
 
-  /* ---------- clubs ---------- */
-  let clubIdx = 0, suggested = -1;
-  clubs.forEach((c, i) => { const b = document.createElement('button'); b.className = 'mg-clubBtn'; b.textContent = c.id; b.title = c.name; b.onclick = () => { setClub(i); toggleClubs(false); emit('club', i); }; R.clubs.appendChild(b); });
-  function setClub(i, isSuggestion) {
-    clubIdx = i; if (isSuggestion) suggested = i;
-    R.club.textContent = clubs[i] ? clubs[i].id : '';
-    [...R.clubs.children].forEach((b, j) => { b.setAttribute('aria-pressed', String(j === i)); b.classList.toggle('sugg', j === suggested); });
-    if (clubs[i]) launchMonitor.setPlayer({ club: clubs[i].id });
+  /* ---------- the simulated-shot tool (club, trajectory, shape, Ideal / Hit) ---------- */
+  // Every hit/ideal event carries the tool's settings: { club, traj, axis, ideal, target, clubAuto, axisAuto }.
+  let lastClub = -1;
+  const tool = createSimTool(R.hitrow, { clubs, onShot: st => { sfx.init(); if (S.phase === 'aim') emit(st.ideal ? 'ideal' : 'hit', st); }, onTarget: t => emit('spot', t) });
+  // a spot tapped on a game's map ({ x, z } metres from the ball): the next simulated shot goes there
+  // (the tool works out club length and direction). Games draw it with drawSpot().
+  function mapSpot(x, z) {
+    const yd = Math.hypot(x, z) / 0.9144, lat = x / 0.9144;
+    tool.setTarget({ x, z, label: `Your spot · ${Math.round(yd)} yd${Math.abs(lat) >= 1 ? ` · ${Math.round(Math.abs(lat))} ${lat < 0 ? 'L' : 'R'}` : ''}` });
+    sfx.tick();
   }
-  function toggleClubs(open = R.clubSheet.hidden) { R.clubSheet.hidden = !open; R.clubBtn.setAttribute('aria-expanded', String(open)); }
-  R.clubBtn.onclick = () => toggleClubs(); R.clubX.onclick = () => toggleClubs(false);
-  R.clubBtn.hidden = !clubs.length;
-  R.hit.onclick = () => { sfx.init(); if (S.phase === 'aim') emit('hit'); };
-  // test helper: the ideal shot is only offered while swings are simulated (no live R10)
-  const syncIdeal = () => { R.ideal.hidden = !idealShot || launchMonitor.status === 'ready'; };
-  launchMonitor.addEventListener('status', syncIdeal); syncIdeal();
-  R.ideal.onclick = () => { sfx.init(); if (S.phase === 'aim') emit('ideal'); };
+  function drawSpot(g, x, y) { // a gold cross on a map canvas
+    g.strokeStyle = '#ffd257'; g.lineWidth = 2; g.beginPath(); g.moveTo(x - 4, y - 4); g.lineTo(x + 4, y + 4); g.moveTo(x + 4, y - 4); g.lineTo(x - 4, y + 4); g.stroke();
+    g.strokeStyle = 'rgba(255,210,87,0.5)'; g.lineWidth = 1; g.beginPath(); g.arc(x, y, 7, 0, 7); g.stroke();
+  }
+  const syncClub = () => { const c = tool.club; if (c !== lastClub && clubs[c]) { lastClub = c; launchMonitor.setPlayer({ club: clubs[c].id }); emit('club', c); } };
+  tool.el.addEventListener('click', () => setTimeout(syncClub, 0));
+  // games call setClub(i, true) with their suggestion (and suggest({ club, axis }) to suggest a shape too)
+  function setClub(i, isSuggestion) { if (isSuggestion) { tool.suggest({ club: i }); syncClub(); } }
+  function suggest(o) { tool.suggest(o); syncClub(); }
+  if (!clubs.length) tool.el.hidden = true;
+  void idealShot;
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
-    if (e.code === 'Space' && S.phase === 'aim') { e.preventDefault(); sfx.init(); emit('hit'); }
+    if (e.code === 'Space' && S.phase === 'aim') { e.preventDefault(); tool.shoot(false); }
   });
 
   /* ---------- HUD rendering ---------- */
@@ -239,13 +236,13 @@ export function createKit(cfg) {
     p.shots++;
     if (scored) { p.streak = Math.min(MAX_MULT - 1, p.streak + 1); statMax('mult', Math.min(MAX_MULT, 1 + p.streak)); }
     else p.streak = 0;
-    S.phase = 'between'; R.hit.disabled = true; R.ideal.disabled = true;
+    S.phase = 'between'; tool.setEnabled(false);
     renderHud();
     const last = !RUN && !MANUAL && S.players.every(q => q.shots >= shotsPerPlayer);
     return { last };
   }
   // run mode: the current player's run is over (e.g. the fence fell)
-  function finishRun() { player().finished = true; S.phase = 'between'; R.hit.disabled = true; R.ideal.disabled = true; renderHud(); }
+  function finishRun() { player().finished = true; S.phase = 'between'; tool.setEnabled(false); renderHud(); }
   const isDone = q => (RUN ? q.finished : q.shots >= shotsPerPlayer);
   function showResult(html) { R.result.innerHTML = html; R.result.hidden = false; }
 
@@ -263,7 +260,7 @@ export function createKit(cfg) {
   function beginTurn(announce, sub = null) {
     const p = player(); p.shotPts = 0;
     if (Math.round(shownScore) !== p.score) showScore(p.score);
-    S.phase = p.cpu ? 'cpu' : 'aim'; R.hit.disabled = R.ideal.disabled = !!p.cpu; renderHud();
+    S.phase = p.cpu ? 'cpu' : 'aim'; tool.setEnabled(!p.cpu); renderHud();
     if (announce) {
       R.bannerName.textContent = `${p.name}`; R.bannerSub.textContent = sub != null ? sub : RUN ? `your run · ${p.difficulty.label}` : `your turn · shot ${p.shots + 1} of ${shotsPerPlayer}`;
       R.banner.hidden = false; R.banner.classList.remove('go'); void R.banner.offsetWidth; R.banner.classList.add('go');
@@ -379,14 +376,14 @@ export function createKit(cfg) {
 
   return {
     on(ev, f) { (handlers[ev] = handlers[ev] || []).push(f); return this; },
-    showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, finishRun, turnTo,
+    showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, suggest, mapSpot, drawSpot, finishRun, turnTo,
     finishGame: () => finish(),
     setShotLabel(t) { S.shotLabel = t; if (RUN || MANUAL) R.shot.textContent = t; },
     setPrompt(html) { R.prompt.innerHTML = html; },
-    get phase() { return S.phase; }, set phase(v) { S.phase = v; R.hit.disabled = R.ideal.disabled = v !== 'aim'; },
+    get phase() { return S.phase; }, set phase(v) { S.phase = v; tool.setEnabled(v === 'aim'); },
     get current() { return S.cur; },
     get player() { return player(); }, get players() { return S.players; },
     get multiplier() { return mult(); }, get difficulty() { return diffObj(); },
-    get club() { return clubIdx; }, sfx, els: R,
+    get club() { return tool.club; }, get spot() { return tool.settings.target; }, tool, sfx, els: R,
   };
 }

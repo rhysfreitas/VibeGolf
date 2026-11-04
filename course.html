@@ -30,11 +30,12 @@
   <div class="tools glass">
     <a class="menu-link" href="./" title="Back to the menu" aria-label="Menu"><span class="mlong">Menu</span><span class="mshort" aria-hidden="true">‹</span></a>
     <button class="tbtn" id="btnCard">Card</button>
+    <button class="tbtn" id="sound" aria-pressed="true" title="Sound on or off">Sound</button>
     <button class="tbtn lm-btn" id="lmBtn" title="Launch monitor"><i class="dot" id="lmDot"></i><span id="lmText">R10 off</span></button>
   </div>
 </div>
 
-<button class="minimap glass" id="minimapWrap" hidden aria-label="Hole map. Tap for the full map."><canvas id="minimap"></canvas></button>
+<div class="minimap glass" id="minimapWrap" hidden><canvas id="minimap" aria-label="Hole map. Tap a spot to aim there."></canvas><button class="mm-expand" id="mmExpand" aria-label="Whole hole view" title="Whole hole view">⤢</button></div>
 
 <div id="dock">
   <!-- course management: where to play this shot (under the hole card) -->
@@ -48,11 +49,10 @@
     <div id="swingUI">
       <div class="preview glass" id="preview"><i id="pvDot"></i><span id="pvText">—</span></div>
       <div class="aimrow">
-        <button class="chip" id="btnClub" aria-expanded="false" aria-controls="plan" title="Club and swing length"><b id="chipClub">DR</b><span id="chipPow">Full</span></button>
         <button class="ab" id="aimL" aria-label="Aim left">◀</button>
         <button class="ab" id="aimR" aria-label="Aim right">▶</button>
+        <span id="simMount"></span>
       </div>
-      <button id="hit">Hit</button>
     </div>
     <div id="putt" hidden>
       <div class="preview glass"><span><b class="num" id="puttDist">—<small>ft</small></b> · <span id="puttOdds">—</span></span></div>
@@ -79,24 +79,6 @@
   </section>
 </div>
 
-<aside class="sheet left glass" id="plan" hidden aria-label="Club and swing length">
-  <h2>Club <button class="x" data-close="plan" aria-label="Close">×</button></h2>
-  <div class="group">
-    <div class="clubs" id="clubs" role="group" aria-label="Club"></div>
-    <p class="note">The underlined club is the suggestion for your target.</p>
-  </div>
-  <div class="group">
-    <span class="lbl">Swing length</span>
-    <div class="power" role="group" aria-label="Swing length" id="power"></div>
-  </div>
-  <div class="group">
-    <button class="switch soundRow" id="sound" aria-pressed="true"><span>Sound</span><i class="tog" aria-hidden="true"></i></button>
-  </div>
-  <div class="group">
-    <span class="lbl" id="pvLie">Lie: Tee box</span>
-    <p class="note">Rough takes about 5% off ball speed and a quarter of the spin. Sand takes more. Tap the course to aim at any spot, or use the arrows above Hit. Tap the corner map for the whole hole.</p>
-  </div>
-</aside>
 
 <div id="intro" class="glass" hidden>
   <span class="lbl" id="iMeta">Hole 1 · Par 4</span>

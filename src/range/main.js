@@ -1,5 +1,7 @@
 // Woodson Range — driving range mode.
 import { simulate, airDensity, DEFAULT_COEF } from '../physics.js';
+import { createSimTool } from '../sim-tool.js';
+import { TRAJ_MUL } from '../minigames/aim.js';
 import { launchMonitor, mountLaunchMonitorUI, parseShot } from '../launch-monitor.js';
 import { STANCE, stanceView } from '../stance.js';
 import { CLUB_DELIVERY, deliveryFromBall, renderShotDetail } from './shot-detail.js';
@@ -68,31 +70,37 @@ const state = {
   camMode: 'tracer', sunKey: 'golden', tracer: TRACERS[1], tracerKeep: 10, sound: true, pending: null,
   flight: null, t: 0, phase: 'idle', restTimer: 0, shots: [], seq: 0,
 };
-function loadClub(i) { const c = CLUBS[i]; state.club = i; state.shotData = { Speed: c.Speed, VLA: c.VLA, HLA: 0, TotalSpin: c.TotalSpin, SpinAxis: 0 }; syncSliders(); renderClubs(); placeBallAtAddress(); launchMonitor.setPlayer({ club: c.id }); }
+function loadClub(i) { const c = CLUBS[i]; state.club = i; state.custom = false; state.shotData = { Speed: c.Speed, VLA: c.VLA, HLA: 0, TotalSpin: c.TotalSpin, SpinAxis: 0 }; syncSliders(); renderClubs(); placeBallAtAddress(); launchMonitor.setPlayer({ club: c.id }); }
 
 /* ===================== UI ===================== */
 const $ = id => document.getElementById(id);
 function renderClubs() {
-  const wrap = $('clubs');
-  if (!wrap.children.length) CLUBS.forEach((c, i) => { const b = document.createElement('button'); b.className = 'club'; b.textContent = c.id; b.title = c.name; b.onclick = () => { if (state.phase === 'idle') loadClub(i); }; wrap.appendChild(b); });
-  [...wrap.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === state.club)));
   $('vClub').textContent = CLUBS[state.club].name;
-  $('chipClub').textContent = CLUBS[state.club].id;
+  if (tool) { tool.suggest({ club: state.club }); tool.setClub(state.club); customNote.hidden = !state.custom; }
 }
+// The simulated-shot tool: club, Normal / Punch / Stinger, a shape line, Ideal (exact) and Hit
+// (natural misses). Moving an exact-number slider in Settings overrides it until you pick a club.
+const customNote = document.createElement('p'); customNote.className = 'st-note'; customNote.hidden = true;
+customNote.innerHTML = 'Using your exact numbers from Settings. <a href="#" style="color:var(--flag)">Back to club averages</a>';
+customNote.querySelector('a').onclick = e => { e.preventDefault(); loadClub(state.club); };
+const tool = createSimTool($('hitbar'), {
+  clubs: CLUBS, auto: false, extra: customNote,
+  onChange: s => { if (state.phase === 'idle' && s.club !== state.club) loadClub(s.club); },
+  onShot: s => { if (s.club !== state.club && state.phase === 'idle') loadClub(s.club); swing(s); },
+});
 const SL = [
   ['sSpeed', 'oSpeed', v => v.toFixed(1) + ' mph', 'Speed'], ['sVla', 'oVla', v => v.toFixed(1) + '°', 'VLA'],
   ['sHla', 'oHla', v => Math.abs(v).toFixed(1) + '° ' + (v < 0 ? 'L' : v > 0 ? 'R' : ''), 'HLA'],
   ['sSpin', 'oSpin', v => Math.round(v).toLocaleString() + ' rpm', 'TotalSpin'], ['sAxis', 'oAxis', v => Math.abs(v).toFixed(1) + '° ' + (v < 0 ? 'L' : v > 0 ? 'R' : ''), 'SpinAxis'],
 ];
 function syncSliders() { for (const [s, o, f, k] of SL) { $(s).value = state.shotData[k]; $(o).textContent = f(+state.shotData[k]); } }
-for (const [s, o, f, k] of SL) $(s).addEventListener('input', e => { state.shotData[k] = +e.target.value; $(o).textContent = f(+e.target.value); });
+for (const [s, o, f, k] of SL) $(s).addEventListener('input', e => { state.shotData[k] = +e.target.value; $(o).textContent = f(+e.target.value); state.custom = true; customNote.hidden = false; });
 const envFmt = () => {
   $('oTemp').textContent = state.tempF + '°F'; $('oAlt').textContent = state.altFt.toLocaleString() + ' ft';
   const rho = airDensity(state.tempF, state.altFt); $('oRho').textContent = `Air density ${rho.toFixed(3)} kg/m³, ${((1 - rho / 1.2041) * 100).toFixed(1)}% thinner than sea level at 68°F.`;
   $('oLift').textContent = '×' + state.lift.toFixed(2); $('oDrag').textContent = '×' + state.drag.toFixed(2);
 };
 for (const [s, k] of [['sTemp', 'tempF'], ['sAlt', 'altFt'], ['sLift', 'lift'], ['sDrag', 'drag']]) { $(s).value = state[k]; $(s).addEventListener('input', e => { state[k] = +e.target.value; envFmt(); }); }
-$('sVar').addEventListener('change', e => state.variance = e.target.checked);
 $('btnReset').onclick = () => loadClub(state.club);
 document.querySelectorAll('[data-sun]').forEach(b => b.onclick = () => { setSun(b.dataset.sun); document.querySelectorAll('[data-sun]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
 TRACERS.forEach(c => {
@@ -127,10 +135,9 @@ let rotateDismissed = false;
 const syncRotate = () => { $('rotate').hidden = rotateDismissed || !portraitPhone.matches; };
 portraitPhone.addEventListener?.('change', syncRotate); syncRotate();
 $('rotateOk').onclick = () => { rotateDismissed = true; syncRotate(); };
-$('hit').onclick = () => swing();
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if (e.code === 'Space' || e.key === 'h' || e.key === 'H') { e.preventDefault(); swing(); }
+  if (e.code === 'Space' || e.key === 'h' || e.key === 'H') { e.preventDefault(); tool.shoot(false); }
   else if (/^[1-8]$/.test(e.key) && state.phase === 'idle') loadClub(+e.key - 1);
   else if (e.key === 'x' || e.key === 'X') clearTracers();
 });
@@ -259,8 +266,9 @@ function simClub(ball, face, path, smashMul = 1) {
   const clubSpeed = ball.Speed / (def.smash * smashMul);
   return { Speed: clubSpeed, Path: path, FaceToTarget: face, AngleOfAttack: def.aoa + (state.variance ? gauss() * 1.1 : 0) };
 }
-function realSwing(base) {
-  if (!state.variance) { const s = { ...base }; const d = deliveryFromBall(s); s.Club = simClub(s, d.face, d.path); return s; }
+function realSwing(base, variance = true) {
+  state.variance = variance;
+  if (!variance) { const s = { ...base }; const d = deliveryFromBall(s); s.Club = simClub(s, d.face, d.path); return s; }
   const s = { ...base };
   const strike = Math.random();
   const face = gauss() * 1.9, path = gauss() * 2.4;
@@ -295,7 +303,14 @@ launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
 mountLaunchMonitorUI({ dot: $('lmDot'), text: $('lmText'), button: $('lmBtn') });
 window.WoodsonRange = { receiveShot: msg => { const shot = parseShot(msg); if (shot) receiveShot(shot); } };
 
-function swing() { if (state.phase !== 'idle') return; initAudio(); launch(realSwing(state.shotData), false); }
+// the ball for a simulated shot: your exact numbers, or the club's average with the tool's
+// trajectory and shape (started out so the curve comes back toward the target line)
+function toolBase(s) {
+  if (state.custom) return { ...state.shotData };
+  const t = TRAJ_MUL[s.traj] || TRAJ_MUL.normal, c = CLUBS[state.club];
+  return { Speed: c.Speed * t.speed, VLA: c.VLA * t.vla, HLA: -s.axis * 0.37, TotalSpin: c.TotalSpin * t.spin, SpinAxis: s.axis };
+}
+function swing(s = { ...tool.settings, ideal: false }) { if (state.phase !== 'idle') return; initAudio(); launch(realSwing(toolBase(s), !s.ideal), false); }
 
 function launch(shot, live) {
   placeBallAtAddress();
@@ -310,7 +325,7 @@ function launch(shot, live) {
   state.flight = { r, shot, live, tracer: makeTracer(state.club), bounced: 0, sampled: [], apexShown: false };
   apexDot.visible = false; $('tagApex').hidden = true;
   state.t = 0; state.phase = 'flight'; state.restTimer = 0;
-  $('hit').disabled = true;
+  tool.setEnabled(false);
   landRing.visible = restDisc.visible = false; $('tagLand').hidden = $('tagRest').hidden = true;
   showReadout(r, shot, true);
   strikeSound(state.club, shot.Speed / CLUBS[state.club].Speed > 0.95 ? 1 : 0.7);
@@ -465,7 +480,7 @@ function step(dt) {
     } else {
       state.restTimer += dt;
       if (state.restTimer > 3.0) {
-        state.phase = 'idle'; $('hit').disabled = false; placeBallAtAddress();
+        state.phase = 'idle'; tool.setEnabled(true); placeBallAtAddress();
         $('tagLand').hidden = $('tagRest').hidden = $('tagApex').hidden = true; apexDot.visible = false;
         if (state.camMode !== 'top') camState.cut = false;
         if (state.pending) { const p = state.pending; state.pending = null; launch(p, true); }

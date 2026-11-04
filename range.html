@@ -25,16 +25,13 @@
   </div>
   <div class="tools glass">
     <a class="menu-link" href="./" title="Back to the menu" aria-label="Menu"><span class="mlong">Menu</span><span class="mshort" aria-hidden="true">‹</span></a>
+    <button class="tbtn" id="btnAdjust" aria-expanded="false" aria-controls="adjust" title="Tracers, conditions, exact numbers">Settings</button>
   </div>
 </div>
 
 <!-- controls live bottom left so the ball can sit at the bottom centre -->
-<div id="hitbar">
-  <button class="chip" id="btnAdjust" aria-expanded="false" aria-controls="adjust" title="Club and shot settings">
-    <b id="chipClub">7i</b><span>Shot</span>
-  </button>
-  <button id="hit">Hit</button>
-</div>
+<!-- the simulated-shot tool (src/sim-tool.js): club, Normal / Punch / Stinger, shape, Ideal / Hit -->
+<div id="hitbar"></div>
 
 <div id="rightDock">
   <button class="chip wide" id="btnSession" aria-expanded="false" aria-controls="session">Session <span class="count" id="shotCount">0 shots</span></button>
@@ -55,20 +52,16 @@
   </section>
 </div>
 
-<aside class="sheet left glass" id="adjust" hidden aria-label="Club and shot settings">
-  <h2>Club &amp; shot <button class="x" data-close="adjust" aria-label="Close">×</button></h2>
+<aside class="sheet left glass" id="adjust" hidden aria-label="Settings">
+  <h2>Settings <button class="x" data-close="adjust" aria-label="Close">×</button></h2>
   <div class="group">
-    <div class="clubs" role="group" aria-label="Club" id="clubs"></div>
-  </div>
-  <div class="group">
-    <span class="lbl">Simulated swing</span>
-    <p class="note">Hit uses these numbers. A live R10 shot replaces them.</p>
+    <span class="lbl">Exact numbers</span>
+    <p class="note">Move a slider and simulated shots use these exact numbers (Ideal as set, Hit with natural misses) until you pick a club in the shot tool or reset. Your R10 shots ignore them.</p>
     <div class="row"><label for="sSpeed">Ball speed</label><output id="oSpeed"></output><input type="range" id="sSpeed" min="50" max="190" step="0.5"></div>
     <div class="row"><label for="sVla">Launch angle</label><output id="oVla"></output><input type="range" id="sVla" min="2" max="40" step="0.1"></div>
     <div class="row"><label for="sHla">Launch direction</label><output id="oHla"></output><input type="range" id="sHla" min="-10" max="10" step="0.1"></div>
     <div class="row"><label for="sSpin">Total spin</label><output id="oSpin"></output><input type="range" id="sSpin" min="1200" max="12000" step="10"></div>
     <div class="row"><label for="sAxis">Spin axis</label><output id="oAxis"></output><input type="range" id="sAxis" min="-30" max="30" step="0.5"></div>
-    <label class="switch" for="sVar"><span>Natural dispersion<br><span class="note">Each swing varies like a real one</span></span><input type="checkbox" id="sVar" checked></label>
     <button class="ghost" id="btnReset">Reset to club averages</button>
   </div>
   <div class="group">

@@ -5,6 +5,7 @@
 import { simulate } from '../physics.js';
 import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
+import { amateurMiss } from './aim.js';
 import { createCulDeSac } from './scenes/cul-de-sac.js';
 import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
@@ -115,14 +116,19 @@ function drawMap() {
   for (const L of G.landings) { const [x, y] = mapXY(L.x, L.z, W, Hh); g.fillStyle = L.made ? '#fff3c4' : '#ff6a5a'; g.beginPath(); g.arc(x, y, 2.4, 0, 7); g.fill(); }
   if (G.track && G.track.length > 1) { g.strokeStyle = '#fff3c4'; g.lineWidth = 1.2; g.beginPath(); G.track.forEach((p, i) => { const [x, y] = mapXY(p[0], p[2], W, Hh); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
   const [tx, ty] = mapXY(0, 0, W, Hh); g.fillStyle = '#fff'; g.beginPath(); g.arc(tx, ty, 2.4, 0, 7); g.fill();
+  if (kit.spot) { const [sx, sy] = mapXY(kit.spot.x, kit.spot.z, W, Hh); kit.drawSpot(g, sx, sy); }
 }
 mapCv.addEventListener('click', e => {
-  if (!canEdit()) return;
-  const r = mapCv.getBoundingClientRect();
+  if (kit.phase !== 'aim' || kit.player.cpu) return;
+  const r = mapCv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
   let best = null, bd = Infinity;
-  for (const T of TARGETS) { const [x, y] = mapXY(T.px, T.pz, r.width, r.height), dd = Math.hypot(x - (e.clientX - r.left), y - (e.clientY - r.top)); if (dd < bd) { bd = dd; best = T; } }
-  if (best) changeCall({ ring: best.i });
+  for (const T of TARGETS) { const [x, y] = mapXY(T.px, T.pz, r.width, r.height), dd = Math.hypot(x - px, y - py); if (dd < bd) { bd = dd; best = T; } }
+  // on a ring: call it (when it's your call); anywhere else: the next simulated shot goes to that spot
+  if (best && bd < 9 && canEdit()) { changeCall({ ring: best.i }); return; }
+  const k = mapK(r.height), x = (px - r.width / 2) / k, z = (py - (r.height - 6)) / k;
+  if (-z > 5) kit.mapSpot(x, z);
 });
+kit.on('spot', () => drawMap());
 // tap a ring in the scene to call it
 const ray = new THREE.Raycaster(); let down = null;
 renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
@@ -145,7 +151,7 @@ function solveFor(call) {
 }
 function renderPrompt() {
   const p = kit.player; if (!p) return;
-  G.sol = solveFor(G.call); kit.setClub(G.sol.club, true);
+  G.sol = solveFor(G.call); kit.suggest({ club: G.sol.club, axis: G.sol.ball.SpinAxis || 0 });
   const T = TARGETS[G.call.ring];
   const kick = p.cpu ? `${esc(p.name)} is up` : G.role === 'set' ? 'Call your shot' : `Match ${esc(setterName())}`;
   const sub = p.cpu ? (G.role === 'set' ? 'Calling a shot…' : 'Watch and learn') : G.role === 'set' ? `Make it to set it · try <b>${CLUBS[G.sol.club].id}</b>${G.sol.k < 0.97 ? ` <small>${Math.round(G.sol.k * 100)}%</small>` : ''}` : `Miss and take a letter · try <b>${CLUBS[G.sol.club].id}</b>${G.sol.k < 0.97 ? ` <small>${Math.round(G.sol.k * 100)}%</small>` : ''}`;
@@ -155,13 +161,15 @@ function refresh() { world.setCalled(G.call.ring); renderBoard(); renderPrompt()
 
 /* ===================== shots ===================== */
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-function attempt() { // a decent amateur attempting the call (CLAUDE.md "Mini games")
-  const b = { ...G.sol.ball };
-  b.HLA += gauss() * 3.0; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1;
-  return b;
+function attempt() { return amateurMiss(G.sol.ball); } // a decent amateur attempting the call (the CPU swings this)
+// simulated shots: the call's own shot, unless the tool's club / trajectory / shape / map spot says otherwise
+function toolSolve(s) {
+  if (s.clubAuto && s.axisAuto && s.traj === 'normal' && !s.target) return G.sol;
+  const T = s.target ? { px: s.target.x, pz: s.target.z } : TARGETS[G.call.ring];
+  return H.solveCall(fsim, CLUBS, T, G.call, { club: s.clubAuto ? null : s.club, traj: s.traj, axis: s.axis });
 }
-kit.on('hit', () => { if (G.sol) launch(attempt(), 'Sim'); });
-kit.on('ideal', () => { if (G.sol) launch({ ...G.sol.ball }, 'Ideal'); });
+kit.on('hit', s => { if (G.sol) launch(amateurMiss(toolSolve(s).ball), 'Sim'); });
+kit.on('ideal', s => { if (G.sol) launch({ ...toolSolve(s).ball }, 'Ideal'); });
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim' && !kit.player.cpu) launch(e.detail, 'R10'); });
 
 function launch(ball, src) {

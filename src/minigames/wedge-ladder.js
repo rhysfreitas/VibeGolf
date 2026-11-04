@@ -6,7 +6,7 @@ import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createAirfield } from './scenes/airfield.js';
 import { createShotView } from '../world/shot-view.js';
-import { solveShot } from './aim.js';
+import { solveShot, makeToolShot } from './aim.js';
 import { YD, SHOTS, CLUBS, DIFFICULTIES, CHALLENGES, judge, step, points } from './wedge-logic.js';
 
 const stage = document.getElementById('stage');
@@ -39,6 +39,15 @@ function renderBoard(flipRow = -1) {
     rungs.map((yd, i) => i).reverse().map(i => `<div class="wl-row ${i === cur ? 'cur' : i <= best ? 'done' : ''} ${i === best && best > 0 ? 'best' : ''} ${i === flipRow ? 'flip' : ''}"><span>${rungs[i]} YD</span><span class="st">${i === cur ? 'NOW' : i <= best ? 'CLR' : '–'}</span></div>`).join('') + '</div></div>';
   drawStrip();
 }
+let stripGeo = null;
+// tap the board: the next simulated shot goes to that distance (rows are 10 yd apart; on the runway strip, that side too)
+board.addEventListener('click', e => {
+  const body = e.target.closest('.wl-body'), cv = board.querySelector('.wl-strip'); if (!body || !cv || kit.phase !== 'aim' || !stripGeo) return;
+  const r = cv.getBoundingClientRect(), M = stripGeo, yd = M.top - (e.clientY - r.top - M.y0) / M.step * 10;
+  const lat = e.target === cv ? (e.clientX - r.left - M.W / 2) / (M.W / 2 - 3) * 22 : 0; // sideways only on the strip itself
+  if (yd > 5) kit.mapSpot(lat * YD, -yd * YD);
+});
+kit.on('spot', () => drawStrip());
 function drawStrip() {
   const p = kit.player, cv = board.querySelector('.wl-strip'), rowsEl = board.querySelector('.wl-rows'); if (!p || !cv || !rowsEl) return;
   const rows = [...rowsEl.children]; if (!rows.length) return;
@@ -48,12 +57,14 @@ function drawStrip() {
   const rungs = p.difficulty.rungs, top = rungs[rungs.length - 1];
   const y0 = rows[0].offsetTop - rowsEl.offsetTop + rows[0].offsetHeight / 2, step = rows.length > 1 ? (rows[1].offsetTop - rows[0].offsetTop) : 18;
   const yOf = yd => y0 + (top - yd) / 10 * step;
+  stripGeo = { y0, step, top, W };
   g.fillStyle = '#2a2d33'; g.fillRect(0, 0, W, H);
   g.fillStyle = 'rgba(240,240,232,0.5)'; for (let y = 2; y < H; y += 7) g.fillRect(W / 2 - 0.5, y, 1, 3);
   const d = p.difficulty, yd = rungs[p.rung];
   g.fillStyle = 'rgba(242,195,26,0.45)'; g.fillRect(0, yOf(yd + d.band), W, yOf(yd - d.band) - yOf(yd + d.band));
   (p.landings || []).slice(-6).forEach((L, k, a) => { g.globalAlpha = 0.45 + 0.55 * (k + 1) / a.length; g.fillStyle = L.ok ? '#5aff8a' : '#ff7a3a'; g.beginPath(); g.arc(W / 2 + Math.max(-1, Math.min(1, L.x / 22)) * (W / 2 - 3), Math.max(3, Math.min(H - 3, yOf(L.yd))), 2.6, 0, 7); g.fill(); });
   g.globalAlpha = 1;
+  if (kit.spot) kit.drawSpot(g, W / 2 + Math.max(-1, Math.min(1, kit.spot.x / YD / 22)) * (W / 2 - 3), Math.max(3, Math.min(H - 3, yOf(-kit.spot.z / YD))));
 }
 
 /* ===================== aiming ===================== */
@@ -71,9 +82,11 @@ function refresh() {
 }
 
 /* ===================== shots ===================== */
-function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-kit.on('hit', () => { const b = { ...sol.ball }; b.HLA += gauss() * 3; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1; launch(b, 'Sim'); });
-kit.on('ideal', () => launch({ ...sol.ball }, 'Ideal'));
+// simulated shots: the tool's club, trajectory and shape, to the rung (or a spot tapped on the board)
+const toolShot = makeToolShot(sim, CLUBS);
+const rungTarget = () => ({ x: 0, z: -kit.player.difficulty.rungs[kit.player.rung] * YD });
+kit.on('hit', s => launch(toolShot(s.target || rungTarget(), s).ball, 'Sim'));
+kit.on('ideal', s => launch(toolShot(s.target || rungTarget(), s).ball, 'Ideal'));
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 
 let shot = null;

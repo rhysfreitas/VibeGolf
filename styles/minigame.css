@@ -71,7 +71,7 @@ button { font: inherit; color: inherit; }
 .mg-prompt .big { font-family: var(--f-data); font-weight: 700; font-size: 22px; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.05; color: var(--accent); }
 .mg-prompt .sub { font-family: var(--f-data); font-size: 12.5px; color: var(--bone); }
 .mg-prompt .sub b { color: var(--gold); }
-.mg-hitrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; }
+.mg-hitrow { display: flex; }
 .mg-chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 10px; min-width: 54px; min-height: 52px; font-family: var(--f-data); }
 .mg-chip b { font-size: 18px; line-height: 1; color: var(--gold); }
 .mg-chip span { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mist); }

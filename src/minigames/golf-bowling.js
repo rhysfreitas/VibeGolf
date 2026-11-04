@@ -8,6 +8,7 @@ import { createKit } from './kit.js';
 import { createToyRoom } from './scenes/toy-room.js';
 import { createShotView } from '../world/shot-view.js';
 import * as BL from './bowling-logic.js';
+import { amateurMiss } from './aim.js';
 const { YD, CLUBS, DIFFICULTIES, CHALLENGES, ALL_PINS, SHAPES, FRAMES } = BL;
 
 const stage = document.getElementById('stage');
@@ -24,7 +25,7 @@ const kit = createKit({
     '<b>Fly it into the pocket</b>, just off the head pin, below the tops of the pins. Speed makes the pins explode: a low, hot punch hits hardest. A ball that lands short rolls in weakly.',
     '<b>Shape counts</b>, like a hook in bowling: a draw curving into the 1-3 pocket (or a fade into the 1-2) carries more pins than a straight ball, which tends to get knocked off line and leave one standing. Straight on the nose usually leaves a split.',
     'Real bowling scoring: a <b>strike</b> scores 10 plus your next two balls, a <b>spare</b> 10 plus your next one. Ten frames, and a bonus ball or two in the 10th.',
-    'No R10? Pick a club and a shape on the chips and the simulated shot plays it: a longer club is hit as a low punch.',
+    'No R10? The simulated-shot button (bottom left) picks a club, Punch or Stinger, and a shape you drag left or right. A longer club is hit as a low punch.',
     'Difficulty sets the lane length (85, 110, 130 or 150 yd). Beginner gets bumpers and a guide line; Tour has heavier pins.',
   ],
   difficulties: DIFFICULTIES, challenges: CHALLENGES,
@@ -52,32 +53,25 @@ const pinDiag = up => `<span class="bw-pins">${[[7, 8, 9, 10], [4, 5, 6], [2, 3]
 const pinNames = s => s.slice().sort((a, b) => a - b).join('–');
 
 /* ===================== aiming ===================== */
-// The suggested shot flies into the pocket at about chest height on the pins. Simulated and ideal
-// shots use the club on the club chip (once you pick one) and the shape on the shape chip, so you
-// can try a low punch against a wedge, or a draw against a straight ball, without the R10.
+// The suggested shot is a draw flown into the pocket at about chest height on the pins. Simulated
+// and ideal shots use the simulated-shot tool's club, trajectory and shape, so you can try a low
+// punch against a wedge, or a draw against a straight ball, without the R10.
 const flightOf = b => simulate(b, { groundAt: () => 0, flightOnly: true }).pts;
-let shapeI = 0, userClub = null;
+const SUGG_AXIS = SHAPES[0].axis; // a draw: curves into the 1-3 pocket like a right-hander's hook
 const bases = new Map(), lines = new Map();
-function baseFor(d, club) { // swing effort for this lane, club and shape (and how the ball arrives)
-  const sh = SHAPES[shapeI], key = `${d.id}|${club}|${sh.id}`;
-  if (!bases.has(key)) bases.set(key, BL.solveInto(flightOf, CLUBS, { L: d.lane * YD, x: sh.axis > 0 ? -1.5 : 1.5, axis: sh.axis, club }));
+function baseFor(d, club, axis, traj) { // swing effort for this lane, club, shape and trajectory
+  const key = `${d.id}|${club}|${axis}|${traj}`;
+  if (!bases.has(key)) bases.set(key, BL.solveInto(flightOf, CLUBS, { L: d.lane * YD, x: axis > 0 ? -1.5 : 1.5, axis, traj, club }));
   return bases.get(key);
 }
-function aimFor(up, d) {
-  const sh = SHAPES[shapeI], sugg = baseFor(d, null).club, club = userClub ?? sugg, b = baseFor(d, club), c = b.cross;
-  const lk = `${d.id}|${club}|${sh.id}|${BL.pinList(up)}`;
+function aimFor(up, d, s = null) {
+  const axis = s ? s.axis : SUGG_AXIS, traj = s ? s.traj : 'normal';
+  const sugg = baseFor(d, null, SUGG_AXIS, 'normal').club, club = s && !s.clubAuto ? s.club : sugg, b = baseFor(d, club, axis, traj), c = b.cross;
+  const lk = `${d.id}|${club}|${axis}|${traj}|${BL.pinList(up)}`;
   if (!lines.has(lk)) lines.set(lk, BL.bestLine(up, { L: d.lane * YD, pinMass: d.pinMass, slope: c.slope, speed: c.speed, h: Math.max(0.5, c.y), descent: c.descent }));
-  const x = lines.get(lk), s = BL.solveInto(flightOf, CLUBS, { L: d.lane * YD, x, axis: sh.axis, club, k: b.k });
-  return { ...s, x, sugg };
+  const x = lines.get(lk), sol = BL.solveInto(flightOf, CLUBS, { L: d.lane * YD, x, axis, traj, club, k: b.k });
+  return { ...sol, x, sugg };
 }
-// the shape chip, next to the club chip
-const shapeBtn = document.createElement('button');
-shapeBtn.className = 'mg-chip bw-shape'; shapeBtn.title = 'Shape of the simulated and ideal shots (your R10 shots fly as you hit them)';
-kit.els.hit.parentNode.insertBefore(shapeBtn, kit.els.hit);
-const showShape = () => { shapeBtn.innerHTML = `<b>${SHAPES[shapeI].name}</b><span>Shape</span>`; };
-shapeBtn.onclick = () => { shapeI = (shapeI + 1) % SHAPES.length; showShape(); if (kit.phase === 'aim') refresh(); };
-showShape();
-kit.on('club', i => { userClub = i; if (kit.phase === 'aim') refresh(); });
 
 let sol = null;
 function refresh() {
@@ -86,20 +80,20 @@ function refresh() {
   if (BL.freshRack(fr, f)) p.up = ALL_PINS.slice();
   if (Math.abs(world.L - d.lane * YD) > 0.01) { world.setLane(d); shown = []; }
   if (BL.pinList(shown) !== BL.pinList(p.up)) { world.setPins(p.up, { drop: true }); shown = p.up.slice(); rackSound(); }
-  sol = aimFor(p.up, d); kit.setClub(sol.sugg, true); kit.setClub(sol.club);
+  sol = aimFor(p.up, d); kit.suggest({ club: sol.sugg, axis: SUGG_AXIS });
   world.setGuide(d.guide ? sol.x : null, sol.cross.slope);
   kit.setShotLabel(`Frame ${f + 1} · Ball ${fr.length + 1}`);
   const full = p.up.length === 10, how = sol.club < sol.sugg || sol.k < 0.8 ? ' punch' : sol.k < 0.97 ? ' ¾' : ''; // below full, the sim hits it lower and flatter
   kit.setPrompt(`<span class="kick">Frame ${f + 1} · Ball ${fr.length + 1}</span>
     <span class="bw-row"><span class="big">${full ? `${d.lane} <small>yd</small>` : `${p.up.length} <small>pin${p.up.length === 1 ? '' : 's'} left</small>`}</span>${pinDiag(p.up)}</span>
-    <span class="sub">${full ? 'Fly it into the pocket' : p.splits[f] ? 'A split: clip one into the other' : 'Pick up the spare'} · <b>${CLUBS[sol.club].id}</b>${how} ${SHAPES[shapeI].name.toLowerCase()}</span>`);
+    <span class="sub">${full ? 'Fly it into the pocket' : p.splits[f] ? 'A split: clip one into the other' : 'Pick up the spare'} · <b>${CLUBS[sol.club].id}</b>${how} draw</span>`);
   renderSheet();
 }
 
 /* ===================== shots ===================== */
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-kit.on('hit', () => { const b = { ...sol.ball }; b.HLA += gauss() * 3; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1; launch(b, 'Sim'); });
-kit.on('ideal', () => launch({ ...sol.ball }, 'Ideal'));
+kit.on('hit', s => launch(amateurMiss(aimFor(kit.player.up, kit.player.difficulty, s).ball), 'Sim'));
+kit.on('ideal', s => launch({ ...aimFor(kit.player.up, kit.player.difficulty, s).ball }, 'Ideal'));
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 
 function launch(ball, src) {
@@ -159,7 +153,7 @@ function resolve() {
       <span>${how}</span></div>
     <div class="meta"><span>Frame <b>${f + 1}</b></span><span>Total <b>${sc.total}</b></span></div>`);
   renderSheet();
-  if (!done && !BL.freshRack(fr, f)) setTimeout(() => aimFor(p.up, d), 60); // work out the spare line while the result shows
+  if (!done && !BL.freshRack(fr, f)) setTimeout(() => { aimFor(p.up, d); aimFor(p.up, d, kit.tool.settings); }, 60); // work out the spare line while the result shows
   // sweep the deck, then the next ball (same frame) or the next frame
   setTimeout(() => {
     const rerack = !done && BL.freshRack(fr, f), keep = done || rerack ? [] : p.up;

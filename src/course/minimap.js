@@ -42,7 +42,10 @@ export function createMinimap(canvas) {
     }
     const pad = 8, k = Math.min((W - pad * 2) / (maxX - minX), (H - pad * 2) / (maxZ - minZ));
     const ox = W / 2 - (minX + maxX) / 2 * k, oz = H / 2 - (minZ + maxZ) / 2 * k;
-    view = { k, map: (x, z) => { const [lx, lz] = toLocal(x, z); return [ox + lx * k, oz + lz * k]; } };
+    view = {
+      k, map: (x, z) => { const [lx, lz] = toLocal(x, z); return [ox + lx * k, oz + lz * k]; },
+      unmap: (a, b) => { const lx = (a - ox) / k, lz = (b - oz) / k; return [tx + lx * c + lz * s, tz - lx * s + lz * c]; },
+    };
     drawStatic();
   }
 
@@ -112,5 +115,6 @@ export function createMinimap(canvas) {
 
   size();
   addEventListener('resize', size);
-  return { setHole, draw, resize: size };
+  // a point on the map (CSS pixels) → world [x, z], for tapping the map to aim
+  return { setHole, draw, resize: size, toWorld: (a, b) => (view ? view.unmap(a, b) : null) };
 }

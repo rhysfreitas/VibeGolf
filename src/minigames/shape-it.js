@@ -4,6 +4,7 @@
 import { simulate } from '../physics.js';
 import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
+import { makeToolShot, amateurMiss, TRAJ_MUL } from './aim.js';
 import { createSunsetMesa } from './scenes/sunset-mesa.js';
 import { createShotView } from '../world/shot-view.js';
 import { shotShape } from '../range/shot-detail.js';
@@ -136,6 +137,16 @@ const mapWrap = document.createElement('div'); mapWrap.className = 'si-map glass
 mapWrap.innerHTML = '<canvas aria-label="Ring map from above and from the side"></canvas>';
 kit.els.play.parentElement.querySelector('.mg-tr').appendChild(mapWrap);
 const mapCv = mapWrap.querySelector('canvas');
+let mapGeo = null;
+// tap the top view: the next simulated shot goes to that spot (club length and direction worked out)
+mapCv.addEventListener('click', e => {
+  if (kit.phase !== 'aim' || !mapGeo) return;
+  const r = mapCv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, M = mapGeo;
+  if (py > M.topH) return;
+  const x = (px - M.W / 2) / (M.W / 2 - M.pad) * M.latMax, d = (M.topH - M.pad - py) / (M.topH - M.pad * 2) * M.maxD;
+  if (d > 5) kit.mapSpot(x, -d);
+});
+kit.on('spot', () => drawMap(null));
 function drawMap(shot) {
   const dpr = Math.min(devicePixelRatio || 1, 2), W = mapCv.clientWidth, H = mapCv.clientHeight;
   if (!W || !H) return;
@@ -149,6 +160,7 @@ function drawMap(shot) {
   const pad = 6, topH = Math.round(H * 0.56), sideY0 = topH + 4;
   // top view: downrange goes up the panel
   const tX = x => W / 2 + x / latMax * (W / 2 - pad), tY = d => topH - pad - d / maxD * (topH - pad * 2);
+  mapGeo = { W, topH, pad, latMax, maxD };
   // side view: downrange goes left → right
   const sX = d => pad + d / maxD * (W - pad * 2), sY = h => H - pad - h / hMax * (H - sideY0 - pad * 2);
   g.fillStyle = 'rgba(255,255,255,0.04)'; g.fillRect(0, 0, W, topH); g.fillRect(0, sideY0, W, H - sideY0);
@@ -174,6 +186,7 @@ function drawMap(shot) {
     g.fillStyle = '#ffffff'; g.beginPath(); g.arc(tX(b[0]), tY(flight(b)), 2.6, 0, 7); g.fill();
   }
   g.fillStyle = '#ffffff'; g.beginPath(); g.arc(tX(0), tY(0), 2.4, 0, 7); g.fill();
+  if (kit.spot) kit.drawSpot(g, tX(kit.spot.x), tY(-kit.spot.z));
   g.fillStyle = 'rgba(178,180,196,0.9)'; g.font = '600 9px "Saira Semi Condensed", sans-serif'; g.textAlign = 'right';
   g.fillText(`${Math.round(maxD / YD)} yd`, W - pad, 12); g.fillText('SIDE', W - pad, sideY0 + 11);
 }
@@ -184,9 +197,10 @@ let diff = DIFFICULTIES[0];
 
 kit.on('start', () => { cur.lastShape = null; sv.clearGhosts(); });
 kit.on('turn', () => newShape());
-kit.on('hit', () => swing());
-// test helper: the exact reference shot the rings were built from (always threads them dead centre)
-kit.on('ideal', () => launch(shapeBall(CLUBS[cur.refClub], cur.shape), false, true));
+kit.on('hit', s => swing(s));
+// test helper: the exact reference shot the rings were built from (always threads them dead centre),
+// unless the simulated-shot tool's club / trajectory / shape / map spot says otherwise
+kit.on('ideal', s => launch(toolBallFor(s, true), false, true));
 kit.on('club', i => { cur.club = i; sv.address(CLUBS[i].tee); });
 
 function newShape() {
@@ -205,7 +219,7 @@ function newShape() {
     const arr = []; res.pts.forEach((q, i) => { if (i % 5 === 0 && q.phase === 'flight') arr.push(...q.p); });
     sv.setLine(guide, arr); guide.computeLineDistances(); guide.visible = true;
   } else guide.visible = false;
-  kit.setClub(cur.club, true);
+  kit.suggest({ club: cur.club, axis: shape.axis || 0 });
   const carry = Math.round(res.carry);
   kit.setPrompt(`<span class="kick">Shot shape</span><span class="big">${shape.name}</span><span class="sub">${carry} yd carry · try <b>${clubId}</b></span>`);
   sv.address(club.tee);
@@ -215,12 +229,22 @@ function newShape() {
 }
 
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-function swing() {
-  // a simulated golfer *attempting* the shape with the chosen club: sometimes pure, sometimes not
-  const b = shapeBall(CLUBS[cur.club], cur.shape);
-  // a decent amateur's spread: on Beginner most swings find a ring or two, perfects are earned
-  b.HLA += gauss() * 3.0; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1;
-  launch(b, false);
+// The simulated shot: the called shape with the tool's club, unless you've changed the trajectory,
+// dragged the shape line, or tapped the map (then it's your shot to that spot).
+const toolShot = makeToolShot(b => simulate(b, { groundAt: () => 0 }), CLUBS);
+function toolBallFor(s, ideal) {
+  if (s.target) return toolShot(s.target, { ...s, ideal }).ball;
+  const sh = SHAPES[cur.shape], c = CLUBS[s.clubAuto ? cur.refClub : s.club], t = TRAJ_MUL[s.traj] || TRAJ_MUL.normal;
+  return {
+    Speed: c.Speed * (sh.speed || 1) * t.speed, VLA: (c.VLA + (sh.vla || 0)) * t.vla,
+    HLA: s.axisAuto ? sh.hla : -s.axis * 0.37,         // start it out so the curve comes back (a −6.5° draw starts 2.4° right)
+    TotalSpin: c.TotalSpin * (sh.spin || 1) * t.spin, SpinAxis: s.axis,
+  };
+}
+function swing(s) {
+  // a simulated golfer *attempting* the shape: sometimes pure, sometimes not (a decent amateur's
+  // spread: on Beginner most swings find a ring or two, perfects are earned)
+  launch(s.target ? toolShot(s.target, { ...s, ideal: false }).ball : amateurMiss(toolBallFor(s, false)), false);
 }
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, true); });
 

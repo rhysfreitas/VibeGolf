@@ -13,6 +13,7 @@ import {
   YD, FENCE_Z, FENCE_HP, WAVE_TIMEOUT, DIFFICULTIES, CHALLENGES, TYPES, POINTS, CRATES, LANES, CHAIN_YD,
   waveSpawns, stepZombies, active, resolveBlast, blastPoints, chooseTarget, solveShot, makeCrate, crateGrabYd, bestLane, fieldHalf,
 } from './zombie-logic.js';
+import { makeToolShot } from './aim.js';
 
 const stage = document.getElementById('stage');
 const world = createDeadFarm(stage);
@@ -223,14 +224,10 @@ function updateTarget(force) {
 
 /* ===================== shots ===================== */
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-kit.on('hit', () => {
-  if (!G.solve) return;
-  const b = { ...G.solve.ball };
-  // a decent amateur attempting it (see CLAUDE.md "Mini games")
-  b.HLA += gauss() * 3.0; b.SpinAxis += gauss() * 6.5; b.Speed *= 1 + gauss() * 0.03; b.VLA += gauss() * 1.8; b.TotalSpin *= 1 + gauss() * 0.1;
-  launch(b, 'Sim');
-});
-kit.on('ideal', () => { if (G.solve) launch({ ...G.solve.ball }, 'Ideal'); });
+// simulated shots: the tool's club, trajectory and shape, to the target (or a spot tapped on the map)
+const toolShot = makeToolShot(flat, CLUBS);
+kit.on('hit', s => { const t = s.target || G.target; if (t) launch(toolShot(t, s).ball, 'Sim'); });
+kit.on('ideal', s => { const t = s.target || G.target; if (t) launch(toolShot(t, s).ball, 'Ideal'); });
 kit.on('club', () => {});
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 
