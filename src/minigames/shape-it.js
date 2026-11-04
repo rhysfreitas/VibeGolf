@@ -315,10 +315,6 @@ function newShape() {
   const carry = Math.round(res.carry);
   kit.setPrompt(`<span class="kick">Shot shape</span><span class="big">${shape.name}</span><span class="sub">${carry} yd carry · try <b>${clubId}</b></span>`);
   sv.address(club.tee);
-  const reach = r => (r.kind === 'gate' ? r.top + 1 : r.c[1] + r.r * 1.1); // keep the gate tops (or the top ring) in view
-  const ang = r => reach(r) / Math.max(1, Math.hypot(r.c[0], r.c[2]));
-  const top = rings.reduce((a, r) => (ang(r) > a.y ? { y: ang(r), r } : a), { y: -1, r: null }).r;
-  sv.keepInView(new THREE.Vector3(top.c[0], reach(top), top.c[2]));
   drawMap(null);
 }
 

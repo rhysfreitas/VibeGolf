@@ -117,7 +117,6 @@ function renderPrompt() {
     <span class="sub">${Math.round(distYd(G.from, I))} yd${Math.abs(dy) > 2 ? ` · ${dy > 0 ? '↑' : '↓'}${Math.round(Math.abs(dy))} m` : ''} · try <b>${CLUBS[G.solve.club].id}</b>${G.solve.k < 0.97 ? ` <small>${Math.round(G.solve.k * 100)}%</small>` : ''}</span>
     <span class="ih-opts">${G.options.map(o => `<button data-opt="${o.id}" class="${o === I ? 'on' : ''}" style="--c:${BCOL[o.band]}">${band(o.band).name}</button>`).join('')}</span>`);
   kit.els.prompt.querySelectorAll('[data-opt]').forEach(btn => btn.onclick = () => selectTarget(G.options.find(o => o.id === +btn.dataset.opt)));
-  const top = I; sv.keepInView(new THREE.Vector3(top.x - G.from.x, top.y - G.from.y + 8, top.z - G.from.z));
   drawMap();
 }
 

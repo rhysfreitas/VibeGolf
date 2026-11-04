@@ -403,7 +403,7 @@ function setCam(mode) {
 // Standing over the ball: ball at the bottom centre of the screen (see src/stance.js).
 const ADDRESS = { pos: new THREE.Vector3(0, 1.6, 3.2), look: new THREE.Vector3(0, -9, -100), fov: STANCE.fov };
 const FWD = new THREE.Vector3(0, 0, -1), addrBall = new THREE.Vector3(0, 0.05, 0);
-function stance(keep) { return stanceView(addrBall, FWD, baseFov(STANCE.fov), keep ? { keep } : {}); }
+function stance() { return stanceView(addrBall, FWD, baseFov(STANCE.fov)); }
 function updateAddress() { const v = stance(); ADDRESS.pos.copy(v.pos); ADDRESS.look.copy(v.look); }
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
 function hfovToV(hdeg) { const a = camera.aspect; return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hdeg) / 2) / a)); }
@@ -416,9 +416,8 @@ function cameraTarget(dt) {
   let pos = ADDRESS.pos.clone(), look = ADDRESS.look.clone(), fov = ADDRESS.fov, k = 2.2;
   const flying = state.phase === 'flight' || state.phase === 'rest';
   if (mode === 'tracer') {
-    // fixed, high behind the bay: the whole flight stays in frame and the tracers stack up
-    // fixed behind the ball; the view tips up only as far as needed to keep the ball in frame
-    look.copy(stance(flying ? bp : null).look); k = 3;
+    // fixed behind the ball: a window onto the range that doesn't follow the ball up or down
+    look.copy(stance().look); k = 3;
   } else if (mode === 'top') {
     const far = Math.max(150, ...state.shots.slice(-12).map(s => s.r.totalDown * 0.9144), f ? -f.r.pts.at(-1).p[2] : 0);
     const cz = -far * 0.5;

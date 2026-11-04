@@ -1002,10 +1002,9 @@ function camTarget(dt) {
       look = bp.clone().lerp(L, ph === 'rest' ? 0 : 0.35); look.y = Math.max(look.y, L.y + 0.3); fov = 40; k = 4;
       return { pos, look, fov, k };
     }
-    // from where you stood, watching it go: the view tips up only as far as the ball needs
-    const sv = stanceView(f.from, yawDir, baseFov(STANCE.fov), { keep: bp, groundAt });
+    // from where you stood, watching it go: the view stays put (it doesn't follow the ball up or down)
+    const sv = stanceView(f.from, yawDir, baseFov(STANCE.fov), { groundAt });
     pos = sv.pos; look = sv.look; fov = STANCE.fov; k = 4;
-    if (r.outcome === 'void' && state.t > landT * 0.75) { look = bp.clone(); fov = 44; }
     return { pos, look, fov, k, posHold: true };
   }
   if (ph === 'putt' || ph === 'rolling' || ph === 'holed') {

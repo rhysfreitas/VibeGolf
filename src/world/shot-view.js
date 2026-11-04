@@ -5,6 +5,7 @@
 //   sv.address(club.tee)                 // ball on the mat (or tee)
 //   const flight = sv.fly(simulateResult)// start playback; returns { done, landIdx, ... }
 //   per frame: sv.update(dt) then render  // advances the ball, tracer and camera
+// The camera is fixed (src/stance.js): it doesn't follow the ball up or down.
 
 import { STANCE, stanceView } from '../stance.js';
 
@@ -35,7 +36,7 @@ export function createShotView(world, opts = {}) {
 
   const addrBall = new THREE.Vector3(), FWD = new THREE.Vector3(0, 0, -1);
   const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), init: false };
-  let flight = null, keepPoint = null, tmp = new THREE.Vector3();
+  let flight = null, tmp = new THREE.Vector3();
   // stance.fov (optional) zooms the view: a narrower lens makes far targets bigger (Golf HORSE)
   const baseFov = stanceOpts.fov || STANCE.fov, hfov = 62 * baseFov / STANCE.fov;
   const vfov = () => { const h = THREE.MathUtils.degToRad(hfov); return Math.max(baseFov, Math.min(78, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(h / 2) / camera.aspect)))); };
@@ -55,7 +56,6 @@ export function createShotView(world, opts = {}) {
     flight = { r, pts, t: 0, landIdx: li < 0 ? pts.length - 1 : li, arr: [], done: false, landed: false, onLand: null, onDone: null };
     return flight;
   }
-  function keepInView(p) { keepPoint = p; }   // e.g. the highest target, so the address view frames it
 
   function sample(t, out) {
     const P = flight.pts; let lo = 0, hi = P.length - 1;
@@ -87,8 +87,8 @@ export function createShotView(world, opts = {}) {
     shadow.position.y = groundAt(shadow.position.x, shadow.position.z) + 0.012;
     const bs = BALL_RADIUS * 3.2 * ball.scale.x * (1 + h * 0.02);
     shadow.scale.set(bs, bs, 1); shadow.material.opacity = flight ? Math.max(0, 0.75 - h / 40) : 0;
-    // camera: standing over the ball; tips up only as far as the ball (or a kept target) needs
-    const v = stanceView(addrBall, FWD, vfov(), { ...stanceOpts, keep: flight && !flight.done ? ball.position : keepPoint });
+    // camera: standing over the ball, fixed (a window into the world, not a chase cam)
+    const v = stanceView(addrBall, FWD, vfov(), stanceOpts);
     if (!cam.init) { cam.pos.copy(v.pos); cam.look.copy(v.look); cam.init = true; }
     cam.pos.lerp(v.pos, 1 - Math.exp(-6 * dt)); cam.look.lerp(v.look, 1 - Math.exp(-3 * dt));
     camera.fov = vfov(); camera.updateProjectionMatrix();
@@ -107,5 +107,5 @@ export function createShotView(world, opts = {}) {
   resizeLines();
   // fade the live tracer (e.g. while a game's camera moves in close)
   function tracerFade(k) { tracer.core.material.opacity = 1 - k; tracer.glow.material.opacity = 0.3 * (1 - k); }
-  return { ball, address, fly, update, tracerFade, keepInView, resizeLines, ghostCurrent, clearGhosts, setLine, mkLine: (w, o) => { const l = mkLine(w, o); extra.push(l); return l; }, get flight() { return flight; } };
+  return { ball, address, fly, update, tracerFade, resizeLines, ghostCurrent, clearGhosts, setLine, mkLine: (w, o) => { const l = mkLine(w, o); extra.push(l); return l; }, get flight() { return flight; } };
 }
