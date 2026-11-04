@@ -18,7 +18,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 | Island Hopper | **The Aerie**'s floating sky world. |
 | Golf HORSE | **The Cul-de-sac**: a giant suburban cul-de-sac just after sunset under Topgolf-style floodlights. You hit from a bay on the first garage roof. Seven LED target rings sit in the street and lawns, a basketball court is painted in the bulb under a giant driveway hoop, and a basketball scoreboard shows the call. |
 | Golf Bowling | **Neon roadside lane**: a 1950s bowling lane laid down a desert valley floor. |
-| Wedge Ladder | **Practice academy**: a crisp morning, banded target greens, a coach's board. |
+| Wedge Ladder | **The Airfield**: a vintage airstrip at sunrise. Each rung is a landing zone painted across the flat runway (true carries) with a runway-style number; the live zone has green and red edge-light rows and a floating number. Control tower with a turning beacon, hangars, a biplane, a windsock, taxiway yardage signs and hot-air balloons. The ladder HUD is a departures-style flight board whose rows double as a top-down runway strip with your landings. |
 | Glass Tower | **Downtown plaza at dusk**: the target tower lit among other skyscrapers. |
 
 ---
@@ -128,7 +128,7 @@ Giant pins down the fairway. Ten frames, real bowling scoring.
 Climb a ladder of carry distances with your wedges.
 
 - **Rungs:** 40, 50 … 120 yd (difficulty sets the range). Each rung is a glowing landing band on the ground with its number.
-- **Bands:** Beginner ±8 yd, Amateur ±5, Pro ±3. Within 1 yd is **PERFECT**.
+- **Bands:** Beginner ±5 yd (40–100), Amateur ±4, Pro ±3, Tour ±2 (40–120). Within about 1 yd is **PERFECT**. Distance is carry measured straight down the runway. (Tuned so Beginner is generous and Amateur reaches the top about a third of the time.)
 - **Moving:** a hit climbs a rung and a miss drops one, with "So close · 1.5 yd long" feedback. A ladder HUD on the side shows where you are.
 - **Round:** 15 shots each. The score is your highest rung plus perfects, and the streak builds on consecutive climbs.
 - **Challenges, e.g.:** reach the top · 3 perfects · no drops.
