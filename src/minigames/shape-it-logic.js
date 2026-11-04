@@ -28,30 +28,37 @@ export const SHAPES = {
   low:      { name: 'Low', hla: 0, axis: 0, vla: -4, spin: 0.8, speed: 1.0, clubs: ['5i', '7i', '9i'], weight: 1.5 },
 };
 
-// Ring size as a share of its distance from the tee (radius), with a floor; perfect zone = 35% of it.
-// Beginner ≈ 30 yd across at 150 yd, Amateur ≈ 18, Pro ≈ 11, Tour ≈ 6.
+// Beginner and Amateur fly through tall *gates*: only left and right count, so it's all about
+// start line and curve (draws and fades; Amateur adds hooks and slices). Pro and Tour fly through
+// *rings*, where height counts too and every shape is in play.
+// Size as a share of distance from the tee (gate half-width or ring radius), with a floor.
+// Beginner gates ≈ 22 yd wide at 150 yd, Amateur ≈ 13; Pro rings ≈ 14 yd across, Tour ≈ 10.
+// (A decent amateur's swing threads a full shape about 70% / 45% / 30% / 15% of the time.)
+const CURVES = ['straight', 'draw', 'fade'];
 export const DIFFICULTIES = [
-  { id: 'beginner', label: 'Beginner', frac: 0.10, min: 4.0, guide: true, note: 'Big rings (about 30 yd across at 150 yd) and a guide line through them.' },
-  { id: 'amateur', label: 'Amateur', frac: 0.06, min: 2.6, guide: true, note: 'Medium rings (about 18 yd across at 150 yd) with a guide line.' },
-  { id: 'pro', label: 'Pro', frac: 0.037, min: 1.8, guide: false, note: 'Tight rings (about 11 yd across at 150 yd). No guide line.' },
-  { id: 'tour', label: 'Tour', frac: 0.02, min: 1.2, guide: false, note: 'Tiny rings (about 6 yd across at 150 yd). Good luck.' },
+  { id: 'beginner', label: 'Beginner', gate: true, frac: 0.075, min: 3.0, guide: true, shapes: CURVES, note: 'Tall gates: just start it on line and curve it through (about 22 yd wide at 150 yd). Straights, draws and fades, with a guide line.' },
+  { id: 'amateur', label: 'Amateur', gate: true, frac: 0.045, min: 2.0, guide: true, shapes: [...CURVES, 'hook', 'slice'], note: 'Narrower gates (about 13 yd wide at 150 yd), and hooks and slices join in. Guide line on.' },
+  { id: 'pro', label: 'Pro', frac: 0.048, min: 2.2, guide: false, note: 'Rings: height counts now, and high and low shots join in (about 14 yd across at 150 yd). No guide line.' },
+  { id: 'tour', label: 'Tour', frac: 0.034, min: 1.6, guide: false, note: 'Tight rings (about 10 yd across at 150 yd). No guide line.' },
 ];
 export const PERFECT_FRAC = 0.25; // the bright centre is a quarter of the ring: earned, not given
+export const GATE_PERFECT_FRAC = 0.2; // a gate's centre band (left-right only, so a little narrower)
 export const POINTS = { ring: 100, shape: 250, perfectShape: 500 };
 
 export const CHALLENGES = [
   { id: 'full1', text: 'Thread a full shape', key: 'fullShapes', goal: 1 },
   { id: 'full3', text: 'Thread 3 full shapes', key: 'fullShapes', goal: 3, only: ['beginner', 'amateur'] },
-  { id: 'perf2', text: 'Hit 2 perfect rings', key: 'perfects', goal: 2 },
-  { id: 'perf5', text: 'Hit 5 perfect rings', key: 'perfects', goal: 5, only: ['beginner', 'amateur'] },
+  { id: 'perf2', text: 'Hit 2 perfect gates', key: 'perfects', goal: 2 },
+  { id: 'perf5', text: 'Hit 5 perfect gates', key: 'perfects', goal: 5, only: ['beginner', 'amateur'] },
   { id: 'x4', text: 'Reach a ×4 streak', key: 'mult', goal: 4 },
-  { id: 'rings15', text: 'Fly through 15 rings', key: 'rings', goal: 15 },
-  { id: 'rings8', text: 'Fly through 8 rings', key: 'rings', goal: 8, only: ['pro', 'tour'] },
-  { id: 'curve', text: 'Thread a hook or slice', key: 'curveShapes', goal: 1 },
+  { id: 'rings15', text: 'Clear 15 gates', key: 'rings', goal: 15 },
+  { id: 'rings8', text: 'Clear 8 gates', key: 'rings', goal: 8, only: ['pro', 'tour'] },
+  { id: 'curve', text: 'Thread a hook or slice', key: 'curveShapes', goal: 1, only: ['amateur', 'pro', 'tour'] },
 ];
 
-export function pickShape(rand = Math.random, lastKey = null) {
-  const keys = Object.keys(SHAPES).filter(k => k !== lastKey);
+// allowed: the difficulty's shapes (gates only ask for curves; rings use them all)
+export function pickShape(rand = Math.random, lastKey = null, allowed = null) {
+  const keys = (allowed || Object.keys(SHAPES)).filter(k => k !== lastKey);
   const total = keys.reduce((a, k) => a + SHAPES[k].weight, 0);
   let r = rand() * total;
   for (const k of keys) { r -= SHAPES[k].weight; if (r <= 0) return k; }
@@ -69,6 +76,8 @@ export function shapeBall(club, shapeKey) {
 
 // Place three rings along a reference flight: rising (~33% of carry), apex, descending (~80%).
 // pts: physics result points [{t, p:[x,y,z], phase}]. Returns rings with centre, normal, radius.
+// On a gate difficulty they're gates instead: kind 'gate', a level normal, r = half-width, and
+// top = how tall the posts stand (comfortably above the flight there; height still doesn't count).
 export function buildRings(pts, diff) {
   const flight = [];
   for (const q of pts) { flight.push(q); if (q.phase !== 'flight') break; }
@@ -83,12 +92,17 @@ export function buildRings(pts, diff) {
     const n = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], nl = Math.hypot(...n);
     const dist = Math.hypot(...c);
     const r = Math.max(diff.min, diff.frac * dist);
-    return { k, c: c.slice(), n: n.map(v => v / nl), r, perfect: r * PERFECT_FRAC, t: flight[i].t, dist };
+    if (diff.gate) {
+      const hl = Math.hypot(n[0], n[2]);
+      return { k, kind: 'gate', c: c.slice(), n: [n[0] / hl, 0, n[2] / hl], r, perfect: r * GATE_PERFECT_FRAC, t: flight[i].t, dist, top: Math.max(12, c[1] * 1.3 + 6) };
+    }
+    return { k, kind: 'ring', c: c.slice(), n: n.map(v => v / nl), r, perfect: r * PERFECT_FRAC, t: flight[i].t, dist };
   });
 }
 
 // Where (and when) a flight crosses each ring's plane, moving forward through it.
 // Returns per ring: { hit, perfect, d (m from centre, Infinity if never reached), t, nearYd }
+// For a gate, d is just how far left or right of centre it went through (height doesn't count).
 export function testRings(pts, rings) {
   return rings.map(ring => {
     let best = { d: Infinity, t: null };
@@ -99,7 +113,9 @@ export function testRings(pts, rings) {
       const sb = (b[0] - ring.c[0]) * ring.n[0] + (b[1] - ring.c[1]) * ring.n[1] + (b[2] - ring.c[2]) * ring.n[2];
       if (sa <= 0 && sb > 0) {
         const f = sa / (sa - sb), p = [0, 1, 2].map(j => a[j] + (b[j] - a[j]) * f);
-        const d = Math.hypot(p[0] - ring.c[0], p[1] - ring.c[1], p[2] - ring.c[2]);
+        const d = ring.kind === 'gate'
+          ? Math.abs((p[0] - ring.c[0]) * -ring.n[2] + (p[2] - ring.c[2]) * ring.n[0])
+          : Math.hypot(p[0] - ring.c[0], p[1] - ring.c[1], p[2] - ring.c[2]);
         if (d < best.d) best = { d, t: pts[i - 1].t + (pts[i].t - pts[i - 1].t) * f, p };
       }
     }

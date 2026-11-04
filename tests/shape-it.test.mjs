@@ -21,12 +21,36 @@ test('the reference shot threads every ring dead centre', () => {
 
 test('rings sit rising, at the apex and descending, and grow with distance', () => {
   const pts = fly(shapeBall(CLUBS[clubIndex('7i')], 'straight'));
-  const [a, b, c] = buildRings(pts, diff('beginner'));
-  assert.ok(a.n[1] > 0.2 && Math.abs(b.n[1]) < 0.1 && c.n[1] < -0.2, 'normals follow the flight');
+  const [a, b, c] = buildRings(pts, diff('pro'));
+  assert.ok(a.kind === 'ring' && a.n[1] > 0.2 && Math.abs(b.n[1]) < 0.1 && c.n[1] < -0.2, 'normals follow the flight');
   assert.ok(a.dist < b.dist && b.dist < c.dist);
   assert.ok(a.r < c.r);
-  // Beginner ring ≈ 30 yd across at ~150 yd
-  const d150 = 150 * 0.9144; assert.ok(Math.abs(2 * Math.max(4, 0.10 * d150) / 0.9144 - 30) < 1);
+  // Pro ring ≈ 14 yd across at ~150 yd, Tour ≈ 10
+  const d150 = 150 * 0.9144, across = d => 2 * Math.max(d.min, d.frac * d150) / 0.9144;
+  assert.ok(Math.abs(across(diff('pro')) - 14) < 1 && Math.abs(across(diff('tour')) - 10) < 1);
+});
+
+test('Beginner and Amateur fly through tall gates where only left and right count', () => {
+  const club = CLUBS[clubIndex('7i')], ball = shapeBall(club, 'draw'), pts = fly(ball);
+  const gates = buildRings(pts, diff('beginner'));
+  assert.ok(gates.every(g => g.kind === 'gate' && g.n[1] === 0 && g.top > g.c[1] + 5), 'level gates standing well above the flight');
+  const d150 = 150 * 0.9144, wide = d => 2 * Math.max(d.min, d.frac * d150) / 0.9144;
+  assert.ok(Math.abs(wide(diff('beginner')) - 22) < 1 && Math.abs(wide(diff('amateur')) - 13) < 1);
+  // the same line flown much higher still clears every gate, but not Pro's rings
+  const high = fly({ ...ball, VLA: ball.VLA + 9, Speed: ball.Speed * 0.97 });
+  assert.equal(testRings(high, gates).filter(r => r.hit).length, 3);
+  assert.ok(testRings(high, buildRings(pts, diff('pro'))).filter(r => r.hit).length < 3);
+  // a push that keeps going right misses
+  const push = testRings(fly({ ...ball, HLA: 7, SpinAxis: 4 }), buildRings(pts, diff('amateur')));
+  assert.ok(push.filter(r => r.hit).length < 3 && push.some(r => r.missYd > 0));
+});
+
+test('gate levels only ask for curves: no high or low shots, hooks and slices from Amateur', () => {
+  const seen = d => { const s = new Set(); let last = null; for (let i = 0; i < 300; i++) { last = pickShape(Math.random, last, diff(d).shapes); s.add(last); } return s; };
+  const b = seen('beginner'), a = seen('amateur'), p = seen('pro');
+  assert.deepEqual([...b].sort(), ['draw', 'fade', 'straight']);
+  assert.ok(a.has('hook') && a.has('slice') && !a.has('high') && !a.has('low'));
+  assert.ok(p.has('high') && p.has('low'));
 });
 
 test('the wrong shape misses; a near miss reports yards', () => {

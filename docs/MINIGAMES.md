@@ -49,8 +49,8 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 ## 1. Shape It
 Fly the ball through a set of rings tracing a shot shape.
 
-- **Shapes**, chosen at random each turn: straight, draw, fade, hook, slice, and high or low to a set distance. Each comes with a suggested club and swing length.
-- **Rings:** three per shape (rising, apex, descending), sized as a share of their distance: Beginner ~30 yd across at 150 yd, Amateur ~18, Pro ~11, Tour ~6. Each has a perfect center.
+- **Shapes**, chosen at random each turn from the level's list: Beginner straight, draw and fade; Amateur adds hook and slice; Pro and Tour add high and low. Each comes with a suggested club.
+- **Gates and rings:** three per shape (rising, apex, descending), sized as a share of their distance. Beginner and Amateur fly through tall **gates** (two light posts and a crossbar standing well above the flight, with a line across the deck): only left and right count, so it's all start line and curve. Beginner gates are ~22 yd wide at 150 yd, Amateur ~13. Pro and Tour fly through **rings**, where height counts too: Pro ~14 yd across, Tour ~10. Each has a perfect centre (a gold band on a gate). A decent amateur's simulated swing threads a full shape about 70% / 45% / 30% / 15% of the time.
 - **Scoring:** points per ring, perfect doubles it, and threading all three gives a **SHAPE!** bonus. Streak applies across shots.
 - **Round:** 10 shots each.
 - **Map:** the flight-plan screen: top and side views showing the rings and your tracer.

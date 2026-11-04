@@ -23,8 +23,9 @@ const kit = createKit({
   id: 'shape-it', title: 'Shape It', accent: '#36e2ff',
   blurb: 'Fly your ball through three glowing rings that trace a shot shape: straight, draw, fade, hook, slice, high or low.',
   rules: [
-    'Each ring is <b>100</b>. Through the bright centre is <b>PERFECT</b>, worth double.',
-    'All three rings: <b>SHAPE!</b> +250. All three perfect: +500.',
+    'Beginner and Amateur fly through tall <b>gates</b>: only left and right count, so start it on line and curve it through. Pro and Tour fly through <b>rings</b>, where height counts too.',
+    'Each gate is <b>100</b>. Through the bright centre is <b>PERFECT</b>, worth double.',
+    'All three gates: <b>SHAPE!</b> +250. All three perfect: +500.',
     'Consecutive scoring shots build a streak up to <b>×4</b>. A full miss resets it.',
     '10 shots each. The flight-plan screen (top right) shows the gates from above and from the side; tap it to aim at a spot.',
   ],
@@ -63,9 +64,61 @@ function clearRings() {
   for (const o of ringObjs) { scene.remove(o.group); o.group.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material) m.material.dispose(); }); }
   ringObjs = []; if (guide) guide.visible = false;
 }
+// Beginner and Amateur: a tall gate (two light posts and a faint curtain; only left and right count)
+const curtainMat = color => new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide,
+  uniforms: { uColor: { value: new THREE.Color(color) }, uA: { value: 0.12 }, uTime: { value: 0 }, uPerf: { value: 0.2 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform vec3 uColor; uniform float uA, uTime, uPerf;
+    void main(){ float x = abs(vUv.x * 2.0 - 1.0);
+      float edge = smoothstep(0.8, 1.0, x), band = 1.0 - smoothstep(uPerf * 0.9, uPerf, x);
+      float scan = 0.6 + 0.4 * sin(vUv.y * 70.0 - uTime * 3.0);
+      float a = uA * (0.3 + 1.6 * edge + 0.9 * band + 1.2 * smoothstep(0.93, 1.0, vUv.y)) * scan;
+      vec3 c = mix(uColor, vec3(1.0, 0.78, 0.25), band * 0.7);
+      gl_FragColor = vec4(c * a, 1.0); }`,
+});
+// the gate's line across the deck, so you can see where each one stands
+const stripMat = color => new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  uniforms: { uColor: { value: new THREE.Color(color) }, uTime: { value: 0 }, uPerf: { value: 0.2 }, uDim: { value: 1 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform vec3 uColor; uniform float uTime, uPerf, uDim;
+    void main(){ float x = abs(vUv.x * 2.0 - 1.0), band = 1.0 - smoothstep(uPerf * 0.9, uPerf, x);
+      float across = 1.0 - smoothstep(0.2, 0.5, abs(vUv.y - 0.5));
+      float chase = 0.65 + 0.35 * sin(x * 30.0 - uTime * 4.0);
+      vec3 c = mix(uColor, vec3(1.0, 0.78, 0.25), band);
+      gl_FragColor = vec4(c * across * chase * 0.9 * uDim, 1.0); }`,
+});
+function postGeo(radius, h) { // a light post whose shader bands run up it
+  const g = new THREE.CylinderGeometry(radius, radius, h, 12, 1, true); g.translate(0, h / 2, 0);
+  const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getY(i) * h / 40, uv.getX(i));
+  return g;
+}
+function makeGate(rg, i) {
+  const group = new THREE.Group(), top = rg.top, pr = Math.max(0.3, rg.r * 0.04);
+  const postMat = ringMat(CYAN, 1.2), bandMat = ringMat(GOLD, 0.8);
+  const posts = [-1, 1].map(sx => { const m = new THREE.Mesh(postGeo(pr, top), postMat); m.position.x = sx * rg.r; m.renderOrder = 4; group.add(m); return m; });
+  const bands = [-1, 1].map(sx => { const m = new THREE.Mesh(postGeo(pr * 0.35, top * 0.8), bandMat); m.position.x = sx * rg.perfect; m.renderOrder = 4; group.add(m); return m; });
+  const curtain = new THREE.Mesh(new THREE.PlaneGeometry(rg.r * 2, top), curtainMat(CYAN)); curtain.position.y = top / 2; curtain.renderOrder = 3;
+  curtain.material.uniforms.uPerf.value = rg.perfect / rg.r; group.add(curtain);
+  const bar = new THREE.Mesh(postGeo(pr * 0.8, rg.r * 2), postMat); bar.rotation.z = -Math.PI / 2; bar.position.set(-rg.r, top, 0); bar.renderOrder = 4; group.add(bar);
+  const strip = new THREE.Mesh(new THREE.PlaneGeometry(rg.r * 2, Math.max(0.8, rg.r * 0.08)).rotateX(-Math.PI / 2), stripMat(CYAN));
+  strip.position.y = 0.04; strip.material.uniforms.uPerf.value = rg.perfect / rg.r; strip.renderOrder = 3; group.add(strip);
+  const pads = [-1, 1].map(sx => { const m = new THREE.Mesh(new THREE.CylinderGeometry(pr * 2.6, pr * 3, 0.5, 16), new THREE.MeshStandardMaterial({ color: 0x2a3038, metalness: 0.7, roughness: 0.4, emissive: 0x0a3a48 })); m.position.set(sx * rg.r, 0.25, 0); group.add(m); return m; });
+  void pads;
+  // nav lights: red left, green right on the post tops, white strobes halfway up
+  const lights = [[-1, 1, 0xff4a3a], [1, 1, 0x4dff7a], [-1, 0.5, 0xffffff], [1, 0.5, 0xffffff]].map(([sx, fy, c]) => {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTex, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    sp.position.set(sx * rg.r, top * fy + (fy === 1 ? 0.6 : 0), 0); sp.scale.setScalar(Math.max(1.4, rg.r * 0.18)); sp.renderOrder = 5; group.add(sp); return sp;
+  });
+  group.position.set(rg.c[0], 0, rg.c[2]); group.rotation.y = Math.atan2(rg.n[0], rg.n[2]);
+  scene.add(group);
+  return { group, outer: posts[0], inner: bands[0], disc: curtain, strip, lights, ring: rg, gate: true, phase: i * 1.7, flash: 0, pop: 0, state: 'live', flashColor: new THREE.Color(1, 1, 1) };
+}
 function makeRings(list) {
   clearRings();
   list.forEach((rg, i) => {
+    if (rg.kind === 'gate') { ringObjs.push(makeGate(rg, i)); return; }
     const group = new THREE.Group();
     const tube = Math.max(0.14, rg.r * 0.05);
     const outer = new THREE.Mesh(new THREE.TorusGeometry(rg.r, tube, 14, 120), ringMat(CYAN, 1.1));
@@ -84,25 +137,27 @@ function makeRings(list) {
     ringObjs.push({ group, outer, inner, disc, lights, ring: rg, phase: i * 1.7, flash: 0, pop: 0, state: 'live', flashColor: new THREE.Color(1, 1, 1) });
   });
 }
-function ringHit(o, perfect) {
+function ringHit(o, perfect, at = null) {
   o.state = 'hit'; o.flash = 1; o.pop = 1;
   o.outer.material.uniforms.uFlashColor.value.set(perfect ? 0xfff2b0 : 0xffffff);
   o.outer.material.uniforms.uColor.value.set(GOLD);
   o.disc.material.uniforms.uColor.value.set(GOLD);
-  burst(o, perfect);
+  if (o.strip) o.strip.material.uniforms.uColor.value.set(GOLD);
+  burst(o, perfect, at);
 }
 function ringMiss(o) { o.state = 'miss'; o.flash = 0.8; o.outer.material.uniforms.uFlashColor.value.set(RED); }
 function animateRings(dt, t) {
   for (const o of ringObjs) {
     o.flash = Math.max(0, o.flash - dt * 1.8); o.pop = Math.max(0, o.pop - dt * 2.4);
     const pulse = 1 + 0.025 * Math.sin(t * 2.2 + o.phase);
-    o.group.scale.setScalar(pulse * (1 + 0.28 * Math.sin(o.pop * Math.PI)));
-    o.outer.rotation.z += dt * (o.state === 'hit' ? 1.6 : 0.35);
-    o.inner.rotation.z -= dt * 0.6;
+    const sc = pulse * (1 + 0.28 * Math.sin(o.pop * Math.PI));
+    if (o.gate) o.group.scale.set(sc, 1, 1); // a gate swells sideways
+    else { o.group.scale.setScalar(sc); o.outer.rotation.z += dt * (o.state === 'hit' ? 1.6 : 0.35); o.inner.rotation.z -= dt * 0.6; }
     for (const m of [o.outer, o.inner]) { m.material.uniforms.uTime.value = t; m.material.uniforms.uFlash.value = m === o.outer ? o.flash : o.flash * 0.6; }
     o.outer.material.uniforms.uDim.value = o.state === 'miss' ? 0.35 : 1;
     o.inner.material.uniforms.uDim.value = o.state === 'miss' ? 0.3 : 1;
     o.disc.material.uniforms.uTime.value = t;
+    if (o.strip) { o.strip.material.uniforms.uTime.value = t; o.strip.material.uniforms.uDim.value = o.state === 'miss' ? 0.3 : 1 + o.flash; }
     o.disc.material.uniforms.uA.value = o.state === 'miss' ? 0.04 : 0.12 + o.flash * 0.3;
     o.lights.forEach((sp, k) => { sp.material.opacity = o.state === 'miss' ? 0.15 : k < 2 ? 0.75 + 0.25 * Math.sin(t * 2 + o.phase) : (Math.sin(t * 3.2 + o.phase + k) > 0.55 ? 1 : 0.12); });
   }
@@ -111,15 +166,16 @@ function animateRings(dt, t) {
 /* ===================== sparkles ===================== */
 const sparkTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(cv); return t; })();
 const bursts = [];
-function burst(o, perfect) {
+function burst(o, perfect, at = null) {
   const N = perfect ? 220 : 140, rg = o.ring;
+  const C = o.gate && at ? at : rg.c, R0 = o.gate ? rg.r * 0.45 : rg.r; // a gate bursts where the ball went through
   const pos = new Float32Array(N * 3), col = new Float32Array(N * 3), vel = [];
   const n = new THREE.Vector3(...rg.n), u = new THREE.Vector3().crossVectors(n, Math.abs(n.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).normalize(), w = new THREE.Vector3().crossVectors(n, u);
   const c1 = new THREE.Color(perfect ? GOLD : CYAN), c2 = new THREE.Color(perfect ? 0xffffff : GOLD), tc = new THREE.Color();
   for (let i = 0; i < N; i++) {
     const a = Math.random() * Math.PI * 2, onRing = i < N * 0.7;
-    const rr = onRing ? rg.r : rg.perfect * Math.random();
-    const p = new THREE.Vector3(...rg.c).addScaledVector(u, Math.cos(a) * rr).addScaledVector(w, Math.sin(a) * rr);
+    const rr = onRing ? R0 : rg.perfect * Math.random();
+    const p = new THREE.Vector3(...C).addScaledVector(u, Math.cos(a) * rr).addScaledVector(w, Math.sin(a) * rr);
     pos.set([p.x, p.y, p.z], i * 3);
     const out = new THREE.Vector3().addScaledVector(u, Math.cos(a)).addScaledVector(w, Math.sin(a));
     const sp = (onRing ? 4 : 2) + Math.random() * (perfect ? 9 : 6);
@@ -187,7 +243,7 @@ function drawMap(shot) {
     const ref = cur.ref, flight = p => -p[2];
     const maxD = Math.max(...ref.map(q => flight(q.p)), ...(shot ? shot.map(q => flight(q.p)) : [0])) * 1.08 + 5;
     const latMax = Math.max(12, ...rings.map(r => Math.abs(r.c[0]) + r.r), ...(shot ? shot.map(q => Math.abs(q.p[0])) : [0])) * 1.15;
-    const hMax = Math.max(10, ...rings.map(r => r.c[1] + r.r), ...(shot ? shot.map(q => q.p[1]) : [0])) * 1.12;
+    const hMax = Math.max(10, ...rings.map(r => (r.kind === 'gate' ? r.top : r.c[1] + r.r)), ...(shot ? shot.map(q => q.p[1]) : [0])) * 1.12;
     const pad = 6, topH = Math.round(y0 + (y1 - y0) * 0.56), sideY0 = topH + 4;
     const tX = x => W / 2 + x / latMax * (W / 2 - pad), tY = d => topH - pad - d / maxD * (topH - y0 - pad * 2);
     mapGeo = { W, y0, topH, pad, latMax, maxD };
@@ -205,7 +261,8 @@ function drawMap(shot) {
       const hx = -r.n[2], hz = r.n[0], hl = Math.hypot(hx, hz) || 1;
       g.strokeStyle = c; g.lineWidth = 2.5; g.lineCap = 'round';
       g.beginPath(); g.moveTo(tX(r.c[0] - hx / hl * r.r), tY(flight(r.c) + hz / hl * r.r)); g.lineTo(tX(r.c[0] + hx / hl * r.r), tY(flight(r.c) - hz / hl * r.r)); g.stroke();
-      g.beginPath(); g.moveTo(sX(flight(r.c)), sY(r.c[1] - r.r)); g.lineTo(sX(flight(r.c)), sY(r.c[1] + r.r)); g.stroke();
+      if (r.kind === 'gate') { g.beginPath(); g.moveTo(sX(flight(r.c)), sY(0)); g.lineTo(sX(flight(r.c)), sY(r.top)); g.stroke(); }
+      else { g.beginPath(); g.moveTo(sX(flight(r.c)), sY(r.c[1] - r.r)); g.lineTo(sX(flight(r.c)), sY(r.c[1] + r.r)); g.stroke(); }
     });
     if (shot && shot.length > 1) {
       path(shot, q => tX(q.p[0]), q => tY(flight(q.p)), '#fff3c4', 1.6);
@@ -240,7 +297,7 @@ kit.on('club', i => { cur.club = i; sv.address(CLUBS[i].tee); });
 function newShape() {
   diff = kit.player.difficulty; // each player can play their own level
   sv.clearGhosts();
-  const key = pickShape(Math.random, cur.lastShape); cur.lastShape = key;
+  const key = pickShape(Math.random, cur.lastShape, diff.shapes); cur.lastShape = key;
   const shape = SHAPES[key];
   const clubId = shape.clubs[Math.floor(Math.random() * shape.clubs.length)];
   const club = CLUBS[clubIndex(clubId)];
@@ -258,8 +315,10 @@ function newShape() {
   const carry = Math.round(res.carry);
   kit.setPrompt(`<span class="kick">Shot shape</span><span class="big">${shape.name}</span><span class="sub">${carry} yd carry · try <b>${clubId}</b></span>`);
   sv.address(club.tee);
-  const top = rings.reduce((a, r) => (r.c[1] + r.r > a.y ? { y: r.c[1] + r.r, r } : a), { y: -1, r: null }).r;
-  sv.keepInView(new THREE.Vector3(top.c[0], top.c[1] + top.r * 1.1, top.c[2]));
+  const reach = r => (r.kind === 'gate' ? r.top + 1 : r.c[1] + r.r * 1.1); // keep the gate tops (or the top ring) in view
+  const ang = r => reach(r) / Math.max(1, Math.hypot(r.c[0], r.c[2]));
+  const top = rings.reduce((a, r) => (ang(r) > a.y ? { y: ang(r), r } : a), { y: -1, r: null }).r;
+  sv.keepInView(new THREE.Vector3(top.c[0], reach(top), top.c[2]));
   drawMap(null);
 }
 
@@ -299,7 +358,7 @@ function fireRingEvents() {
     ev.done = true;
     const o = ringObjs[ev.i];
     if (ev.res.hit) {
-      ringHit(o, ev.res.perfect); kit.sfx.chime(cur.step++);
+      ringHit(o, ev.res.perfect, ev.res.p); kit.sfx.chime(cur.step++);
       if (ev.res.perfect) { kit.sfx.perfect(); kit.splash('PERFECT', { gold: true }); kit.stat('perfects'); }
       kit.stat('rings');
       kit.award((ev.res.perfect ? 2 : 1) * 100);
@@ -328,7 +387,7 @@ function finishShot() {
   const hit = shotShape(cur.ball.HLA || 0, cur.ball.SpinAxis || 0);
   kit.showResult(`
     <div class="top"><span class="lbl">${SHAPES[cur.shape].name} · ${pl.name}</span><span class="pts ${shotPts ? '' : 'zero'}">${shotPts ? '+' + shotPts : '0'}</span></div>
-    <div class="items">${cur.results.map((r, i) => `<span>Ring ${i + 1} · ${r.hit ? `<b>${r.perfect ? 'Perfect' : 'Through'}</b>` : Number.isFinite(r.missYd) ? `missed by ${r.missYd < 10 ? r.missYd.toFixed(1) : Math.round(r.missYd)} yd` : 'not reached'}</span>`).join('')}</div>
+    <div class="items">${cur.results.map((r, i) => `<span>Gate ${i + 1} · ${r.hit ? `<b>${r.perfect ? 'Perfect' : 'Through'}</b>` : Number.isFinite(r.missYd) ? `missed by ${r.missYd < 10 ? r.missYd.toFixed(1) : Math.round(r.missYd)} yd` : 'not reached'}</span>`).join('')}</div>
     <div class="meta"><span>You hit <b>${hit}</b></span><span><b>${Math.round(cur.r.carry)}</b> yd ${cur.live ? '· R10' : cur.ideal ? '· Ideal' : '· Sim'}</span></div>`);
   cur.status = s.all ? { text: s.allPerfect ? 'PERFECT FLIGHT PLAN' : 'ON PLAN · ALL GATES', color: '#ffd257' } : s.rings ? { text: `${s.rings} OF 3 GATES`, color: '#7fe9ff' } : { text: 'OFF PLAN', color: '#ff7a6a' };
   drawMap(cur.r.pts);
