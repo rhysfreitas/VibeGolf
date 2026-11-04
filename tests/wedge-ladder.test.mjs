@@ -11,11 +11,11 @@ const at = (yd, xYd = 0) => ({ x: xYd * YD, z: -yd * YD });
 test('judge: bands, perfects, long/short and off the runway', () => {
   const d = diff('amateur');
   let j = judge(at(60.4), d, 2); assert.ok(j.inBand && j.perfect);
-  j = judge(at(64), d, 2); assert.ok(j.inBand && !j.perfect);
-  j = judge(at(66.5), d, 2); assert.ok(!j.inBand && j.dir === 'long' && Math.abs(j.missYd - 1.5) < 1e-6);
+  j = judge(at(63.5), d, 2); assert.ok(j.inBand && !j.perfect);
+  j = judge(at(60 + d.band + 1.5), d, 2); assert.ok(!j.inBand && j.dir === 'long' && Math.abs(j.missYd - 1.5) < 1e-6);
   j = judge(at(52), d, 2); assert.equal(j.dir, 'short');
   j = judge(at(60, LATERAL_YD + 4), d, 2); assert.ok(!j.inBand && !j.onRunway && j.dir === 'right');
-  assert.ok(judge(at(67), diff('beginner'), 2).inBand && !judge(at(63), diff('tour'), 2).inBand);
+  assert.ok(judge(at(64.5), diff('beginner'), 2).inBand && !judge(at(63), diff('tour'), 2).inBand);
 });
 
 test('the ladder: climb on hits, drop on misses, hold the top', () => {
