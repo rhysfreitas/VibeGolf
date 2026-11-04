@@ -6,6 +6,11 @@ export const YD = 0.9144;
 export const FENCE_Z = -14;            // ≈15 yd in front of the tee
 export const SPAWN_Z = [-275, -255];   // edge of the cornfield, ≈280–300 yd
 export const FIELD_X = 52;             // zombies spawn within ±this
+// The field funnels in toward the fence so no zombie is ever at an angle you can't hit from the tee:
+// its half-width is the full FIELD_X out deep, narrowing to stay within TAPER_DEG of straight ahead
+// (never narrower than FENCE_HALF). Each zombie keeps its lane: 90% right stays 90% right.
+export const TAPER_DEG = 32, FENCE_HALF = 12;
+export const fieldHalf = z => Math.max(FENCE_HALF, Math.min(FIELD_X, Math.tan(TAPER_DEG * Math.PI / 180) * -z));
 export const GRAVEYARD = { x: [-48, -28], z: [-250, -238] }; // a family plot in front of the corn: some walkers climb out of it
 export const DIRECT_YD = 2;            // landing this close to a zombie is a DIRECT HIT
 export const CHAIN_YD = 8;             // a bloater's burst radius
@@ -86,8 +91,9 @@ export function stepZombies(zs, dt, { frozen = false } = {}) {
     if (frozen) continue;
     if (z.state === 'walk') {
       z.wob += dt;
+      const lane = z.x / fieldHalf(z.z);                                 // keep its share of the field's width
       z.z += z.speed * dt;
-      z.x += Math.sin(z.wob * 0.7 + z.id) * 0.25 * dt;                 // a little shamble side to side
+      z.x = lane * fieldHalf(z.z) + Math.sin(z.wob * 0.7 + z.id) * 0.25 * dt; // and shamble a little side to side
       z.x = Math.max(-FIELD_X - 6, Math.min(FIELD_X + 6, z.x));
       if (z.z >= FENCE_Z - 1) {
         z.z = FENCE_Z - 1;

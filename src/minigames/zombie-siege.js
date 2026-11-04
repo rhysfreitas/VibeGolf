@@ -11,7 +11,7 @@ import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
 import {
   YD, FENCE_Z, FENCE_HP, WAVE_TIMEOUT, DIFFICULTIES, CHALLENGES, TYPES, POINTS, CRATES, LANES, CHAIN_YD,
-  waveSpawns, stepZombies, active, resolveBlast, blastPoints, chooseTarget, solveShot, makeCrate, crateGrabYd, bestLane,
+  waveSpawns, stepZombies, active, resolveBlast, blastPoints, chooseTarget, solveShot, makeCrate, crateGrabYd, bestLane, fieldHalf,
 } from './zombie-logic.js';
 
 const stage = document.getElementById('stage');
@@ -175,6 +175,9 @@ function drawMap() {
   g.font = '600 8.5px "Saira Semi Condensed", sans-serif'; g.fillStyle = 'rgba(232,220,192,0.55)'; g.textAlign = 'left';
   for (let yd = 50; yd <= 250; yd += 50) { const [, y] = mapXY(0, -yd * YD, W, H); g.fillRect(3, y, W - 6, 0.6); g.fillText(yd, 4, y - 2); }
   const [, fy] = mapXY(0, FENCE_Z, W, H); g.fillStyle = '#c8a070'; g.fillRect(2, fy, W - 4, 2);
+  // the field's funnel toward the fence
+  g.strokeStyle = 'rgba(232,220,192,0.35)'; g.lineWidth = 1;
+  for (const sd of [-1, 1]) { g.beginPath(); for (let zz = FENCE_Z - 1; zz >= -265; zz -= 5) { const [x, y] = mapXY(sd * (fieldHalf(zz) + 4), zz, W, H); zz === FENCE_Z - 1 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
   // reticle
   if (G.target && kit.phase === 'aim') { const [tx, ty] = mapXY(G.target.x, G.target.z, W, H); const rr = blastYd * YD / MAP.xMax * (W / 2 - 4); g.strokeStyle = '#ffb040'; g.lineWidth = 1.3; g.beginPath(); g.arc(tx, ty, Math.max(3, rr), 0, 7); g.stroke(); }
   for (const c of G.crates) if (c.alive) { const [x, y] = mapXY(c.x, c.z, W, H); g.fillStyle = '#' + CRATE_COL[c.kind].toString(16).padStart(6, '0'); g.fillRect(x - 3, y - 3, 6, 6); }

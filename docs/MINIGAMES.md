@@ -57,7 +57,7 @@ Fly the ball through a set of rings tracing a shot shape.
 - **Challenges, e.g.:** thread a full shape · 2 perfects · reach ×4.
 
 ## 2. Zombie Siege
-Zombies walk toward your fence. Your ball explodes where it lands.
+Zombies walk toward your fence. Your ball explodes where it lands. The field funnels in toward the fence (full width out deep, narrowing to stay within 32° of straight ahead), and each zombie keeps its lane, so none ends up at an angle you can't hit.
 
 - **Difficulty = blast radius only:** Easy 20 yd · Normal 12 · Hard 7 · Nightmare 4. All zombies walk at a steady pace.
 - **Field:** yard lines and flags every 25 yd plus a centerline. Zombies come in across the width, so aiming off-line spreads your shots.

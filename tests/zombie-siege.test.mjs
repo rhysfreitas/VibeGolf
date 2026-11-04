@@ -95,3 +95,14 @@ test('airstrike lane is the busiest one', () => {
   assert.equal(bestLane(zs), 2);
   assert.equal(active(zs).length, 4);
 });
+
+test('the field funnels toward the fence and zombies keep their lane', async () => {
+  const { fieldHalf, FIELD_X, FENCE_HALF, FENCE_Z, stepZombies, TAPER_DEG } = await import('../src/minigames/zombie-logic.js');
+  assert.equal(fieldHalf(-250), FIELD_X);
+  assert.equal(fieldHalf(FENCE_Z - 1), FENCE_HALF);
+  for (const z of [-30, -50, -70]) assert.ok(Math.atan2(fieldHalf(z), -z) * 180 / Math.PI <= TAPER_DEG + 0.01 || fieldHalf(z) === FENCE_HALF);
+  const zs = [{ id: 1, type: 'walker', x: FIELD_X * 0.9, z: -250, hp: 1, speed: 2, alive: true, state: 'walk', wob: 0, delay: 0 }];
+  for (let i = 0; i < 2000 && zs[0].state === 'walk'; i++) stepZombies(zs, 0.1);
+  assert.equal(zs[0].state, 'attack');
+  assert.ok(Math.abs(zs[0].x / fieldHalf(zs[0].z) - 0.9) < 0.05, `lane ${zs[0].x / fieldHalf(zs[0].z)}`);
+});

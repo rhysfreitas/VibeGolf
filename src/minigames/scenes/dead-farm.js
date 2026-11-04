@@ -8,7 +8,7 @@
 // Extra API for the game: addFire(x, z, opts) · flashFog(pos, k) · onThunder(delay) · onSpark()
 
 import { createStage, fbm, rng, sstep, hash2, GLSL_NOISE, terrainMesh, signTexture } from '../../world/stage.js';
-import { FENCE_Z, YD, GRAVEYARD } from '../zombie-logic.js';
+import { FENCE_Z, YD, GRAVEYARD, FIELD_X, TAPER_DEG, FENCE_HALF } from '../zombie-logic.js';
 
 const NPOOL = 12; // warm light pools (barrels, fires, headlights) painted onto the ground and fog
 
@@ -120,9 +120,12 @@ c = mix(c, dirt * (0.6 + 0.3 * fb(p.xz * 1.7)), gy * 0.85);
 float yd = -p.z / 0.9144;
 float fade = 1.0 - smoothstep(120.0, 420.0, camD);
 float lineW = 0.32 / 0.9144 * (1.0 + camD/120.0);
-float onField = step(abs(p.x), 62.0) * step(30.0, yd) * step(yd, 290.0) * (1.0 - gy);
+float fhalf = clamp(${Math.tan(TAPER_DEG * Math.PI / 180).toFixed(4)} * -p.z, ${FENCE_HALF.toFixed(1)}, ${FIELD_X.toFixed(1)}) + 4.0; // the field funnels in toward the fence
+float onField = step(abs(p.x), fhalf) * step(30.0, yd) * step(yd, 290.0) * (1.0 - gy);
+float side = (1.0 - smoothstep(0.0, lineW * 0.9144, abs(abs(p.x) - fhalf))) * step(${(-FENCE_Z + 4).toFixed(1)}, -p.z) * step(-p.z, 268.0) * (1.0 - gy) * (0.55 + 0.45*fb(p.xz*0.6));
 float yl = (1.0 - smoothstep(0.0, lineW, abs(mod(yd + 12.5, 25.0) - 12.5))) * onField * (0.55 + 0.45*fb(p.xz*0.6));
 float cl = (1.0 - smoothstep(0.12, 0.12 + 0.02*camD, abs(p.x))) * step(0.5, fract(yd / 4.0)) * onField * 0.7;
+yl = max(yl, side);
 c = mix(c, lin(vec3(0.82,0.82,0.76)), max(yl, cl) * fade);
 gChalk = max(yl, cl * 0.6) * (1.0 - smoothstep(200.0, 420.0, camD));
 c = mix(c, lin(vec3(0.16,0.17,0.12)) * (0.8 + 0.3*big), smoothstep(1.5, 8.0, p.y));
