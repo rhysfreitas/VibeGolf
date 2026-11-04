@@ -7,18 +7,23 @@
 //   const tool = createSimTool(parent, { clubs, onShot: s => ... });
 //   tool.suggest({ club, axis, traj })   // the game's recommendation for this shot
 //   tool.setTarget({ x, z, label })       // a spot picked on a map, for the next shot only
-//   s = { club, traj, axis, ideal, target, clubAuto, axisAuto, autoAim }
+//   tool.setShot({ club, pct })            // a map tap: the club and swing length for that spot
+//   s = { club, pct, traj, axis, ideal, target, clubAuto, axisAuto, autoAim }
+//
+// pct is the swing length, % of a full swing (Full by default), set on the bar beside the shape line.
 //
 // Auto-aim (the small crosshair beside the pill, off by default and remembered): on, the
 // simulated shot aims itself at the target; off, it flies down the phantom aim line you drag
-// left or right in the view (src/aim-line.js).
+// left or right in the view (src/aim-line.js). With `autoDistance` (mini games, course) auto-aim
+// picks the swing length too, and the bar shows Auto; dragging the bar takes it back.
 
 export const TRAJ = [
   { id: 'normal', name: 'Normal' },
   { id: 'punch', name: 'Punch' },
   { id: 'stinger', name: 'Stinger' },
 ];
-const AXIS_MAX = 24; // degrees of spin axis at the ends of the shape line (− draw · + fade)
+const AXIS_MAX = 24;
+const PCT_MIN = 20; // shortest swing on the bar, % of full // degrees of spin axis at the ends of the shape line (− draw · + fade)
 
 export function shapeName(axis) {
   const a = Math.abs(axis), side = axis < 0 ? 'draw' : 'fade';
@@ -31,7 +36,7 @@ const AIM_KEY = 'vibegolf.autoAim';
 const readAim = () => { try { return localStorage.getItem(AIM_KEY) === '1'; } catch (e) { return false; } };
 const saveAim = v => { try { localStorage.setItem(AIM_KEY, v ? '1' : '0'); } catch (e) { /* storage blocked */ } };
 
-export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget = () => {}, onChange = () => {}, auto = true, aimToggle = true, note = 'Your R10 shots fly exactly as you hit them; these settings are only for simulated shots.', extra = null } = {}) {
+export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget = () => {}, onChange = () => {}, auto = true, aimToggle = true, autoDistance = true, seedPct = () => null, note = 'Your R10 shots fly exactly as you hit them; these settings are only for simulated shots.', extra = null } = {}) {
   const el = document.createElement('div');
   el.className = 'st';
   el.innerHTML = `
@@ -48,16 +53,22 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
       <div class="st-target" hidden><span></span><button type="button" class="st-clear" aria-label="Clear the map spot">×</button></div>
       <div class="st-clubs" role="group" aria-label="Club"></div>
       <div class="st-seg" role="group" aria-label="Trajectory"></div>
-      <div class="st-shape">
-        <svg viewBox="0 0 220 74" aria-label="Shot shape: drag left or right" role="slider" tabindex="0">
-          <line class="st-mid" x1="110" y1="68" x2="110" y2="8"/>
-          <path class="st-sugg"/>
-          <path class="st-path"/>
-          <circle class="st-ball" cx="110" cy="66" r="3.4"/>
-          <circle class="st-flag" cx="110" cy="9" r="3.4"/>
-          <circle class="st-knob" r="9"/>
-        </svg>
-        <div class="st-shapeRow"><span class="st-shapeName"></span><button type="button" class="st-reset" hidden>Reset</button></div>
+      <div class="st-shot">
+        <div class="st-shape">
+          <svg viewBox="0 0 170 74" aria-label="Shot shape: drag left or right" role="slider" tabindex="0">
+            <line class="st-mid" x1="85" y1="68" x2="85" y2="8"/>
+            <path class="st-sugg"/>
+            <path class="st-path"/>
+            <circle class="st-ball" cx="85" cy="66" r="3.4"/>
+            <circle class="st-flag" cx="85" cy="9" r="3.4"/>
+            <circle class="st-knob" r="9"/>
+          </svg>
+          <div class="st-shapeRow"><span class="st-shapeName"></span><button type="button" class="st-reset" hidden>Reset</button></div>
+        </div>
+        <div class="st-pow">
+          <div class="st-powBar" role="slider" tabindex="0" aria-label="Swing length, % of full: drag up or down" aria-valuemin="${PCT_MIN}" aria-valuemax="100"><i class="st-powFill"></i><i class="st-powKnob"></i></div>
+          <div class="st-shapeRow"><button type="button" class="st-powVal" title="Back to a full swing"></button></div>
+        </div>
       </div>
       <div class="st-extra"></div>
       <div class="st-go"><button type="button" class="st-ideal" title="The exact shot, no misses">Ideal</button><button type="button" class="st-hit" title="A decent amateur's swing: it misses a little">Hit</button></div>
@@ -68,10 +79,17 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
   const btn = $('.st-btn'), panel = $('.st-panel'), sum = $('.st-sum');
   if (extra) $('.st-extra').appendChild(extra);
 
-  const S = { club: null, traj: 'normal', axis: null, target: null, sugg: { club: 0, axis: 0 }, enabled: true, autoAim: readAim() };
+  const S = { club: null, traj: 'normal', axis: null, pct: 100, target: null, sugg: { club: 0, axis: 0 }, enabled: true, autoAim: readAim() };
+  const autoPct = () => autoDistance && S.autoAim;
   const aimBtn = $('.st-aim'); aimBtn.hidden = !aimToggle;
   aimBtn.onclick = () => setAutoAim(!S.autoAim);
-  function setAutoAim(v) { if (S.autoAim === !!v) return; S.autoAim = !!v; saveAim(S.autoAim); changed(); }
+  // turning auto-aim off hands its shot over: seedPct() (the page) gives the swing length it was using
+  function setAutoAim(v) {
+    if (S.autoAim === !!v) return;
+    S.autoAim = !!v; saveAim(S.autoAim);
+    if (!v && autoDistance) { const p = seedPct(); if (p != null && isFinite(p)) S.pct = Math.max(PCT_MIN, Math.min(100, p)); }
+    changed();
+  }
   const club = () => (S.club ?? S.sugg.club);
   const axis = () => (S.axis ?? S.sugg.axis ?? 0);
 
@@ -85,18 +103,28 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
   const trajBtns = TRAJ.map(t => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t.name; b.onclick = () => { S.traj = t.id; changed(); }; sw.appendChild(b); return b; });
   /* the shape line: drag anywhere on it, left or right */
   const svg = $('.st-shape svg');
-  const curve = a => { const cx = 110 - (a / AXIS_MAX) * 92; return `M110 66 Q ${cx.toFixed(1)} 37 110 9`; };
-  const knobX = a => 110 - (a / AXIS_MAX) * 46;
+  const curve = a => { const cx = 85 - (a / AXIS_MAX) * 71; return `M85 66 Q ${cx.toFixed(1)} 37 85 9`; };
+  const knobX = a => 85 - (a / AXIS_MAX) * 36;
   let drag = false;
-  const fromEvent = e => { const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width * 220; let a = -(x - 110) / 46 * AXIS_MAX; a = Math.max(-AXIS_MAX, Math.min(AXIS_MAX, a)); if (Math.abs(a) < 1.2) a = 0; return Math.round(a * 2) / 2; };
+  const fromEvent = e => { const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width * 170; let a = -(x - 85) / 36 * AXIS_MAX; a = Math.max(-AXIS_MAX, Math.min(AXIS_MAX, a)); if (Math.abs(a) < 1.2) a = 0; return Math.round(a * 2) / 2; };
   svg.addEventListener('pointerdown', e => { drag = true; svg.setPointerCapture(e.pointerId); S.axis = fromEvent(e); render(); });
   svg.addEventListener('pointermove', e => { if (drag) { S.axis = fromEvent(e); render(); } });
   svg.addEventListener('pointerup', () => { if (drag) { drag = false; changed(); } });
   svg.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); S.axis = Math.max(-AXIS_MAX, Math.min(AXIS_MAX, axis() + (e.key === 'ArrowLeft' ? 1 : -1))); changed(); } });
   $('.st-reset').onclick = () => { S.axis = null; changed(); };
+  /* swing length: drag the bar up or down (taking it over from auto-aim) */
+  const bar = $('.st-powBar'); let pdrag = false;
+  const clampPct = v => Math.max(PCT_MIN, Math.min(100, v));
+  const pctFrom = e => { const r = bar.getBoundingClientRect(); const v = Math.round((1 - (e.clientY - r.top) / r.height) * 100); return v >= 98 ? 100 : clampPct(v); };
+  const takePct = v => { if (autoPct()) { S.autoAim = false; saveAim(false); } S.pct = v; };
+  bar.addEventListener('pointerdown', e => { pdrag = true; try { bar.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ } takePct(pctFrom(e)); render(); });
+  bar.addEventListener('pointermove', e => { if (pdrag) { S.pct = pctFrom(e); render(); } });
+  bar.addEventListener('pointerup', () => { if (pdrag) { pdrag = false; changed(); } });
+  bar.addEventListener('keydown', e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); takePct(clampPct(Math.round(S.pct) + (e.key === 'ArrowUp' ? 1 : -1))); changed(); } });
+  $('.st-powVal').onclick = () => { takePct(100); changed(); };
   $('.st-clear').onclick = () => { S.target = null; render(); onTarget(null); };
 
-  function settings() { return { club: club(), traj: S.traj, axis: axis(), target: S.target, clubAuto: S.club == null, axisAuto: S.axis == null, autoAim: S.autoAim }; }
+  function settings() { return { club: club(), pct: S.pct, traj: S.traj, axis: axis(), target: S.target, clubAuto: S.club == null, axisAuto: S.axis == null, autoAim: S.autoAim }; }
   function changed() { render(); onChange(settings()); }
   function render() {
     const ci = club(), a = axis();
@@ -105,6 +133,11 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
     clubBtns.forEach((b, i) => { b.setAttribute('aria-pressed', String(S.club === i || (!auto && S.club == null && i === S.sugg.club))); b.classList.toggle('sugg', auto && i === S.sugg.club); });
     trajBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(TRAJ[i].id === S.traj)));
     aimBtn.setAttribute('aria-pressed', String(S.autoAim));
+    const pw = $('.st-pow'), ap = autoPct(), pr = Math.round(S.pct);
+    pw.classList.toggle('auto', ap);
+    $('.st-powFill').style.height = `${ap ? 100 : S.pct}%`; $('.st-powKnob').style.bottom = `calc(${S.pct}% - 1.5px)`;
+    bar.setAttribute('aria-valuenow', String(pr)); bar.setAttribute('aria-valuetext', ap ? 'Auto' : pr >= 100 ? 'Full' : pr + '%');
+    $('.st-powVal').textContent = ap ? 'Auto' : pr >= 100 ? 'Full' : pr + '%';
     $('.st-path').setAttribute('d', curve(a));
     $('.st-sugg').setAttribute('d', curve(S.sugg.axis || 0));
     $('.st-sugg').style.display = S.axis != null && Math.abs((S.sugg.axis || 0) - a) > 0.4 ? '' : 'none';
@@ -114,7 +147,8 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
     $('.st-reset').hidden = S.axis == null;
     const tg = $('.st-target'); tg.hidden = !S.target; if (S.target) tg.querySelector('span').textContent = S.target.label || 'Aiming at your spot';
     const tr = S.traj === 'normal' ? '' : ` · ${TRAJ.find(t => t.id === S.traj).name}`;
-    sum.innerHTML = `<b>${clubs[ci] ? clubs[ci].id : ''}</b>${tr}${Math.abs(a) >= 1.5 ? ` · ${shapeName(a)}` : ''}${S.target ? ' · spot' : ''}`;
+    const pc = !autoPct() && pr < 100 ? ` ${pr}%` : '';
+    sum.innerHTML = `<b>${clubs[ci] ? clubs[ci].id : ''}</b>${pc}${tr}${Math.abs(a) >= 1.5 ? ` · ${shapeName(a)}` : ''}${S.target ? ' · spot' : ''}`;
   }
   function open(v = panel.hidden) { panel.hidden = !v; btn.setAttribute('aria-expanded', String(v)); el.classList.toggle('open', v); }
   btn.onclick = () => open();
@@ -139,6 +173,10 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
     setEnabled(v) { S.enabled = v; $('.st-hit').disabled = $('.st-ideal').disabled = !v; el.classList.toggle('busy', !v); },
     get settings() { return settings(); },
     get autoAim() { return S.autoAim; }, setAutoAim,
+    // swing length, % of full (silent: no onChange, for a page seeding it as auto-aim hands over)
+    setPct(v, { silent = false } = {}) { S.pct = clampPct(v); if (silent) render(); else changed(); },
+    // a map tap: the club (unless it's the suggestion, which Auto already plays) and swing length
+    setShot({ club: c = null, pct = null } = {}) { if (c != null && !(S.club == null && c === S.sugg.club)) S.club = c; if (pct != null) S.pct = clampPct(pct); changed(); },
     setClub(i) { S.club = i; render(); },        // the page picked a club (e.g. a keyboard shortcut); null = Auto
     get club() { return club(); },
     get isOpen() { return !panel.hidden; },

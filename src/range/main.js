@@ -1,7 +1,7 @@
 // Woodson Range — driving range mode.
 import { simulate, airDensity, DEFAULT_COEF } from '../physics.js';
 import { createSimTool } from '../sim-tool.js';
-import { TRAJ_MUL, landOf, bearingOf, turnBall, turnPts, aimTurn } from '../minigames/aim.js';
+import { toolBall, landOf, bearingOf, turnBall, turnPts, aimTurn } from '../minigames/aim.js';
 import { createAimLine } from '../aim-line.js';
 import { launchMonitor, mountLaunchMonitorUI, parseShot } from '../launch-monitor.js';
 import { STANCE, stanceView } from '../stance.js';
@@ -85,7 +85,7 @@ const customNote = document.createElement('p'); customNote.className = 'st-note'
 customNote.innerHTML = 'Using your exact numbers from Settings. <a href="#" style="color:var(--flag)">Back to club averages</a>';
 customNote.querySelector('a').onclick = e => { e.preventDefault(); loadClub(state.club); };
 const tool = createSimTool($('hitbar'), {
-  clubs: CLUBS, auto: false, extra: customNote,
+  clubs: CLUBS, auto: false, autoDistance: false, extra: customNote,
   onChange: s => { if (state.phase === 'idle' && s.club !== state.club) loadClub(s.club); refreshAim(); },
   onShot: s => { if (s.club !== state.club && state.phase === 'idle') loadClub(s.club); swing(s); },
 });
@@ -305,12 +305,11 @@ launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
 mountLaunchMonitorUI({ dot: $('lmDot'), text: $('lmText'), button: $('lmBtn') });
 window.WoodsonRange = { receiveShot: msg => { const shot = parseShot(msg); if (shot) receiveShot(shot); } };
 
-// the ball for a simulated shot: your exact numbers, or the club's average with the tool's
-// trajectory and shape (started out so the curve comes back toward the target line)
+// the ball for a simulated shot: your exact numbers, or the club's average at the tool's swing
+// length with its trajectory and shape (started out so the curve comes back toward the target line)
 function toolBase(s) {
   if (state.custom) return { ...state.shotData };
-  const t = TRAJ_MUL[s.traj] || TRAJ_MUL.normal, c = CLUBS[state.club];
-  return { Speed: c.Speed * t.speed, VLA: c.VLA * t.vla, HLA: -s.axis * 0.37, TotalSpin: c.TotalSpin * t.spin, SpinAxis: s.axis };
+  return toolBall(CLUBS[state.club], s.pct / 100, -s.axis * 0.37, s);
 }
 function swing(s = { ...tool.settings, ideal: false }) { if (state.phase !== 'idle') return; initAudio(); launch(realSwing(aimedBase(s).ball, !s.ideal), false); }
 

@@ -7,6 +7,7 @@
 //   const kit = createKit({ id, title, blurb, shotsPerPlayer, difficulties, challenges, clubs });
 //   kit.on('start', ({ difficulty, players }) => ...);  kit.on('turn', ({ player, shot }) => ...)
 //   kit.aimLine({ world, view, sim, ideal })   the phantom aim line: ideal(s) = the game's exact ball
+//     with auto-aim; without it the shot is your club at your swing length (s.pct) down your line
 //   kit.on('hit', s => launch(s.ball)); kit.on('ideal', s => launch(s.ball))  (s.ball is aimed, and
 //   for Hit carries a decent amateur's miss; s also has the tool's club / traj / axis / target)
 //   during a shot: kit.award(points, opts) / kit.splash(word) / kit.soClose(yd) / kit.stat(key, n)
@@ -15,7 +16,8 @@
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
 import { createSimTool } from '../sim-tool.js';
 import { createAimLine } from '../aim-line.js';
-import { amateurMiss, landOf, bearingOf, turnBall, turnPts, aimTurn } from './aim.js';
+import { amateurMiss, landOf, bearingOf, turnBall, turnPts, aimTurn, toolBall, solveCustom } from './aim.js';
+import { simulate } from '../physics.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const store = {
@@ -153,6 +155,7 @@ export function createKit(cfg) {
     },
     onTarget: t => { emit('spot', t); refreshAim(); },
     onChange: () => refreshAim(),
+    seedPct: () => seedManual(),
   });
 
   /* ---------- the phantom aim line (src/aim-line.js) ---------- */
@@ -160,11 +163,15 @@ export function createKit(cfg) {
   // (aimed at its target, or null when there's nothing to aim at), sim(ball) flies it on the game's
   // ground and view (a shot view) gives the ball's height. The kit draws the predicted flight, lets
   // you drag it left or right (which turns auto-aim off), and gives every simulated shot to the game
-  // as s.ball. With auto-aim off the shot keeps the game's distance but flies down your line.
+  // as s.ball. With auto-aim on the game's solver plays it (club, swing length, direction to its
+  // target). Off, it's your club at your swing length (the tool's % of full bar), down your line;
+  // `manual(s)` builds that ball when a game hits partial swings its own way (Golf Bowling's
+  // knockdowns) and `seedPct(s)` then says what swing length its solver was using.
   let AL = null, yaw = 0, base = null, turned = null, pending = 0;
   const clampYaw = v => Math.max(-80, Math.min(80, v));
-  function aimLine({ world, view = null, sim, ideal }) {
-    AL = { line: createAimLine(world), view, sim, ideal };
+  const flatSim = b => simulate(b, { groundAt: () => 0 });
+  function aimLine({ world, view = null, sim, ideal, manual = null, seedPct = null }) {
+    AL = { line: createAimLine(world), view, sim, ideal, manual, seedPct };
     let y0 = 0;
     AL.line.onDrag({
       enabled: () => S.phase === 'aim' && !!player() && !player().cpu,
@@ -175,12 +182,32 @@ export function createKit(cfg) {
     refreshAim();
   }
   function takeAim() { // grabbing the line (or nudging it) aims by hand from wherever it was
-    if (!tool.autoAim) return;
-    if (base) yaw = base.b0;
-    tool.setAutoAim(false);
+    if (tool.autoAim) tool.setAutoAim(false); // → seedManual()
+  }
+  // auto-aim is handing over: keep its line, and give the tool the swing length it was using
+  function seedManual() {
+    if (!AL || !base || S.phase !== 'aim') return null;
+    yaw = clampYaw(base.b0);
+    const s = tool.settings;
+    if (AL.seedPct) return AL.seedPct(s);
+    const l = landOf(base.r);
+    return solveCustom(flatSim, clubs, { x: l[0], z: l[2] }, { club: s.club, traj: s.traj, axis: s.axis }).k * 100;
+  }
+  // a spot picked on a map (or a target the player chose): the club and swing length that get there
+  function shotFor(x, z) {
+    if (!AL || tool.autoAim || !clubs.length) return;
+    // flown on the game's own ground, so a target below you (Island Hopper, HORSE) takes less club
+    const s = tool.settings, d = Math.hypot(x, z), o = { traj: s.traj, axis: s.axis };
+    let sol = solveCustom(AL.sim, clubs, { x, z }, { ...o, club: s.clubAuto ? null : s.club });
+    if (!s.clubAuto && sol.land.d < d - 2) sol = solveCustom(AL.sim, clubs, { x, z }, { ...o, club: null }); // your club can't get there
+    tool.setShot({ club: sol.club, pct: sol.k * 100 });
+  }
+  function manualBall(s) {
+    if (AL.manual) return AL.manual(s);
+    const c = clubs[s.club]; return c ? toolBall(c, s.pct / 100, -s.axis * 0.37, s) : null;
   }
   function solveBase(s) {
-    const b = AL.ideal(s); if (!b) return (base = null);
+    const b = s.autoAim ? AL.ideal(s) : manualBall(s); if (!b) return (base = null);
     const key = [b.Speed, b.VLA, b.HLA, b.TotalSpin, b.SpinAxis].map(v => (+v || 0).toFixed(3)).join(',');
     if (base && base.key === key) return base;
     const r = AL.sim(b), l = landOf(r);
@@ -205,12 +232,12 @@ export function createKit(cfg) {
     AL.line.show(arr, pts[end].p);
   }
   function refreshAim() { if (!AL) return; clearTimeout(pending); pending = setTimeout(() => drawAim(false), 0); }
-  function aimAt(x, z) { yaw = clampYaw(bearingOf(x, z)); refreshAim(); } // the player picked a target: face it
+  function aimAt(x, z) { yaw = clampYaw(bearingOf(x, z)); shotFor(x, z); refreshAim(); } // the player picked a target: set up for it
   // a spot tapped on a game's map ({ x, z } metres from the ball): the next simulated shot goes there
   // (the tool works out club length and direction). Games draw it with drawSpot().
   function mapSpot(x, z) {
     const yd = Math.hypot(x, z) / 0.9144, lat = x / 0.9144;
-    yaw = clampYaw(bearingOf(x, z)); // the spot sets the aim line too
+    yaw = clampYaw(bearingOf(x, z)); shotFor(x, z); // the spot sets the aim line, club and swing length
     tool.setTarget({ x, z, label: `Your spot · ${Math.round(yd)} yd${Math.abs(lat) >= 1 ? ` · ${Math.round(Math.abs(lat))} ${lat < 0 ? 'L' : 'R'}` : ''}` });
     sfx.tick();
   }

@@ -92,7 +92,10 @@ function refresh() {
 /* ===================== shots ===================== */
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 // simulated shots: the kit aims them (auto-aim flies into the pocket, otherwise down your aim line)
-kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt, flightOnly: true }), ideal: s => (kit.player && kit.player.up ? aimFor(kit.player.up, kit.player.difficulty, s).ball : null) });
+kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt, flightOnly: true }), ideal: s => (kit.player && kit.player.up ? aimFor(kit.player.up, kit.player.difficulty, s).ball : null),
+  // without auto-aim: your club at your swing length, hit the bowling way (shorter = a knockdown punch)
+  manual: s => BL.swing(CLUBS[s.club], s.pct / 100, 0, s.axis, s.traj),
+  seedPct: s => aimFor(kit.player.up, kit.player.difficulty, s).k * 100 });
 kit.on('hit', s => launch(s.ball, 'Sim'));
 kit.on('ideal', s => launch(s.ball, 'Ideal'));
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });

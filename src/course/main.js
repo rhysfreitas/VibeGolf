@@ -507,7 +507,7 @@ function drawMinimap() {
 /* ===================== game state ===================== */
 const state = {
   holeIdx: 0, strokes: 0, scores: [], ball: new THREE.Vector3(), lie: 'tee', yaw: 0, camYaw: 0, aimPoint: null,
-  club: 0, power: 0, target: 0, tracks: [], previewAim: null, aimCustom: null, phase: 'intro', cam: 'tv', sound: true,
+  club: 0, k: 1, target: 0, tracks: [], previewAim: null, aimCustom: null, phase: 'intro', cam: 'tv', sound: true,
   flight: null, t: 0, restTimer: 0, preview: null, lastShot: null, puttAnim: null, flyT: 0, lastLie: null,
 };
 const $ = id => document.getElementById(id);
@@ -517,6 +517,7 @@ const tool = createSimTool($('simMount'), {
   clubs: CLUBS, extra: lieLine,
   note: 'Tap the course or the corner map to aim at a spot; drag the dashed line left or right to fine-tune. Your R10 shots fly as you hit them.',
   onChange: () => { if (state.phase === 'address') applyTool(); },
+  seedPct: () => state.k * 100, // auto-aim handing over: keep the swing length it picked
   onShot: s => swing(s),
 });
 const yd = m => Math.round(m / M_PER_YD);
@@ -545,17 +546,19 @@ function lieAdjust(shot, lie) {
   else if (lie === 'sand') { s.Speed *= 0.86; s.TotalSpin *= 0.65; s.VLA += 2; }
   return s;
 }
-function clubShot(ci, pk) {
-  const c = CLUBS[ci], k = POWERS[pk].k;
+function clubShot(ci, pk) { return clubShotK(ci, POWERS[pk].k); }
+function clubShotK(ci, k) { // k: swing length, fraction of full
+  const c = CLUBS[ci];
   return { Speed: c.Speed * k, VLA: c.VLA + (1 - k) * 7, HLA: 0, TotalSpin: c.TotalSpin * (0.65 + 0.35 * k), SpinAxis: 0 };
 }
 const carryCache = new Map();
-function carryFor(ci, pk, dy) { // metres of carry to land at height dy relative to the ball
-  const key = ci + ':' + pk + ':' + Math.round(dy) + ':' + state.lie;
+function carryFor(ci, pk, dy) { return carryForK(ci, POWERS[pk].k, dy); }
+function carryForK(ci, k, dy) { // metres of carry to land at height dy relative to the ball
+  const key = ci + ':' + k.toFixed(3) + ':' + Math.round(dy) + ':' + state.lie;
   if (carryCache.has(key)) return carryCache.get(key);
   const g = Math.round(dy);
   // fly through open air and read off where the descending ball passes the target's height
-  const r = simulate(lieAdjust(clubShot(ci, pk), state.lie), { groundAt: (x, z) => (Math.hypot(x, z) < 6 ? 0 : null), voidY: Math.min(g, 0) - 40, altFt: 0 });
+  const r = simulate(lieAdjust(clubShotK(ci, k), state.lie), { groundAt: (x, z) => (Math.hypot(x, z) < 6 ? 0 : null), voidY: Math.min(g, 0) - 40, altFt: 0 });
   let v = 0, apexSeen = false;
   for (let i = 1; i < r.pts.length; i++) {
     const a = r.pts[i - 1].p, b = r.pts[i].p;
@@ -578,6 +581,14 @@ function suggest(distM, dy) { // pick club + swing length whose carry best match
   return best;
 }
 
+// the swing length (fraction of full) that carries club ci to distM at height dy
+function kFor(ci, distM, dy) {
+  if (carryForK(ci, 1, dy) <= distM) return 1;
+  let lo = 0.2, hi = 1;
+  for (let i = 0; i < 12; i++) { const m = (lo + hi) / 2; if (carryForK(ci, m, dy) > distM) hi = m; else lo = m; }
+  return (lo + hi) / 2;
+}
+
 /* ---------- targets & aim ---------- */
 function targetPoint(i) {
   const t = HOLE.targets[i];
@@ -594,26 +605,26 @@ function aimAt(p, autoClub = true) {
   state.yaw = state.camYaw = Math.atan2(d.x, -d.z); state.aimPoint = p.clone();
   if (autoClub) {
     const dist = Math.hypot(d.x, d.z), dy = (p.y - state.ball.y);
-    const s = suggest(dist, dy); state.club = s.ci; state.power = s.pk; state.sugg = s.ci; state.suggPow = s.pk;
+    const s = suggest(dist, dy); state.sugg = s.ci; state.suggK = kFor(s.ci, dist, dy);
     state.aimDist = dist; state.aimDy = dy;
     tool.suggest({ club: s.ci });
+    // aiming by hand: set the swing length that gets your club there (you can change it on the bar)
+    const t = tool.settings;
+    if (!t.autoAim) tool.setPct((t.clubAuto ? state.suggK : kFor(t.club, dist, dy)) * 100, { silent: true });
   }
   applyTool();
 }
-// The simulated-shot tool: Auto plays the suggested club and swing length; a club you pick gets
-// the swing length that best reaches your target. Trajectory and shape change the ball itself.
+// The simulated-shot tool: Auto plays the suggested club. With auto-aim the swing length is
+// whatever reaches your target; without it, it's the tool's bar (set for you when you pick a
+// target or tap a spot). Trajectory and shape change the ball itself.
 function applyTool() {
   const s = tool.settings;
-  if (s.clubAuto) { state.club = state.sugg ?? state.club; state.power = state.suggPow ?? state.power; }
-  else {
-    state.club = s.club; let best = 0, be = Infinity;
-    for (let pk = 0; pk < POWERS.length; pk++) { const e = Math.abs(carryFor(s.club, pk, state.aimDy || 0) - (state.aimDist || 0)); if (e < be - 1) { be = e; best = pk; } }
-    state.power = best;
-  }
+  state.club = s.clubAuto ? (state.sugg ?? state.club) : s.club;
+  state.k = !s.autoAim ? s.pct / 100 : s.clubAuto ? (state.suggK ?? 1) : kFor(state.club, state.aimDist || 0, state.aimDy || 0);
   updatePreview(); renderPlan();
 }
 function planShot() {
-  const s = tool.settings, b = clubShot(state.club, state.power), t = TRAJ_MUL[s.traj] || TRAJ_MUL.normal;
+  const s = tool.settings, b = clubShotK(state.club, state.k), t = TRAJ_MUL[s.traj] || TRAJ_MUL.normal;
   return { Speed: b.Speed * t.speed, VLA: b.VLA * t.vla, HLA: -s.axis * 0.37, TotalSpin: b.TotalSpin * t.spin, SpinAxis: s.axis };
 }
 function selectTarget(i) { state.target = i; state.aimCustom = null; aimAt(targetPoint(i)); }
@@ -683,8 +694,9 @@ function renderPlan() {
   });
   if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
   const lieNames = { tee: 'Tee box', fairway: 'Fairway', rough: 'Rough −5%', sand: 'Bunker −14%', green: 'Green' };
-  $('pvLie').textContent = `${CLUBS[state.club].name}${state.power ? ' · ' + POWERS[state.power].label : ''} · Lie: ${lieNames[state.lie] || state.lie}`;
-  $('vClub').textContent = CLUBS[state.club].name + (state.power ? ' · ' + POWERS[state.power].label : '');
+  const pct = state.k < 0.995 ? ` · ${Math.round(state.k * 100)}%` : '';
+  $('pvLie').textContent = `${CLUBS[state.club].name}${pct} · Lie: ${lieNames[state.lie] || state.lie}`;
+  $('vClub').textContent = CLUBS[state.club].name + pct;
   if (state.lastSentClub !== state.club) { state.lastSentClub = state.club; launchMonitor.setPlayer({ club: CLUBS[state.club].id }); }
 }
 function renderHoleCard() {
