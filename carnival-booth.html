@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a1410">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<title>Carnival Booth · VibeGolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&family=Rye&display=swap">
+<link rel="stylesheet" href="styles/minigame.css">
+<link rel="stylesheet" href="styles/shared.css">
+<style>
+/* Carnival Booth extras: row picker chips in the prompt, and the prize board under the tools. */
+.cb-rows { display: flex; gap: 4px; margin-top: 6px; }
+.cb-rows button { appearance: none; flex: 1; min-width: 0; border: 1px solid var(--line); background: rgba(255,255,255,0.05); border-radius: 7px; padding: 3px 0 2px; cursor: pointer; font-family: var(--f-data); color: var(--bone); line-height: 1.05; }
+.cb-rows button b { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+.cb-rows button small { display: block; font-size: 10px; color: var(--mist); }
+.cb-rows button.on { background: #ffcf4a; border-color: #ffcf4a; color: #2a1a06; }
+.cb-rows button.on small { color: #5a3a10; }
+.cb-prize { width: 124px; padding: 7px 9px 8px; font-family: var(--f-data); }
+.cb-prize .lbl { font-size: 9.5px; letter-spacing: 0.16em; color: var(--mist); text-transform: uppercase; }
+.cb-prize .tix { font-size: 22px; font-weight: 800; line-height: 1.05; color: #ffcf4a; font-variant-numeric: tabular-nums; }
+.cb-prize .tix small { font-size: 10px; font-weight: 600; color: var(--mist); letter-spacing: 0.1em; margin-left: 3px; }
+.cb-shelf { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; margin: 6px 0 4px; height: 38px; border-bottom: 3px solid #7a4a2a; padding: 0 2px; }
+.cb-shelf svg { display: block; opacity: 0.28; filter: grayscale(1); transition: opacity .3s, filter .3s, transform .3s; }
+.cb-shelf svg.on { opacity: 1; filter: none; transform: translateY(-2px); }
+.cb-bar { height: 5px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.cb-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff8a3a, #ffcf4a); transition: width .3s; }
+.cb-next { font-size: 10px; color: var(--mist); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-height: 560px) and (min-width: 900px) { .cb-prize { width: 160px; } .cb-shelf { height: 50px; } }
+@media (max-width: 760px) and (orientation: landscape) { .cb-prize { width: 106px; padding: 5px 7px 6px; } .cb-shelf { height: 30px; } .cb-prize .tix { font-size: 18px; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="vendor/three-r147/three.min.js"></script>
+<script src="vendor/three-r147/Sky.js"></script>
+<script src="vendor/three-r147/lines/LineSegmentsGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineMaterial.js"></script>
+<script src="vendor/three-r147/lines/LineSegments2.js"></script>
+<script src="vendor/three-r147/lines/Line2.js"></script>
+<script type="module" src="src/minigames/carnival.js"></script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

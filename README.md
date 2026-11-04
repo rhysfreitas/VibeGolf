@@ -8,7 +8,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 |---|---|
 | **Woodson Range** | Driving range with stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. |
 | **The Aerie** | Three holes on floating sky islands. Each hole has a safe route and a carry-the-gap route. Target picks, a shot preview, a corner hole map, penalty drops and auto-putting. |
-| **Mini games** | **Shape It** (fly through rings that trace a shot shape on Sunset Mesa), **Zombie Siege** (bomb the horde before it breaks your fence, on a fog-bound farm at night) **Island Hopper** (hop floating islands above the clouds, three lives) and **Golf HORSE** (call your shot on a basketball scoreboard in a floodlit cul-de-sac, with Topgolf-style light-up targets; Dusty joins if you're alone) are playable, for 1–4 players, each with their own difficulty. Next up are Carnival Booth, Wedge Ladder, Golf Bowling and Glass Tower. Design in [docs/MINIGAMES.md](docs/MINIGAMES.md). |
+| **Mini games** | **Shape It** (fly through rings that trace a shot shape on Sunset Mesa), **Zombie Siege** (bomb the horde before it breaks your fence, on a fog-bound farm at night) **Island Hopper** (hop floating islands above the clouds, three lives) and **Golf HORSE** (call your shot on a basketball scoreboard in a floodlit cul-de-sac, with Topgolf-style light-up targets; Dusty joins if you're alone) are playable, for 1–4 players, each with their own difficulty. **Carnival Booth** (a life-size tin shooting gallery: cans, bullseye boards, gliding ducks and the prize bell, for tickets and a plush) is playable too. Next up are Wedge Ladder, Golf Bowling and Glass Tower. Design in [docs/MINIGAMES.md](docs/MINIGAMES.md). |
 
 ## Play
 
@@ -86,7 +86,7 @@ tests/                physics calibration and bridge tests (`npm test`)
 
 ## Roadmap
 
-- Mini games: Carnival Booth next, then the rest of docs/MINIGAMES.md
+- Mini games: Wedge Ladder next, then the rest of docs/MINIGAMES.md
 - Play Golf: multiple players, each on their own tee (set by their difficulty)
 - Course builder that reads and writes the hole format
 - The rest of The Aerie (holes 4–18)

@@ -14,7 +14,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 |---|---|
 | Shape It | **Sunset Mesa**: a fairway on a red-rock mesa high above a desert valley, pink and violet sunset sky, so the glowing rings pop. |
 | Zombie Siege | **Dead farm at night**: a huge low moon, stars and drifting clouds, distant lightning. Floodlights cut beams through rolling ground fog. Your fence has sandbags, barbed wire and burning barrels, and the field has an overturned pickup with its headlights on, a burning tractor, a graveyard some zombies climb out of, a barn, an abandoned farmhouse, a windmill, jack-o'-lanterns and a far church steeple. Candle-lit headstones carved with the yardage mark every 50 yd down both sides. Synthesised night sounds (wind, crickets, groans that grow as they near, crows, thunder, a bell each wave). Spooky, not gory. |
-| Carnival Booth | **Night fairground**: string lights, a striped tent behind the booth, a Ferris wheel turning on the horizon. |
+| Carnival Booth | **The Tin Gallery**: a life-size antique tin shooting gallery on a sunny late afternoon. A bulb-lit arch over the counter, a plank stage floor, painted plywood waves rocking side to side, gears turning on striped walls, and a painted sky backdrop with a cut-out sun on a stick. The rows are tiered (cans low, boards on posts, ducks on a raised rail along a painted sea wall, the bell up top) and the walls are solid. The real fairground shows beyond: Ferris wheel, big top, carousel, coaster, stalls, bunting and balloons. A synthesised calliope waltz plays. |
 | Island Hopper | **The Aerie**'s floating sky world. |
 | Golf HORSE | **The Cul-de-sac**: a giant suburban cul-de-sac just after sunset under Topgolf-style floodlights. You hit from a bay on the first garage roof. Seven LED target rings sit in the street and lawns, a basketball court is painted in the bulb under a giant driveway hoop, and a basketball scoreboard shows the call. |
 | Golf Bowling | **Neon roadside lane**: a 1950s bowling lane laid down a desert valley floor. |
@@ -76,7 +76,7 @@ Zombies walk toward your fence. Your ball explodes where it lands. The field fun
 - **Challenges, e.g.:** a MASSACRE · reach wave 5 · pop a bloater chain.
 
 ## 3. Carnival Booth
-An old-time shooting gallery downrange.
+An old-time shooting gallery downrange. *(Built: 4 cans, 2 boards in the gaps, 5 ducks gliding on a loop, the bell. Tickets are the score: small plush at 300, medium at 800, giant at 1,600. Knocking down every can scores a +200 row bonus.)*
 
 - **Rows:** tin cans at ~75 yd, bullseye boards at ~120, a row of ducks on a rail at ~150, and the prize bell at ~210.
 - **Ducks** glide slowly and steadily, so you aim ahead of them. Beginner shows a faint lead marker.
