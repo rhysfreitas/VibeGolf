@@ -170,11 +170,12 @@ export function createKit(cfg) {
   let AL = null, yaw = 0, base = null, turned = null, pending = 0;
   const clampYaw = v => Math.max(-80, Math.min(80, v));
   const flatSim = b => simulate(b, { groundAt: () => 0 });
-  function aimLine({ world, view = null, sim, ideal, manual = null, seedPct = null }) {
-    AL = { line: createAimLine(world), view, sim, ideal, manual, seedPct };
+  // blockDrag(e): true where a press belongs to something in the scene (e.g. a prop screen you tap)
+  function aimLine({ world, view = null, sim, ideal, manual = null, seedPct = null, blockDrag = null }) {
+    AL = { line: createAimLine(world), view, sim, ideal, manual, seedPct, blockDrag };
     let y0 = 0;
     AL.line.onDrag({
-      enabled: () => S.phase === 'aim' && !!player() && !player().cpu,
+      enabled: e => S.phase === 'aim' && !!player() && !player().cpu && !(e && AL.blockDrag && AL.blockDrag(e)),
       start: () => { takeAim(); y0 = yaw; },
       move: dd => { yaw = clampYaw(y0 + dd); drawAim(true); },
       end: () => drawAim(false),

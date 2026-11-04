@@ -1,19 +1,23 @@
 // Shape It — fly the ball through three glowing rings that trace a shot shape.
 // Rules live in shape-it-logic.js; HUD, turns and scoring feedback come from the shared kit.
+// The scene is the Launch Bay (a spaceship's hangar, door open on space): the rings are flight
+// gates and the map is the bay's flight-plan screen, a monitor hanging top right.
 
 import { simulate } from '../physics.js';
 import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { makeToolShot, TRAJ_MUL } from './aim.js';
-import { createSunsetMesa } from './scenes/sunset-mesa.js';
+import { createLaunchBay, createFlightPlanMonitor, BAY } from './scenes/launch-bay.js';
 import { createShotView } from '../world/shot-view.js';
 import { shotShape } from '../range/shot-detail.js';
 import { CLUBS, SHAPES, DIFFICULTIES, CHALLENGES, YD, clubIndex, pickShape, shapeBall, buildRings, testRings, scoreShot } from './shape-it-logic.js';
 
 const stage = document.getElementById('stage');
-const world = createSunsetMesa(stage);
+const world = createLaunchBay(stage);
 const { renderer, scene, camera, groundAt, surfaceAt } = world;
-const sv = createShotView(world, { tracerColor: '#fff3c4' });
+const sv = createShotView({ ...world, groundAt: world.safeGround }, { tracerColor: '#fff3c4' });
+const VOID_Y = -60; // off the flight deck the ball drops away into space
+const flySim = b => simulate(b, { groundAt, surfaceAt, voidY: VOID_Y });
 
 const kit = createKit({
   id: 'shape-it', title: 'Shape It', accent: '#36e2ff',
@@ -22,7 +26,7 @@ const kit = createKit({
     'Each ring is <b>100</b>. Through the bright centre is <b>PERFECT</b>, worth double.',
     'All three rings: <b>SHAPE!</b> +250. All three perfect: +500.',
     'Consecutive scoring shots build a streak up to <b>×4</b>. A full miss resets it.',
-    '10 shots each. The map shows where the rings are, from above and from the side.',
+    '10 shots each. The flight-plan screen (top right) shows the gates from above and from the side; tap it to aim at a spot.',
   ],
   shotsPerPlayer: 10, difficulties: DIFFICULTIES, challenges: CHALLENGES, clubs: CLUBS, idealShot: true,
 });
@@ -68,11 +72,16 @@ function makeRings(list) {
     const inner = new THREE.Mesh(new THREE.TorusGeometry(rg.perfect, tube * 0.55, 10, 80), ringMat(GOLD, 0.9));
     const disc = new THREE.Mesh(new THREE.CircleGeometry(rg.r, 64), discMat(CYAN));
     group.add(disc, outer, inner);
+    // flight-gate nav lights: red on the left, green on the right, white top and bottom
+    const lights = [[-1, 0, 0xff4a3a], [1, 0, 0x4dff7a], [0, 1, 0xffffff], [0, -1, 0xffffff]].map(([ux, uy, c]) => {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTex, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+      const off = rg.r + tube * 3.2; sp.position.set(ux * off, uy * off, 0); sp.scale.setScalar(Math.max(0.9, rg.r * 0.16)); sp.renderOrder = 5; group.add(sp); return sp;
+    });
     group.position.set(...rg.c);
     group.quaternion.setFromUnitVectors(Z, new THREE.Vector3(...rg.n));
     group.renderOrder = 3; outer.renderOrder = inner.renderOrder = 4; disc.renderOrder = 3;
     scene.add(group);
-    ringObjs.push({ group, outer, inner, disc, ring: rg, phase: i * 1.7, flash: 0, pop: 0, state: 'live', flashColor: new THREE.Color(1, 1, 1) });
+    ringObjs.push({ group, outer, inner, disc, lights, ring: rg, phase: i * 1.7, flash: 0, pop: 0, state: 'live', flashColor: new THREE.Color(1, 1, 1) });
   });
 }
 function ringHit(o, perfect) {
@@ -95,6 +104,7 @@ function animateRings(dt, t) {
     o.inner.material.uniforms.uDim.value = o.state === 'miss' ? 0.3 : 1;
     o.disc.material.uniforms.uTime.value = t;
     o.disc.material.uniforms.uA.value = o.state === 'miss' ? 0.04 : 0.12 + o.flash * 0.3;
+    o.lights.forEach((sp, k) => { sp.material.opacity = o.state === 'miss' ? 0.15 : k < 2 ? 0.75 + 0.25 * Math.sin(t * 2 + o.phase) : (Math.sin(t * 3.2 + o.phase + k) > 0.55 ? 1 : 0.12); });
   }
 }
 
@@ -132,71 +142,94 @@ function animateBursts(dt) {
   }
 }
 
-/* ===================== the map (top + side) ===================== */
-const mapWrap = document.createElement('div'); mapWrap.className = 'si-map glass';
-mapWrap.innerHTML = '<canvas aria-label="Ring map from above and from the side"></canvas>';
-kit.els.play.parentElement.querySelector('.mg-tr').appendChild(mapWrap);
-const mapCv = mapWrap.querySelector('canvas');
-let mapGeo = null;
-// tap the top view: the next simulated shot goes to that spot (club length and direction worked out)
-mapCv.addEventListener('click', e => {
+/* ===================== the flight plan (top + side) on the bay's monitor ===================== */
+const fp = createFlightPlanMonitor(world);
+let mapGeo = null, fpDirty = true;
+// where the screen sits: under the top-right tools, the size the corner map is in other games
+function fpRect() {
+  const tools = kit.els.lmBtn.closest('.mg-tools').getBoundingClientRect(), vw = stage.clientWidth, vh = stage.clientHeight;
+  let w = 128, h = 186;
+  if (vh >= 560 && vw >= 900) { w = 170; h = 240; } else if (vw <= 760 && vw > vh) { w = 112; h = 164; }
+  return { left: tools.right - 14 - w, top: tools.bottom + 14, w, h };
+}
+function placeMonitor() { const r = fpRect(); if (r.w !== fp.w || r.h !== fp.h) fpDirty = true; fp.layout(r); if (fpDirty) { fpDirty = false; drawMap(cur.mapShot); } }
+// tap the top view: the next simulated shot goes to that spot (club, swing length and direction worked out)
+renderer.domElement.addEventListener('click', e => {
   if (kit.phase !== 'aim' || !mapGeo) return;
-  const r = mapCv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, M = mapGeo;
-  if (py > M.topH) return;
-  const x = (px - M.W / 2) / (M.W / 2 - M.pad) * M.latMax, d = (M.topH - M.pad - py) / (M.topH - M.pad * 2) * M.maxD;
+  const h = fp.hit(e); if (!h) return;
+  const M = mapGeo, px = h.x, py = h.y;
+  if (py < M.y0 + M.pad || py > M.topH - M.pad) return;
+  const x = (px - M.W / 2) / (M.W / 2 - M.pad) * M.latMax, d = (M.topH - M.pad - py) / (M.topH - M.y0 - M.pad * 2) * M.maxD;
   if (d > 5) kit.mapSpot(x, -d);
 });
-kit.on('spot', () => drawMap(null));
+kit.on('spot', () => drawMap(cur.mapShot));
+const FONT = '"Saira Semi Condensed", "Arial Narrow", sans-serif';
 function drawMap(shot) {
-  const dpr = Math.min(devicePixelRatio || 1, 2), W = mapCv.clientWidth, H = mapCv.clientHeight;
-  if (!W || !H) return;
-  if (mapCv.width !== Math.round(W * dpr)) { mapCv.width = Math.round(W * dpr); mapCv.height = Math.round(H * dpr); }
-  const g = mapCv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  if (!rings.length) return;
-  const ref = cur.ref, flight = p => -p[2];
-  const maxD = Math.max(...ref.map(q => flight(q.p)), ...(shot ? shot.map(q => flight(q.p)) : [0])) * 1.08 + 5;
-  const latMax = Math.max(12, ...rings.map(r => Math.abs(r.c[0]) + r.r), ...(shot ? shot.map(q => Math.abs(q.p[0])) : [0])) * 1.15;
-  const hMax = Math.max(10, ...rings.map(r => r.c[1] + r.r), ...(shot ? shot.map(q => q.p[1]) : [0])) * 1.12;
-  const pad = 6, topH = Math.round(H * 0.56), sideY0 = topH + 4;
-  // top view: downrange goes up the panel
-  const tX = x => W / 2 + x / latMax * (W / 2 - pad), tY = d => topH - pad - d / maxD * (topH - pad * 2);
-  mapGeo = { W, topH, pad, latMax, maxD };
-  // side view: downrange goes left → right
-  const sX = d => pad + d / maxD * (W - pad * 2), sY = h => H - pad - h / hMax * (H - sideY0 - pad * 2);
-  g.fillStyle = 'rgba(255,255,255,0.04)'; g.fillRect(0, 0, W, topH); g.fillRect(0, sideY0, W, H - sideY0);
-  g.strokeStyle = 'rgba(255,255,255,0.12)'; g.lineWidth = 1; g.setLineDash([3, 4]);
-  g.beginPath(); g.moveTo(tX(0), tY(0)); g.lineTo(tX(0), tY(maxD)); g.stroke();
-  g.beginPath(); g.moveTo(sX(0), sY(0)); g.lineTo(sX(maxD), sY(0)); g.stroke(); g.setLineDash([]);
-  const path = (pts, fx, fy, style, w, dash) => { g.beginPath(); pts.forEach((q, i) => { const x = fx(q), y = fy(q); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.strokeStyle = style; g.lineWidth = w; g.setLineDash(dash || []); g.stroke(); g.setLineDash([]); };
-  const refF = ref.filter((q, i) => i % 4 === 0 && q.phase === 'flight');
-  path(refF, q => tX(q.p[0]), q => tY(flight(q.p)), 'rgba(54,226,255,0.35)', 1, [2, 3]);
-  path(refF, q => sX(flight(q.p)), q => sY(q.p[1]), 'rgba(54,226,255,0.35)', 1, [2, 3]);
-  rings.forEach((r, i) => {
-    const o = ringObjs[i], col = o && o.state === 'hit' ? '#ffc23d' : o && o.state === 'miss' ? 'rgba(255,90,74,0.7)' : '#36e2ff';
-    // ring seen from above: a segment across the path; from the side: a vertical segment
-    const hx = -r.n[2], hz = r.n[0], hl = Math.hypot(hx, hz) || 1;
-    g.strokeStyle = col; g.lineWidth = 2.5; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(tX(r.c[0] - hx / hl * r.r), tY(flight(r.c) - hz / hl * r.r * -1)); g.lineTo(tX(r.c[0] + hx / hl * r.r), tY(flight(r.c) + hz / hl * r.r * -1)); g.stroke();
-    g.beginPath(); g.moveTo(sX(flight(r.c)), sY(r.c[1] - r.r)); g.lineTo(sX(flight(r.c)), sY(r.c[1] + r.r)); g.stroke();
-  });
-  if (shot && shot.length > 1) {
-    path(shot, q => tX(q.p[0]), q => tY(flight(q.p)), '#fff3c4', 1.6);
-    path(shot, q => sX(flight(q.p)), q => sY(Math.max(0, q.p[1])), '#fff3c4', 1.6);
-    const b = shot[shot.length - 1].p;
-    g.fillStyle = '#ffffff'; g.beginPath(); g.arc(tX(b[0]), tY(flight(b)), 2.6, 0, 7); g.fill();
+  cur.mapShot = shot;
+  const W = fp.w, H = fp.h; if (!W || !H) return;
+  const g = fp.canvas.getContext('2d'), dpr = fp.canvas.width / W;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // the screen: deep blue glass with a faint grid and scan lines
+  g.fillStyle = '#03101b'; g.fillRect(0, 0, W, H);
+  g.strokeStyle = 'rgba(54,226,255,0.06)'; g.lineWidth = 1;
+  for (let x = 0; x < W; x += 12) { g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, H); g.stroke(); }
+  for (let y = 0; y < H; y += 12) { g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(W, y + 0.5); g.stroke(); }
+  const hh = 15, fh = 14, y0 = hh, y1 = H - fh;
+  g.fillStyle = 'rgba(54,226,255,0.14)'; g.fillRect(0, 0, W, hh);
+  g.font = `700 9px ${FONT}`; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = '#7fe9ff';
+  g.fillText('FLIGHT PLAN', 5, hh / 2 + 0.5);
+  g.textAlign = 'right'; g.fillStyle = '#ffd257'; g.fillText(cur.shape ? SHAPES[cur.shape].name.toUpperCase() : '', W - 5, hh / 2 + 0.5);
+  const st = cur.status || { text: 'STANDBY', color: '#7fe9ff' };
+  g.fillStyle = 'rgba(54,226,255,0.08)'; g.fillRect(0, y1, W, fh);
+  g.textAlign = 'center'; g.fillStyle = st.color; g.font = `700 8.5px ${FONT}`; g.fillText(st.text, W / 2, y1 + fh / 2 + 0.5);
+  mapGeo = null;
+  if (rings.length) {
+    const ref = cur.ref, flight = p => -p[2];
+    const maxD = Math.max(...ref.map(q => flight(q.p)), ...(shot ? shot.map(q => flight(q.p)) : [0])) * 1.08 + 5;
+    const latMax = Math.max(12, ...rings.map(r => Math.abs(r.c[0]) + r.r), ...(shot ? shot.map(q => Math.abs(q.p[0])) : [0])) * 1.15;
+    const hMax = Math.max(10, ...rings.map(r => r.c[1] + r.r), ...(shot ? shot.map(q => q.p[1]) : [0])) * 1.12;
+    const pad = 6, topH = Math.round(y0 + (y1 - y0) * 0.56), sideY0 = topH + 4;
+    const tX = x => W / 2 + x / latMax * (W / 2 - pad), tY = d => topH - pad - d / maxD * (topH - y0 - pad * 2);
+    mapGeo = { W, y0, topH, pad, latMax, maxD };
+    const sX = d => pad + d / maxD * (W - pad * 2), sY = h => y1 - pad - h / hMax * (y1 - sideY0 - pad * 2);
+    g.strokeStyle = 'rgba(54,226,255,0.22)'; g.setLineDash([3, 4]);
+    g.beginPath(); g.moveTo(tX(0), tY(0)); g.lineTo(tX(0), tY(maxD)); g.stroke();
+    g.beginPath(); g.moveTo(sX(0), sY(0)); g.lineTo(sX(maxD), sY(0)); g.stroke(); g.setLineDash([]);
+    g.strokeStyle = 'rgba(54,226,255,0.25)'; g.beginPath(); g.moveTo(0, sideY0 - 2); g.lineTo(W, sideY0 - 2); g.stroke();
+    const path = (pts, fx, fy, style, w, dash) => { g.beginPath(); pts.forEach((q, i) => { const x = fx(q), y = fy(q); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.strokeStyle = style; g.lineWidth = w; g.setLineDash(dash || []); g.stroke(); g.setLineDash([]); };
+    const refF = ref.filter((q, i) => i % 4 === 0 && q.phase === 'flight');
+    path(refF, q => tX(q.p[0]), q => tY(flight(q.p)), 'rgba(54,226,255,0.55)', 1, [2, 3]);
+    path(refF, q => sX(flight(q.p)), q => sY(q.p[1]), 'rgba(54,226,255,0.55)', 1, [2, 3]);
+    rings.forEach((r, i) => {
+      const o = ringObjs[i], c = o && o.state === 'hit' ? '#ffc23d' : o && o.state === 'miss' ? 'rgba(255,90,74,0.8)' : '#36e2ff';
+      const hx = -r.n[2], hz = r.n[0], hl = Math.hypot(hx, hz) || 1;
+      g.strokeStyle = c; g.lineWidth = 2.5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(tX(r.c[0] - hx / hl * r.r), tY(flight(r.c) + hz / hl * r.r)); g.lineTo(tX(r.c[0] + hx / hl * r.r), tY(flight(r.c) - hz / hl * r.r)); g.stroke();
+      g.beginPath(); g.moveTo(sX(flight(r.c)), sY(r.c[1] - r.r)); g.lineTo(sX(flight(r.c)), sY(r.c[1] + r.r)); g.stroke();
+    });
+    if (shot && shot.length > 1) {
+      path(shot, q => tX(q.p[0]), q => tY(flight(q.p)), '#fff3c4', 1.6);
+      path(shot, q => sX(flight(q.p)), q => sY(Math.max(0, q.p[1])), '#fff3c4', 1.6);
+      const b = shot[shot.length - 1].p;
+      g.fillStyle = '#ffffff'; g.beginPath(); g.arc(tX(b[0]), tY(flight(b)), 2.6, 0, 7); g.fill();
+    }
+    g.fillStyle = '#ffffff'; g.beginPath(); g.arc(tX(0), tY(0), 2.4, 0, 7); g.fill();
+    if (kit.spot) kit.drawSpot(g, tX(kit.spot.x), tY(-kit.spot.z));
+    g.fillStyle = 'rgba(127,233,255,0.75)'; g.font = `600 8px ${FONT}`; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+    g.fillText(`${Math.round(maxD / YD)} YD`, W - pad, y0 + 11); g.fillText('SIDE', W - pad, sideY0 + 10);
   }
-  g.fillStyle = '#ffffff'; g.beginPath(); g.arc(tX(0), tY(0), 2.4, 0, 7); g.fill();
-  if (kit.spot) kit.drawSpot(g, tX(kit.spot.x), tY(-kit.spot.z));
-  g.fillStyle = 'rgba(178,180,196,0.9)'; g.font = '600 9px "Saira Semi Condensed", sans-serif'; g.textAlign = 'right';
-  g.fillText(`${Math.round(maxD / YD)} yd`, W - pad, 12); g.fillText('SIDE', W - pad, sideY0 + 11);
+  // scan lines
+  g.fillStyle = 'rgba(0,0,0,0.16)'; for (let y = 0; y < H; y += 3) g.fillRect(0, y, W, 1);
+  fp.update();
 }
+function setStatus(text, color = '#7fe9ff') { cur.status = { text, color }; drawMap(cur.mapShot); }
 
 /* ===================== game flow ===================== */
 const cur = { shape: null, club: 0, ref: [], results: null, events: [], step: 0, lastShape: null, flight: null, live: false };
 let diff = DIFFICULTIES[0];
 
 kit.on('start', () => { cur.lastShape = null; sv.clearGhosts(); });
-kit.on('turn', () => newShape());
+kit.on('turn', () => { world.resetShips(); newShape(); });
 // simulated shots (s.ball comes from the kit, aimed down the phantom line): Ideal is the exact
 // reference shot the rings were built from (it threads them dead centre with auto-aim on),
 // unless the tool's club / trajectory / shape / map spot says otherwise
@@ -212,6 +245,7 @@ function newShape() {
   const clubId = shape.clubs[Math.floor(Math.random() * shape.clubs.length)];
   const club = CLUBS[clubIndex(clubId)];
   const res = simulate(shapeBall(club, key), { groundAt: () => 0 });
+  cur.status = { text: 'CLEARED FOR LAUNCH', color: '#7dffa8' };
   cur.shape = key; cur.club = cur.refClub = clubIndex(clubId); cur.ref = res.pts;
   rings = buildRings(res.pts, diff); makeRings(rings);
   // guide line through the rings (Beginner, Amateur)
@@ -244,17 +278,18 @@ function toolBallFor(s, ideal) {
 }
 // Hit is a simulated golfer *attempting* the shape: a decent amateur's spread, so on Beginner
 // most swings find a ring or two and perfects are earned (the kit adds the miss)
-kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt }), ideal: s => (cur.shape ? toolBallFor(s, true) : null) });
+kit.aimLine({ world, view: sv, sim: flySim, ideal: s => (cur.shape ? toolBallFor(s, true) : null), blockDrag: e => !!fp.hit(e) });
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, true); });
 
 function launch(ball, live, ideal = false) {
   kit.phase = 'flight'; cur.ideal = ideal;
-  const r = simulate(ball, { groundAt, surfaceAt });
+  const r = flySim(ball);
   cur.results = testRings(r.pts, rings); cur.step = 0; cur.ball = ball; cur.live = live; cur.r = r;
   cur.events = cur.results.map((res, i) => ({ i, res, t: res.t ?? Infinity, done: false })).filter(e => Number.isFinite(e.t));
   const fl = sv.fly(r);
   fl.onDone = () => setTimeout(finishShot, 700);
   kit.sfx.tone(160, { len: 0.08, vol: 0.25, type: 'triangle' }); kit.sfx.noise(0.08, 3000, 0.5);
+  cur.prevZ = 0; cur.gates = 0; setStatus('IN FLIGHT', '#ffd257');
 }
 
 function fireRingEvents() {
@@ -268,7 +303,8 @@ function fireRingEvents() {
       if (ev.res.perfect) { kit.sfx.perfect(); kit.splash('PERFECT', { gold: true }); kit.stat('perfects'); }
       kit.stat('rings');
       kit.award((ev.res.perfect ? 2 : 1) * 100);
-    } else ringMiss(o);
+      cur.gates++; setStatus(`GATE ${ev.i + 1} ${ev.res.perfect ? 'PERFECT' : 'CLEAR'}`, ev.res.perfect ? '#ffd257' : '#7dffa8');
+    } else { ringMiss(o); setStatus(`GATE ${ev.i + 1} MISSED`, '#ff7a6a'); }
   }
 }
 
@@ -281,6 +317,7 @@ function finishShot() {
     kit.splash(s.allPerfect ? 'PERFECT SHAPE' : 'SHAPE!', { gold: s.allPerfect, big: true, sub: `+${pts}` });
     kit.sfx.fanfare(); kit.stat('fullShapes'); if (SHAPES[cur.shape].curve) kit.stat('curveShapes');
     ringObjs.forEach(o => { o.flash = 1; o.pop = 1; });
+    if (s.allPerfect) world.launchShip(); // a perfect flight plan: a ship takes off out of the bay
   } else if (!s.rings) {
     const near = cur.results.filter(r => r.near).sort((a, b) => a.missYd - b.missYd)[0];
     if (near) kit.soClose(Math.max(0.1, near.missYd)); else kit.sfx.miss();
@@ -293,13 +330,14 @@ function finishShot() {
     <div class="top"><span class="lbl">${SHAPES[cur.shape].name} · ${pl.name}</span><span class="pts ${shotPts ? '' : 'zero'}">${shotPts ? '+' + shotPts : '0'}</span></div>
     <div class="items">${cur.results.map((r, i) => `<span>Ring ${i + 1} · ${r.hit ? `<b>${r.perfect ? 'Perfect' : 'Through'}</b>` : Number.isFinite(r.missYd) ? `missed by ${r.missYd < 10 ? r.missYd.toFixed(1) : Math.round(r.missYd)} yd` : 'not reached'}</span>`).join('')}</div>
     <div class="meta"><span>You hit <b>${hit}</b></span><span><b>${Math.round(cur.r.carry)}</b> yd ${cur.live ? '· R10' : cur.ideal ? '· Ideal' : '· Sim'}</span></div>`);
+  cur.status = s.all ? { text: s.allPerfect ? 'PERFECT FLIGHT PLAN' : 'ON PLAN · ALL GATES', color: '#ffd257' } : s.rings ? { text: `${s.rings} OF 3 GATES`, color: '#7fe9ff' } : { text: 'OFF PLAN', color: '#ff7a6a' };
   drawMap(cur.r.pts);
   setTimeout(() => kit.next(), end.last ? 1600 : 2200);
 }
 
 /* ===================== loop ===================== */
 let fitW = 0, fitH = 0, last = performance.now(), clock = 0;
-function resize() { const w = stage.clientWidth, h = stage.clientHeight; fitW = w; fitH = h; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); sv.resizeLines(); if (guide) guide.material.resolution.set(renderer.domElement.width, renderer.domElement.height); drawMap(sv.flight && sv.flight.done ? cur.r.pts : null); }
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; fitW = w; fitH = h; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); sv.resizeLines(); if (guide) guide.material.resolution.set(renderer.domElement.width, renderer.domElement.height); fpDirty = true; }
 function fitToScreen() { const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h || (w === fitW && h === fitH)) return; resize(); }
 const refit = () => { fitToScreen(); requestAnimationFrame(fitToScreen); setTimeout(fitToScreen, 250); setTimeout(fitToScreen, 700); };
 addEventListener('resize', refit); addEventListener('orientationchange', refit);
@@ -309,15 +347,17 @@ function step(dt) {
   clock += dt;
   fireRingEvents();
   animateRings(dt, clock); animateBursts(dt);
-  sv.update(dt); world.animate(clock);
+  sv.update(dt); world.animate(clock); placeMonitor();
+  // the ball pops through the door's force field
+  if (sv.flight && !sv.flight.done) { const b = sv.ball.position; if (cur.prevZ > BAY.door && b.z <= BAY.door && b.y < BAY.doorTop) world.fieldRipple(b.x, b.y); cur.prevZ = b.z; }
   if (sv.flight && !sv.flight.done && Math.floor(clock * 15) !== Math.floor((clock - dt) * 15)) drawMap(sv.flight.pts.slice(0, Math.max(2, sv.flight.pts.findIndex(q => q.t > sv.flight.t))));
 }
 function frame(now) { const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; fitToScreen(); step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 window.__advance = (sec, n) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (n && i % n === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
-window.__shape = cur; window.__kit = kit;
+window.__shape = cur; window.__kit = kit; window.__fp = fp; window.__world = world;
 
 resize();
 sv.address(false);
-document.fonts && document.fonts.ready.then(() => world.refreshSigns && world.refreshSigns());
+document.fonts && document.fonts.ready.then(() => { fpDirty = true; });
 kit.showStart();
 requestAnimationFrame(t => { last = t; frame(t); });

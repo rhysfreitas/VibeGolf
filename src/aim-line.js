@@ -40,7 +40,7 @@ export function createAimLine({ renderer, scene, camera }, { color = '#ffffff', 
   }
   function hide() { line.visible = mark.visible = false; }
 
-  const onDrag = (o = {}) => attachAimDrag(renderer, camera, { ...o, enabled: () => line.visible && (o.enabled ? o.enabled() : true) });
+  const onDrag = (o = {}) => attachAimDrag(renderer, camera, { ...o, enabled: e => line.visible && (o.enabled ? o.enabled(e) : true) });
   return { line, mark, show, hide, onDrag, get visible() { return line.visible; } };
 }
 
@@ -56,13 +56,13 @@ export function attachAimDrag(renderer, camera, { enabled = () => true, start = 
       const v = ray.ray.direction; return Math.atan2(v.x, -v.z);
     };
     let d = null;
-    el.addEventListener('pointerdown', e => { d = enabled() && e.button <= 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, a0: ang(e), on: false } : null; });
+    el.addEventListener('pointerdown', e => { d = enabled(e) && e.button <= 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, a0: ang(e), on: false } : null; });
     el.addEventListener('pointermove', e => {
       if (!d || e.pointerId !== d.id) return;
       if (!d.on) {
         const dx = e.clientX - d.x, dy = e.clientY - d.y;
         if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 24) d = null; return; }
-        if (!enabled()) { d = null; return; }
+        if (!enabled(e)) { d = null; return; }
         d.on = true; try { el.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
         start();
       }

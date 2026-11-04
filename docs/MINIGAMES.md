@@ -12,7 +12,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 
 | Game | Scene |
 |---|---|
-| Shape It | **Sunset Mesa**: a fairway on a red-rock mesa high above a desert valley, pink and violet sunset sky, so the glowing rings pop. |
+| Shape It | **The Launch Bay**: you tee off from the launch pad in the hangar at the back of a spaceship. Its stern door is open on space, with a faint force field across it (it keeps the air in) that ripples as the ball goes through, and a lit flight deck runs out from it like a carrier's, with yardage painted on it (a ball that misses the deck drops away into space). Small ships wait in their launch slots either side with their engines idling, blue lane lights chase toward the door, and through it an asteroid belt crosses the distance under a ringed gas giant, with a few rocks drifting past and far-off ships cruising. The hidden joke: you're reading a *launch* monitor. The rings are flight gates with nav lights, and the map is the bay's **flight-plan screen**, a monitor on a boom arm hanging into the top right of the view (it rides with the camera so it stays readable; tap it to aim at a spot). Its status line reads Cleared for launch, In flight, each gate, then On plan or Off plan. A perfect flight plan sends one of the ships out of the door; it rises back up its slot's lift next turn. |
 | Zombie Siege | **Dead farm at night**: a huge low moon, stars and drifting clouds, distant lightning. Floodlights cut beams through rolling ground fog. Your fence has sandbags, barbed wire and burning barrels, and the field has an overturned pickup with its headlights on, a burning tractor, a graveyard some zombies climb out of, a barn, an abandoned farmhouse, a windmill, jack-o'-lanterns and a far church steeple. Candle-lit headstones carved with the yardage mark every 50 yd down both sides. Synthesised night sounds (wind, crickets, groans that grow as they near, crows, thunder, a bell each wave). Spooky, not gory. |
 | Carnival Booth | **The Tin Gallery**: a life-size antique tin shooting gallery on a sunny late afternoon. A bulb-lit arch over the counter, a plank stage floor, painted plywood waves rocking side to side, gears turning on striped walls, and a painted sky backdrop with a cut-out sun on a stick. The rows are tiered (cans low, boards on posts, ducks on a raised rail along a painted sea wall, the bell up top) and the walls are solid. The real fairground shows beyond: Ferris wheel, big top, carousel, coaster, stalls, bunting and balloons. A synthesised calliope waltz plays. |
 | Island Hopper | **The Aerie**'s floating sky world. |
@@ -53,7 +53,7 @@ Fly the ball through a set of rings tracing a shot shape.
 - **Rings:** three per shape (rising, apex, descending), sized as a share of their distance: Beginner ~30 yd across at 150 yd, Amateur ~18, Pro ~11, Tour ~6. Each has a perfect center.
 - **Scoring:** points per ring, perfect doubles it, and threading all three gives a **SHAPE!** bonus. Streak applies across shots.
 - **Round:** 10 shots each.
-- **Map:** top and side views showing the rings and your tracer.
+- **Map:** the flight-plan screen: top and side views showing the rings and your tracer.
 - **Challenges, e.g.:** thread a full shape · 2 perfects · reach ×4.
 
 ## 2. Zombie Siege
