@@ -61,7 +61,10 @@ export function createKit(cfg) {
     id, title, blurb = '', shotsPerPlayer = 10, difficulties, challenges: pool = [], clubs = [],
     rules = [], accent, idealShot = false, mode = 'shots', summary = null,
     minPlayers = 1, cpu = null, rankBy = null, options = [], board = true,
+    multiplier = true, badge = null,
   } = cfg;
+  // multiplier: false → award() adds points as given (e.g. bowling, whose scoring is its own
+  // multiplier); badge(player) → { text, level } relabels the streak badge (e.g. strikes in a row)
   // 'shots': N shots each, round robin · 'run': each player plays until their run ends ·
   // 'manual': the game decides who plays next (kit.turnTo) and when it ends (kit.finishGame)
   const RUN = mode === 'run', MANUAL = mode === 'manual';
@@ -136,7 +139,7 @@ export function createKit(cfg) {
   const findDiff = idd => difficulties.find(d => d.id === idd) || difficulties[0];
   const diffObj = () => (player() ? player().difficulty : findDiff(S.roster[0] && S.roster[0].diff));
   const player = () => S.players[S.cur];
-  const mult = () => Math.min(MAX_MULT, 1 + player().streak);
+  const mult = () => (multiplier ? Math.min(MAX_MULT, 1 + player().streak) : 1);
 
   /* ---------- clubs ---------- */
   let clubIdx = 0, suggested = -1;
@@ -167,8 +170,8 @@ export function createKit(cfg) {
     R.diff.textContent = p.difficulty.label;
     R.player.textContent = p.name;
     R.shot.textContent = RUN || MANUAL ? S.shotLabel : `Shot ${Math.min(p.shots + 1, shotsPerPlayer)} of ${shotsPerPlayer}`;
-    const m = mult();
-    R.mult.textContent = '×' + m; R.mult.dataset.level = m; R.mult.classList.toggle('live', m > 1);
+    const m = mult(), bd = badge ? badge(p) : { text: '×' + m, level: m };
+    R.mult.textContent = bd.text; R.mult.dataset.level = bd.level; R.mult.classList.toggle('live', bd.level > 1);
     R.stars.innerHTML = S.challenges.map((c, i) => `<i class="${p.done[i] ? 'on' : ''}" title="${esc(c.text)}">★</i>`).join('');
     if (board && S.players.length > 1) {
       R.board.hidden = false;
@@ -200,7 +203,7 @@ export function createKit(cfg) {
     clearTimeout(splashT); splashT = setTimeout(() => { R.splash.className = 'mg-splash'; }, 1300);
   }
   function soClose(yd, what = '') {
-    R.close.textContent = `So close · ${yd < 10 ? yd.toFixed(1) : Math.round(yd)} yd${what ? ' ' + what : ''}`;
+    R.close.textContent = typeof yd === 'string' ? `So close · ${yd}` : `So close · ${yd < 10 ? yd.toFixed(1) : Math.round(yd)} yd${what ? ' ' + what : ''}`;
     R.close.className = 'mg-close on'; sfx.close();
     clearTimeout(closeT); closeT = setTimeout(() => { R.close.className = 'mg-close'; }, 1800);
   }
@@ -212,7 +215,7 @@ export function createKit(cfg) {
   /* ---------- scoring ---------- */
   // `to`: award another player (e.g. the setter in HORSE when someone misses their call)
   function award(base, { to = S.cur } = {}) {
-    const p = S.players[to], m = Math.min(MAX_MULT, 1 + p.streak), pts = Math.round(base * m);
+    const p = S.players[to], m = multiplier ? Math.min(MAX_MULT, 1 + p.streak) : 1, pts = Math.round(base * m);
     p.score += pts; p.stats.score = p.score;
     if (to === S.cur) { p.shotPts += pts; countUpTo(p.score); }
     checkChallenges(to); renderHud();

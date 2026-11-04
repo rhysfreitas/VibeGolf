@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a1c14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<title>Golf Bowling · VibeGolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles/minigame.css">
+<link rel="stylesheet" href="styles/shared.css">
+<style>
+/* Golf Bowling extras: a paper score sheet (top centre) and the pin diagram in the prompt. */
+.bw-sheet { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 6px); transform: translateX(-50%) rotate(-0.6deg); z-index: 6;
+  --w: 26px; padding: 4px 7px 5px; border-radius: 4px; color: #1f2a4a; font-family: var(--f-data);
+  background: linear-gradient(#fffdf6, #f6f0de); box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 1px 0 rgba(0,0,0,0.1); user-select: none; -webkit-user-select: none; }
+.bw-sheet::before { content: ""; position: absolute; left: 50%; top: -6px; width: 46px; height: 14px; transform: translateX(-50%) rotate(2deg); background: rgba(246,236,190,0.75); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+.bw-hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 1px 2px; }
+.bw-hd .nm { font-weight: 800; color: #c8322a; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bw-hd .ln { color: #6a7088; font-weight: 600; }
+.bw-fr { display: flex; border: 1.5px solid #1f2a4a; border-radius: 2px; }
+.bw-fr .f { width: var(--w); display: flex; flex-direction: column; border-left: 1px solid #1f2a4a; position: relative; }
+.bw-fr .f:first-child { border-left: 0; }
+.bw-fr .f.ten { width: calc(var(--w) * 1.5); }
+.bw-fr .n { font-size: 8px; text-align: center; line-height: 10px; color: #6a7088; border-bottom: 1px solid rgba(31,42,74,0.35); }
+.bw-fr .bx { display: flex; justify-content: flex-end; height: 13px; }
+.bw-fr .bx i { font-style: normal; width: calc(var(--w) / 2); height: 13px; line-height: 13px; text-align: center; font-size: 11px; font-weight: 700; border-left: 1px solid rgba(31,42,74,0.35); border-bottom: 1px solid rgba(31,42,74,0.35); }
+.bw-fr .ten .bx i { width: calc(var(--w) / 2); }
+.bw-fr .bx i:first-child { border-left: 0; }
+.bw-fr .f:not(.ten) .bx i:first-child { border-bottom: 0; }
+.bw-fr .bx i.x { color: #c8322a; font-weight: 800; }
+.bw-fr .bx i.sp { color: #2f63c0; font-weight: 800; }
+.bw-fr .bx i.split { border-radius: 50%; box-shadow: inset 0 0 0 1.3px #c8322a; }
+.bw-fr b { display: block; text-align: center; font-size: 12px; line-height: 15px; font-variant-numeric: tabular-nums; min-height: 15px; }
+.bw-fr .f.cur { background: rgba(238,90,60,0.12); }
+.bw-fr .f.cur .n { color: #c8322a; font-weight: 800; }
+.bw-row { display: flex; align-items: center; gap: 10px; }
+.bw-pins { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 3px 5px; border-radius: 6px; background: rgba(0,0,0,0.28); }
+.bw-pins span { display: flex; gap: 3px; }
+.bw-pins i { width: 7px; height: 7px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45); }
+.bw-pins i.on { background: #fff; box-shadow: 0 0 5px rgba(255,255,255,0.6); }
+.mg-result .pts.zero { opacity: 0.6; }
+#mg .mg-toast { top: calc(env(safe-area-inset-top, 0px) + 76px); }
+@media (min-height: 560px) and (min-width: 900px) { .bw-sheet { --w: 36px; padding: 6px 10px 8px; } .bw-hd { font-size: 12px; } .bw-fr .n { font-size: 10px; line-height: 13px; } .bw-fr .bx, .bw-fr .bx i { height: 18px; line-height: 18px; font-size: 14px; } .bw-fr b { font-size: 16px; line-height: 21px; min-height: 21px; } .bw-pins i { width: 9px; height: 9px; } #mg .mg-toast { top: calc(env(safe-area-inset-top, 0px) + 96px); } }
+@media (max-width: 760px) and (orientation: landscape) { .bw-sheet { --w: 22px; padding: 3px 5px 4px; } .bw-hd { font-size: 9px; } .bw-fr .bx i { font-size: 10px; } .bw-fr b { font-size: 11px; } }
+@media (orientation: portrait) { .bw-sheet { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 210px); --w: min(26px, calc((100vw - 40px) / 10.5)); } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="vendor/three-r147/three.min.js"></script>
+<script src="vendor/three-r147/Sky.js"></script>
+<script src="vendor/three-r147/lines/LineSegmentsGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineMaterial.js"></script>
+<script src="vendor/three-r147/lines/LineSegments2.js"></script>
+<script src="vendor/three-r147/lines/Line2.js"></script>
+<script type="module" src="src/minigames/golf-bowling.js"></script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

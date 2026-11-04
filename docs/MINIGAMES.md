@@ -17,7 +17,7 @@ The scoring, feedback, players and end screen are shared, but each game has its 
 | Carnival Booth | **The Tin Gallery**: a life-size antique tin shooting gallery on a sunny late afternoon. A bulb-lit arch over the counter, a plank stage floor, painted plywood waves rocking side to side, gears turning on striped walls, and a painted sky backdrop with a cut-out sun on a stick. The rows are tiered (cans low, boards on posts, ducks on a raised rail along a painted sea wall, the bell up top) and the walls are solid. The real fairground shows beyond: Ferris wheel, big top, carousel, coaster, stalls, bunting and balloons. A synthesised calliope waltz plays. |
 | Island Hopper | **The Aerie**'s floating sky world. |
 | Golf HORSE | **The Cul-de-sac**: a giant suburban cul-de-sac just after sunset under Topgolf-style floodlights. You hit from a bay on the first garage roof. Seven LED target rings sit in the street and lawns, a basketball court is painted in the bulb under a giant driveway hoop, and a basketball scoreboard shows the call. |
-| Golf Bowling | **Neon roadside lane**: a 1950s bowling lane laid down a desert valley floor. |
+| Golf Bowling | **The Toy Room**: you've been shrunk in a kid's bedroom on a sunny afternoon (everything is real size ×30). The lane is the long runner rug down the floor, with woven landing dots and arrows, and the toy pin set (9 m pins, white with red stripes) stands on a maple mat between red side rails with a cushion behind. Floorboards, a toy train looping through a sunbeam with dust in it, letter blocks, log-sized crayons, marbles, a race car, a spinning top, a beach ball, the bed with a patchwork quilt and a teddy on the pillow, a dresser with a lit lamp, a toy shelf, kid's drawings taped to the wall, and a big window with gingham curtains, the garden fence and a tree. A wooden yardstick is the pinsetter's sweep bar; Beginner gets foam-noodle bumpers. Sunlight only gets in through the windows (a shader dims direct light where the walls block it). The camera glides down the lane to watch the pins, then back. A roadside neon lane could be a second lane later. |
 | Wedge Ladder | **The Airfield**: a vintage airstrip at sunrise. Each rung is a landing zone painted across the flat runway (true carries) with a runway-style number; the live zone has green and red edge-light rows and a floating number. Control tower with a turning beacon, hangars, a biplane, a windsock, taxiway yardage signs and hot-air balloons. The ladder HUD is a departures-style flight board whose rows double as a top-down runway strip with your landings. |
 | Glass Tower | **Downtown plaza at dusk**: the target tower lit among other skyscrapers. |
 
@@ -123,6 +123,7 @@ Giant pins down the fairway. Ten frames, real bowling scoring.
 - **Difficulty:** lane length (100 / 140 / 180 yd).
 - **Tuning:** forgiving roll, because the R10's spin reading drives the bounce.
 - **Challenges, e.g.:** a strike · pick up a split · score 120+.
+- **Built:** the roll after landing ignores spin and keeps a fixed share of the landing speed, so the ideal shot lands on the dots a few yards short and rolls in. A small top-down rigid-body sim (`bowling-logic.js`) does the pin action: the ball shoves the pins it meets, a falling pin sweeps whatever it tips into, and pins bounce off the side rails. Beginner 100 yd with bumpers and a guide line, Amateur 140, Pro 180, Tour 180 with heavier pins. Splits are named (the bedposts, the big four, Greek church…). Converting a split is very rare with a golf ball, so it's a celebrated splash rather than a challenge. The simulated amateur averages about 120 / 95 / 75 / 70.
 
 ## 7. Wedge Ladder
 Climb a ladder of carry distances with your wedges.
@@ -151,4 +152,4 @@ Smash the windows of a glass skyscraper.
 1. **Shape It plus the shared kit:** the mini games menu, players and turns, difficulty, run challenges, splash words, the end screen and bests.
 2. **Zombie Siege.**
 3. **Island Hopper** (reuses The Aerie's islands), then **Golf HORSE**. *(Done.)*
-4. **Carnival Booth**, **Wedge Ladder**, **Golf Bowling**, **Glass Tower**.
+4. **Carnival Booth**, **Wedge Ladder**, **Golf Bowling** *(done)*, then **Glass Tower**.

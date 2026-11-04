@@ -105,5 +105,7 @@ export function createShotView(world, opts = {}) {
   function clearGhosts() { while (ghosts.length) { const o = ghosts.pop(); scene.remove(o); o.geometry.dispose(); o.material.dispose(); } }
 
   resizeLines();
-  return { ball, address, fly, update, keepInView, resizeLines, ghostCurrent, clearGhosts, setLine, mkLine: (w, o) => { const l = mkLine(w, o); extra.push(l); return l; }, get flight() { return flight; } };
+  // fade the live tracer (e.g. while a game's camera moves in close)
+  function tracerFade(k) { tracer.core.material.opacity = 1 - k; tracer.glow.material.opacity = 0.3 * (1 - k); }
+  return { ball, address, fly, update, tracerFade, keepInView, resizeLines, ghostCurrent, clearGhosts, setLine, mkLine: (w, o) => { const l = mkLine(w, o); extra.push(l); return l; }, get flight() { return flight; } };
 }
