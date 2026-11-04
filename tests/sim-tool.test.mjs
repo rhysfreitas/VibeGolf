@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { simulate } from '../src/physics.js';
-import { solveCustom, amateurMiss, makeToolShot } from '../src/minigames/aim.js';
+import { solveCustom, amateurMiss, makeToolShot, landOf, bearingOf, turnBall, turnPts, aimTurn } from '../src/minigames/aim.js';
 import { CLUBS } from '../src/minigames/shape-it-logic.js';
 
 const sim = b => simulate(b, { groundAt: () => 0 });
@@ -40,4 +40,17 @@ test('Hit misses like a decent amateur; Ideal is exact', () => {
   const hla = []; for (let i = 0; i < 400; i++) hla.push(amateurMiss(ideal, rnd).HLA - ideal.HLA);
   const sd = Math.sqrt(hla.reduce((a, v) => a + v * v, 0) / hla.length);
   assert.ok(sd > 2.4 && sd < 3.6, `start direction σ ${sd.toFixed(2)}°`);
+});
+
+test('the aim line: turning HLA turns the whole flight, so the landing follows the line', () => {
+  const s = solveCustom(sim, CLUBS, T, { traj: 'punch', axis: -12 });
+  const r0 = sim(s.ball), l0 = landOf(r0), b0 = bearingOf(l0[0], l0[2]);
+  for (const yaw of [-15, -3, 0, 9]) {
+    const dd = aimTurn(b0, { autoAim: false, yawDeg: yaw }), r = sim(turnBall(s.ball, dd)), l = landOf(r);
+    assert.ok(Math.abs(bearingOf(l[0], l[2]) - yaw) < 0.05, `aim ${yaw}°: lands at ${bearingOf(l[0], l[2]).toFixed(2)}°`);
+    assert.ok(Math.abs(Math.hypot(l[0], l[2]) - Math.hypot(l0[0], l0[2])) < 0.05, 'same distance');
+    const fast = landOf({ pts: turnPts(r0.pts, dd) }); // the quick turn used while dragging matches
+    assert.ok(Math.hypot(fast[0] - l[0], fast[2] - l[2]) < 0.05);
+  }
+  assert.equal(aimTurn(b0, { autoAim: true, yawDeg: 20 }), 0, 'auto-aim leaves the solved shot alone');
 });

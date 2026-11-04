@@ -7,7 +7,11 @@
 //   const tool = createSimTool(parent, { clubs, onShot: s => ... });
 //   tool.suggest({ club, axis, traj })   // the game's recommendation for this shot
 //   tool.setTarget({ x, z, label })       // a spot picked on a map, for the next shot only
-//   s = { club, traj, axis, ideal, target, clubAuto, axisAuto }
+//   s = { club, traj, axis, ideal, target, clubAuto, axisAuto, autoAim }
+//
+// Auto-aim (the small crosshair beside the pill, off by default and remembered): on, the
+// simulated shot aims itself at the target; off, it flies down the phantom aim line you drag
+// left or right in the view (src/aim-line.js).
 
 export const TRAJ = [
   { id: 'normal', name: 'Normal' },
@@ -23,13 +27,21 @@ export function shapeName(axis) {
   return `${a < 6 ? 'Little ' + side : side[0].toUpperCase() + side.slice(1)}`;
 }
 
-export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget = () => {}, onChange = () => {}, auto = true, note = 'Your R10 shots fly exactly as you hit them; these settings are only for simulated shots.', extra = null } = {}) {
+const AIM_KEY = 'vibegolf.autoAim';
+const readAim = () => { try { return localStorage.getItem(AIM_KEY) === '1'; } catch (e) { return false; } };
+const saveAim = v => { try { localStorage.setItem(AIM_KEY, v ? '1' : '0'); } catch (e) { /* storage blocked */ } };
+
+export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget = () => {}, onChange = () => {}, auto = true, aimToggle = true, note = 'Your R10 shots fly exactly as you hit them; these settings are only for simulated shots.', extra = null } = {}) {
   const el = document.createElement('div');
   el.className = 'st';
   el.innerHTML = `
     <button class="st-btn" type="button" aria-expanded="false" title="Simulated shot">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20c3-1 5-4 7-8s4-6 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="0.1 3.6"/><circle cx="19" cy="5" r="2.4" fill="currentColor"/></svg>
       <span class="st-sum"></span>
+    </button>
+    <button class="st-aim" type="button" aria-pressed="false" title="Auto-aim: simulated shots aim themselves at the target. Off: they follow the aim line you drag in the view.">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle class="st-aimDot" cx="12" cy="12" r="2" fill="currentColor"/></svg>
+      <span>Auto</span>
     </button>
     <aside class="st-panel" hidden aria-label="Simulated shot">
       <header><span>Simulated shot</span><button class="st-x" type="button" aria-label="Close">×</button></header>
@@ -56,7 +68,10 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
   const btn = $('.st-btn'), panel = $('.st-panel'), sum = $('.st-sum');
   if (extra) $('.st-extra').appendChild(extra);
 
-  const S = { club: null, traj: 'normal', axis: null, target: null, sugg: { club: 0, axis: 0 }, enabled: true };
+  const S = { club: null, traj: 'normal', axis: null, target: null, sugg: { club: 0, axis: 0 }, enabled: true, autoAim: readAim() };
+  const aimBtn = $('.st-aim'); aimBtn.hidden = !aimToggle;
+  aimBtn.onclick = () => setAutoAim(!S.autoAim);
+  function setAutoAim(v) { if (S.autoAim === !!v) return; S.autoAim = !!v; saveAim(S.autoAim); changed(); }
   const club = () => (S.club ?? S.sugg.club);
   const axis = () => (S.axis ?? S.sugg.axis ?? 0);
 
@@ -81,7 +96,7 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
   $('.st-reset').onclick = () => { S.axis = null; changed(); };
   $('.st-clear').onclick = () => { S.target = null; render(); onTarget(null); };
 
-  function settings() { return { club: club(), traj: S.traj, axis: axis(), target: S.target, clubAuto: S.club == null, axisAuto: S.axis == null }; }
+  function settings() { return { club: club(), traj: S.traj, axis: axis(), target: S.target, clubAuto: S.club == null, axisAuto: S.axis == null, autoAim: S.autoAim }; }
   function changed() { render(); onChange(settings()); }
   function render() {
     const ci = club(), a = axis();
@@ -89,6 +104,7 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
     autoBtn.textContent = clubs[S.sugg.club] ? `Auto · ${clubs[S.sugg.club].id}` : 'Auto';
     clubBtns.forEach((b, i) => { b.setAttribute('aria-pressed', String(S.club === i || (!auto && S.club == null && i === S.sugg.club))); b.classList.toggle('sugg', auto && i === S.sugg.club); });
     trajBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(TRAJ[i].id === S.traj)));
+    aimBtn.setAttribute('aria-pressed', String(S.autoAim));
     $('.st-path').setAttribute('d', curve(a));
     $('.st-sugg').setAttribute('d', curve(S.sugg.axis || 0));
     $('.st-sugg').style.display = S.axis != null && Math.abs((S.sugg.axis || 0) - a) > 0.4 ? '' : 'none';
@@ -122,6 +138,7 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
     clearTarget() { if (S.target) { S.target = null; render(); onTarget(null); } },
     setEnabled(v) { S.enabled = v; $('.st-hit').disabled = $('.st-ideal').disabled = !v; el.classList.toggle('busy', !v); },
     get settings() { return settings(); },
+    get autoAim() { return S.autoAim; }, setAutoAim,
     setClub(i) { S.club = i; render(); },        // the page picked a club (e.g. a keyboard shortcut); null = Auto
     get club() { return club(); },
     get isOpen() { return !panel.hidden; },

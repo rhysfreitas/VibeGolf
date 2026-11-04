@@ -8,7 +8,6 @@ import { createSkyIslands } from './scenes/sky-islands.js';
 import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
 import { YD, LIVES, VOID_Y, DIFFICULTIES, CHALLENGES, BANDS, band, startIsland, makeOptions, resolveHop, solveHop, distYd, padRadius, teeSpot } from './island-logic.js';
-import { amateurMiss } from './aim.js';
 
 const stage = document.getElementById('stage');
 const world = createSkyIslands(stage);
@@ -109,7 +108,7 @@ function solveFor(I) {
   if (!solveCache.has(I.id)) solveCache.set(I.id, solveHop(simulate, CLUBS, G.from, I, [G.current, ...G.options]));
   return solveCache.get(I.id);
 }
-function selectTarget(I) { G.target = I; kit.sfx.tick(); renderPrompt(); }
+function selectTarget(I) { G.target = I; kit.sfx.tick(); kit.aimAt(I.x - G.from.x, I.z - G.from.z); renderPrompt(); }
 function renderPrompt() {
   const I = G.target; if (!I) return;
   G.solve = solveFor(I); kit.setClub(G.solve.club, true);
@@ -131,8 +130,10 @@ function toolSolve(s) {
   const I = s.target ? { x: G.from.x + s.target.x, z: G.from.z + s.target.z } : G.target;
   return solveHop(simulate, CLUBS, G.from, I, [G.current, ...G.options], { club: s.clubAuto ? null : s.club, traj: s.traj, axis: s.axis });
 }
-kit.on('hit', s => { const sol = G.target && toolSolve(s); if (sol) launch(amateurMiss(sol.ball), 'Sim'); });
-kit.on('ideal', s => { const sol = G.target && toolSolve(s); if (sol) launch({ ...sol.ball }, 'Ideal'); });
+// the kit aims simulated shots (auto-aim, or down your aim line) and adds Hit's miss
+kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt: world.groundAt, voidY: VOID_Y }), ideal: s => { const sol = G.target && toolSolve(s); return sol ? sol.ball : null; } });
+kit.on('hit', s => launch(s.ball, 'Sim'));
+kit.on('ideal', s => launch(s.ball, 'Ideal'));
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 
 function launch(ball, src) {

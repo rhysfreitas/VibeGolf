@@ -68,3 +68,18 @@ export function makeToolShot(sim, clubs) {
     return { ...sol, ball: s.ideal ? { ...sol.ball } : amateurMiss(sol.ball) };
   };
 }
+
+/* ---------- the phantom aim line (src/aim-line.js) ---------- */
+// Where a simulated flight lands (or ends, for flight-only sims), and its bearing in degrees
+// (+ = right of straight downrange, the same sense as HLA).
+export const landOf = r => (r.pts.find(p => p.phase !== 'flight') || r.pts[r.pts.length - 1]).p;
+export const bearingOf = (x, z) => Math.atan2(x, -z) * 180 / Math.PI;
+// Turning a shot: on flat ground with no wind, adding δ to HLA turns the whole flight δ about the ball.
+export function turnBall(ball, deg) { return { ...ball, HLA: (ball.HLA || 0) + deg }; }
+export function turnPts(pts, deg) {
+  const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  return pts.map(q => ({ ...q, p: [q.p[0] * c - q.p[2] * s, q.p[1], q.p[0] * s + q.p[2] * c] }));
+}
+// How far to turn a shot whose ideal flight lands on `fromDeg`: none with auto-aim (the game's
+// solver already aims at the target), otherwise onto the aim line you dragged (`yawDeg`).
+export const aimTurn = (fromDeg, { autoAim, yawDeg = 0, targetDeg = fromDeg }) => (autoAim ? targetDeg : yawDeg) - fromDeg;

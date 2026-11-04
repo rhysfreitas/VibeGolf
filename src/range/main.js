@@ -1,7 +1,8 @@
 // Woodson Range — driving range mode.
 import { simulate, airDensity, DEFAULT_COEF } from '../physics.js';
 import { createSimTool } from '../sim-tool.js';
-import { TRAJ_MUL } from '../minigames/aim.js';
+import { TRAJ_MUL, landOf, bearingOf, turnBall, turnPts, aimTurn } from '../minigames/aim.js';
+import { createAimLine } from '../aim-line.js';
 import { launchMonitor, mountLaunchMonitorUI, parseShot } from '../launch-monitor.js';
 import { STANCE, stanceView } from '../stance.js';
 import { CLUB_DELIVERY, deliveryFromBall, renderShotDetail } from './shot-detail.js';
@@ -70,7 +71,7 @@ const state = {
   camMode: 'tracer', sunKey: 'golden', tracer: TRACERS[1], tracerKeep: 10, sound: true, pending: null,
   flight: null, t: 0, phase: 'idle', restTimer: 0, shots: [], seq: 0,
 };
-function loadClub(i) { const c = CLUBS[i]; state.club = i; state.custom = false; state.shotData = { Speed: c.Speed, VLA: c.VLA, HLA: 0, TotalSpin: c.TotalSpin, SpinAxis: 0 }; syncSliders(); renderClubs(); placeBallAtAddress(); launchMonitor.setPlayer({ club: c.id }); }
+function loadClub(i) { const c = CLUBS[i]; state.club = i; state.custom = false; state.shotData = { Speed: c.Speed, VLA: c.VLA, HLA: 0, TotalSpin: c.TotalSpin, SpinAxis: 0 }; syncSliders(); renderClubs(); placeBallAtAddress(); launchMonitor.setPlayer({ club: c.id }); if (typeof refreshAim === 'function') refreshAim(); }
 
 /* ===================== UI ===================== */
 const $ = id => document.getElementById(id);
@@ -85,7 +86,7 @@ customNote.innerHTML = 'Using your exact numbers from Settings. <a href="#" styl
 customNote.querySelector('a').onclick = e => { e.preventDefault(); loadClub(state.club); };
 const tool = createSimTool($('hitbar'), {
   clubs: CLUBS, auto: false, extra: customNote,
-  onChange: s => { if (state.phase === 'idle' && s.club !== state.club) loadClub(s.club); },
+  onChange: s => { if (state.phase === 'idle' && s.club !== state.club) loadClub(s.club); refreshAim(); },
   onShot: s => { if (s.club !== state.club && state.phase === 'idle') loadClub(s.club); swing(s); },
 });
 const SL = [
@@ -94,13 +95,13 @@ const SL = [
   ['sSpin', 'oSpin', v => Math.round(v).toLocaleString() + ' rpm', 'TotalSpin'], ['sAxis', 'oAxis', v => Math.abs(v).toFixed(1) + '° ' + (v < 0 ? 'L' : v > 0 ? 'R' : ''), 'SpinAxis'],
 ];
 function syncSliders() { for (const [s, o, f, k] of SL) { $(s).value = state.shotData[k]; $(o).textContent = f(+state.shotData[k]); } }
-for (const [s, o, f, k] of SL) $(s).addEventListener('input', e => { state.shotData[k] = +e.target.value; $(o).textContent = f(+e.target.value); state.custom = true; customNote.hidden = false; });
+for (const [s, o, f, k] of SL) $(s).addEventListener('input', e => { state.shotData[k] = +e.target.value; $(o).textContent = f(+e.target.value); state.custom = true; customNote.hidden = false; refreshAim(); });
 const envFmt = () => {
   $('oTemp').textContent = state.tempF + '°F'; $('oAlt').textContent = state.altFt.toLocaleString() + ' ft';
   const rho = airDensity(state.tempF, state.altFt); $('oRho').textContent = `Air density ${rho.toFixed(3)} kg/m³, ${((1 - rho / 1.2041) * 100).toFixed(1)}% thinner than sea level at 68°F.`;
   $('oLift').textContent = '×' + state.lift.toFixed(2); $('oDrag').textContent = '×' + state.drag.toFixed(2);
 };
-for (const [s, k] of [['sTemp', 'tempF'], ['sAlt', 'altFt'], ['sLift', 'lift'], ['sDrag', 'drag']]) { $(s).value = state[k]; $(s).addEventListener('input', e => { state[k] = +e.target.value; envFmt(); }); }
+for (const [s, k] of [['sTemp', 'tempF'], ['sAlt', 'altFt'], ['sLift', 'lift'], ['sDrag', 'drag']]) { $(s).value = state[k]; $(s).addEventListener('input', e => { state[k] = +e.target.value; envFmt(); refreshAim(); }); }
 $('btnReset').onclick = () => loadClub(state.club);
 document.querySelectorAll('[data-sun]').forEach(b => b.onclick = () => { setSun(b.dataset.sun); document.querySelectorAll('[data-sun]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
 TRACERS.forEach(c => {
@@ -140,6 +141,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space' || e.key === 'h' || e.key === 'H') { e.preventDefault(); tool.shoot(false); }
   else if (/^[1-8]$/.test(e.key) && state.phase === 'idle') loadClub(+e.key - 1);
   else if (e.key === 'x' || e.key === 'X') clearTracers();
+  else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && state.phase === 'idle' && !state.custom) { e.preventDefault(); takeAim(); aim.yaw = clampYaw(aim.yaw + (e.key === 'ArrowLeft' ? -0.5 : 0.5)); drawAim(); }
 });
 let toastT = 0; function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
 
@@ -310,7 +312,44 @@ function toolBase(s) {
   const t = TRAJ_MUL[s.traj] || TRAJ_MUL.normal, c = CLUBS[state.club];
   return { Speed: c.Speed * t.speed, VLA: c.VLA * t.vla, HLA: -s.axis * 0.37, TotalSpin: c.TotalSpin * t.spin, SpinAxis: s.axis };
 }
-function swing(s = { ...tool.settings, ideal: false }) { if (state.phase !== 'idle') return; initAudio(); launch(realSwing(toolBase(s), !s.ideal), false); }
+function swing(s = { ...tool.settings, ideal: false }) { if (state.phase !== 'idle') return; initAudio(); launch(realSwing(aimedBase(s).ball, !s.ideal), false); }
+
+/* ---------- the phantom aim line (src/aim-line.js) ---------- */
+// The next simulated shot's flight, dashed. Drag it left or right in the view to aim (that turns
+// auto-aim off); with auto-aim on it lands on the centre line. Your exact numbers from Settings
+// fly as they are.
+const rangeSim = b => simulate(b, { tempF: state.tempF, altFt: state.altFt, coef: { clScale: state.lift, cd0: DEFAULT_COEF.cd0 * state.drag, cdS: DEFAULT_COEF.cdS * state.drag, cdLow: DEFAULT_COEF.cdLow * state.drag }, surfaceAt, groundAt });
+const aimLine = createAimLine(world);
+const aim = { yaw: 0, base: null, turned: null, t: 0 };
+const clampYaw = v => Math.max(-45, Math.min(45, v));
+function aimBaseFor(s) {
+  const b = toolBase(s), key = [b.Speed, b.VLA, b.HLA, b.TotalSpin, b.SpinAxis, state.tempF, state.altFt, state.lift, state.drag].map(v => (+v || 0).toFixed(3)).join(',');
+  if (!aim.base || aim.base.key !== key) { const r = rangeSim(b), l = landOf(r); aim.base = { key, ball: b, r, b0: bearingOf(l[0], l[2]) }; }
+  return aim.base;
+}
+function aimedBase(s) {
+  const B = aimBaseFor(s), dd = state.custom ? 0 : aimTurn(B.b0, { autoAim: s.autoAim, yawDeg: aim.yaw, targetDeg: 0 });
+  return { B, dd, ball: dd ? turnBall(B.ball, dd) : { ...B.ball } };
+}
+function takeAim() { if (tool.autoAim) { aim.yaw = 0; tool.setAutoAim(false); } }
+function drawAim(fast = false) {
+  if (state.phase !== 'idle') { aimLine.hide(); return; }
+  const s = tool.settings, { B, dd, ball: b } = aimedBase(s);
+  let pts = B.r.pts;
+  if (Math.abs(dd) >= 0.01) {
+    if (fast) pts = turnPts(B.r.pts, dd);
+    else { const k = `${B.key}|${dd.toFixed(2)}`; if (!aim.turned || aim.turned.k !== k) aim.turned = { k, pts: rangeSim(b).pts }; pts = aim.turned.pts; }
+  }
+  const y0 = ball.position.y, li = pts.findIndex(q => q.phase !== 'flight'), end = li < 0 ? pts.length - 1 : li, arr = [];
+  for (let i = 0; i < end; i += 2) { const q = pts[i]; arr.push(q.p[0], q.p[1] + y0 * Math.max(0, 1 - q.t * 4), q.p[2]); }
+  arr.push(...pts[end].p);
+  aimLine.show(arr, pts[end].p);
+}
+function refreshAim() { clearTimeout(aim.t); aim.t = setTimeout(() => drawAim(false), 0); }
+{
+  let y0 = 0;
+  aimLine.onDrag({ enabled: () => state.phase === 'idle' && !state.custom, start: () => { takeAim(); y0 = aim.yaw; }, move: d => { aim.yaw = clampYaw(y0 + d); drawAim(true); }, end: () => drawAim() });
+}
 
 function launch(shot, live) {
   placeBallAtAddress();
@@ -325,7 +364,7 @@ function launch(shot, live) {
   state.flight = { r, shot, live, tracer: makeTracer(state.club), bounced: 0, sampled: [], apexShown: false };
   apexDot.visible = false; $('tagApex').hidden = true;
   state.t = 0; state.phase = 'flight'; state.restTimer = 0;
-  tool.setEnabled(false);
+  tool.setEnabled(false); aimLine.hide();
   landRing.visible = restDisc.visible = false; $('tagLand').hidden = $('tagRest').hidden = true;
   showReadout(r, shot, true);
   strikeSound(state.club, shot.Speed / CLUBS[state.club].Speed > 0.95 ? 1 : 0.7);
@@ -480,7 +519,7 @@ function step(dt) {
     } else {
       state.restTimer += dt;
       if (state.restTimer > 3.0) {
-        state.phase = 'idle'; tool.setEnabled(true); placeBallAtAddress();
+        state.phase = 'idle'; tool.setEnabled(true); placeBallAtAddress(); refreshAim();
         $('tagLand').hidden = $('tagRest').hidden = $('tagApex').hidden = true; apexDot.visible = false;
         if (state.camMode !== 'top') camState.cut = false;
         if (state.pending) { const p = state.pending; state.pending = null; launch(p, true); }

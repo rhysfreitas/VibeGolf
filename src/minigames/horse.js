@@ -51,7 +51,7 @@ document.getElementById('mg').appendChild(hb);
 const HB = {}; hb.querySelectorAll('[data-b]').forEach(el => { HB[el.dataset.b] = el; });
 const canEdit = () => G.role === 'set' && kit.phase === 'aim' && kit.player && !kit.player.cpu;
 const cycle = (arr, v, d = 1) => arr[(arr.indexOf(v) + d + arr.length) % arr.length];
-function changeCall(patch) { if (!canEdit()) return; Object.assign(G.call, patch); kit.sfx.tick(); hb.classList.remove('flip'); void hb.offsetWidth; hb.classList.add('flip'); refresh(); }
+function changeCall(patch) { if (!canEdit()) return; Object.assign(G.call, patch); if (patch.ring != null) kit.aimAt(TARGETS[patch.ring].px, TARGETS[patch.ring].pz); kit.sfx.tick(); hb.classList.remove('flip'); void hb.offsetWidth; hb.classList.add('flip'); refresh(); }
 HB.prev.onclick = () => changeCall({ ring: (G.call.ring + TARGETS.length - 1) % TARGETS.length });
 HB.next.onclick = () => changeCall({ ring: (G.call.ring + 1) % TARGETS.length });
 HB.yd.onclick = () => changeCall({ ring: (G.call.ring + 1) % TARGETS.length });
@@ -157,7 +157,7 @@ function renderPrompt() {
   const sub = p.cpu ? (G.role === 'set' ? 'Calling a shot…' : 'Watch and learn') : G.role === 'set' ? `Make it to set it · try <b>${CLUBS[G.sol.club].id}</b>${G.sol.k < 0.97 ? ` <small>${Math.round(G.sol.k * 100)}%</small>` : ''}` : `Miss and take a letter · try <b>${CLUBS[G.sol.club].id}</b>${G.sol.k < 0.97 ? ` <small>${Math.round(G.sol.k * 100)}%</small>` : ''}`;
   kit.setPrompt(`<span class="kick">${kick}</span><span class="big" style="color:${T.color}">${esc(callText())}</span><span class="sub">${sub}</span>`);
 }
-function refresh() { world.setCalled(G.call.ring); renderBoard(); renderPrompt(); drawMap(); }
+function refresh() { world.setCalled(G.call.ring); renderBoard(); renderPrompt(); drawMap(); kit.refreshAim(); }
 
 /* ===================== shots ===================== */
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
@@ -168,8 +168,10 @@ function toolSolve(s) {
   const T = s.target ? { px: s.target.x, pz: s.target.z } : TARGETS[G.call.ring];
   return H.solveCall(fsim, CLUBS, T, G.call, { club: s.clubAuto ? null : s.club, traj: s.traj, axis: s.axis });
 }
-kit.on('hit', s => { if (G.sol) launch(amateurMiss(toolSolve(s).ball), 'Sim'); });
-kit.on('ideal', s => { if (G.sol) launch({ ...toolSolve(s).ball }, 'Ideal'); });
+// the kit aims simulated shots (auto-aim, or down your aim line) and adds Hit's miss
+kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt: world.groundAt, surfaceAt: world.surfaceAt }), ideal: s => (G.sol ? toolSolve(s).ball : null) });
+kit.on('hit', s => { if (G.sol) launch(s.ball, 'Sim'); });
+kit.on('ideal', s => { if (G.sol) launch(s.ball, 'Ideal'); });
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim' && !kit.player.cpu) launch(e.detail, 'R10'); });
 
 function launch(ball, src) {

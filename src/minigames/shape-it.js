@@ -4,7 +4,7 @@
 import { simulate } from '../physics.js';
 import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
-import { makeToolShot, amateurMiss, TRAJ_MUL } from './aim.js';
+import { makeToolShot, TRAJ_MUL } from './aim.js';
 import { createSunsetMesa } from './scenes/sunset-mesa.js';
 import { createShotView } from '../world/shot-view.js';
 import { shotShape } from '../range/shot-detail.js';
@@ -197,10 +197,11 @@ let diff = DIFFICULTIES[0];
 
 kit.on('start', () => { cur.lastShape = null; sv.clearGhosts(); });
 kit.on('turn', () => newShape());
-kit.on('hit', s => swing(s));
-// test helper: the exact reference shot the rings were built from (always threads them dead centre),
-// unless the simulated-shot tool's club / trajectory / shape / map spot says otherwise
-kit.on('ideal', s => launch(toolBallFor(s, true), false, true));
+// simulated shots (s.ball comes from the kit, aimed down the phantom line): Ideal is the exact
+// reference shot the rings were built from (it threads them dead centre with auto-aim on),
+// unless the tool's club / trajectory / shape / map spot says otherwise
+kit.on('hit', s => launch(s.ball, false));
+kit.on('ideal', s => launch(s.ball, false, true));
 kit.on('club', i => { cur.club = i; sv.address(CLUBS[i].tee); });
 
 function newShape() {
@@ -241,11 +242,9 @@ function toolBallFor(s, ideal) {
     TotalSpin: c.TotalSpin * (sh.spin || 1) * t.spin, SpinAxis: s.axis,
   };
 }
-function swing(s) {
-  // a simulated golfer *attempting* the shape: sometimes pure, sometimes not (a decent amateur's
-  // spread: on Beginner most swings find a ring or two, perfects are earned)
-  launch(s.target ? toolShot(s.target, { ...s, ideal: false }).ball : amateurMiss(toolBallFor(s, false)), false);
-}
+// Hit is a simulated golfer *attempting* the shape: a decent amateur's spread, so on Beginner
+// most swings find a ring or two and perfects are earned (the kit adds the miss)
+kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt }), ideal: s => (cur.shape ? toolBallFor(s, true) : null) });
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, true); });
 
 function launch(ball, live, ideal = false) {

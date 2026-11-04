@@ -216,7 +216,7 @@ function updateTarget(force) {
   }
   if (!G.target) { kit.setPrompt('<span class="kick">Target</span><span class="big">Waiting…</span><span class="sub">The horde is coming</span>'); return; }
   const key = `${Math.round(G.target.x / 2)}:${Math.round(G.target.z / 2)}`;
-  if (force || key !== G.solveKey) { G.solveKey = key; G.solve = solveShot(flat, CLUBS, G.target); kit.setClub(G.solve.club, true); }
+  if (force || key !== G.solveKey) { G.solveKey = key; G.solve = solveShot(flat, CLUBS, G.target); kit.setClub(G.solve.club, true); kit.refreshAim(); }
   const d = Math.hypot(G.target.x, G.target.z) / YD, lat = G.target.x / YD;
   const what = G.custom ? 'Your spot' : G.target.n >= 5 ? `Pack ×${G.target.n}` : G.target.n > 1 ? `${G.target.n} zombies` : 'Closest';
   kit.setPrompt(`<span class="kick">Target</span><span class="big">${what}</span><span class="sub">${Math.round(d)} yd${Math.abs(lat) >= 1 ? ` · ${Math.round(Math.abs(lat))} ${lat < 0 ? 'L' : 'R'}` : ''} · try <b>${CLUBS[G.solve.club].id}</b>${G.solve.k < 0.97 ? ` <small>${Math.round(G.solve.k * 100)}%</small>` : ''}</span>`);
@@ -226,8 +226,10 @@ function updateTarget(force) {
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 // simulated shots: the tool's club, trajectory and shape, to the target (or a spot tapped on the map)
 const toolShot = makeToolShot(flat, CLUBS);
-kit.on('hit', s => { const t = s.target || G.target; if (t) launch(toolShot(t, s).ball, 'Sim'); });
-kit.on('ideal', s => { const t = s.target || G.target; if (t) launch(toolShot(t, s).ball, 'Ideal'); });
+// the kit aims simulated shots (auto-aim, or down your aim line) and adds Hit's miss
+kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt: world.surfaceAt }), ideal: s => { const t = s.target || G.target; return t ? toolShot(t, { ...s, ideal: true }).ball : null; } });
+kit.on('hit', s => launch(s.ball, 'Sim'));
+kit.on('ideal', s => launch(s.ball, 'Ideal'));
 kit.on('club', () => {});
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 

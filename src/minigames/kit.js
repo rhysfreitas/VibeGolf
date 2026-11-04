@@ -6,12 +6,16 @@
 //
 //   const kit = createKit({ id, title, blurb, shotsPerPlayer, difficulties, challenges, clubs });
 //   kit.on('start', ({ difficulty, players }) => ...);  kit.on('turn', ({ player, shot }) => ...)
-//   kit.on('hit', s => swing(s)); kit.on('ideal', s => ...)  (s: the tool's club / traj / axis / target)
+//   kit.aimLine({ world, view, sim, ideal })   the phantom aim line: ideal(s) = the game's exact ball
+//   kit.on('hit', s => launch(s.ball)); kit.on('ideal', s => launch(s.ball))  (s.ball is aimed, and
+//   for Hit carries a decent amateur's miss; s also has the tool's club / traj / axis / target)
 //   during a shot: kit.award(points, opts) / kit.splash(word) / kit.soClose(yd) / kit.stat(key, n)
 //   when the shot is over: kit.endShot(scored) → then kit.next()
 
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
 import { createSimTool } from '../sim-tool.js';
+import { createAimLine } from '../aim-line.js';
+import { amateurMiss, landOf, bearingOf, turnBall, turnPts, aimTurn } from './aim.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const store = {
@@ -136,11 +140,77 @@ export function createKit(cfg) {
   /* ---------- the simulated-shot tool (club, trajectory, shape, Ideal / Hit) ---------- */
   // Every hit/ideal event carries the tool's settings: { club, traj, axis, ideal, target, clubAuto, axisAuto }.
   let lastClub = -1;
-  const tool = createSimTool(R.hitrow, { clubs, onShot: st => { sfx.init(); if (S.phase === 'aim') emit(st.ideal ? 'ideal' : 'hit', st); }, onTarget: t => emit('spot', t) });
+  const tool = createSimTool(R.hitrow, {
+    clubs,
+    onShot: st => {
+      sfx.init(); if (S.phase !== 'aim') return;
+      if (AL) { // aim it: auto-aim leaves the game's shot alone, otherwise it's turned onto your aim line
+        const B = solveBase(st); if (!B) return;
+        const b = turnBall(B.ball, turnFor(B, st));
+        st = { ...st, ball: st.ideal ? b : amateurMiss(b) };
+      }
+      emit(st.ideal ? 'ideal' : 'hit', st);
+    },
+    onTarget: t => { emit('spot', t); refreshAim(); },
+    onChange: () => refreshAim(),
+  });
+
+  /* ---------- the phantom aim line (src/aim-line.js) ---------- */
+  // kit.aimLine({ world, view, sim, ideal }): ideal(s) is the game's exact ball for the tool's settings
+  // (aimed at its target, or null when there's nothing to aim at), sim(ball) flies it on the game's
+  // ground and view (a shot view) gives the ball's height. The kit draws the predicted flight, lets
+  // you drag it left or right (which turns auto-aim off), and gives every simulated shot to the game
+  // as s.ball. With auto-aim off the shot keeps the game's distance but flies down your line.
+  let AL = null, yaw = 0, base = null, turned = null, pending = 0;
+  const clampYaw = v => Math.max(-80, Math.min(80, v));
+  function aimLine({ world, view = null, sim, ideal }) {
+    AL = { line: createAimLine(world), view, sim, ideal };
+    let y0 = 0;
+    AL.line.onDrag({
+      enabled: () => S.phase === 'aim' && !!player() && !player().cpu,
+      start: () => { takeAim(); y0 = yaw; },
+      move: dd => { yaw = clampYaw(y0 + dd); drawAim(true); },
+      end: () => drawAim(false),
+    });
+    refreshAim();
+  }
+  function takeAim() { // grabbing the line (or nudging it) aims by hand from wherever it was
+    if (!tool.autoAim) return;
+    if (base) yaw = base.b0;
+    tool.setAutoAim(false);
+  }
+  function solveBase(s) {
+    const b = AL.ideal(s); if (!b) return (base = null);
+    const key = [b.Speed, b.VLA, b.HLA, b.TotalSpin, b.SpinAxis].map(v => (+v || 0).toFixed(3)).join(',');
+    if (base && base.key === key) return base;
+    const r = AL.sim(b), l = landOf(r);
+    return (base = { key, ball: b, r, b0: bearingOf(l[0], l[2]) });
+  }
+  const turnFor = (B, s) => aimTurn(B.b0, { autoAim: s.autoAim, yawDeg: yaw });
+  function drawAim(fast = false) {
+    if (!AL) return;
+    const p = player();
+    if (S.phase !== 'aim' || !p || p.cpu) { AL.line.hide(); return; }
+    const s = tool.settings, B = fast && base ? base : solveBase(s); // mid-drag: keep the flight we have
+    if (!B) { AL.line.hide(); return; }
+    const dd = turnFor(B, s);
+    let pts;
+    if (Math.abs(dd) < 0.01) pts = B.r.pts;
+    else if (fast) pts = turnPts(B.r.pts, dd);            // while dragging: turn the flight we have
+    else { const k = `${B.key}|${dd.toFixed(2)}`; if (!turned || turned.k !== k) turned = { k, pts: AL.sim(turnBall(B.ball, dd)).pts }; pts = turned.pts; }
+    const y0 = AL.view ? AL.view.ball.position.y : 0;
+    const li = pts.findIndex(q => q.phase !== 'flight'), end = li < 0 ? pts.length - 1 : li, arr = [];
+    for (let i = 0; i < end; i += 2) { const q = pts[i]; arr.push(q.p[0], q.p[1] + y0 * Math.max(0, 1 - q.t * 4), q.p[2]); }
+    arr.push(...pts[end].p);
+    AL.line.show(arr, pts[end].p);
+  }
+  function refreshAim() { if (!AL) return; clearTimeout(pending); pending = setTimeout(() => drawAim(false), 0); }
+  function aimAt(x, z) { yaw = clampYaw(bearingOf(x, z)); refreshAim(); } // the player picked a target: face it
   // a spot tapped on a game's map ({ x, z } metres from the ball): the next simulated shot goes there
   // (the tool works out club length and direction). Games draw it with drawSpot().
   function mapSpot(x, z) {
     const yd = Math.hypot(x, z) / 0.9144, lat = x / 0.9144;
+    yaw = clampYaw(bearingOf(x, z)); // the spot sets the aim line too
     tool.setTarget({ x, z, label: `Your spot · ${Math.round(yd)} yd${Math.abs(lat) >= 1 ? ` · ${Math.round(Math.abs(lat))} ${lat < 0 ? 'L' : 'R'}` : ''}` });
     sfx.tick();
   }
@@ -151,13 +221,14 @@ export function createKit(cfg) {
   const syncClub = () => { const c = tool.club; if (c !== lastClub && clubs[c]) { lastClub = c; launchMonitor.setPlayer({ club: clubs[c].id }); emit('club', c); } };
   tool.el.addEventListener('click', () => setTimeout(syncClub, 0));
   // games call setClub(i, true) with their suggestion (and suggest({ club, axis }) to suggest a shape too)
-  function setClub(i, isSuggestion) { if (isSuggestion) { tool.suggest({ club: i }); syncClub(); } }
-  function suggest(o) { tool.suggest(o); syncClub(); }
+  function setClub(i, isSuggestion) { if (isSuggestion) { tool.suggest({ club: i }); syncClub(); refreshAim(); } }
+  function suggest(o) { tool.suggest(o); syncClub(); refreshAim(); }
   if (!clubs.length) tool.el.hidden = true;
   void idealShot;
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
     if (e.code === 'Space' && S.phase === 'aim') { e.preventDefault(); tool.shoot(false); }
+    else if (AL && S.phase === 'aim' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); takeAim(); yaw = clampYaw(yaw + (e.key === 'ArrowLeft' ? -0.5 : 0.5)); drawAim(); }
   });
 
   /* ---------- HUD rendering ---------- */
@@ -236,13 +307,13 @@ export function createKit(cfg) {
     p.shots++;
     if (scored) { p.streak = Math.min(MAX_MULT - 1, p.streak + 1); statMax('mult', Math.min(MAX_MULT, 1 + p.streak)); }
     else p.streak = 0;
-    S.phase = 'between'; tool.setEnabled(false);
+    S.phase = 'between'; tool.setEnabled(false); refreshAim();
     renderHud();
     const last = !RUN && !MANUAL && S.players.every(q => q.shots >= shotsPerPlayer);
     return { last };
   }
   // run mode: the current player's run is over (e.g. the fence fell)
-  function finishRun() { player().finished = true; S.phase = 'between'; tool.setEnabled(false); renderHud(); }
+  function finishRun() { player().finished = true; S.phase = 'between'; tool.setEnabled(false); refreshAim(); renderHud(); }
   const isDone = q => (RUN ? q.finished : q.shots >= shotsPerPlayer);
   function showResult(html) { R.result.innerHTML = html; R.result.hidden = false; }
 
@@ -267,6 +338,7 @@ export function createKit(cfg) {
       setTimeout(() => { R.banner.hidden = true; }, 1600);
     }
     emit('turn', { player: p, index: S.cur, shot: p.shots });
+    refreshAim();
   }
   // manual mode: hand the next shot to player i
   function turnTo(i, { announce = S.players.length > 1, sub = null } = {}) {
@@ -349,7 +421,7 @@ export function createKit(cfg) {
 
   /* ---------- end screen ---------- */
   function finish() {
-    S.phase = 'over'; R.play.hidden = true;
+    S.phase = 'over'; R.play.hidden = true; refreshAim();
     const ranked = S.players.map((p, i) => ({ ...p, i, stars: p.done.filter(Boolean).length })).sort(rankBy || ((a, b) => b.score - a.score));
     // bests are kept per difficulty; each player can set one on their own level (not the computer)
     ranked.forEach(p => {
@@ -377,10 +449,11 @@ export function createKit(cfg) {
   return {
     on(ev, f) { (handlers[ev] = handlers[ev] || []).push(f); return this; },
     showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, suggest, mapSpot, drawSpot, finishRun, turnTo,
+    aimLine, refreshAim, aimAt, get aimYaw() { return yaw; }, set aimYaw(v) { yaw = clampYaw(v); refreshAim(); },
     finishGame: () => finish(),
     setShotLabel(t) { S.shotLabel = t; if (RUN || MANUAL) R.shot.textContent = t; },
     setPrompt(html) { R.prompt.innerHTML = html; },
-    get phase() { return S.phase; }, set phase(v) { S.phase = v; tool.setEnabled(v === 'aim'); },
+    get phase() { return S.phase; }, set phase(v) { S.phase = v; tool.setEnabled(v === 'aim'); refreshAim(); },
     get current() { return S.cur; },
     get player() { return player(); }, get players() { return S.players; },
     get multiplier() { return mult(); }, get difficulty() { return diffObj(); },

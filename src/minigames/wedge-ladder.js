@@ -85,8 +85,10 @@ function refresh() {
 // simulated shots: the tool's club, trajectory and shape, to the rung (or a spot tapped on the board)
 const toolShot = makeToolShot(sim, CLUBS);
 const rungTarget = () => ({ x: 0, z: -kit.player.difficulty.rungs[kit.player.rung] * YD });
-kit.on('hit', s => launch(toolShot(s.target || rungTarget(), s).ball, 'Sim'));
-kit.on('ideal', s => launch(toolShot(s.target || rungTarget(), s).ball, 'Ideal'));
+// the kit aims simulated shots (auto-aim, or down your aim line) and adds Hit's miss
+kit.aimLine({ world, view: sv, sim, ideal: s => (kit.player ? toolShot(s.target || rungTarget(), { ...s, ideal: true }).ball : null) });
+kit.on('hit', s => launch(s.ball, 'Sim'));
+kit.on('ideal', s => launch(s.ball, 'Ideal'));
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 
 let shot = null;

@@ -9,7 +9,6 @@ import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
 import { createCalliope } from './calliope.js';
 import { YD, SHOTS, DIFFICULTIES, CHALLENGES, ROWS, ROW_IDS, PRIZES, layout, duckX, duckLap, findHit, bounceOff, scoreHit, aimPoint, solveAim, prizeFor, nextPrize } from './carnival-logic.js';
-import { amateurMiss } from './aim.js';
 
 // the painted signs use a carnival typeface: give it a moment to arrive before drawing them
 if (document.fonts) await Promise.race([document.fonts.load('40px "Rye"'), new Promise(r => setTimeout(r, 1500))]).catch(() => {});
@@ -68,7 +67,7 @@ function refreshAim() {
   const { aim, sol } = solveNow(); G.aim = aim; G.sol = sol;
   kit.setClub(sol.club, true);
   world.setAim(G.row === 'ducks' ? null : aim);
-  renderPromptUI();
+  renderPromptUI(); kit.refreshAim();
 }
 function renderPromptUI() {
   const R = ROWS[G.row], c = CLUBS[G.sol.club];
@@ -92,8 +91,10 @@ renderer.domElement.addEventListener('pointerup', e => {
 });
 
 /* ===================== shots ===================== */
-kit.on('hit', s => { const { sol } = solveNow(s); launch(amateurMiss(sol.ball), 'Sim'); });
-kit.on('ideal', s => { const { sol } = solveNow(s); launch({ ...sol.ball }, 'Ideal'); });
+// simulated shots: the kit aims them (auto-aim or your aim line) and adds Hit's miss
+kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt }), ideal: s => solveNow(s).sol.ball });
+kit.on('hit', s => launch(s.ball, 'Sim'));
+kit.on('ideal', s => launch(s.ball, 'Ideal'));
 kit.on('club', i => { sv.address(CLUBS[i].tee); });
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 

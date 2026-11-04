@@ -79,9 +79,9 @@ button { font: inherit; color: inherit; }
 .preview { display: flex; align-items: center; gap: 7px; font-family: var(--f-data); font-size: 12.5px; letter-spacing: 0.02em; padding: 4px 10px; border-radius: 9px; white-space: nowrap; align-self: flex-start; width: max-content; max-width: 44vw; }
 .preview i { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--mist); }
 .preview small { font-size: 11px; color: var(--mist); margin-left: 1px; }
-.aimrow { display: grid; grid-template-columns: 52px 52px auto; gap: 6px; align-items: center; }
+.aimrow { display: flex; align-items: center; }
 #simMount { display: flex; justify-self: start; }
-#simMount .st-panel { left: -116px; }
+#simMount .st-panel { left: 0; }
 .chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; color: var(--bone); font-family: var(--f-data); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 8px; min-height: 44px; }
 .chip b { font-size: 17px; font-weight: 700; line-height: 1; color: var(--flag); }
 .chip span { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mist); }

@@ -5,6 +5,7 @@ import { HOLES } from './aerie.js';
 import { createMinimap } from './minimap.js';
 import { createSimTool } from '../sim-tool.js';
 import { TRAJ_MUL } from '../minigames/aim.js';
+import { attachAimDrag } from '../aim-line.js';
 import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
@@ -505,7 +506,7 @@ function drawMinimap() {
 
 /* ===================== game state ===================== */
 const state = {
-  holeIdx: 0, strokes: 0, scores: [], ball: new THREE.Vector3(), lie: 'tee', yaw: 0,
+  holeIdx: 0, strokes: 0, scores: [], ball: new THREE.Vector3(), lie: 'tee', yaw: 0, camYaw: 0, aimPoint: null,
   club: 0, power: 0, target: 0, tracks: [], previewAim: null, aimCustom: null, phase: 'intro', cam: 'tv', sound: true,
   flight: null, t: 0, restTimer: 0, preview: null, lastShot: null, puttAnim: null, flyT: 0, lastLie: null,
 };
@@ -514,7 +515,7 @@ const $ = id => document.getElementById(id);
 const lieLine = document.createElement('p'); lieLine.className = 'st-note'; lieLine.id = 'pvLie';
 const tool = createSimTool($('simMount'), {
   clubs: CLUBS, extra: lieLine,
-  note: 'Tap the course or the corner map to aim at a spot; the arrows fine-tune. Your R10 shots fly as you hit them.',
+  note: 'Tap the course or the corner map to aim at a spot; drag the dashed line left or right to fine-tune. Your R10 shots fly as you hit them.',
   onChange: () => { if (state.phase === 'address') applyTool(); },
   onShot: s => swing(s),
 });
@@ -586,9 +587,11 @@ function availableTargets() { // only those still ahead of the ball
   const pinD = state.ball.distanceTo(HOLE.pinPos);
   return HOLE.targets.map((t, i) => ({ t, i, p: targetPoint(i) })).filter(o => o.t.pin || (o.p.distanceTo(HOLE.pinPos) < pinD - 15 && o.p.distanceTo(state.ball) > 25));
 }
+// aiming at a spot (a target, a tap on the course or the map) turns you to face it; dragging the
+// aim line afterwards (or the arrow keys) swings the shot without turning the view
 function aimAt(p, autoClub = true) {
   const d = p.clone().sub(state.ball); d.y = 0;
-  state.yaw = Math.atan2(d.x, -d.z);
+  state.yaw = state.camYaw = Math.atan2(d.x, -d.z); state.aimPoint = p.clone();
   if (autoClub) {
     const dist = Math.hypot(d.x, d.z), dy = (p.y - state.ball.y);
     const s = suggest(dist, dy); state.club = s.ci; state.power = s.pk; state.sugg = s.ci; state.suggPow = s.pk;
@@ -617,11 +620,22 @@ function selectTarget(i) { state.target = i; state.aimCustom = null; aimAt(targe
 
 /* ---------- preview ---------- */
 let pvTimer = 0;
+// Auto-aim: turn the shot so it lands right on the spot you're aiming at, curve and all.
+function landLocal(r) { const li = r.pts.findIndex(p => p.phase !== 'flight'); let k = li; if (k < 0) { k = r.pts.findIndex((p, i) => i > 10 && p.p[1] < 0); if (k < 0) k = r.pts.length - 1; } return r.pts[k].p; }
 function updatePreview() {
-  clearTimeout(pvTimer);
+  if (pvTimer) return; // at most one preview per 30 ms (it reads the latest aim when it runs, so a drag stays smooth)
   pvTimer = setTimeout(() => {
-    const fr = shotFrame(state.ball, state.yaw);
-    const r = simulate(lieAdjust(planShot(), state.lie), { ...fr, altFt: 0 });
+    pvTimer = 0;
+    let fr = shotFrame(state.ball, state.yaw);
+    let r = simulate(lieAdjust(planShot(), state.lie), { ...fr, altFt: 0 });
+    if (tool.autoAim && state.aimPoint) {
+      const want = Math.atan2(state.aimPoint.x - state.ball.x, -(state.aimPoint.z - state.ball.z));
+      for (let it = 0; it < 2; it++) {
+        const l = landLocal(r), off = Math.atan2(l[0], -l[2]), err = Math.atan2(Math.sin(want - state.yaw - off), Math.cos(want - state.yaw - off));
+        if (Math.abs(err) < 0.0005) break;
+        state.yaw += err; fr = shotFrame(state.ball, state.yaw); r = simulate(lieAdjust(planShot(), state.lie), { ...fr, altFt: 0 });
+      }
+    }
     state.preview = r;
     const pts = r.pts, li = pts.findIndex(p => p.phase !== 'flight');
     const arr = [], tmpV = new THREE.Vector3();
@@ -941,7 +955,7 @@ function holeBounds() {
 function camTarget(dt) {
   if (window.__pose) { const p = window.__pose; return { pos: new THREE.Vector3(...p.pos), look: new THREE.Vector3(...p.look), fov: p.fov || 50, k: 3, hard: true }; } // screenshot hook
   const ph = state.phase, bp = ball.position;
-  const yawDir = dirFromYaw(state.yaw);
+  const yawDir = dirFromYaw(state.camYaw); // the way you're facing (the aim line can swing off it)
   let pos, look, fov = 50, k = 3, hard = false;
   if (ph === 'intro' && fly) {
     state.flyT += dt;
@@ -1023,12 +1037,16 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (!p || p.distanceTo(state.ball) < 3) return;
   state.aimCustom = p.clone(); aimAt(p);
 });
-let aimHold = 0;
-function nudge(d) { if (state.phase !== 'address') return; state.yaw += d; state.aimCustom = state.aimCustom || state.ball.clone().addScaledVector(dirFromYaw(state.yaw), 100); updatePreview(); renderPlan(); }
-for (const [id, d] of [['aimL', -1], ['aimR', 1]]) {
-  const b = $(id);
-  b.addEventListener('pointerdown', e => { e.preventDefault(); nudge(d * 0.004); clearInterval(aimHold); aimHold = setInterval(() => nudge(d * 0.004), 70); });
-  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => clearInterval(aimHold));
+// drag the dashed aim line left or right (or use the arrow keys); either turns auto-aim off
+function nudge(d) { if (state.phase !== 'address') return; if (tool.autoAim) tool.setAutoAim(false); state.yaw += d; updatePreview(); renderPlan(); }
+{
+  let y0 = 0;
+  attachAimDrag(renderer, camera, {
+    enabled: () => state.phase === 'address' && state.cam !== 'map',
+    start: () => { if (tool.autoAim) tool.setAutoAim(false); y0 = state.yaw; },
+    move: d => { state.yaw = y0 + d * Math.PI / 180; updatePreview(); },
+    end: () => { updatePreview(); renderPlan(); },
+  });
 }
 $('puttBtn').onclick = putt;
 $('readout').addEventListener('click', () => $('readout').classList.toggle('more'));

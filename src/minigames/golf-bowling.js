@@ -8,7 +8,6 @@ import { createKit } from './kit.js';
 import { createToyRoom } from './scenes/toy-room.js';
 import { createShotView } from '../world/shot-view.js';
 import * as BL from './bowling-logic.js';
-import { amateurMiss } from './aim.js';
 const { YD, CLUBS, DIFFICULTIES, CHALLENGES, ALL_PINS, SHAPES, FRAMES } = BL;
 
 const stage = document.getElementById('stage');
@@ -81,7 +80,7 @@ function refresh() {
   if (Math.abs(world.L - d.lane * YD) > 0.01) { world.setLane(d); shown = []; }
   if (BL.pinList(shown) !== BL.pinList(p.up)) { world.setPins(p.up, { drop: true }); shown = p.up.slice(); rackSound(); }
   sol = aimFor(p.up, d); kit.suggest({ club: sol.sugg, axis: SUGG_AXIS });
-  world.setGuide(d.guide ? sol.x : null, sol.cross.slope);
+  world.setGuide(d.guide ? sol.x : null, sol.cross.slope); kit.refreshAim();
   kit.setShotLabel(`Frame ${f + 1} · Ball ${fr.length + 1}`);
   const full = p.up.length === 10, how = sol.club < sol.sugg || sol.k < 0.8 ? ' punch' : sol.k < 0.97 ? ' ¾' : ''; // below full, the sim hits it lower and flatter
   kit.setPrompt(`<span class="kick">Frame ${f + 1} · Ball ${fr.length + 1}</span>
@@ -92,8 +91,10 @@ function refresh() {
 
 /* ===================== shots ===================== */
 function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-kit.on('hit', s => launch(amateurMiss(aimFor(kit.player.up, kit.player.difficulty, s).ball), 'Sim'));
-kit.on('ideal', s => launch({ ...aimFor(kit.player.up, kit.player.difficulty, s).ball }, 'Ideal'));
+// simulated shots: the kit aims them (auto-aim flies into the pocket, otherwise down your aim line)
+kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt, flightOnly: true }), ideal: s => (kit.player && kit.player.up ? aimFor(kit.player.up, kit.player.difficulty, s).ball : null) });
+kit.on('hit', s => launch(s.ball, 'Sim'));
+kit.on('ideal', s => launch(s.ball, 'Ideal'));
 launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
 
 function launch(ball, src) {
