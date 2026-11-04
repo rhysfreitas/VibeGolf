@@ -1,5 +1,5 @@
-// Golf Bowling — ten frames down the runner rug of a giant toy room. Land short of the pins and
-// let the ball roll into the pocket. Rules + pin action: bowling-logic.js. Scene: scenes/toy-room.js.
+// Golf Bowling — ten frames down the runner rug of a giant toy room. Fly the ball into the
+// pocket: its speed and the angle it comes in at decide how the pins go. Rules + pin action: bowling-logic.js. Scene: scenes/toy-room.js.
 // HUD, turns and feedback: the shared kit (manual turns, so each player bowls a whole frame).
 
 import { simulate } from '../physics.js';
@@ -7,9 +7,8 @@ import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createToyRoom } from './scenes/toy-room.js';
 import { createShotView } from '../world/shot-view.js';
-import { solveShot } from './aim.js';
 import * as BL from './bowling-logic.js';
-const { YD, CLUBS, DIFFICULTIES, CHALLENGES, ALL_PINS, LAND_GAP, FRAMES } = BL;
+const { YD, CLUBS, DIFFICULTIES, CHALLENGES, ALL_PINS, SHAPES, FRAMES } = BL;
 
 const stage = document.getElementById('stage');
 const world = createToyRoom(stage);
@@ -20,12 +19,13 @@ const kit = createKit({
   id: 'golf-bowling', title: 'Golf Bowling', accent: '#ee5a3c', mode: 'manual', idealShot: true, clubs: CLUBS,
   multiplier: false,
   badge: p => { const r = p.strikeRun || 0; return { text: r > 3 ? `X×${r}` : 'X'.repeat(Math.max(1, r)), level: r ? Math.min(4, r + 1) : 1 }; },
-  blurb: 'Ten frames of bowling down the hallway rug of a giant toy room. Land short of the pins and let it roll into the pocket.',
+  blurb: 'Ten frames of bowling down the hallway rug of a giant toy room. Fly the ball into the pins: the harder it comes in, the bigger the crash.',
   rules: [
-    'Land the ball on the <b>dots</b> just short of the pins and let it roll in. The roll is forgiving: spin doesn\'t matter once it lands.',
-    'Aim for the <b>pocket</b>, just off the head pin. Straight on the nose tends to leave a split.',
+    '<b>Fly it into the pocket</b>, just off the head pin, below the tops of the pins. Speed makes the pins explode: a low, hot punch hits hardest. A ball that lands short rolls in weakly.',
+    '<b>Shape counts</b>, like a hook in bowling: a draw curving into the 1-3 pocket (or a fade into the 1-2) carries more pins than a straight ball, which tends to get knocked off line and leave one standing. Straight on the nose usually leaves a split.',
     'Real bowling scoring: a <b>strike</b> scores 10 plus your next two balls, a <b>spare</b> 10 plus your next one. Ten frames, and a bonus ball or two in the 10th.',
-    'Difficulty sets the lane length (100, 140 or 180 yd). Beginner gets bumpers and a guide line; Tour has heavier pins.',
+    'No R10? Pick a club and a shape on the chips and the simulated shot plays it: a longer club is hit as a low punch.',
+    'Difficulty sets the lane length (85, 110, 130 or 150 yd). Beginner gets bumpers and a guide line; Tour has heavier pins.',
   ],
   difficulties: DIFFICULTIES, challenges: CHALLENGES,
   summary: p => `${p.stats.strikes || 0} strike${p.stats.strikes === 1 ? '' : 's'} · ${p.stats.spares || 0} spare${p.stats.spares === 1 ? '' : 's'}`,
@@ -52,16 +52,33 @@ const pinDiag = up => `<span class="bw-pins">${[[7, 8, 9, 10], [4, 5, 6], [2, 3]
 const pinNames = s => s.slice().sort((a, b) => a - b).join('–');
 
 /* ===================== aiming ===================== */
-const sim = b => simulate(b, { groundAt, surfaceAt });
-const cache = new Map();
-function solveFor(up, d) {
-  const key = d.id + '|' + BL.pinList(up);
-  if (!cache.has(key)) {
-    const L = d.lane * YD, x = BL.bestLine(up, { L, pinMass: d.pinMass }), f = (L - LAND_GAP) / L;
-    cache.set(key, { ...solveShot(sim, CLUBS, { x: x * f, z: -(L - LAND_GAP) }), x });
-  }
-  return cache.get(key);
+// The suggested shot flies into the pocket at about chest height on the pins. Simulated and ideal
+// shots use the club on the club chip (once you pick one) and the shape on the shape chip, so you
+// can try a low punch against a wedge, or a draw against a straight ball, without the R10.
+const flightOf = b => simulate(b, { groundAt: () => 0, flightOnly: true }).pts;
+let shapeI = 0, userClub = null;
+const bases = new Map(), lines = new Map();
+function baseFor(d, club) { // swing effort for this lane, club and shape (and how the ball arrives)
+  const sh = SHAPES[shapeI], key = `${d.id}|${club}|${sh.id}`;
+  if (!bases.has(key)) bases.set(key, BL.solveInto(flightOf, CLUBS, { L: d.lane * YD, x: sh.axis > 0 ? -1.5 : 1.5, axis: sh.axis, club }));
+  return bases.get(key);
 }
+function aimFor(up, d) {
+  const sh = SHAPES[shapeI], sugg = baseFor(d, null).club, club = userClub ?? sugg, b = baseFor(d, club), c = b.cross;
+  const lk = `${d.id}|${club}|${sh.id}|${BL.pinList(up)}`;
+  if (!lines.has(lk)) lines.set(lk, BL.bestLine(up, { L: d.lane * YD, pinMass: d.pinMass, slope: c.slope, speed: c.speed, h: Math.max(0.5, c.y), descent: c.descent }));
+  const x = lines.get(lk), s = BL.solveInto(flightOf, CLUBS, { L: d.lane * YD, x, axis: sh.axis, club, k: b.k });
+  return { ...s, x, sugg };
+}
+// the shape chip, next to the club chip
+const shapeBtn = document.createElement('button');
+shapeBtn.className = 'mg-chip bw-shape'; shapeBtn.title = 'Shape of the simulated and ideal shots (your R10 shots fly as you hit them)';
+kit.els.hit.parentNode.insertBefore(shapeBtn, kit.els.hit);
+const showShape = () => { shapeBtn.innerHTML = `<b>${SHAPES[shapeI].name}</b><span>Shape</span>`; };
+shapeBtn.onclick = () => { shapeI = (shapeI + 1) % SHAPES.length; showShape(); if (kit.phase === 'aim') refresh(); };
+showShape();
+kit.on('club', i => { userClub = i; if (kit.phase === 'aim') refresh(); });
+
 let sol = null;
 function refresh() {
   const p = kit.player, d = p.difficulty, f = G.frame;
@@ -69,13 +86,13 @@ function refresh() {
   if (BL.freshRack(fr, f)) p.up = ALL_PINS.slice();
   if (Math.abs(world.L - d.lane * YD) > 0.01) { world.setLane(d); shown = []; }
   if (BL.pinList(shown) !== BL.pinList(p.up)) { world.setPins(p.up, { drop: true }); shown = p.up.slice(); rackSound(); }
-  sol = solveFor(p.up, d); kit.setClub(sol.club, true);
-  world.setGuide(d.guide ? sol.x : null);
+  sol = aimFor(p.up, d); kit.setClub(sol.sugg, true); kit.setClub(sol.club);
+  world.setGuide(d.guide ? sol.x : null, sol.cross.slope);
   kit.setShotLabel(`Frame ${f + 1} · Ball ${fr.length + 1}`);
-  const full = p.up.length === 10, k = sol.k < 0.97 ? ` <small>${Math.round(sol.k * 100)}%</small>` : '';
+  const full = p.up.length === 10, how = sol.club < sol.sugg ? ' punch' : sol.k < 0.97 ? ` ${Math.round(sol.k * 100)}%` : '';
   kit.setPrompt(`<span class="kick">Frame ${f + 1} · Ball ${fr.length + 1}</span>
     <span class="bw-row"><span class="big">${full ? `${d.lane} <small>yd</small>` : `${p.up.length} <small>pin${p.up.length === 1 ? '' : 's'} left</small>`}</span>${pinDiag(p.up)}</span>
-    <span class="sub">${full ? 'Land on the dots, roll into the pocket' : p.splits[f] ? 'A split: clip one into the other' : 'Pick up the spare'} · try <b>${CLUBS[sol.club].id}</b>${k}</span>`);
+    <span class="sub">${full ? 'Fly it into the pocket' : p.splits[f] ? 'A split: clip one into the other' : 'Pick up the spare'} · <b>${CLUBS[sol.club].id}</b>${how} ${SHAPES[shapeI].name.toLowerCase()}</span>`);
   renderSheet();
 }
 
@@ -116,7 +133,8 @@ function resolve() {
   if (delta > 0) kit.award(delta);
   if (strike) {
     p.strikeRun = (p.strikeRun || 0) + 1; kit.stat('strikes'); kit.statMax('strikeRun', p.strikeRun);
-    kit.splash(BL.strikeWord(p.strikeRun), { gold: true, big: true, sub: delta ? `+${delta}` : '' }); kit.sfx.perfect(); setTimeout(() => kit.sfx.fanfare(), 250);
+    const boom = res.contact && res.contact.speed * 2.237 >= 45;
+    kit.splash(BL.strikeWord(p.strikeRun), { gold: true, big: true, sub: boom ? 'Pins exploded!' : delta ? `+${delta}` : '' }); kit.sfx.perfect(); setTimeout(() => kit.sfx.fanfare(), 250);
   } else {
     if (fresh) p.strikeRun = 0;
     if (spare) { kit.stat('spares'); if (p.splitOpen) kit.stat('splitPicks'); kit.splash(p.splitOpen ? 'SPLIT CONVERTED' : 'SPARE', { gold: p.splitOpen, big: p.splitOpen, sub: `+${delta}` }); kit.sfx.chime(2); setTimeout(() => kit.sfx.chime(4), 120); }
@@ -132,13 +150,16 @@ function resolve() {
   }
   kit.endShot(strike);
   const left = res.standing.length;
-  const why = !res.contactT ? (res.reason === 'short' ? 'stopped short' : res.reason === 'over' ? 'flew past the pins' : 'missed the pins') : res.bumped ? 'off the bumper' : '';
+  const ct = res.contact, mph = ct ? Math.round(ct.speed * 2.237) : 0, ang = ct ? Math.round(Math.abs(ct.angle)) : 0;
+  const how = ct ? `${ct.y > 0.4 ? 'Flew in' : 'Rolled in'} at ${mph} mph${ang >= 1 ? ` · ${ang}° angle` : ''}${res.bumped ? ' · off the bumper' : ''}`
+    : res.reason === 'short' ? 'Stopped short' : res.reason === 'over' ? 'Flew over the pins' : 'Missed the pins';
   kit.showResult(`
     <div class="top"><span class="lbl">${esc(p.name)} · ${shot.src}</span><span class="pts ${delta ? '' : 'zero'}">${delta ? '+' + delta : '0'}</span></div>
     <div class="items"><span><b>${n} pin${n === 1 ? '' : 's'}</b>${strike ? ' · strike' : spare ? ' · spare' : left && left < 10 ? ` · ${pinNames(res.standing)} left` : ''}</span>
-      <span>${shot.carryYd != null ? `Carry ${shot.carryYd.toFixed(1)} yd` : ''}${why ? ` · ${why}` : ''}</span></div>
+      <span>${how}</span></div>
     <div class="meta"><span>Frame <b>${f + 1}</b></span><span>Total <b>${sc.total}</b></span></div>`);
   renderSheet();
+  if (!done && !BL.freshRack(fr, f)) setTimeout(() => aimFor(p.up, d), 60); // work out the spare line while the result shows
   // sweep the deck, then the next ball (same frame) or the next frame
   setTimeout(() => {
     const rerack = !done && BL.freshRack(fr, f), keep = done || rerack ? [] : p.up;

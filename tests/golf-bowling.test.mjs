@@ -2,8 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { simulate } from '../src/physics.js';
-import { solveShot } from '../src/minigames/aim.js';
-import { YD, CLUBS, DIFFICULTIES, ALL_PINS, LAND_GAP, PIN_S, rack, isSplit, splitName, score, marks, frameDone, pinsUp, strikeWord, bowl, rollFrom, bestLine } from '../src/minigames/bowling-logic.js';
+import { YD, CLUBS, DIFFICULTIES, SHAPES, ALL_PINS, AIM_H, PIN_H, PIN_S, rack, solveInto, crossing, pocket, isSplit, splitName, score, marks, frameDone, pinsUp, strikeWord, bowl, rollFrom, bestLine } from '../src/minigames/bowling-logic.js';
 
 const game = s => s.map(f => f.slice());
 
@@ -52,31 +51,63 @@ test('splits: the head pin is down and the pins left do not touch', () => {
   assert.equal(rack(0).find(p => p.n === 10).x, 1.5 * PIN_S);
 });
 
+// a ball arriving at the head pin's row at x, speed (m/s) and entry angle (deg, − = curving left)
+function into(L, x, speed, deg, seed) {
+  const sl = Math.tan(deg * Math.PI / 180), back = 4, dl = Math.hypot(sl, 1), vy = -speed * Math.tan(30 * Math.PI / 180), dt = 0.01;
+  const p0 = [x - sl * back, AIM_H - vy * back / speed, -(L - back)], v = [sl / dl * speed, vy, -1 / dl * speed];
+  return bowl([{ t: 0, p: p0.map((c, i) => c - v[i] * dt) }, { t: dt, p: p0 }], ALL_PINS, { L, seed });
+}
+
 test('pin action: a pocket hit strikes more than a head-on hit, a wide ball misses', () => {
   const L = 100 * YD, x = bestLine(ALL_PINS, { L });
   assert.ok(Math.abs(x) > PIN_S * 0.08 && Math.abs(x) < PIN_S * 0.5, `the best line is a pocket, not head on (${x})`);
-  const roll = (x, seed) => { const dl = Math.hypot(x / L, 1); return rollFrom({ x: x * (L - 8) / L, z: -(L - 8), vx: x / L / dl * 9, vz: -1 / dl * 9 }, ALL_PINS, { L, seed }); };
-  let pocket = 0, head = 0;
-  for (let s = 1; s <= 30; s++) { pocket += roll(x, s).down.length === 10; head += roll(0, s).down.length === 10; }
-  assert.ok(pocket > head + 8, `pocket ${pocket} vs head-on ${head}`);
-  const wide = roll(25, 1); assert.equal(wide.down.length, 0);
-  const r = roll(x, 3); assert.ok(r.contactT > 0 && r.ballPts.length > 10 && Object.keys(r.tracks).length >= r.down.length);
+  let pocketHits = 0, head = 0;
+  for (let s = 1; s <= 30; s++) { pocketHits += into(L, x, 18, 0, s).down.length === 10; head += into(L, 0, 18, 0, s).down.length === 10; }
+  assert.ok(pocketHits > head + 8, `pocket ${pocketHits} vs head-on ${head}`);
+  assert.equal(into(L, 25, 18, 0, 1).down.length, 0);
+  const r = into(L, x, 18, 0, 3); assert.ok(r.contactT > 0 && r.contact.speed > 15 && r.ballPts.length > 10 && Object.keys(r.tracks).length >= r.down.length);
 });
 
-test('the ideal shot lands short of the pins and rolls in', () => {
-  const sim = b => simulate(b, { groundAt: () => 0 });
-  for (const d of DIFFICULTIES) {
-    const L = d.lane * YD, x = bestLine(ALL_PINS, { L, pinMass: d.pinMass }), f = (L - LAND_GAP) / L;
-    const sol = solveShot(sim, CLUBS, { x: x * f, z: -(L - LAND_GAP) });
-    const fl = simulate(sol.ball, { groundAt: () => 0, flightOnly: true });
-    const r = bowl(fl.pts, ALL_PINS, { L, pinMass: d.pinMass, seed: 5 });
-    assert.ok(r.landing && Math.abs(-r.landing.z - (L - LAND_GAP)) < 2, `${d.id}: lands ${(-r.landing.z / YD).toFixed(1)} yd`);
-    assert.ok(r.down.length >= 7, `${d.id}: ideal shot knocks ${r.down.length}`);
+test('speed makes the pins explode: a hot ball beats a slow one, and rolling in is weak', () => {
+  const L = 140 * YD;
+  let hot = 0, slow = 0;
+  for (let s = 1; s <= 30; s++) { hot += into(L, 1.5, 22, -4, s).down.length === 10; slow += into(L, 1.5, 7, -4, s).down.length === 10; }
+  assert.ok(hot > slow + 10, `hot ${hot} vs slow ${slow} strikes`);
+  const roll = (s) => rollFrom({ x: 1.6, z: -(L - 12), vx: -0.3, vz: -6 }, ALL_PINS, { L, seed: s }).down.length;
+  let rolled = 0; for (let s = 1; s <= 20; s++) rolled += roll(s) === 10;
+  assert.ok(rolled <= 6, `a slow roller strikes ${rolled}/20`);
+});
+
+test('a hook into the pocket carries better than a straight ball', () => {
+  const L = 140 * YD;
+  let hook = 0, straight = 0;
+  for (const dx of [-0.75, -0.25, 0.25, 0.75]) for (let s = 1; s <= 15; s++) {
+    hook += into(L, pocket(-0.07) + dx, 18, -4, s).down.length === 10;
+    straight += into(L, pocket(0) + dx, 18, 0, s).down.length === 10;
   }
+  assert.ok(hook > straight + 4, `hook ${hook} vs straight ${straight} strikes`);
+  assert.equal(pocket(-0.07), -pocket(0.07)); // a fade into the 1-2 pocket mirrors a draw into the 1-3
+});
+
+test('the suggested shot flies into the pocket below the tops of the pins', () => {
+  const fl = b => simulate(b, { groundAt: () => 0, flightOnly: true }).pts;
+  for (const d of [DIFFICULTIES[0], DIFFICULTIES[2]]) for (const sh of SHAPES) {
+    const L = d.lane * YD, x = pocket(sh.axis < 0 ? -1 : sh.axis > 0 ? 1 : 0);
+    const sol = solveInto(fl, CLUBS, { L, x, axis: sh.axis });
+    const c = crossing(fl(sol.ball), L);
+    assert.ok(Math.abs(c.y - AIM_H) < 0.6 && c.y < PIN_H, `${d.id} ${sh.id}: crosses at ${c.y.toFixed(1)} m`);
+    assert.ok(Math.abs(c.x - x) < 0.5, `${d.id} ${sh.id}: crosses at x ${c.x.toFixed(2)} (wanted ${x})`);
+    if (sh.axis) assert.ok(Math.sign(c.slope) === Math.sign(sh.axis), `${d.id} ${sh.id}: curves the right way`);
+    let n = 0; for (let s = 1; s <= 6; s++) n += bowl(fl(sol.ball), ALL_PINS, { L, pinMass: d.pinMass, seed: s }).down.length;
+    assert.ok(n / 6 >= 8, `${d.id} ${sh.id}: ideal shot knocks ${(n / 6).toFixed(1)}`);
+  }
+  // a longer club is hit as a knockdown: lower and hotter into the pins
+  const L = 140 * YD, a = solveInto(fl, CLUBS, { L, x: 1.75, axis: -9, club: 6 }), b = solveInto(fl, CLUBS, { L, x: 1.75, axis: -9, club: 1 });
+  assert.ok(b.cross.speed > a.cross.speed * 1.3 && b.cross.descent < a.cross.descent - 10, 'the 5 iron punch comes in faster and flatter than the wedge');
 });
 
 test('bumpers (Beginner) turn a wide roll back into the pins', () => {
-  const L = 100 * YD, x0 = 13, start = { x: x0, z: -(L - 30), vx: 0.6, vz: -9 };
+  const L = 100 * YD, x0 = 13, start = { x: x0, z: -(L - 30), vx: 0.9, vz: -13 };
   assert.equal(rollFrom(start, ALL_PINS, { L, seed: 2 }).down.length, 0);
   const b = rollFrom(start, ALL_PINS, { L, seed: 2, bumpers: true }); assert.ok(b.bumped && b.down.length > 0);
 });

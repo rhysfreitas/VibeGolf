@@ -12,7 +12,7 @@
 //      sweep(keep) → seconds · animate(clock, dt)
 
 import { createStage, rng, GLSL_NOISE } from '../../world/stage.js';
-import { YD, PIN_H, PIN_S, PIN_R, KICK_X, RUG_HALF, LAND_GAP, BUMPER_LEN, WALL_Z, rack, deckEnd } from '../bowling-logic.js';
+import { YD, PIN_H, PIN_S, PIN_R, KICK_X, RUG_HALF, BUMPER_LEN, WALL_Z, rack, deckEnd } from '../bowling-logic.js';
 
 const X0 = -66, X1 = 66, Z1 = 42, CEIL = 78;          // the room (real 4.4 m × 8.2 m × 2.6 m, ×30)
 const RUG_T = 0.3, RUG_Z0 = 14, RUG_Z1 = WALL_Z + 12;  // the runner rug: 1 cm thick
@@ -101,13 +101,13 @@ float rough = mix(0.32, 0.6, grain) + seam * 0.3;
   floor.rotation.x = -Math.PI / 2; floor.position.set(0, -RUG_T, (Z1 + WALL_Z) / 2); floor.receiveShadow = true; scene.add(floor);
 
   /* ---------- the runner rug (the lane), with the pin deck and its markings ---------- */
-  const U = { uL: { value: 100 * YD }, uGuide: { value: new THREE.Vector2(0, 0) } };
+  const U = { uL: { value: 100 * YD }, uGuide: { value: new THREE.Vector3(0, 0, 0) } };
   const rugMat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
   rugMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = shaderPos(sh);
     const h = PIN_S * Math.sqrt(3) / 2;
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform float uL;\nuniform vec2 uGuide;' + GLSL_NOISE)
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform float uL;\nuniform vec3 uGuide;' + GLSL_NOISE)
       .replace('#include <map_fragment>', `
 vec3 p = vWPos; float camD = length(cameraPosition - p), px = max(0.012, camD * 0.0016);
 float ax = abs(p.x), fine = fb(p.xz * 5.0), far = smoothstep(40.0, 160.0, camD);
@@ -133,15 +133,15 @@ for (int r = 0; r < 4; r++) for (int k = 0; k < 4; k++) { if (k > r) continue;
   float d = length(p.xz - q); spot = max(spot, 1.0 - smoothstep(0.18, 0.18 + px, abs(d - ${(PIN_R * 1.15).toFixed(2)}))); }
 maple = mix(maple, lin(vec3(0.78, 0.14, 0.1)), spot);
 c = mix(c, maple, onDeck);
-// woven landing dots and the arrows (as on a real lane)
-float dotZ = -uL + ${LAND_GAP.toFixed(2)};
+// woven dots and arrows (as on a real lane)
+float dotZ = -uL + 7.0;
 float dts = 0.0; for (int i = -3; i <= 3; i++) { vec2 q = p.xz - vec2(float(i) * 3.2, dotZ); q.y *= 0.55; dts = max(dts, 1.0 - smoothstep(0.85, 0.85 + px, length(q))); }
 float arr = 0.0; for (int i = -3; i <= 3; i++) { vec2 a = p.xz - vec2(float(i) * 3.2, -uL + 24.0 + abs(float(i)) * 2.5);
   float tri = max(abs(a.x) * 1.6 + a.y * 0.42 - 1.4, max(-a.y - 3.0, a.y - 3.0)); arr = max(arr, 1.0 - smoothstep(0.0, px * 2.0, tri)); }
 c = mix(c, lin(vec3(0.95, 0.9, 0.78)), max(dts, arr) * step(ax, bR - 4.4));
-// Beginner's guide line: dashes into the best line through the pins
+// Beginner's guide line: dashes under the best line into the pins
 if (uGuide.y > 0.5) {
-  float gx = uGuide.x * (-p.z) / uL;
+  float gx = uGuide.x + uGuide.z * (-p.z - uL); // the ball's track over the rug as it comes in
   float gw = max(0.35, px * 1.6);
   float gl = (1.0 - smoothstep(gw, gw + px, abs(p.x - gx))) * step(0.4, fract(p.z / 5.0)) * step(-uL + 1.5, p.z) * step(p.z, -uL + 40.0);
   c = mix(c, lin(vec3(1.0, 0.82, 0.3)), gl * 0.95);
@@ -516,7 +516,7 @@ diffuseColor.rgb = c;
     homes().forEach((h, i) => pins[i].home.set(h.x, 0, h.z));
     shadowFocus.set(0, 0, -Math.max(80, L * 0.62)); st.aimShadows(shadowFocus);
   }
-  function setGuide(x) { U.uGuide.value.set(x == null ? 0 : x, x == null ? 0 : 1); }
+  function setGuide(x, slope = 0) { U.uGuide.value.set(x == null ? 0 : x, x == null ? 0 : 1, slope); }
 
   /* ---------- pin animation: racking, playback, the sweep ---------- */
   let anim = null; // { type: 'drop'|'sweep', t, dur, ... }

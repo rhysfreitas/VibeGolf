@@ -2,11 +2,13 @@
 // Frame: ball at the origin, aim down -z, metres. The lane is a long runner rug, dead flat and level
 // with you. Design: docs/MINIGAMES.md §6. Ten frames, real bowling scoring.
 //
-// The ball's flight comes from the physics. Once it lands, the roll is ours and deliberately
-// forgiving: it ignores spin (the R10's spin reading drives the bounce, and a noisy reading
-// shouldn't decide a frame), keeps a fixed share of the landing speed and rolls straight on the rug.
-// Then a small top-down rigid-body sim knocks the pins: the ball shoves the pins it touches, and
-// a pin that tips over sweeps whatever it falls into, so pins topple into their neighbours.
+// Fly it into the pins. The ball's flight comes from the physics, so its speed and the angle it
+// comes in at are your real shot: a low, hot punch hits hardest, and a draw (or fade) curving into
+// the pocket carries like a hook does in bowling, where a straight ball tends to get knocked off
+// line by the head pin and leave one standing. A ball that lands short rolls in on the rug, which
+// soaks up most of its speed (it ignores spin, so a noisy reading can't decide a frame): a weak bowl.
+// A small top-down rigid-body sim knocks the pins: the ball shoves the pins it touches, pins fly
+// as hard as they're hit, and a pin that tips over sweeps whatever it falls into.
 
 export const YD = 0.9144;
 export const FRAMES = 10;
@@ -16,9 +18,13 @@ export const FRAMES = 10;
 export const PIN_H = 9;
 export const PIN_S = PIN_H * 0.8;
 export const PIN_R = PIN_H * 0.159;
-export const BALL_R = PIN_H * 0.25;          // the ball's reach in the pin deck (it's a game: a golf ball would slip between)
+export const BALL_R = PIN_H * 0.25;   // the ball's reach in the pin deck (it's a game: a golf ball would slip between)
+// pin action: ball mass (× a pin's), bounce, how far a toppling pin reaches (× belly radius), slide friction
+export const TUNE = { mass: 4.5, e: 0.8, reach: 2.5, fallFr: 3.0, lieFr: 10.0 };
 export const RUG_HALF = 15;         // the runner rug: about the width of a real lane, scaled
-export const LAND_GAP = 7;            // the ideal landing spot, metres short of the head pin
+export const AIM_H = 3.5;             // fly it into the head pin at about chest height on a pin
+// shot shapes for the simulated and ideal shots (spin axis, degrees: − draws left for a right-hander)
+export const SHAPES = [{ id: 'draw', name: 'Draw', axis: -12 }, { id: 'straight', name: 'Straight', axis: 0 }, { id: 'fade', name: 'Fade', axis: 12 }];
 export const KICK_X = 1.5 * PIN_S + PIN_R + 1.1; // the deck's side rails (kickbacks): pins bounce back in off them
 export const WALL_Z = -206;           // the far wall of the room (under the window)
 export const BUMPER_LEN = 45;        // Beginner's bumpers run this far up the lane from the pins
@@ -32,14 +38,16 @@ export const CLUBS = [
   { id: '8i', name: '8 iron', Speed: 115, VLA: 18.1, TotalSpin: 7998 },
   { id: '9i', name: '9 iron', Speed: 109, VLA: 20.4, TotalSpin: 8647 },
   { id: 'PW', name: 'Pitching wedge', Speed: 102, VLA: 24.2, TotalSpin: 9304 },
+  { id: 'GW', name: 'Gap wedge', Speed: 90, VLA: 27.5, TotalSpin: 9600 },
+  { id: 'SW', name: 'Sand wedge', Speed: 76, VLA: 31, TotalSpin: 9800 },
 ];
 
 // difficulty is the lane length; Tour also has heavier pins, so only a pocket hit carries them all
 export const DIFFICULTIES = [
-  { id: 'beginner', label: 'Beginner', lane: 100, pinMass: 1, guide: true, bumpers: true, note: '100 yd lane with bumpers, and a guide line shows the best line into the pins.' },
-  { id: 'amateur', label: 'Amateur', lane: 140, pinMass: 1, guide: false, note: '140 yd lane.' },
-  { id: 'pro', label: 'Pro', lane: 180, pinMass: 1, guide: false, note: '180 yd lane.' },
-  { id: 'tour', label: 'Tour', lane: 180, pinMass: 1.7, guide: false, note: '180 yd lane and heavier pins: hit the pocket or leave some standing.' },
+  { id: 'beginner', label: 'Beginner', lane: 85, pinMass: 1, guide: true, bumpers: true, note: '85 yd lane with bumpers, and a guide line shows the best line into the pins.' },
+  { id: 'amateur', label: 'Amateur', lane: 110, pinMass: 1, guide: false, note: '110 yd lane.' },
+  { id: 'pro', label: 'Pro', lane: 130, pinMass: 1, guide: false, note: '130 yd lane.' },
+  { id: 'tour', label: 'Tour', lane: 150, pinMass: 1.3, guide: false, note: '150 yd lane and heavier pins: come in hot and hit the pocket.' },
 ];
 
 export const CHALLENGES = [
@@ -138,8 +146,10 @@ export function marks(fr, i) {
 export function strikeWord(run) { return run >= 6 ? `${run}-BAGGER` : ['STRIKE', 'STRIKE', 'DOUBLE', 'TURKEY', 'HAMBONE', 'FIVE-BAGGER'][run] || 'STRIKE'; }
 
 /* ===================== the roll and the pin action ===================== */
-const LAND_KEEP = 0.7;    // share of the landing speed the ball keeps (no spin: forgiving)
-const ROLL_A = 0.7;       // rug rolling resistance (m/s²)
+const LAND_KEEP = 0.42;   // share of the landing speed the ball keeps on the rug (no spin: forgiving)
+const DECK_KEEP = 0.82;   // landing on the hard maple pin deck keeps most of it
+const ROLL_A = 1.3;       // rug rolling resistance (m/s²)
+const PIN_VMAX = 30;      // the hardest a pin can be sent flying
 const FLOOR_A = 0.5;      // bare floorboards off the rug
 const G = 9.81, G_PIN = 9.81 * 3.5; // pins tip a little faster than real (they're light plastic)
 const DT = 1 / 240, REC = 1 / 60;
@@ -165,14 +175,15 @@ export function bowl(flight, up, { L, pinMass = 1, bumpers = false, seed = 1 } =
 function deck(st, pre, up, { L, pinMass, bumpers = false, seed }) {
   const R = rand(seed), jit = s => (R() - 0.5) * 2 * s;
   const pins = rack(L).filter(p => up.includes(p.n)).map(p => ({ ...p, x0: p.x, z0: p.z, vx: 0, vz: 0, s: 0, th: 0, om: 0, dx: 0, dz: -1, y: 0, vy: 0, yaw: 0, yawV: 0, wob: 0, wobT: 0, hit: new Set(), trk: null }));
-  const ballPts = pre.slice(), mb = 10, mp = pinMass;
+  const ballPts = pre.slice(), mb = TUNE.mass, mp = pinMass;
   let t = st.t, nextRec = t, contactT = null, landing = null, settleT = null;
   const pos = st.p, vel = st.v;
-  let air = st.air, touched = st.touched, bumped = false;
+  let air = st.air, touched = st.touched, bumped = false, contact = null;
 
   const knock = (q, vx, vz) => {
     q.vx += vx; q.vz += vz;
-    const v = Math.hypot(q.vx, q.vz); if (v < 1e-6) return;
+    let v = Math.hypot(q.vx, q.vz); if (v < 1e-6) return;
+    if (v > PIN_VMAX) { q.vx *= PIN_VMAX / v; q.vz *= PIN_VMAX / v; v = PIN_VMAX; }
     if (q.s <= 1 && v < 0.75) { q.s = 1; q.wob = Math.max(q.wob, 0.18 * v / 0.75); q.wobT = t; q.dx = q.vx / v; q.dz = q.vz / v; q.vx *= 0.2; q.vz *= 0.2; return; }
     if (q.s <= 1) { q.s = 2; q.dx = q.vx / v; q.dz = q.vz / v; q.th = Math.max(q.th, 0.06); }
     q.om = Math.max(q.om, v / (0.5 * PIN_H));
@@ -194,7 +205,7 @@ function deck(st, pre, up, { L, pinMass, bumpers = false, seed }) {
       vel[1] -= G * DT; pos[0] += vel[0] * DT; pos[1] += vel[1] * DT; pos[2] += vel[2] * DT;
       if (pos[1] <= 0) {
         pos[1] = 0;
-        if (!touched) { touched = true; landing = { x: pos[0], z: pos[2], t }; vel[0] *= LAND_KEEP; vel[2] *= LAND_KEEP; vel[1] = -vel[1] * 0.2; }
+        if (!touched) { const k = -pos[2] > L - 3 && -pos[2] < deckEnd(L) ? DECK_KEEP : LAND_KEEP; touched = true; landing = { x: pos[0], z: pos[2], t }; vel[0] *= k; vel[2] *= k; vel[1] = -vel[1] * 0.2; }
         else { vel[0] *= 0.93; vel[2] *= 0.93; vel[1] = -vel[1] * 0.3; }
         if (vel[1] < 0.7) { vel[1] = 0; air = false; }
       }
@@ -214,16 +225,16 @@ function deck(st, pre, up, { L, pinMass, bumpers = false, seed }) {
       let nx = dx / d, nz = dz / d; const an = jit(0.3), c = Math.cos(an), sn = Math.sin(an); [nx, nz] = [nx * c - nz * sn, nx * sn + nz * c];
       const vr = (vel[0] - q.vx) * nx + (vel[2] - q.vz) * nz;
       if (vr <= 0) continue;
-      const J = (1 + 0.9) * vr / (1 / mb + 1 / mp), Jp = (1 + 0.9) * (4 + 0.6 * vr) / (1 / mb + 1 / mp); // pins fly even off a slow ball
+      const J = (1 + TUNE.e) * vr / (1 / mb + 1 / mp);   // pins fly as hard as they're hit
+      if (contactT == null) { contactT = t; contact = { speed: Math.hypot(vel[0], vel[2]), angle: Math.atan2(-vel[0], -vel[2]) * 180 / Math.PI, y: pos[1] }; }
       vel[0] -= J / mb * nx; vel[2] -= J / mb * nz;
-      if (contactT == null) contactT = t;
-      knock(q, Jp / mp * nx, Jp / mp * nz);
+      knock(q, J / mp * nx, J / mp * nz);
     }
     /* pins */
     for (const q of pins) {
       if (q.s === 1) { if (t - q.wobT > 1.1) { q.s = 0; q.wob = 0; } continue; }
       if (q.s < 2) continue;
-      const v = Math.hypot(q.vx, q.vz), fr = (q.s === 2 ? 3.0 : 10.0) * DT;
+      const v = Math.hypot(q.vx, q.vz), fr = (q.s === 2 ? TUNE.fallFr : TUNE.lieFr) * DT;
       if (v > 0) { const k = Math.max(0, v - fr) / v; q.vx *= k; q.vz *= k; }
       q.x += q.vx * DT; q.z += q.vz * DT;
       if (-q.z > deckEnd(L) && Math.abs(q.x) < KICK_X + 3) { q.vz = Math.max(0, q.vz) * 0.2; q.vx *= 0.9; } // into the cushion
@@ -244,7 +255,7 @@ function deck(st, pre, up, { L, pinMass, bumpers = false, seed }) {
       for (const o of pins) {
         if (o === q || o.s > 1 || q.hit.has(o.n)) continue;
         const sd = segDist(q.x, q.z, ex, ez, o.x, o.z);
-        if (sd.d > PIN_R * 2.5) continue;
+        if (sd.d > PIN_R * TUNE.reach) continue;
         q.hit.add(o.n);
         const along = sd.u * reach;
         const vHit = q.s === 3 ? v * 0.75 : Math.max(v * 1.0, q.om * along * Math.cos(q.th) * 1.2);
@@ -280,30 +291,77 @@ function deck(st, pre, up, { L, pinMass, bumpers = false, seed }) {
   const enteredDeck = contactT != null;
   const lastP = ballPts[ballPts.length - 1].p;
   const reason = enteredDeck ? 'hit' : -lastP[2] < L - PIN_R - BALL_R ? 'short' : landing && -landing.z > L + 3 * PIN_S ? 'over' : 'wide';
-  return { ballPts, tracks, down, standing, contactT, landing, endT: t, reason, bumped };
+  return { ballPts, tracks, down, standing, contactT, contact, landing, endT: t, reason, bumped };
 }
 
 // test helper: a ball already rolling at (x, z) with velocity (vx, vz)
 export function rollFrom({ x, z, vx, vz }, up, opts) { return deck({ t: 0, p: [x, 0, z], v: [vx, 0, vz], air: false, touched: true }, [], up, { pinMass: 1, seed: 1, ...opts }); }
 
-// The best line through the pins left standing: try lines across the deck with an ideal roll and
-// keep the one that knocks the most (a little wiggle room counts, so it isn't a knife edge).
-// Returns the x (metres) to cross the head pin's row at.
-export function bestLine(up, { L, pinMass = 1 } = {}) {
+// The pocket for a full rack (measured with the sim, see tests): a hook curving left (a draw for a
+// right-hander) wants the 1-3 pocket, a fade the 1-2 pocket, and a straight ball a touch lighter.
+export const pocket = slope => (slope < -0.02 ? 1.75 : slope > 0.02 ? -1.75 : 1.25);
+
+// The best line through the pins left standing, for a ball coming in the way your shot does:
+// slope = sideways metres per metre downrange as it reaches the pins, speed (m/s), height and
+// descent (deg). Tries lines across the deck and keeps the one that knocks the most (a little
+// wiggle room counts, so it isn't a knife edge). Returns the x (metres) to cross the head pin's row.
+export function bestLine(up, { L, pinMass = 1, slope = 0, speed = 14, h = AIM_H, descent = 40 } = {}) {
   const P = rack(L).filter(p => up.includes(p.n));
   if (!P.length) return 0;
-  const xs = [];
-  for (let x = -KICK_X + 1; x <= KICK_X - 0.99; x += PIN_S / 16) xs.push(x);
+  if (P.length === 10) return pocket(slope);
+  const xs = [], x0 = Math.max(-KICK_X + 1, Math.min(...P.map(p => p.x)) - 4.5), x1 = Math.min(KICK_X - 1, Math.max(...P.map(p => p.x)) + 4.5);
+  for (let x = x0; x <= x1 + 1e-6; x += PIN_S / 12) xs.push(x);
+  const back = 4, dl = Math.hypot(slope, 1), vy = -speed * Math.tan(descent * Math.PI / 180);
   const tryX = x => {
-    const sx = x * (L - 10) / L, s = 8, dir = [x / L, -1], dl = Math.hypot(...dir);
-    const r = deck({ t: 0, p: [sx, 0, -(L - 10)], v: [dir[0] / dl * s, 0, dir[1] / dl * s], air: false, touched: true }, [], up, { L, pinMass, seed: 7 + Math.round(x * 100) });
-    return r.down.length;
+    let n = 0;
+    for (const seed of [3, 11]) { // start just short of the pins, on the way down to the crossing height
+      const r = deck({ t: 0, p: [x - slope * back, Math.max(0.05, h + (-vy) * back / speed), -(L - back)], v: [slope / dl * speed, vy, -1 / dl * speed], air: true, touched: false }, [], up, { L, pinMass, seed: seed + Math.round(x * 100) });
+      n += r.down.length;
+    }
+    return n / 2;
   };
   const got = xs.map(tryX);
-  let best = 0, bx = 0;
+  let best = -1, bx = 0;
   xs.forEach((x, i) => {
     const sc = got[i] * 2 + (got[i - 1] ?? 0) + (got[i + 1] ?? 0) - Math.abs(x) * 0.01;
     if (sc > best) { best = sc; bx = x; }
   });
   return bx;
+}
+
+/* ===================== aiming the simulated / ideal shot ===================== */
+// A swing with club c at effort k (1 = full). Below full, a longer club is hit as a knockdown:
+// lower launch, a little less speed and spin, so it comes in low and hot.
+export function swing(c, k, hla, axis = 0) {
+  return { Speed: c.Speed * (0.8 + 0.2 * k), VLA: c.VLA * (0.4 + 0.6 * k), HLA: hla, TotalSpin: c.TotalSpin * (0.6 + 0.4 * k), SpinAxis: axis };
+}
+// where a flight (physics points) crosses the head pin's row: height, x, slope, speed, descent.
+// A ball that comes down short gets a negative height (how far short), so it stays monotonic.
+export function crossing(pts, L) {
+  const i = pts.findIndex(q => -q.p[2] >= L);
+  if (i < 1) { const e = pts[pts.length - 1].p; return { y: -(L + e[2]) - 1, x: e[0], slope: 0, speed: 0, descent: 90, short: true }; }
+  const a = pts[i - 1], b = pts[i], u = (L + a.p[2]) / (a.p[2] - b.p[2]), dt = b.t - a.t;
+  const vx = (b.p[0] - a.p[0]) / dt, vz = (b.p[2] - a.p[2]) / dt, vy = (b.p[1] - a.p[1]) / dt, vh = Math.hypot(vx, vz);
+  return { y: a.p[1] + (b.p[1] - a.p[1]) * u, x: a.p[0] + (b.p[0] - a.p[0]) * u, slope: vx / -vz, speed: vh, descent: Math.atan2(-vy, vh) * 180 / Math.PI };
+}
+// Ball data that crosses the head pin's row at (x, height h) with the given shape. club: an index
+// into clubs, or null for the shortest club whose full swing gets there at that height.
+// flight(ball) must return physics points on flat ground (flightOnly).
+// Pass k (a swing effort already solved for this club, shape and lane) to only re-aim sideways.
+export function solveInto(flight, clubs, { L, x = 0, h = AIM_H, axis = 0, club = null, k: k0 = null }) {
+  const at = (c, k, hla) => crossing(flight(swing(c, k, hla, axis)), L);
+  let hla = Math.atan2(x, L) * 180 / Math.PI;
+  let ci = club;
+  if (ci == null) { ci = 0; for (let i = clubs.length - 1; i >= 0; i--) if (at(clubs[i], 1, hla).y >= h) { ci = i; break; } }
+  const c = clubs[ci];
+  let k = k0 ?? 1, cr;
+  for (let it = 0; it < (k0 == null ? 2 : 0); it++) {
+    if (at(c, 1, hla).y > h) { let lo = 0.05, hi = 1; for (let j = 0; j < 11; j++) { k = (lo + hi) / 2; if (at(c, k, hla).y > h) hi = k; else lo = k; } }
+    else k = 1;
+    cr = at(c, k, hla);
+    hla += Math.atan2(x - cr.x, L) * 180 / Math.PI;
+  }
+  for (let it = 0; it < 2; it++) { cr = at(c, k, hla); hla += Math.atan2(x - cr.x, L) * 180 / Math.PI; }
+  cr = at(c, k, hla);
+  return { club: ci, k, ball: swing(c, k, hla, axis), cross: cr };
 }
