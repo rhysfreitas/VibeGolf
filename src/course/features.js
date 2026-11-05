@@ -60,13 +60,15 @@ function landformDelta(L, x, z) {
 /* ---------- green complexes ---------- */
 // green: { x, z, rx (half width), rz (half depth), rot|from, style, tilt (% higher at the back), side (% higher
 //   right), raise (m above the ground around it), apron (m of falloff), falseFront (m), tiers: [{ b, step, axis }],
-//   swale: { b, depth, width }, crown (m), dish (m), mound (m), runoff (short-grass falloffs), pins: [[x, z]...] }
+//   swale: { b, depth, width }, crown (m), dish (m), mound (m), runoff (short-grass falloffs), pins: [[x, z]...],
+//   contours: [{ u, b, r, h }] (rolls in the surface; default: a few, seeded), roll (their scale, default 1) }
+// Around each pin the rolls flatten into a cupping area, so a pin sits on the green's tilt alone.
 const GREEN_STYLES = {
   tilt: {},
   tiered: { tiers: [{ b: 0, step: 0.75 }] },
-  crowned: { crown: 0.35, tilt: 0.6, runoff: true, raise: 0.8 },
+  crowned: { crown: 0.25, tilt: 0.6, runoff: true, raise: 0.8 },
   plateau: { raise: 1.4, runoff: true, falseFront: 0.5 },
-  punchbowl: { raise: -0.6, dish: 0.25, mound: 1.6, tilt: 0.8 },
+  punchbowl: { raise: -0.6, dish: 0.18, mound: 1.6, tilt: 0.8 },
   redan: { tilt: -2.1, side: 1.6, raise: 0.9, runoff: true },
   biarritz: { swale: { b: 0, depth: 1.1, width: 7 }, tilt: 1, rz: 22 },
 };
@@ -77,8 +79,14 @@ export function prepGreen(G, baseAt, from) {
   G.seed = G.seed ?? (G.x * 0.37 + G.z * 0.11);
   G.y0 = baseAt(G.x, G.z) + G.raise;
   G.bound = Math.max(G.rx, G.rz) * 1.15 + G.apron + 14;
+  if (!G.contours) { // a few rolls across the surface: humps and hollows 4-8 m across
+    let k = Math.abs(Math.sin(G.seed * 12.9898) * 43758.5453) % 1; const r = () => (k = (k * 9301 + 0.4927) % 1);
+    G.contours = Array.from({ length: 3 }, (_, i) => ({ u: (r() - 0.5) * G.rx * 1.2, b: (r() - 0.5) * G.rz * 1.2, r: 4.5 + r() * 3.5, h: (i % 2 ? -1 : 1) * (0.2 + r() * 0.18) * (G.roll ?? 1) }));
+  }
+  G.cups = (G.pins || []).map(([px, pz]) => { const l = loc(G, px, pz); return { u: l.u, b: l.b, c: rolls(G, l.u, l.b) }; });
   return G;
 }
+function rolls(G, u, b) { let h = 0; for (const c of G.contours) h += c.h * Math.exp(-((u - c.u) ** 2 + (b - c.b) ** 2) / (c.r * c.r)); return h; }
 function greenWob(G, th) { return 1 + 0.05 * Math.sin(3 * th + G.seed) + 0.03 * Math.sin(5 * th + 2 * G.seed); }
 export function greenRho(G, u, b) { return Math.hypot(u / G.rx, b / G.rz) / greenWob(G, Math.atan2(b / G.rz, u / G.rx)); }
 // height of the putting surface above y0 at local (u, b); defined past the edge too (it's sampled at the edge)
@@ -90,7 +98,10 @@ function greenH(G, u, b, rho) {
   if (G.crown) h -= G.crown * r2;
   if (G.dish) h += G.dish * r2;
   if (G.falseFront) h -= G.falseFront * (1 - sstep(-G.rz * 0.97, -G.rz * 0.97 + (G.ffLen ?? 4.5), b));
-  return h + 0.07 * (fbm(u / 7 + G.seed, b / 7) - 0.5);
+  // rolls, flattened into a cupping area around each pin (within about 2.2 m, easing out by 4.5 m)
+  let c = rolls(G, u, b);
+  for (const p of G.cups) { const d = Math.hypot(u - p.u, b - p.b); if (d < 4.5) c += (p.c - c) * (1 - sstep(2.2, 4.5, d)); }
+  return h + c + 0.04 * (fbm(u / 6 + G.seed, b / 6) - 0.5);
 }
 // the complex's ground: { h, w } (w = how much of it replaces the ground), or null when out of reach
 function greenGround(G, x, z, base) {
@@ -225,8 +236,10 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims) {
   function surfaceAt(x, z, groundOf) {
     for (const T of tees) if (near(T, x, z)) { const d = teeDist(T, x, z); if (d < 0) return 'tee'; }
     for (const W of water) if (near(W, x, z) && waterRho(W, x, z) < 1.4) { const g = groundOf(); if (g !== null && g < W.level) return 'water'; }
-    for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s) return s; }
-    for (const G of greens) { const s = greenSurface(G, x, z); if (s) return s; }
+    let rim = null; // sand beats the green; the green beats a bunker's grassy rim
+    for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s === 'sand' || s === 'waste') return s; if (s) rim = s; }
+    for (const G of greens) { const s = greenSurface(G, x, z); if (s === 'green' || s === 'fringe') return s; if (s && !rim) rim = s; }
+    if (rim) return rim;
     for (const T of tees) if (near(T, x, z) && teeDist(T, x, z) < 4) return 'rough';
     return null;
   }

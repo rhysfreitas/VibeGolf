@@ -50,6 +50,8 @@ test('every tee is on a tee box and measures its card yardage to the pin', () =>
       assert.ok(Math.abs(y - h.yards[s.id]) / h.yards[s.id] < 0.03, `${h.name} ${s.id}: ${y.toFixed(0)} vs ${h.yards[s.id]}`);
     }
     assert.equal(T[i].surfaceAt(h.pin[0], h.pin[1]), 'green', `${h.name} pin on the green`);
+    // pins at least 6 m apart, so each has its own cupping area
+    h.green.pins.forEach((a, k) => h.green.pins.slice(k + 1).forEach(b => assert.ok(Math.hypot(a[0] - b[0], a[1] - b[1]) >= 6, `${h.name} pins ${a} and ${b} too close`)));
     // every pin position: on the green, at 3% or less
     for (const p of h.green.pins) {
       const t = createTerrain({ ...h, pin: p }), g = t.slopeAt(p[0], p[1]);

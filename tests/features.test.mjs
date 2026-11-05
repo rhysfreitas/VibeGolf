@@ -57,10 +57,20 @@ test('a false front sends a short approach back off the green; a good one holds'
 
 test('every green style keeps its pins at 3% or less', () => {
   for (const style of ['tilt', 'tiered', 'crowned', 'plateau', 'punchbowl', 'redan', 'biarritz']) {
-    const pins = style === 'biarritz' ? [[0, -370], [0, -392]] : style === 'tiered' ? [[0, -374], [0, -387]] : [[0, -380], [5, -377]];
-    const t = createTerrain(base({ green: { x: 0, z: -380, rx: 15, rz: style === 'biarritz' ? 22 : 13, style } }));
+    const pins = style === 'biarritz' ? [[0, -370], [0, -392]] : style === 'tiered' ? [[0, -374], [0, -387]] : [[0, -380], [6, -375]];
+    const t = createTerrain(base({ green: { x: 0, z: -380, rx: 15, rz: style === 'biarritz' ? 22 : 13, style, pins } }));
     for (const p of pins) assert.ok(grade(t, ...p) <= 3.05, `${style} pin ${p}: ${grade(t, ...p).toFixed(2)}%`);
   }
+});
+
+test('greens roll between the pins: steeper than the cupping areas', () => {
+  const t = createTerrain(base({ green: { x: 0, z: -380, rx: 15, rz: 13, pins: [[0, -380], [6, -375]] } }));
+  let steepest = 0;
+  for (let u = -12; u <= 12; u += 1.5) for (let b = -10; b <= 10; b += 1.5) {
+    const x = u, z = -380 - b; if (t.surfaceAt(x, z) !== 'green' || Math.hypot(x, z + 380) < 5 || Math.hypot(x - 6, z + 375) < 5) continue;
+    const g = t.slopeAt(x, z); steepest = Math.max(steepest, Math.hypot(g.x, g.z) * 100);
+  }
+  assert.ok(steepest > 3.5, `steepest roll ${steepest.toFixed(1)}%`);
 });
 
 test('a tiered green has a real step and a biarritz a real swale', () => {

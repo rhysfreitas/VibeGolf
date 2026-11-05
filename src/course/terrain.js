@@ -67,14 +67,17 @@ export function islandH(I, x, z, f) {
 }
 
 /* ---------- paint: fairways and washes are polylines with a half-width per point ---------- */
-// pts: [[x, z, halfWidth?], ...]; returns signed distance to the band's edge (negative inside)
+// pts: [[x, z, halfWidth?] | [x, z, left, right], ...] (left/right as you play along the points);
+// returns the signed distance to the band's edge (negative inside)
 export function bandDist(pts, hw0, x, z) {
   let best = Infinity;
   for (let i = 0; i < pts.length - 1; i++) {
-    const [ax, az, ah = hw0] = pts[i], [bx, bz, bh = hw0] = pts[i + 1];
+    const A = pts[i], B = pts[i + 1], [ax, az] = A, [bx, bz] = B;
     const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1;
     const t = Math.min(1, Math.max(0, ((x - ax) * dx + (z - az) * dz) / L2));
-    const d = Math.hypot(x - ax - dx * t, z - az - dz * t) - (ah + (bh - ah) * t);
+    const right = (x - ax) * -dz + (z - az) * dx > 0; // right of the direction of play
+    const wA = A.length > 3 ? (right ? A[3] : A[2]) : A[2] ?? hw0, wB = B.length > 3 ? (right ? B[3] : B[2]) : B[2] ?? hw0;
+    const d = Math.hypot(x - ax - dx * t, z - az - dz * t) - (wA + (wB - wA) * t);
     if (d < best) best = d;
   }
   return best;
@@ -212,6 +215,10 @@ export function createTerrain(hole) {
     const g0 = FT.greens[0], fwS = fairways.length ? lineProj(hole.line, fairways[0].pts[0][0], fairways[0].pts[0][1]).s : g0 ? lineProj(hole.line, g0.x, g0.z).s - g0.rz - 28 : 0;
     native = hole.native || [24, fwS - 8];
   }
+  // the canyon floor is part of the hole only when it's the level you play on (or the hole says so);
+  // under a mesa-top hole it's native ground, however close to the line
+  const teeY0 = teeSpots.length ? baseGroundAt(teeSpots[0][0], teeSpots[0][1]) : null;
+  const floorPlays = hole.floorPlay ?? (F && F.solid && teeY0 !== null && F.y > teeY0 - 10);
   // which island is on top, without heights unless they're needed (a lone island, or one well
   // above the floor, needs none: surfaceAt runs a few hundred thousand times per hole for the paint)
   const baseTop = I => (I.slopeAt ? Math.min(I.slope.from[2], I.slope.to[2]) : I.top);
@@ -238,6 +245,7 @@ export function createTerrain(hole) {
     if (I && I.green) { const d = Math.hypot(x - I.green.x, z - I.green.z); if (d < I.green.r) return 'green'; if (d < I.green.r + 2.5) return 'fairway'; }
     if (onFloor && washD(x, z) < 0) return 'waste'; // a dry wash: desert waste
     if (fairways.length) { const d = fairwayD(x, z); if (d < 0) return 'fairway'; if (hole.line && d < 2.2) return 'firstcut'; if (hole.line && d < roughW) return 'rough'; }
+    if (onFloor && !floorPlays) return 'desert';
     if (hole.line) { // rough down the corridor, except across the carry; native beyond
       const p = lineProj(hole.line, x, z);
       if (p.d < corridor && !(native && p.s > native[0] && p.s < native[1])) return 'rough';
