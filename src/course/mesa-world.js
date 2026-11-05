@@ -124,7 +124,8 @@ export function scatterShrubs(T, box, coarse, group) {
   const R = rng(Math.round(box.x0 * 7 + box.z1 * 3)), n = coarse ? 900 : 1700, list = [];
   for (let i = 0; i < n * 4 && list.length < n; i++) {
     const x = box.x0 + R() * (box.x1 - box.x0), z = box.z0 + R() * (box.z1 - box.z0), s = T.surfaceAt(x, z);
-    if (s !== 'rough' && s !== 'desert') continue;
+    if (s !== 'desert' && !(s === 'rough' && T.fairwayD(x, z) > 14)) continue;
+    if (T.features.greens.some(G => Math.hypot(x - G.x, z - G.z) < Math.max(G.rx, G.rz) + G.apron + 10)) continue;
     if (vnoise(x / 30, z / 30) < 0.35) continue;
     const g = T.groundAt(x, z); if (g === null) continue;
     list.push([x, g, z, 0.35 + R() * R() * 1.1, R()]);
@@ -453,13 +454,22 @@ export function buildProps(hole, T, tee, mat, group) {
 export function buildPlayfield(T, box, mat, coarse, group) {
   const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
   const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water];
-  const pos = [], idx = [];
+  const pos = [], idx = [], nrm = [];
   for (let tz = box.z0; tz < box.z1; tz += TILE) for (let tx = box.x0; tx < box.x1; tx += TILE) {
     const hot = busy.some(F => F.x + F.bound > tx && F.x - F.bound < tx + TILE && F.z + F.bound > tz && F.z - F.bound < tz + TILE);
     const n = Math.max(2, Math.round(TILE / (hot ? fine : mid))), step = TILE / n, base = pos.length / 3, H = [];
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
       const x = tx + i * step, z = tz + j * step, y = T.groundAt(x, z);
       H.push(y); pos.push(x, y ?? 0, z);
+    }
+    // normals from the ground's slope (neighbours past the tile's edge sampled directly), so tiles
+    // light the same along their seams
+    for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+      const y = H[j * (n + 1) + i]; if (y === null) { nrm.push(0, 1, 0); continue; }
+      const x = tx + i * step, z = tz + j * step;
+      const at = (ii, jj) => { const v = ii >= 0 && ii <= n && jj >= 0 && jj <= n ? H[jj * (n + 1) + ii] : T.groundAt(tx + ii * step, tz + jj * step); return v ?? y; };
+      const gx = (at(i + 1, j) - at(i - 1, j)) / (2 * step), gz = (at(i, j + 1) - at(i, j - 1)) / (2 * step), L = Math.hypot(gx, 1, gz);
+      nrm.push(-gx / L, 1 / L, -gz / L);
     }
     const ok = (...k) => { let lo = Infinity, hi = -Infinity; for (const q of k) { const y = H[q]; if (y === null) return false; lo = Math.min(lo, y); hi = Math.max(hi, y); } return hi - lo < Math.max(2.5, step * 0.9); };
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
@@ -477,12 +487,13 @@ export function buildPlayfield(T, box, mat, coarse, group) {
     for (let k = 0; k < edge.length - 1; k++) {
       const p = edge[k], q = edge[k + 1]; if (H[p] === null || H[q] === null || Math.abs(H[p] - H[q]) > 2.5) continue;
       const s0 = pos.length / 3; pos.push(pos[(base + p) * 3], H[p] - 0.35, pos[(base + p) * 3 + 2], pos[(base + q) * 3], H[q] - 0.35, pos[(base + q) * 3 + 2]);
+      nrm.push(...nrm.slice((base + p) * 3, (base + p) * 3 + 3), ...nrm.slice((base + q) * 3, (base + q) * 3 + 3));
       idx.push(base + p, base + q, s0, base + q, s0 + 1, s0); // facing out, toward any crack
     }
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
-  geo.computeVertexNormals(); rockAttrs(geo, 0);
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3)); rockAttrs(geo, 0);
   const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; m.userData.island = { playable: true, floor: true };
   group.add(m);
   return m;
