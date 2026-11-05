@@ -188,10 +188,24 @@ export function createTerrain(hole) {
   }
   function islandAt(x, z) { const t = topAt(x, z); return t ? t.I : null; }
   const inTee = (x, z) => teeList.some(t => Math.abs(x - t[0]) < 4.5 && Math.abs(z - t[1]) < 6);
+  // which island is on top, without heights unless they're needed (a lone island, or one well
+  // above the floor, needs none: surfaceAt runs a few hundred thousand times per hole for the paint)
+  const baseTop = I => (I.slopeAt ? Math.min(I.slope.from[2], I.slope.to[2]) : I.top);
+  function surfaceTop(x, z) {
+    let one = null, many = false;
+    for (const I of ISL) {
+      if (Math.abs(x - I.x) > I.bound || Math.abs(z - I.z) > I.bound) continue;
+      if (islandF(I, x, z) <= 1) { if (one) { many = true; break; } one = I; }
+    }
+    if (many) { const t = topAt(x, z); return { I: t.I, h: t.h }; }
+    return one ? { I: one, h: null } : null;
+  }
   function surfaceAt(x, z) {
-    const t = topAt(x, z), fl = floorAt(x, z);
-    const onFloor = !t || (fl !== null && fl > t.h);
-    if (onFloor && fl === null) return 'void';
+    const t = surfaceTop(x, z);
+    let onFloor;
+    if (!t) { onFloor = true; if (!F || !F.solid || inGorge(x, z)) return 'void'; }
+    else if (!F || !F.solid || baseTop(t.I) > F.y + F.relief + 2) onFloor = false;
+    else { const fl = floorAt(x, z), h = t.h ?? islandH(t.I, x, z, Math.min(1, islandF(t.I, x, z))); onFloor = fl !== null && fl > h; }
     const I = onFloor ? null : t.I;
     if (inTee(x, z)) return 'tee';
     if (I && I.bunkers) for (const b of I.bunkers) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';

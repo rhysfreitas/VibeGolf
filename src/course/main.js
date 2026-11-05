@@ -486,7 +486,7 @@ function buildHole(h) {
   const trees = [];
   const box = holeBox(h);
   if (MESA) { // paint texture first: the island shader reads it
-    const tex = MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.8);
+    const tex = MW.surfaceTexture(T, h, box, coarse ? 1.3 : 0.9);
     surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
   }
   for (const I of ISL) buildIsland(I, { seg: MESA ? Math.min(coarse ? 200 : 280, Math.max(96, Math.round(Math.max(I.rx, I.rz) * 1.6))) : coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
