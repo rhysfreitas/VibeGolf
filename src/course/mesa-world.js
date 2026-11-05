@@ -147,12 +147,24 @@ export function scatterShrubs(T, box, coarse, group) {
   stones.forEach(([x, y, z, s, r], i) => { m.compose(V(x, y + s * 0.15, z), q.setFromEuler(new THREE.Euler(r, r * 7, r * 3)), V(s, s * 0.6, s * 0.8)); sm.setMatrixAt(i, m); c.set(r < 0.5 ? 0x8a4a30 : 0x9c6a4a); sm.setColorAt(i, c); });
   sm.castShadow = sm.receiveShadow = true; group.add(sm);
 }
+// trees stay out of play: off the line from every tee to the pin, clear of the fairway and green surrounds
+function inPlay(T, hole, x, z) {
+  const pin = hole.pin || [0, -100];
+  for (const t of Object.values(hole.tees || {})) {
+    const [ax, az] = Array.isArray(t) ? t : [t.x, t.z], dx = pin[0] - ax, dz = pin[1] - az, L2 = dx * dx + dz * dz || 1;
+    const k = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2));
+    if (Math.hypot(x - ax - dx * k, z - az - dz * k) < 20) return true;
+  }
+  if (T.fairwayD(x, z) < 9) return true;
+  return T.features.greens.some(G => Math.hypot(x - G.x, z - G.z) < Math.max(G.rx, G.rz) + G.apron + 10);
+}
 export function cottonwoodSpots(T, hole) {
   const out = [], R = rng(91);
   // a ring of cottonwoods around each spring pool, kept off the green side
   for (const W of T.features.water) for (let i = 0; i < 9; i++) {
     const a = i / 9 * Math.PI * 2 + R() * 0.4, r = 1.5 + R() * 0.5, x = W.x + Math.cos(a) * W.rx * r, z = W.z + Math.sin(a) * W.rz * r;
     const s = T.surfaceAt(x, z); if (s === 'green' || s === 'fringe' || s === 'fairway' || s === 'water' || s === 'sand') continue;
+    if (inPlay(T, hole, x, z)) continue;
     const y = T.groundAt(x, z); if (y === null) continue;
     out.push({ x, y, z, s: 1.2 + R() * 0.7, type: 'cotton', r: R() });
   }
@@ -162,6 +174,7 @@ export function cottonwoodSpots(T, hole) {
       const side = R() < 0.5 ? -1 : 1, off = w.w / 2 + 5 + R() * 9;
       const x = ax + (bx - ax) * d / L + nx * off * side, z = az + (bz - az) * d / L + nz * off * side;
       const s = T.surfaceAt(x, z); if (s !== 'desert' && s !== 'rough') continue;
+      if (inPlay(T, hole, x, z)) continue;
       out.push({ x, y: T.groundAt(x, z), z, s: 1.3 + R() * 0.7, type: 'cotton', r: R() });
     }
   }
