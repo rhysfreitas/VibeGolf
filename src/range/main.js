@@ -7,6 +7,8 @@ import { launchMonitor, mountLaunchMonitorUI, parseShot } from '../launch-monito
 import { STANCE, stanceView } from '../stance.js';
 import { CLUB_DELIVERY, deliveryFromBall, renderShotDetail } from './shot-detail.js';
 import { CLUBS, createRangeWorld } from '../world/range-world.js';
+import { FAULTS, applyFault } from '../coach/faults.js';
+import { createCoachUI } from './coach-ui.js';
 
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
 /* ===================== world (shared with the mini games) ===================== */
@@ -85,7 +87,7 @@ const customNote = document.createElement('p'); customNote.className = 'st-note'
 customNote.innerHTML = 'Using your exact numbers from Settings. <a href="#" style="color:var(--flag)">Back to club averages</a>';
 customNote.querySelector('a').onclick = e => { e.preventDefault(); loadClub(state.club); };
 const tool = createSimTool($('hitbar'), {
-  clubs: CLUBS, auto: false, autoDistance: false, extra: customNote,
+  clubs: CLUBS, auto: false, autoDistance: false, extra: customNote, faults: FAULTS,
   onChange: s => { if (state.phase === 'idle' && s.club !== state.club) loadClub(s.club); refreshAim(); },
   onShot: s => { if (s.club !== state.club && state.phase === 'idle') loadClub(s.club); swing(s); },
 });
@@ -311,7 +313,8 @@ function toolBase(s) {
   if (state.custom) return { ...state.shotData };
   return toolBall(CLUBS[state.club], s.pct / 100, -s.axis * 0.37, s);
 }
-function swing(s = { ...tool.settings, ideal: false }) { if (state.phase !== 'idle') return; initAudio(); launch(realSwing(aimedBase(s).ball, !s.ideal), false); }
+// a swing fault (coaching practice without an R10) bends the shot after the natural misses
+function swing(s = { ...tool.settings, ideal: false }) { if (state.phase !== 'idle') return; initAudio(); launch(applyFault(realSwing(aimedBase(s).ball, !s.ideal), s.fault, CLUBS[state.club].id), false); }
 
 /* ---------- the phantom aim line (src/aim-line.js) ---------- */
 // The next simulated shot's flight, dashed. Drag it left or right in the view to aim (that turns
@@ -383,6 +386,7 @@ function finishShot() {
   restDisc.position.set(end[0], end[1] + 0.03, end[2]); restDisc.visible = true;
   $('tagRest').innerHTML = `<b>${yd(r.totalDown)}</b> total`; $('tagRest').hidden = false;
   if (!$('session').hidden) drawSession();
+  if (coachUI.active) coachUI.shot(f.shot, CLUBS[state.club].id);
 }
 
 function samplePos(r, t, out) {
@@ -575,6 +579,36 @@ addEventListener('orientationchange', refit);
 if (window.visualViewport) visualViewport.addEventListener('resize', refit);
 if (window.ResizeObserver) new ResizeObserver(refit).observe(stage);
 addEventListener('resize', refit);
+
+/* ===================== practice modes: Range, Coaching, Short game ===================== */
+// The range opens on the practice menu (unless the address says ?mode=…). Coaching mounts the
+// coach (src/range/coach-ui.js) over the same range; Range is the free range as before.
+const coachUI = createCoachUI({ clubName: id => (CLUBS.find(c => c.id === id) || {}).name || id });
+window.__coachUI = coachUI; // test hook
+const MODE_KEY = 'vibegolf.practice';
+function setMode(mode) {
+  state.mode = mode;
+  coachUI.setActive(mode === 'coach');
+  $('practice').hidden = true;
+  $('btnPractice').textContent = mode === 'coach' ? 'Coaching' : 'Practice';
+  document.querySelectorAll('.pr-card').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+  try { localStorage.setItem(MODE_KEY, mode); history.replaceState(null, '', `?mode=${mode}`); } catch (e) { /* storage blocked */ }
+}
+function openPractice() {
+  const s = coachUI.summary(), box = $('prSum');
+  box.hidden = !s || !s.worked.length;
+  if (s && s.worked.length) {
+    const names = s.worked.map(w => `${w.name.toLowerCase()}${w.progress != null ? ` (${Math.round(w.progress * 100)}% of the way)` : ''}`);
+    box.innerHTML = `<b>This session:</b> ${s.shots} shots with the coach, worked on ${names.join(', ')}.${s.cue ? ` <b>Cue to keep:</b> ${s.cue}.` : ''}`;
+  }
+  $('practice').hidden = false;
+}
+document.querySelectorAll('.pr-card[data-mode]').forEach(b => { b.onclick = () => { if (!b.disabled) setMode(b.dataset.mode); }; });
+$('btnPractice').onclick = openPractice;
+{
+  const q = new URLSearchParams(location.search).get('mode');
+  if (q === 'coach' || q === 'range') setMode(q); else { setMode('range'); openPractice(); }
+}
 
 /* ===================== boot ===================== */
 setSun('golden');

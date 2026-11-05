@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="styles/range.css">
 <link rel="stylesheet" href="styles/shared.css">
+<link rel="stylesheet" href="styles/coach.css">
 </head>
 <body>
 <div id="stage"></div>
@@ -25,6 +26,7 @@
   </div>
   <div class="tools glass">
     <a class="menu-link" href="./" title="Back to the menu" aria-label="Menu"><span class="mlong">Menu</span><span class="mshort" aria-hidden="true">‹</span></a>
+    <button class="tbtn" id="btnPractice" title="Range, Coaching or Short game">Practice</button>
     <button class="tbtn" id="btnAdjust" aria-expanded="false" aria-controls="adjust" title="Tracers, conditions, exact numbers">Settings</button>
   </div>
 </div>
@@ -117,6 +119,25 @@
     <span class="dNav"><button class="navb" id="dPrev" aria-label="Previous shot">‹</button><button class="navb" id="dNext" aria-label="Next shot">›</button><button class="x" data-close="detail" aria-label="Close">×</button></span></h2>
   <div id="detailBody"></div>
 </aside>
+
+<!-- the practice menu: free range, the coach, or (soon) the short game area -->
+<div id="practice" hidden>
+  <div class="pr-box">
+    <h2>Practice</h2>
+    <div class="pr-sum glass" id="prSum" hidden></div>
+    <div class="pr-cards">
+      <button class="pr-card glass" data-mode="range" aria-pressed="false">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M5 29c6-2 10-8 13-15s7-10 11-11" fill="none" stroke="#f5c542" stroke-width="2.2" stroke-linecap="round"/><circle cx="29" cy="3.5" r="2.5" fill="#fff"/></svg>
+        <b>Range</b><span>Hit freely. Tracers, numbers and your gapping, nothing else.</span></button>
+      <button class="pr-card glass" data-mode="coach" aria-pressed="false">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="7" r="4" fill="#6ee38a"/><path d="M17 11v11M17 22l-5 9M17 22l5 9M10 16l7-3 7 3" fill="none" stroke="#6ee38a" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <b>Coaching</b><span>The coach reads your shots, shows the fault on a 3D golfer, and tracks the fix.</span></button>
+      <button class="pr-card glass" data-mode="short" disabled>
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M8 28h20" stroke="#a3b59c" stroke-width="2" stroke-linecap="round"/><path d="M22 28V8l8 3-8 3" fill="none" stroke="#a3b59c" stroke-width="2" stroke-linejoin="round"/></svg>
+        <b>Short game</b><span>Chips, pitches and wedge distances.</span><em>Coming soon</em></button>
+    </div>
+  </div>
+</div>
 
 <div id="rotate" class="glass" hidden>
   <b>Turn your phone sideways</b>

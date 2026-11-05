@@ -25,6 +25,14 @@ Serve the folder (`npm start`) and drive it headlessly with Playwright. Set `win
 ## Course data
 `src/course/aerie.js` holds `HOLES`. Islands are superellipses (`rx`, `rz`, `rot`, `top`, `depth`, `kind`) with optional `green`, `pin`, `bunkers`, `falls` and `trees`. `targets` are the course-management picks, and `drops` are the penalty drop spots. Keep that format stable, because the planned course builder will read and write it.
 
+## Coaching range
+`range.html` opens on a practice menu (Range, Coaching, Short game coming; `?mode=range|coach` skips it). Coaching is mapped in `docs/COACHING.md`; the full spec is the Coaching Range spec doc.
+- The rules are pure and tested: `src/coach/coach-logic.js` (impact metrics, `RULES`, the 4-shot window, `pick`, `createCoach()`), `windows.js` (per-club windows scaled from the tour averages through the flight model), `conditions.js` (the catalogue), `faults.js` (Swing fault presets for simulated shots) and `lessons.js` (mannequin lesson data). No DOM or Three.js in any of them. Run `npm test` after touching them.
+- Decided numbers: read after 4 shots with one club (3 of 4 agree, none the opposite miss), progress after 8 on the cue, quiet for 10 shots after a dismiss unless it gets worse, coaching per club, history in `localStorage` `vibegolf.coach.v1`.
+- `src/coach/mannequin.js` is the 3D golfer (global `THREE`): ten P-position keys blended in the chest's frame, the club as a quaternion, one renderer moved between slots with `mount(el)`. Lessons only change the base swing where the fault lives. Numbers on screen are read off the scene.
+- `src/range/coach-ui.js` shows what the rules decide; the range calls `coachUI.shot(shot, clubId)` when a shot finishes. The shot tool's Swing fault (`faults` option on `createSimTool`) only exists on the range.
+- Headless: `?mode=coach`, set `.st-fault select`, press `h`, `__advance(16)`, wait for `.st` to lose `busy`; `window.__coachUI` is the test hook.
+
 ## Mini games
 The design for all eight mini games, and the shared gamification kit they must use, is in `docs/MINIGAMES.md`. Build to that spec and keep every game at the same level. Don't add slot or card reveals, unlocks, boss stages, or fast-moving targets.
 

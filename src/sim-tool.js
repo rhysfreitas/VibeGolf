@@ -8,7 +8,10 @@
 //   tool.suggest({ club, axis, traj })   // the game's recommendation for this shot
 //   tool.setTarget({ x, z, label })       // a spot picked on a map, for the next shot only
 //   tool.setShot({ club, pct })            // a map tap: the club and swing length for that spot
-//   s = { club, pct, traj, axis, ideal, target, clubAuto, axisAuto, autoAim }
+//   s = { club, pct, traj, axis, ideal, target, clubAuto, axisAuto, autoAim, fault }
+//
+// `faults` (the range) adds a Swing fault picker: a simulated shot played with a fault so the
+// coaching range can be tried without an R10 (src/coach/faults.js). 'none' by default.
 //
 // pct is the swing length, % of a full swing (Full by default), set on the bar beside the shape line.
 //
@@ -36,7 +39,7 @@ const AIM_KEY = 'vibegolf.autoAim';
 const readAim = () => { try { return localStorage.getItem(AIM_KEY) === '1'; } catch (e) { return false; } };
 const saveAim = v => { try { localStorage.setItem(AIM_KEY, v ? '1' : '0'); } catch (e) { /* storage blocked */ } };
 
-export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget = () => {}, onChange = () => {}, auto = true, aimToggle = true, autoDistance = true, seedPct = () => null, note = 'Your R10 shots fly exactly as you hit them; these settings are only for simulated shots.', extra = null } = {}) {
+export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget = () => {}, onChange = () => {}, auto = true, aimToggle = true, autoDistance = true, seedPct = () => null, faults = null, note = 'Your R10 shots fly exactly as you hit them; these settings are only for simulated shots.', extra = null } = {}) {
   const el = document.createElement('div');
   el.className = 'st';
   el.innerHTML = `
@@ -70,6 +73,7 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
           <div class="st-shapeRow"><button type="button" class="st-powVal" title="Back to a full swing"></button></div>
         </div>
       </div>
+      <label class="st-fault" hidden><span>Swing fault</span><select></select></label>
       <div class="st-extra"></div>
       <div class="st-go"><button type="button" class="st-ideal" title="The exact shot, no misses">Ideal</button><button type="button" class="st-hit" title="A decent amateur's swing: it misses a little">Hit</button></div>
       <p class="st-note">${note}</p>
@@ -79,7 +83,7 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
   const btn = $('.st-btn'), panel = $('.st-panel'), sum = $('.st-sum');
   if (extra) $('.st-extra').appendChild(extra);
 
-  const S = { club: null, traj: 'normal', axis: null, pct: 100, target: null, sugg: { club: 0, axis: 0 }, enabled: true, autoAim: readAim() };
+  const S = { club: null, traj: 'normal', axis: null, pct: 100, target: null, sugg: { club: 0, axis: 0 }, enabled: true, autoAim: readAim(), fault: 'none' };
   const autoPct = () => autoDistance && S.autoAim;
   const aimBtn = $('.st-aim'); aimBtn.hidden = !aimToggle;
   aimBtn.onclick = () => setAutoAim(!S.autoAim);
@@ -123,8 +127,14 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
   bar.addEventListener('keydown', e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); takePct(clampPct(Math.round(S.pct) + (e.key === 'ArrowUp' ? 1 : -1))); changed(); } });
   $('.st-powVal').onclick = () => { takePct(100); changed(); };
   $('.st-clear').onclick = () => { S.target = null; render(); onTarget(null); };
+  /* swing fault (range only) */
+  if (faults && faults.length) {
+    const fl = $('.st-fault'), sel = fl.querySelector('select'); fl.hidden = false;
+    sel.innerHTML = faults.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    sel.onchange = () => { S.fault = sel.value; changed(); };
+  }
 
-  function settings() { return { club: club(), pct: S.pct, traj: S.traj, axis: axis(), target: S.target, clubAuto: S.club == null, axisAuto: S.axis == null, autoAim: S.autoAim }; }
+  function settings() { return { club: club(), pct: S.pct, traj: S.traj, axis: axis(), target: S.target, clubAuto: S.club == null, axisAuto: S.axis == null, autoAim: S.autoAim, fault: S.fault }; }
   function changed() { render(); onChange(settings()); }
   function render() {
     const ci = club(), a = axis();
@@ -148,7 +158,8 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
     const tg = $('.st-target'); tg.hidden = !S.target; if (S.target) tg.querySelector('span').textContent = S.target.label || 'Aiming at your spot';
     const tr = S.traj === 'normal' ? '' : ` · ${TRAJ.find(t => t.id === S.traj).name}`;
     const pc = !autoPct() && pr < 100 ? ` ${pr}%` : '';
-    sum.innerHTML = `<b>${clubs[ci] ? clubs[ci].id : ''}</b>${pc}${tr}${Math.abs(a) >= 1.5 ? ` · ${shapeName(a)}` : ''}${S.target ? ' · spot' : ''}`;
+    const fn = faults && S.fault !== 'none' ? ` · ${(faults.find(f => f.id === S.fault) || {}).name}` : '';
+    sum.innerHTML = `<b>${clubs[ci] ? clubs[ci].id : ''}</b>${pc}${tr}${Math.abs(a) >= 1.5 ? ` · ${shapeName(a)}` : ''}${fn}${S.target ? ' · spot' : ''}`;
   }
   function open(v = panel.hidden) { panel.hidden = !v; btn.setAttribute('aria-expanded', String(v)); el.classList.toggle('open', v); }
   btn.onclick = () => open();
@@ -177,7 +188,8 @@ export function createSimTool(parent, { clubs = [], onShot = () => {}, onTarget 
     setPct(v, { silent = false } = {}) { S.pct = clampPct(v); if (silent) render(); else changed(); },
     // a map tap: the club (unless it's the suggestion, which Auto already plays) and swing length
     setShot({ club: c = null, pct = null } = {}) { if (c != null && !(S.club == null && c === S.sugg.club)) S.club = c; if (pct != null) S.pct = clampPct(pct); changed(); },
-    setClub(i) { S.club = i; render(); },        // the page picked a club (e.g. a keyboard shortcut); null = Auto
+    setClub(i) { S.club = i; render(); },
+    setFault(id) { S.fault = id || 'none'; const sel = $('.st-fault select'); if (sel) sel.value = S.fault; render(); },        // the page picked a club (e.g. a keyboard shortcut); null = Auto
     get club() { return club(); },
     get isOpen() { return !panel.hidden; },
     render,

@@ -6,7 +6,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 
 | Mode | What it is |
 |---|---|
-| **Woodson Range** | Driving range with stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. |
+| **Woodson Range** | Opens on a practice menu. **Range**: stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. **Coaching**: the coach reads your shots in fours, names the one fault worth fixing, shows it on a 3D golfer next to the goal swing with two or three likely causes, gives you a cue, and checks your progress after 8 shots. **Short game** is coming. |
 | **The Aerie** | Three holes on floating sky islands. Each hole has a safe route and a carry-the-gap route. Target picks, a shot preview, a corner hole map, penalty drops and auto-putting. |
 | **Mini games** | **Shape It** (fly through flight gates that trace a shot shape, out of the open launch bay of a spaceship), **Zombie Siege** (bomb the horde before it breaks your fence, on a fog-bound farm at night) **Island Hopper** (hop floating islands above the clouds, three lives) and **Golf HORSE** (call your shot on a basketball scoreboard in a floodlit cul-de-sac, with Topgolf-style light-up targets; Dusty joins if you're alone) are playable, for 1–4 players, each with their own difficulty. **Carnival Booth** (a life-size tin shooting gallery: cans, bullseye boards, gliding ducks and the prize bell, for tickets and a plush) **Wedge Ladder** (climb a ladder of landing zones down a runway at sunrise with your wedges) and **Golf Bowling** (ten frames of real bowling down the runner rug of a giant toy room, with toppling pins) are playable too. Glass Tower is next. Design in [docs/MINIGAMES.md](docs/MINIGAMES.md). |
 
@@ -28,7 +28,7 @@ The layout is built for a phone held sideways (landscape), like a launch-monitor
 | Simulated shot | One small button bottom left opens the shot tool: club, Normal / Punch / Stinger, a shape line to drag, a swing-length bar (% of full), Ideal and Hit. Settings (top right) has tracers, sound, conditions, flight trim and exact launch numbers | The same shot tool (Auto plays the suggested club and swing length). Tap the course or the corner map to aim at a spot; ⤢ on the map shows the whole hole |
 | Aim | Drag the dashed aim line left or right, or `←` `→`. The crosshair beside the shot pill is Auto-aim (off by default) | Pick a target, or tap the course or the corner map: that aims you there and sets the club and swing length. Then drag the dashed line (or `←` `→`) and the swing-length bar to fine-tune. Auto-aim picks both for you and lands the shot on your target, curve and all |
 | Numbers | Readout bottom right: carry, total, offline, launch, ball and club speed, spin. Tap it for the shot detail: club (speed, smash, path, face, face to path, attack), launch and spin (backspin, sidespin, axis), with diagrams. ‹ › steps through shots, and tapping a shot in Session opens it | Readout bottom right. Tap it for ball speed, launch, spin and axis |
-| More | **Session** (above the readout) opens the dispersion map, gapping and shot list. `X` clears tracers, `1`–`8` pick clubs | **Play to** (under the hole card) picks the target. Tap the corner map, or press `M`, for the whole hole |
+| More | **Session** (above the readout) opens the dispersion map, gapping and shot list. **Practice** (top right) switches between Range and Coaching. In Coaching, the chip under the title shows what the coach is doing; the shot tool's **Swing fault** plays simulated shots with a fault so you can try the coach without an R10. `X` clears tracers, `1`–`8` pick clubs | **Play to** (under the hole card) picks the target. Tap the corner map, or press `M`, for the whole hole |
 
 ## Connect the R10
 
@@ -64,16 +64,21 @@ range.html            Woodson Range
 course.html           The Aerie
 src/physics.js        ball flight, bounce, roll, cup (pure functions, SI units, no Three.js)
 src/launch-monitor.js live shot link + connection popover, shared by every page
-src/range/main.js     range scene, tracers, cameras, session stats
+src/range/main.js     range scene, tracers, cameras, session stats, practice menu
+src/range/coach-ui.js the coaching screens: readout, cause cards, chip, progress, drills, explorer
+src/coach/            coaching rules (pure), club windows from the flight model, the condition
+                      catalogue, fault presets, and the 3D swing mannequin with its lessons
 src/course/main.js    island renderer, course-management UI, cameras, scoring
 src/course/aerie.js   hole data: islands, targets, drop zones (the future course builder's format)
 src/course/minimap.js corner hole map
 bridge/               GSPro Open Connect → WebSocket relay (Node)
 vendor/three-r147/    Three.js r147 plus Sky and Line2 add-ons, vendored so the app works offline
-tests/                physics calibration and bridge tests (`npm test`)
+tests/                physics calibration, coaching rules, mini games and bridge (`npm test`)
 ```
 
 **Ball flight.** The flight is integrated with RK4 at 240 Hz, using gravity, drag and Magnus lift. The drag coefficient rises with spin ratio and below about 50 m/s (Reynolds effect). The lift coefficient saturates with spin ratio, and spin decays exponentially. The coefficients were fit to TrackMan PGA Tour averages. Carry, apex and landing angle land within about 4% from driver to pitching wedge, and `npm test` fails if a change drifts more than 5%. Air density comes from temperature, altitude and humidity.
+
+**Coaching.** Each shot becomes impact numbers (face, path, attack, spin loft, smash, start line). Target windows per club start at the TrackMan tour averages and scale to your club speed through the flight model, so the LPGA averages fall out at their speeds. Four shots with one club that agree raise a condition; when several do, the root cause wins (setup, then path, face, low point, strike). The full design is in [docs/COACHING.md](docs/COACHING.md).
 
 **Ground.** Bounces use an impulse model with Penner's speed-dependent restitution. Friction depends on spin, and each surface (fairway, green, rough, sand) has its own turf loss. Rolls feel slope and rolling resistance. On the course, the ground function returns `null` over open air, so balls can fall into the clouds, hit cliff faces or roll off edges.
 
@@ -86,6 +91,7 @@ tests/                physics calibration and bridge tests (`npm test`)
 
 ## Roadmap
 
+- Coaching: field-test the thresholds with real R10 sessions; more lessons; the Short game area
 - Mini games: Glass Tower next
 - Play Golf: multiple players, each on their own tee (set by their difficulty)
 - Course builder that reads and writes the hole format

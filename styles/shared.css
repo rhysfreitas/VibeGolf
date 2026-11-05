@@ -61,6 +61,9 @@
 .st-shapeRow { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-family: var(--f-data); font-size: 13px; }
 .st-reset { appearance: none; border: 0; background: transparent; color: var(--flag); font-family: var(--f-data); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; padding: 0; }
 .st-extra:empty { display: none; }
+.st-fault { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--f-data); font-size: 13px; color: var(--sage); }
+.st-fault[hidden] { display: none; }
+.st-fault select { appearance: none; min-width: 0; flex: 1 1 auto; max-width: 62%; background: rgba(255,255,255,0.06); color: var(--bone); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; font: inherit; }
 .st-go { display: grid; grid-template-columns: 1fr 1.5fr; gap: 6px; }
 .st-go button { appearance: none; border-radius: 9px; min-height: 40px; font-family: var(--f-data); font-weight: 700; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
 .st-ideal { border: 1px dashed rgba(255,210,87,0.6); background: transparent; color: var(--flag); }
