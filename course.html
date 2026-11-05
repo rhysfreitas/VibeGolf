@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="VibeGolf">
-<title>The Aerie</title>
+<title>VibeGolf course</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=Cormorant+SC:wght@600;700&display=swap">
 <link rel="stylesheet" href="styles/course.css">
@@ -21,10 +21,11 @@
 <div id="top">
   <div id="holeCard" class="glass">
     <div class="hcMain">
-      <span class="course">The Aerie · <span id="hMeta">Hole 1 · Par 4 · 408 yd</span></span>
-      <span class="holeName" id="hName">The Shelf</span>
+      <span class="course"><span id="cName">VibeGolf</span> · <span id="hMeta">Hole 1</span></span>
+      <span class="holeName" id="hName">&nbsp;</span>
     </div>
     <div class="stat"><span class="lbl">Stroke</span><span class="num" id="hStroke">1</span></div>
+    <div class="stat" id="windStat" hidden><span class="lbl">Wind</span><span class="num" id="hWind">—</span></div>
     <div class="stat" id="pinStat"><span class="lbl">To pin</span><span class="num" id="hPin">—</span></div>
   </div>
   <div class="tools glass">
@@ -93,6 +94,30 @@
 
 <div class="tag" id="tagLand" hidden></div>
 <div class="tag" id="tagAim" hidden></div>
+<div class="tag pin" id="tagPin" hidden></div>
+
+<div id="setup" hidden>
+  <div class="glass setupBox" role="dialog" aria-labelledby="suTitle">
+    <div class="suHead">
+      <div class="sub">Round setup</div>
+      <h2 id="suTitle">Course</h2>
+      <p id="suBlurb"></p>
+      <p class="note" id="suAlt"></p>
+    </div>
+    <div class="suRow" id="suTeeRow">
+      <span class="lbl">Tees</span>
+      <div class="suTees" id="suTees"></div>
+      <p class="note" id="suTeeNote"></p>
+    </div>
+    <div class="suConds">
+      <div class="suRow"><span class="lbl">Time of day</span><div class="segs" id="suTime"></div></div>
+      <div class="suRow"><span class="lbl">Wind</span><div class="segs" id="suWind"></div><select id="suFrom" aria-label="Wind direction"></select></div>
+      <div class="suRow"><span class="lbl">Weather</span><div class="segs" id="suWeather"></div></div>
+      <div class="suRow"><span class="lbl">Temperature</span><div class="segs" id="suTemp"></div></div>
+    </div>
+    <div class="cardBtns"><button class="ghost" id="suSig" title="This course's own conditions">Signature</button><button class="primary" id="suGo">Tee off</button></div>
+  </div>
+</div>
 <div id="toast" class="glass"></div>
 
 <div id="card" hidden>

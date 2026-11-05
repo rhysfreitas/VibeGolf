@@ -9,6 +9,7 @@ const BALL_A = Math.PI * BALL_R * BALL_R;
 const MPH = 0.44704, RPM = Math.PI / 30, DEG = Math.PI / 180, YD = 0.9144;
 
 const SURFACES = {
+  desert:  { mu: 0.55, eScale: 0.70, tScale: 0.62, crr: 0.30 }, // canyon floor hardpan: firm, kicks
   //            friction  COR scale  rolling resistance (fraction of g)
   //            tScale = horizontal speed kept after turf deformation on impact
   fairway: { mu: 0.40, eScale: 1.00, tScale: 0.70, crr: 0.16 },
@@ -51,7 +52,8 @@ function launchState(shot) {
 }
 
 function deriv(s, env) {
-  const [vx, vy, vz] = s.vel;
+  // aerodynamic forces act on the velocity relative to the air (wind in m/s)
+  const vx = s.vel[0] - env.wind[0], vy = s.vel[1], vz = s.vel[2] - env.wind[2];
   const v = Math.hypot(vx, vy, vz) || 1e-9;
   const w = Math.hypot(...s.spin);
   const S = (w * BALL_R) / v;
@@ -67,7 +69,7 @@ function deriv(s, env) {
     ax += q * cl * cx / cn; ay += q * cl * cy / cn; az += q * cl * cz / cn;
   }
   const k = -1 / env.coef.spinTau;
-  return { dpos: [vx, vy, vz], dvel: [ax, ay, az], dspin: [k * s.spin[0], k * s.spin[1], k * s.spin[2]] };
+  return { dpos: [s.vel[0], s.vel[1], s.vel[2]], dvel: [ax, ay, az], dspin: [k * s.spin[0], k * s.spin[1], k * s.spin[2]] };
 }
 
 function add(s, d, h) {
@@ -95,11 +97,16 @@ function cor(vn) { return vn < 20 ? Math.max(0.12, 0.510 - 0.0375 * vn + 0.00090
 // opts.groundAt(x, z)  -> height in metres, or null over open air (floating-island courses)
 // opts.voidY           -> stop and report `void` once the ball falls below this height
 // opts.cup             -> { x, z } hole position; the ball drops if it reaches it slowly enough
+// opts.wind            -> { x, z } air velocity in m/s, in the shot's frame (calm when omitted)
+// opts.solidAt(x,y,z)  -> outward normal [nx,ny,nz] when the point is inside rock that isn't
+//                         ground (an arch, a spire, a cliff overhang), else null
 function simulate(shot, opts = {}) {
   const env = {
     rho: opts.rho ?? airDensity(opts.tempF ?? 72, opts.altFt ?? 0),
     coef: { ...DEFAULT_COEF, ...(opts.coef || {}) },
+    wind: [opts.wind?.x || 0, 0, opts.wind?.z || 0],
   };
+  const solidAt = opts.solidAt || null;
   const surfaceAt = opts.surfaceAt || (() => 'fairway');
   const groundAt = opts.groundAt || (() => 0);
   const voidY = opts.voidY ?? -1e9;
@@ -109,7 +116,7 @@ function simulate(shot, opts = {}) {
   let s = launchState(shot);
   const pts = [{ t: 0, p: s.pos.slice(), phase: 'flight' }];
   let t = 0, landed = null, apex = 0, bounces = 0, phase = 'flight';
-  let firstDescent = 0, landSpeed = 0, outcome = 'rest', wallHits = 0;
+  let firstDescent = 0, landSpeed = 0, outcome = 'rest', wallHits = 0, rockHits = 0;
   const nearCup = (x, z) => cup && Math.hypot(x - cup.x, z - cup.z) < CUP_R;
 
   while (t < 40) {
@@ -118,12 +125,28 @@ function simulate(shot, opts = {}) {
       s = rk4(s, env, dt); t += dt;
       apex = Math.max(apex, s.pos[1]);
       if (s.pos[1] < voidY) { outcome = 'void'; pts.push({ t, p: s.pos.slice(), phase: 'flight' }); break; }
+      const nrm = solidAt && solidAt(s.pos[0], s.pos[1], s.pos[2]);
+      if (nrm) {
+        // hit rock: reflect off the face, losing most of the speed along it
+        const vn = s.vel[0] * nrm[0] + s.vel[1] * nrm[1] + s.vel[2] * nrm[2];
+        if (vn < 0) {
+          const tv = s.vel.map((v, i) => v - vn * nrm[i]);
+          s = { pos: prev.pos.slice(), vel: tv.map((v, i) => v * 0.55 - 0.4 * vn * nrm[i]), spin: prev.spin.map(w => w * 0.3) };
+          rockHits++;
+        } else s = { ...s, pos: s.pos.map((p, i) => p + nrm[i] * 0.02) };
+        if (++wallHits > 60) { outcome = 'void'; break; }
+        pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight', hit: true });
+        continue;
+      }
       const gNow = groundAt(s.pos[0], s.pos[2]);
       if (gNow !== null && s.pos[1] <= gNow && s.vel[1] < 0 || gNow !== null && s.pos[1] < gNow - 0.05) {
         const gPrev = groundAt(prev.pos[0], prev.pos[2]);
-        if (gPrev === null || prev.pos[1] < gPrev - 0.3) {
+        // a cliff face: it came from open air, from under the ground, or from beside a wall that
+        // rises above where the ball was (a step up far steeper than any slope)
+        if (gPrev === null || prev.pos[1] < gPrev - 0.3 || (gNow - gPrev > 0.6 && prev.pos[1] < gNow - 0.3)) {
           // flew into a cliff face: knock it back and let it drop
           s = { pos: prev.pos.slice(), vel: [-prev.vel[0] * 0.25, Math.min(prev.vel[1], 0), -prev.vel[2] * 0.25], spin: prev.spin.map(w => w * 0.3) };
+          rockHits++;
           if (++wallHits > 40) { outcome = 'void'; break; }
           pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight' });
           continue;
@@ -180,6 +203,21 @@ function simulate(shot, opts = {}) {
       const nx = x + s.vel[0] * dt, nz = z + s.vel[2] * dt;
       const ng = groundAt(nx, nz);
       t += dt;
+      if (ng !== null && ng > s.pos[1] + 0.3) {
+        // rolled into a wall: knock it back
+        s.vel = [-s.vel[0] * 0.3, 0, -s.vel[2] * 0.3];
+        pts.push({ t, p: s.pos.slice(), phase: 'roll' });
+        if (++wallHits > 60) break;
+        continue;
+      }
+      const rn = solidAt && ng !== null && solidAt(nx, ng + 0.05, nz);
+      if (rn) { // rolled into rock: reflect off its face
+        const vn = s.vel[0] * rn[0] + s.vel[2] * rn[2];
+        if (vn < 0) s.vel = [(s.vel[0] - 2 * vn * rn[0]) * 0.4, 0, (s.vel[2] - 2 * vn * rn[2]) * 0.4];
+        pts.push({ t, p: s.pos.slice(), phase: 'roll' });
+        if (++wallHits > 60) break;
+        continue;
+      }
       if (ng === null || ng < s.pos[1] - 0.4) {
         // rolled off the edge
         s.pos = [nx, s.pos[1], nz]; s.spin = [0, 0, 0]; phase = 'flight';
@@ -201,7 +239,7 @@ function simulate(shot, opts = {}) {
     apexFt: apex / 0.3048, apexYd: apex / YD,
     descent: firstDescent, landSpeedMph: landSpeed / MPH,
     flightTime: landed ? landed.t : t, totalTime: t,
-    landed: !!landed, rho: env.rho,
+    landed: !!landed, rho: env.rho, rockHits,
   };
 }
 

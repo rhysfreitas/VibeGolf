@@ -12,6 +12,7 @@ const COL = {
   track: 'rgba(245, 197, 66, 0.85)',
   trackOld: 'rgba(245, 197, 66, 0.45)',
   aim: 'rgba(242, 239, 230, 0.75)',
+  floor: '#a26d4a', void: '#15110f', rock: '#8a3e26', mesaRough: '#77743f', hoodoo: '#5a2c1c',
 };
 
 export function createMinimap(canvas) {
@@ -26,7 +27,8 @@ export function createMinimap(canvas) {
     if (hole) fit();
   }
 
-  // hole = { shapes: [{ kind, rim:[[x,z]...], fair:[[x,z]...]|null, green:{x,z,r}|null, bunkers:[[x,z,r]] }], tee:[x,z], pin:[x,z] }
+  // hole = { shapes: [{ kind, rim:[[x,z]...], fair:[[x,z]...]|null, green:{x,z,r}|null, bunkers:[[x,z,r]] }], tee:[x,z], pin:[x,z],
+  //         floor: 'floor'|'void'|null, fairways:[{pts, hw}], sand:[[x,z,r]], washes:[{pts, w}], rocks:[{type,x,z,r,rot,d,ai}], fit:[[x,z]]|null }
   function setHole(h) { hole = h; fit(); }
 
   function fit() {
@@ -36,7 +38,8 @@ export function createMinimap(canvas) {
     const c = Math.cos(-ang), s = Math.sin(-ang);
     const toLocal = (x, z) => { const dx = x - tx, dz = z - tz; return [dx * c - dz * s, dx * s + dz * c]; };
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-    for (const sh of hole.shapes) for (const [x, z] of sh.rim) {
+    const fitPts = hole.fit ? hole.fit.map(([x, z]) => [[x - 45, z], [x + 45, z], [x, z - 25], [x, z + 25]]).flat() : hole.shapes.flatMap(sh => sh.rim);
+    for (const [x, z] of fitPts) {
       const [lx, lz] = toLocal(x, z);
       minX = Math.min(minX, lx); maxX = Math.max(maxX, lx); minZ = Math.min(minZ, lz); maxZ = Math.max(maxZ, lz);
     }
@@ -56,10 +59,13 @@ export function createMinimap(canvas) {
     staticLayer.width = canvas.width; staticLayer.height = canvas.height;
     const g = staticLayer.getContext('2d');
     g.scale(dpr, dpr);
-    g.lineJoin = 'round';
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    const band = (pts, hw, color) => { g.strokeStyle = color; for (let i = 0; i < pts.length - 1; i++) { const [ax, az, ah = hw] = pts[i], [bx, bz, bh = hw] = pts[i + 1]; const [a1, b1] = view.map(ax, az), [a2, b2] = view.map(bx, bz); g.lineWidth = Math.max(2, (ah + bh) * view.k); g.beginPath(); g.moveTo(a1, b1); g.lineTo(a2, b2); g.stroke(); } };
+    if (hole.floor) { g.fillStyle = hole.floor === 'void' ? COL.void : COL.floor; g.fillRect(0, 0, W, H); }
+    if (hole.floor === 'floor') for (const w of hole.washes || []) band(w.pts, w.w / 2, COL.sand);
     for (const sh of hole.shapes) {
       path(g, sh.rim); g.lineWidth = 3; g.strokeStyle = COL.rim; g.stroke();
-      g.fillStyle = sh.kind === 'tee' ? COL.rough : COL.rough; g.fill();
+      g.fillStyle = sh.kind === 'rock' ? COL.rock : sh.kind === 'mesa' ? COL.mesaRough : COL.rough; g.fill();
       if (sh.fair) { path(g, sh.fair); g.fillStyle = COL.fairway; g.fill(); }
       if (sh.green) {
         const [a, b] = view.map(sh.green.x, sh.green.z);
@@ -67,6 +73,15 @@ export function createMinimap(canvas) {
         g.beginPath(); g.arc(a, b, sh.green.r * view.k, 0, 7); g.fillStyle = COL.green; g.fill();
       }
       for (const [x, z, r] of sh.bunkers || []) { const [a, b] = view.map(x, z); g.beginPath(); g.arc(a, b, Math.max(1.5, r * view.k), 0, 7); g.fillStyle = COL.sand; g.fill(); }
+    }
+    // painted fairways and sand on any ground, then the greens again on top
+    if (hole.fairways) for (const f of hole.fairways) band(f.pts, f.hw ?? 16, COL.fairway);
+    for (const sh of hole.shapes) if (sh.green && hole.fairways && hole.fairways.length) { const [a, b] = view.map(sh.green.x, sh.green.z); g.beginPath(); g.arc(a, b, sh.green.r * view.k, 0, 7); g.fillStyle = COL.green; g.fill(); for (const [x, z, r] of sh.bunkers || []) { const [c, d] = view.map(x, z); g.beginPath(); g.arc(c, d, Math.max(1.5, r * view.k), 0, 7); g.fillStyle = COL.sand; g.fill(); } }
+    for (const [x, z, r] of hole.sand || []) { const [a, b] = view.map(x, z); g.beginPath(); g.arc(a, b, Math.max(1.5, r * view.k), 0, 7); g.fillStyle = COL.sand; g.fill(); }
+    for (const r of hole.rocks || []) {
+      g.fillStyle = COL.hoodoo; g.strokeStyle = COL.hoodoo;
+      if (r.type === 'hoodoo') { const [a, b] = view.map(r.x, r.z); g.beginPath(); g.arc(a, b, Math.max(1.4, r.r * view.k), 0, 7); g.fill(); }
+      else if (r.type === 'arch') for (const sd of [-1, 1]) { const c = Math.cos(r.rot), s2 = Math.sin(r.rot), u0 = sd * r.ai, u1 = sd * r.r; const [a1, b1] = view.map(r.x + u0 * c, r.z + u0 * s2), [a2, b2] = view.map(r.x + u1 * c, r.z + u1 * s2); g.lineWidth = Math.max(2, r.d * view.k); g.beginPath(); g.moveTo(a1, b1); g.lineTo(a2, b2); g.stroke(); }
     }
     // tee box
     const [ta, tb] = view.map(hole.tee[0], hole.tee[1]);

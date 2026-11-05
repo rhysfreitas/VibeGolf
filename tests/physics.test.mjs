@@ -53,3 +53,24 @@ test('a ball rolling slowly over the cup drops', () => {
   assert.equal(free.outcome, 'rest');
   assert.equal(holed.outcome, 'holed');
 });
+
+test('wind: headwind shortens, tailwind lengthens, crosswind drifts', () => {
+  const shot = { Speed: 120, VLA: 16.3, HLA: 0, TotalSpin: 7097, SpinAxis: 0 };
+  const calm = simulate(shot, { rho }), zero = simulate(shot, { rho, wind: { x: 0, z: 0 } });
+  const head = simulate(shot, { rho, wind: { x: 0, z: 5 } });   // air moving toward the golfer
+  const tail = simulate(shot, { rho, wind: { x: 0, z: -5 } });
+  const cross = simulate(shot, { rho, wind: { x: 5, z: 0 } });  // left to right
+  assert.equal(zero.carry, calm.carry);
+  assert.ok(head.carry < calm.carry - 8, `head ${head.carry} vs ${calm.carry}`);
+  assert.ok(tail.carry > calm.carry + 4, `tail ${tail.carry} vs ${calm.carry}`);
+  assert.ok(head.carry - calm.carry < -(tail.carry - calm.carry), 'headwind hurts more than tailwind helps');
+  assert.ok(cross.carryOffline > 4, `cross ${cross.carryOffline}`);
+});
+
+test('a ball that flies into rock bounces back off it', () => {
+  // a wall 100 m out, 40 m tall; the ball should end short of it
+  const wall = (x, y, z) => (z < -100 && z > -104 && y < 40 ? [0, 0, 1] : null);
+  const r = simulate({ Speed: 120, VLA: 16.3, HLA: 0, TotalSpin: 7097, SpinAxis: 0 }, { rho, solidAt: wall });
+  assert.ok(r.rockHits >= 1);
+  assert.ok(r.pts.at(-1).p[2] > -100, 'ends short of the wall');
+});

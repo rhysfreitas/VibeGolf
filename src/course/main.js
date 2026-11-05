@@ -1,7 +1,9 @@
-// The Aerie — course play mode.
+// Course play mode: The Aerie, Red Mesa (course.html?c=redmesa) and any course in the same format.
 import { simulate } from '../physics.js';
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
-import { HOLES } from './aerie.js';
+import { hash2, fbm, rng, sstep, islandF, edgeRadius, islandH, prepIsland, createTerrain } from './terrain.js';
+import { TIMES, WINDS, WEATHER, TEMPS, WIND_FROM, rollWind, holeWind, windVector, windInShot, skyAngles, suggestTee, teeYards } from './conditions.js';
+import { recentDrives, recordDrive } from '../drives.js';
 import { createMinimap } from './minimap.js';
 import { createSimTool } from '../sim-tool.js';
 import { TRAJ_MUL } from '../minigames/aim.js';
@@ -9,6 +11,14 @@ import { attachAimDrag } from '../aim-line.js';
 import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
+
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js' };
+const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
+const { COURSE, HOLES } = await import(COURSES[CID]);
+const MESA = COURSE.theme === 'mesa';
+const MW = MESA ? await import('./mesa-world.js') : null;
+const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
+document.title = COURSE.name;
 
 /* ===================== the course ===================== */
 // World units are metres; each hole has its own frame with the tee near the origin and play heading -z.
@@ -26,72 +36,20 @@ const CLUBS = [
 const POWERS = [{ k: 1, label: 'Full' }, { k: 0.8, label: '¾' }, { k: 0.6, label: '½' }, { k: 0.4, label: '¼' }, { k: 0.26, label: 'Chip' }];
 
 
-/* ---------- noise ---------- */
-function hash2(i, j) { let h = Math.imul(i | 0, 374761393) + Math.imul(j | 0, 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
-function vnoise(x, z) { const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); const a = hash2(i, j), b = hash2(i + 1, j), c = hash2(i, j + 1), d = hash2(i + 1, j + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
-function fbm(x, z) { return vnoise(x, z) * 0.5 + vnoise(x * 2.03 + 17, z * 2.03 + 5) * 0.25 + vnoise(x * 4.1 + 3, z * 4.1 + 11) * 0.125 + vnoise(x * 8.3, z * 8.3 + 7) * 0.0625; }
-function rng(seed) { let s = seed >>> 0; return () => { s = Math.imul(s ^ (s >>> 15), 2246822507) + 0x6d2b79f5 >>> 0; return (s >>> 8) / 16777216; }; }
-const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-
-/* ---------- island shape (shared by physics and meshes) ---------- */
-function prepIsland(I) {
-  I.rot = I.rot || 0; I.c = Math.cos(I.rot); I.s = Math.sin(I.rot); I.p = 2.4;
-  I.bound = Math.max(I.rx, I.rz) * 1.25;
-  const sd = I.seed * 1.7;
-  I.wob = th => 1 + 0.06 * Math.sin(3 * th + sd) + 0.04 * Math.sin(7 * th + 2 * sd) + 0.022 * Math.sin(13 * th + 3 * sd);
-  return I;
-}
-function islandF(I, x, z) { // <= 1 inside
-  const dx = x - I.x, dz = z - I.z;
-  const u = dx * I.c + dz * I.s, v = -dx * I.s + dz * I.c;
-  const rho = Math.pow(Math.pow(Math.abs(u) / I.rx, I.p) + Math.pow(Math.abs(v) / I.rz, I.p), 1 / I.p);
-  return rho / I.wob(Math.atan2(v / I.rz, u / I.rx));
-}
-function edgeRadius(I, th) { // world-space distance from centre to rim along local angle th
-  const cu = Math.cos(th), sv = Math.sin(th);
-  const r = 1 / Math.pow(Math.pow(Math.abs(cu) / I.rx, I.p) + Math.pow(Math.abs(sv) / I.rz, I.p), 1 / I.p);
-  const u = cu * r * I.wob(Math.atan2(sv * r / I.rz, cu * r / I.rx)), v = sv * r * I.wob(Math.atan2(sv * r / I.rz, cu * r / I.rx));
-  return { x: I.x + u * I.c - v * I.s, z: I.z + u * I.s + v * I.c };
-}
-function islandH(I, x, z, f) {
-  let h = I.top;
-  if (I.kind === 'green') {
-    const g = I.green, d = Math.hypot(x - g.x, z - g.z);
-    h += 0.35 * (fbm(x / 40 + I.seed, z / 40) - 0.5) + 0.012 * (z - g.z) - 0.008 * (x - g.x);
-    h += 0.6 * sstep(g.r + 1, g.r + 7, d) * (fbm(x / 9, z / 9 + I.seed) - 0.35);
-  } else if (I.kind === 'tee') {
-    h += 0.15 * (fbm(x / 20, z / 20) - 0.5);
-  } else {
-    h += 1.4 * (fbm(x / 32 + I.seed * 3, z / 32) - 0.5);
-  }
-  if (f > 0.9) h -= Math.pow((f - 0.9) / 0.1, 2) * 0.9; // rounded lip
-  return h;
-}
-
-let HOLE = null, ISL = [];
-function groundAt(x, z) {
-  let best = null;
-  for (const I of ISL) {
-    if (Math.abs(x - I.x) > I.bound || Math.abs(z - I.z) > I.bound) continue;
-    const f = islandF(I, x, z);
-    if (f <= 1) { const h = islandH(I, x, z, f); if (best === null || h > best) best = h; }
-  }
-  return best;
-}
-function islandAt(x, z) {
-  for (const I of ISL) { if (Math.abs(x - I.x) > I.bound || Math.abs(z - I.z) > I.bound) continue; if (islandF(I, x, z) <= 1) return I; }
-  return null;
-}
-function surfaceAt(x, z) {
-  const I = islandAt(x, z); if (!I) return 'void';
-  if (I.bunkers) for (const b of I.bunkers) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
-  const f = islandF(I, x, z);
-  if (I.kind === 'green') { const d = Math.hypot(x - I.green.x, z - I.green.z); return d < I.green.r ? 'green' : d < I.green.r + 2 ? 'fairway' : 'rough'; }
-  if (I.kind === 'tee') return (Math.abs(x - HOLE.tee[0]) < 5 && Math.abs(z - HOLE.tee[1]) < 7) ? 'tee' : 'rough';
-  if (I.kind === 'fairway') return f < 0.8 ? 'fairway' : 'rough';
-  return 'rough';
-}
+/* ---------- the hole's ground (shared with the physics; see terrain.js) ---------- */
+let HOLE = null, ISL = [], T = null;
+const groundAt = (x, z) => T.groundAt(x, z);
+const islandAt = (x, z) => T.islandAt(x, z);
+const surfaceAt = (x, z) => T.surfaceAt(x, z);
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' ? 'fairway' : s === 'void' ? 'rough' : s; };
+
+/* ---------- conditions and tees (set on the round setup screen) ---------- */
+const TEE_SETS = COURSE.teeSets || [{ id: 'tee', name: 'Tees', color: '#f5c542', minDrive: 0 }];
+const cond = { ...COURSE.signature, tee: TEE_SETS[Math.min(1, TEE_SETS.length - 1)].id };
+let windRoll = rollWind(cond), wind = { mph: 0, from: 0 }, windVec = { x: 0, z: 0 };
+const teeOf = h => (h.tees ? h.tees[cond.tee] || Object.values(h.tees)[0] : h.tee);
+const yardsOf = h => (typeof h.yards === 'number' ? h.yards : h.yards[cond.tee]);
+const tempF = () => TEMPS[cond.temp]?.f ?? 72;
 
 /* ===================== renderer / scene ===================== */
 const coarse = matchMedia('(pointer: coarse)').matches || !!window.__lowq;
@@ -111,21 +69,61 @@ const FOG_COLOR = new THREE.Color(0xbfd0dc);
 scene.fog = new THREE.Fog(FOG_COLOR, 320, 4200);
 const sky = new THREE.Sky(); sky.scale.setScalar(10000); scene.add(sky);
 const skyU = sky.material.uniforms;
-skyU.turbidity.value = 4; skyU.rayleigh.value = 1.6; skyU.mieCoefficient.value = 0.005; skyU.mieDirectionalG.value = 0.85;
-const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 16), THREE.MathUtils.degToRad(48));
-skyU.sunPosition.value.copy(sunDir);
+const sunDir = new THREE.Vector3(0, 1, 0);
 const sun = new THREE.DirectionalLight(0xffd9b0, 2.4);
 sun.castShadow = true;
 sun.shadow.mapSize.set(coarse ? 2048 : 4096, coarse ? 2048 : 4096);
-const SB = 120; Object.assign(sun.shadow.camera, { left: -SB, right: SB, top: SB, bottom: -SB, near: 1, far: 1400 });
+const SB = MESA ? 150 : 120; Object.assign(sun.shadow.camera, { left: -SB, right: SB, top: SB, bottom: -SB, near: 1, far: 1600 });
 sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.05;
 scene.add(sun, sun.target);
 const hemi = new THREE.HemisphereLight(0xd6e8ff, 0x6a7a68, 0.45); scene.add(hemi);
-{ // image-based light from the same sky
-  const pm = new THREE.PMREMGenerator(renderer), es = new THREE.Scene(), s2 = new THREE.Sky(); s2.scale.setScalar(1000); es.add(s2);
+const pmrem = new THREE.PMREMGenerator(renderer);
+let envRT = null;
+// stars for night rounds
+const stars = (() => {
+  const R = rng(77), n = 1600, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const a = R() * Math.PI * 2, e = Math.asin(R() * 0.97 + 0.03); pos.set([Math.cos(a) * Math.cos(e) * 6000, Math.sin(e) * 6000, Math.sin(a) * Math.cos(e) * 6000], i * 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xdfe8ff, size: 1.6, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.85, depthWrite: false }));
+  p.visible = false; p.renderOrder = -2; scene.add(p); return p;
+})();
+// Light for the round's time of day and weather, with the sun placed for this hole's heading.
+// (The Aerie's morning is the light it always had.)
+function lightPreset() {
+  const t = cond.time, w = cond.weather;
+  const L = {
+    morning: { sun: 0xffd9b0, si: 2.4, hs: 0xd6e8ff, hg: 0x6a7a68, hi: 0.45, exp: 0.6, turb: 4, ray: 1.6, mie: 0.005, fog: MESA ? 0xd8c2ae : 0xbfd0dc },
+    midday: { sun: 0xfff3e2, si: 2.7, hs: 0xd8e8ff, hg: 0x7a6a58, hi: 0.55, exp: 0.5, turb: 3, ray: 1.1, mie: 0.004, fog: MESA ? 0xd6cbbf : 0xc4d4e0 },
+    golden: { sun: 0xffa45c, si: 2.8, hs: 0xe8c8b0, hg: 0x7a5442, hi: 0.42, exp: 0.62, turb: 6.5, ray: 2.6, mie: 0.009, fog: MESA ? 0xdcab84 : 0xe2c0a0 },
+    night: { sun: 0x9fb4ff, si: 0.55, hs: 0x31436a, hg: 0x1a1612, hi: 0.4, exp: 0.9, turb: 1.5, ray: 0.4, mie: 0.003, fog: 0x0e1626 },
+  }[t] || {};
+  const P = { ...L, near: MESA ? 420 : 320, far: MESA ? 5200 : 4200 };
+  if (w === 'haze') { P.turb += 5; P.si *= 0.82; P.hi *= 1.15; P.near *= 0.55; P.far *= 0.6; }
+  if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : MESA ? 0xa89c92 : 0xa9b0b6; P.exp *= 1.05; }
+  return P;
+}
+function applySky(heading = 0) {
+  const T0 = TIMES[cond.time] || TIMES.morning, P = lightPreset();
+  const a = skyAngles(T0.sunAz, T0.sunEl, MESA ? heading : 333);
+  sunDir.setFromSphericalCoords(1, a.polar, a.azimuth);
+  const skySun = T0.night ? new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(96), skyAngles(300, 0, MESA ? heading : 333).azimuth) : sunDir;
+  skyU.turbidity.value = P.turb; skyU.rayleigh.value = P.ray; skyU.mieCoefficient.value = P.mie; skyU.mieDirectionalG.value = 0.85;
+  skyU.sunPosition.value.copy(skySun);
+  sun.color.set(P.sun); sun.intensity = P.si;
+  hemi.color.set(P.hs); hemi.groundColor.set(P.hg); hemi.intensity = P.hi;
+  renderer.toneMappingExposure = P.exp;
+  FOG_COLOR.set(P.fog); scene.fog.near = P.near; scene.fog.far = P.far;
+  sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
+  stars.visible = !!T0.night && cond.weather !== 'overcast';
+  ball.material.emissive.set(T0.night ? 0xbfe8ff : 0x000000); ball.material.emissiveIntensity = T0.night ? 1.4 : 0;
+  // image-based light from the same sky
+  const es = new THREE.Scene(), s2 = new THREE.Sky(); s2.scale.setScalar(1000); es.add(s2);
   for (const k of ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) s2.material.uniforms[k].value = skyU[k].value;
-  s2.material.uniforms.sunPosition.value.copy(sunDir);
-  scene.environment = pm.fromScene(es, 0.02).texture;
+  s2.material.uniforms.sunPosition.value.copy(skySun);
+  if (envRT) envRT.dispose();
+  envRT = pmrem.fromScene(es, 0.02); scene.environment = envRT.texture;
+  s2.material.dispose(); s2.geometry.dispose();
+  if (cloudMats) cloudMats.forEach(m => { m.uniforms.uSun.value = sunDir; });
 }
 const clockU = { value: 0 };
 
@@ -162,23 +160,27 @@ function cloudLayer(y, scale, alpha, speed) {
   m.position.y = y; m.renderOrder = -1; scene.add(m);
   return mat;
 }
-const cloudMats = [cloudLayer(-320, 0.0016, 1.0, 1.0), cloudLayer(-210, 0.0028, 0.55, 1.8)];
+const cloudMats = MESA ? [] : [cloudLayer(-320, 0.0016, 1.0, 1.0), cloudLayer(-210, 0.0028, 0.55, 1.8)];
 
 /* ---------- materials ---------- */
 const islandMat = new THREE.MeshStandardMaterial({ roughness: 0.93, metalness: 0, envMapIntensity: 0.6 });
 const holeDirU = { value: new THREE.Vector2(0, -1) };
+const surfU = { uSurf: { value: null }, uSurfMin: { value: new THREE.Vector2() }, uSurfSize: { value: new THREE.Vector2(1, 1) }, uFloorY: { value: -1e4 } };
 islandMat.onBeforeCompile = sh => {
-  sh.uniforms.uDir = holeDirU;
+  sh.uniforms.uDir = holeDirU; Object.assign(sh.uniforms, surfU);
+  if (MESA) sh.defines = { ...(sh.defines || {}), MESA: '' };
   sh.vertexShader = sh.vertexShader
     .replace('#include <common>', '#include <common>\nattribute vec4 aW; attribute float aDepth; varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN;')
     .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvW4 = aW; vDepth = aDepth; vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
   sh.fragmentShader = sh.fragmentShader
     .replace('#include <common>', `#include <common>
 varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN; uniform vec2 uDir;
+uniform sampler2D uSurf; uniform vec2 uSurfMin, uSurfSize; uniform float uFloorY;
 float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
 float fb(vec2 p){ return vn(p)*0.5 + vn(p*2.07+3.1)*0.25 + vn(p*4.13+7.7)*0.125 + vn(p*8.4+1.3)*0.0625; }
-vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }`)
+vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
+float strataLine(float y){ return smoothstep(0.0, 0.25, abs(fract(y*0.11) - 0.5)); }`)
     .replace('#include <map_fragment>', `
 vec3 p = vWPos;
 float camD = length(cameraPosition - p);
@@ -190,6 +192,30 @@ vec3 rough = mix(lin(vec3(0.2,0.37,0.13)), lin(vec3(0.28,0.42,0.16)), mid) * (0.
 vec3 fair = mix(lin(vec3(0.3,0.5,0.17)), lin(vec3(0.38,0.58,0.21)), stripe) * (0.9 + 0.18*mid) * (0.92 + 0.16*fine);
 vec3 grn = lin(vec3(0.36,0.61,0.24)) * (0.95 + 0.1*vn(p.xz*0.8)) * (0.97 + 0.06*fine);
 vec3 sand = lin(vec3(0.86,0.79,0.62)) * (0.92 + 0.12*fine);
+#ifdef MESA
+// Red Mesa: painted surfaces from the hole's texture over scrub (mesa tops) or bare red earth (floor)
+vec2 st = (p.xz - uSurfMin) / uSurfSize;
+float inTex = step(0.0, st.x) * step(st.x, 1.0) * step(0.0, st.y) * step(st.y, 1.0);
+vec4 sf = mix(vec4(0.0, 0.0, 0.0, 1.0 - step(uFloorY + 4.0, p.y)), texture2D(uSurf, clamp(st, 0.0, 1.0)), inTex);
+vec3 scrub = mix(lin(vec3(0.46,0.42,0.26)), lin(vec3(0.56,0.48,0.3)), mid) * (0.8 + 0.4*fine);
+scrub = mix(scrub, lin(vec3(0.62,0.4,0.26)), smoothstep(0.55, 0.8, fb(p.xz*0.06)) * 0.55);
+vec3 dirt = mix(lin(vec3(0.66,0.4,0.25)), lin(vec3(0.76,0.52,0.33)), mid) * (0.85 + 0.3*fine);
+vec3 mfair = mix(lin(vec3(0.33,0.5,0.18)), lin(vec3(0.4,0.57,0.22)), stripe) * (0.9 + 0.18*mid) * (0.92 + 0.16*fine);
+vec3 msand = lin(vec3(0.88,0.7,0.52)) * (0.92 + 0.12*fine);
+vec3 col = mix(scrub, dirt, sf.a);
+col = mix(col, mfair, sf.r); col = mix(col, grn, sf.g); col = mix(col, msand, sf.b);
+// red sandstone: strata, pale bands and dark desert varnish down the faces
+float band = fb(vec2(p.y*0.16, (p.x+p.z)*0.003));
+vec3 rock = mix(lin(vec3(0.6,0.25,0.14)), lin(vec3(0.8,0.43,0.24)), band);
+rock = mix(rock, lin(vec3(0.86,0.64,0.44)), smoothstep(0.6, 0.78, fb(vec2(p.y*0.45, (p.x-p.z)*0.008))) * 0.55);
+float steep = 1.0 - abs(vWN.y);
+float varnish = smoothstep(0.42, 0.78, fb(vec2((p.x+p.z)*0.22, p.y*0.012))) * steep;
+rock = mix(rock, lin(vec3(0.2,0.1,0.07)), varnish * 0.7);
+rock *= (0.8 + 0.2*fine) * (0.9 + 0.1*strataLine(p.y));
+float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
+col = mix(col, rock, rw);
+diffuseColor.rgb = col;
+#else
 vec3 col = rough;
 col = mix(col, fair, vW4.x);
 col = mix(col, grn, vW4.y);
@@ -207,12 +233,16 @@ rock = mix(rock, lin(vec3(0.24,0.36,0.15)) * (0.8+0.4*fine), moss);
 rock *= mix(1.0, 0.42, smoothstep(10.0, 140.0, vDepth));
 col = mix(col, rock, vW4.w);
 diffuseColor.rgb = col;
+#endif
 `);
 };
 
 /* ---------- island mesh ---------- */
 function buildIsland(I, detail, group, trees) {
-  const N = detail.seg, rings = [0, 0.08, 0.17, 0.27, 0.38, 0.5, 0.6, 0.7, 0.78, 0.85, 0.9, 0.94, 0.97, 0.99, 1];
+  const N = detail.seg;
+  let rings = [0, 0.08, 0.17, 0.27, 0.38, 0.5, 0.6, 0.7, 0.78, 0.85, 0.9, 0.94, 0.97, 0.99, 1];
+  if (MESA && Math.max(I.rx, I.rz) > 45) { const n = Math.min(40, Math.round(Math.max(I.rx, I.rz) / 6)); rings = Array.from({ length: n }, (_, i) => Math.pow(i / (n - 1), 0.8)).filter(r => r < 0.95).concat([0.97, 0.99, 1]); }
+  if (MESA) return buildMesa(I, N, rings, group, trees);
   const K = detail.side;
   const D = I.depth;
   const rows = rings.length + K;
@@ -286,12 +316,57 @@ function buildIsland(I, detail, group, trees) {
     const x = I.x + (e.x - I.x) * s, z = I.z + (e.z - I.z) * s;
     if (I.playable && surfaceAt(x, z) !== 'rough') continue;
     if (I.playable && I.kind !== 'rough' && islandF(I, x, z) < 0.86) continue;
-    if (I.kind === 'tee' && (Math.hypot(x - HOLE.tee[0], z - HOLE.tee[1]) < 12 || z > HOLE.tee[1] - 4)) continue; // keep the tee and the camera behind it clear
+    if (I.kind === 'tee' && Object.values(HOLE.tees || { t: HOLE.tee }).some(t => Math.hypot(x - t[0], z - t[1]) < 12 || (Math.abs(x - t[0]) < 10 && z > t[1] - 4))) continue; // keep the tees and the camera behind them clear
     trees.push({ x, y: groundAt2(I, x, z), z, s: (I.playable ? 0.9 : 1.2) + R() * 0.8, type: R() < 0.62 ? 'pine' : 'oak', r: R() });
     placed++;
   }
 }
 const groundAt2 = (I, x, z) => islandH(I, x, z, Math.min(1, islandF(I, x, z)));
+// Red Mesa: a top like the Aerie's, then cliff walls straight down to the canyon floor, with
+// ledges where the strata step and a talus skirt at the foot
+function buildMesa(I, N, rings, group, trees) {
+  const K = coarse ? 9 : 12, rows = rings.length + K;
+  const pos = new Float32Array((N + 1) * rows * 3), aW = new Float32Array((N + 1) * rows * 4), aD = new Float32Array((N + 1) * rows);
+  const R = rng(I.seed * 977 + 13);
+  let vi = 0;
+  for (let j = 0; j <= N; j++) {
+    const th = (j / N) * Math.PI * 2, e = edgeRadius(I, th);
+    let ry = 0;
+    for (const rr of rings) {
+      const sc = rr * 0.999, x = I.x + (e.x - I.x) * sc, z = I.z + (e.z - I.z) * sc;
+      const y = islandH(I, x, z, Math.min(islandF(I, x, z), 1));
+      pos.set([x, y, z], vi * 3); aW.set([0, 0, 0, 0], vi * 4); aD[vi] = 0; vi++; ry = y;
+    }
+    const ox = e.x - I.x, oz = e.z - I.z, ol = Math.hypot(ox, oz) || 1, nx = ox / ol, nz = oz / ol;
+    const fx = e.x + nx * 5, fz = e.z + nz * 5;
+    let bottom = T.floor ? (T.inGorge(fx, fz) ? T.floor.y - 120 : T.floorShape(fx, fz)) : I.top - I.depth;
+    if (bottom === null || bottom > ry - 0.5) bottom = ry - 1.5;
+    const H = ry - bottom, pad = H < 4, talus = Math.min(10, H * 0.16), arc = th * Math.max(I.rx, I.rz);
+    for (let k = 1; k <= K; k++) {
+      const t = k / K, y = pad ? ry - (H + 1.5) * t : ry - 0.6 - (H + 1.2) * Math.pow(t, 1.1);
+      let off = pad ? t * 1.5 : (fbm(arc / 14 + I.seed, y / 7) - 0.5) * 3.2 + (k === 1 ? 0.3 : 0);
+      if (!pad && t > 0.75) off += Math.pow((t - 0.75) / 0.25, 1.6) * talus;
+      pos.set([e.x + nx * off, y, e.z + nz * off], vi * 3);
+      aW.set([0, 0, 0, pad ? 0 : 1], vi * 4); aD[vi] = ry - y; vi++;
+    }
+  }
+  const idx = [];
+  for (let j = 0; j < N; j++) for (let r = 0; r < rows - 1; r++) { const a = j * rows + r, b = (j + 1) * rows + r; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('aW', new THREE.BufferAttribute(aW, 4)); geo.setAttribute('aDepth', new THREE.BufferAttribute(aD, 1));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, islandMat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData.island = I; group.add(mesh);
+  // junipers and pinyons on the rough
+  const want = I.trees ?? (I.playable ? 0 : Math.round(I.rx * I.rz / 900));
+  let placed = 0;
+  for (let t = 0; t < want * 14 && placed < want; t++) {
+    const th = R() * Math.PI * 2, sc = Math.sqrt(R()) * 0.93, e = edgeRadius(I, th);
+    const x = I.x + (e.x - I.x) * sc, z = I.z + (e.z - I.z) * sc;
+    if (I.playable) { const sf = surfaceAt(x, z); if (sf !== 'rough' || T.fairwayD(x, z) < 6) continue; if (Object.values(HOLE.tees || {}).some(tt => Math.hypot(x - tt[0], z - tt[1]) < 14)) continue; if (HOLE.pinPos && Math.hypot(x - HOLE.pinPos.x, z - HOLE.pinPos.z) < 22) continue; }
+    trees.push({ x, y: groundAt2(I, x, z), z, s: 0.8 + R() * 0.9, type: R() < 0.7 ? 'juniper' : 'pinyon', r: R() });
+    placed++;
+  }
+}
 const vineMat = new THREE.LineBasicMaterial({ color: 0x2f4a22, transparent: true, opacity: 0.85 });
 
 const fallMat = new THREE.ShaderMaterial({
@@ -345,7 +420,7 @@ const trunkGeo = new THREE.CylinderGeometry(0.12, 0.22, 1, 6); trunkGeo.translat
 const foliageMat = new THREE.MeshStandardMaterial({ roughness: 0.92, envMapIntensity: 0.5 });
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 });
 function buildTrees(list, group) {
-  const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type === 'oak');
+  const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type !== 'pine');
   const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * 3);
   const blobs = new THREE.InstancedMesh(blobGeo, foliageMat, oaks.length * 4);
   const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, list.length);
@@ -364,9 +439,11 @@ function buildTrees(list, group) {
   }
   k = 0;
   for (const t of oaks) {
-    const H = 2.5 * t.s, s = 3 * t.s;
-    m.compose(ps.set(t.x, t.y - 0.3, t.z), q.identity(), sc.set(t.s, H + 1.2, t.s)); trunks.setMatrixAt(ti++, m);
-    const base = [0x3f5a28, 0x4a6230, 0x56692f][Math.floor(R() * 3)];
+    const shape = { oak: [2.5, 3, 1], juniper: [0.5, 1.5, 0.6], pinyon: [1.2, 1.9, 0.7], cotton: [4.5, 3.6, 1.4] }[t.type] || [2.5, 3, 1];
+    const H = shape[0] * t.s, s = shape[1] * t.s;
+    m.compose(ps.set(t.x, t.y - 0.3, t.z), q.identity(), sc.set(t.s * shape[2], H + 1.2, t.s * shape[2])); trunks.setMatrixAt(ti++, m);
+    const pal = { juniper: [0x3a4a30, 0x445436, 0x34432e], pinyon: [0x3d5230, 0x48593a, 0x3a4c2c], cotton: [0x7c8c3a, 0x8f9a44, 0x6e8034] }[t.type] || [0x3f5a28, 0x4a6230, 0x56692f];
+    const base = pal[Math.floor(R() * 3)];
     for (let b = 0; b < 4; b++) {
       const a = R() * 6.28, rr = b === 0 ? 0 : s * (0.35 + R() * 0.3), bs = s * (b === 0 ? 0.8 : 0.5 + R() * 0.25);
       m.compose(ps.set(t.x + Math.cos(a) * rr, t.y + H + bs * 0.6 + R() * s * 0.3, t.z + Math.sin(a) * rr), q.setFromEuler(new THREE.Euler(R() * 0.4, R() * 6, 0)), sc.set(bs, bs * 0.75, bs));
@@ -390,56 +467,95 @@ const puffTex = (() => {
 /* ---------- hole build ---------- */
 let holeGroup = null, pinMesh = null, flagMesh = null, cupMesh = null;
 const poleGeo = new THREE.CylinderGeometry(0.014, 0.014, 2.3, 8); poleGeo.translate(0, 1.15, 0);
+let mesaCtx = null, greenLight = null;
+function holeBox(h) { // the area the hole is played over (paint texture, near floor, map view)
+  const pts = [...Object.values(h.tees || { t: h.tee }), h.pin || [h.pinPos.x, h.pinPos.z], ...(h.line || [])];
+  const xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
+  return { x0: Math.min(...xs) - 150, x1: Math.max(...xs) + 150, z0: Math.min(...zs) - 140, z1: Math.max(...zs) + 120 };
+}
 function buildHole(h) {
   if (holeGroup) { scene.remove(holeGroup); holeGroup.traverse(o => { if (o.geometry && o.geometry !== coneGeo && o.geometry !== blobGeo && o.geometry !== trunkGeo && o.geometry !== poleGeo) o.geometry.dispose(); }); }
+  if (surfU.uSurf.value) { surfU.uSurf.value.dispose(); surfU.uSurf.value = null; }
   HOLE = h; holeGroup = new THREE.Group(); scene.add(holeGroup);
-  ISL = h.islands.map(I => prepIsland({ ...I, playable: true }));
-  const pinI = ISL.find(I => I.kind === 'green');
-  h.pinPos = new THREE.Vector3(pinI.pin[0], groundAt(pinI.pin[0], pinI.pin[1]), pinI.pin[1]);
+  T = createTerrain(h); ISL = T.ISL;
+  h.tee = teeOf(h);
+  const pin = h.pin || ISL.find(I => I.kind === 'green').pin;
+  h.pinPos = new THREE.Vector3(pin[0], groundAt(pin[0], pin[1]), pin[1]);
+  wind = holeWind(windRoll, HOLES.indexOf(h)); windVec = windVector(wind, h.heading ?? 0);
+  applySky(h.heading ?? 0);
   const trees = [];
-  for (const I of ISL) buildIsland(I, { seg: coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
-  // decorative spires around the hole, kept clear of the corridor
-  const R = rng(h.par * 101 + h.yards);
-  const a = new THREE.Vector2(0, 0), b = new THREE.Vector2(h.pinPos.x, h.pinPos.z);
+  const box = holeBox(h);
+  if (MESA) { // paint texture first: the island shader reads it
+    const tex = MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.8);
+    surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
+  }
+  for (const I of ISL) buildIsland(I, { seg: MESA ? Math.min(coarse ? 200 : 280, Math.max(96, Math.round(Math.max(I.rx, I.rz) * 1.6))) : coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
+  const R = rng(h.par * 101 + yardsOf(h));
+  const a = new THREE.Vector2(h.tee[0], h.tee[1]), b = new THREE.Vector2(h.pinPos.x, h.pinPos.z);
   const segDist = (x, z) => { const ab = b.clone().sub(a), t = THREE.MathUtils.clamp(new THREE.Vector2(x, z).sub(a).dot(ab) / ab.lengthSq(), 0, 1); return new THREE.Vector2(x, z).distanceTo(a.clone().addScaledVector(ab, t)); };
-  const deco = [];
-  for (let i = 0; i < 400 && deco.length < (coarse ? 26 : 38); i++) {
-    const ang = R() * Math.PI * 2, rad = 160 + Math.pow(R(), 0.8) * 1700;
-    const x = b.x * 0.5 + Math.cos(ang) * rad, z = b.y * 0.5 + Math.sin(ang) * rad;
-    if (segDist(x, z) < 120 + rad * 0.05) continue;
-    const size = 18 + R() * 55 + rad * 0.03;
-    if (deco.some(d => Math.hypot(d.x - x, d.z - z) < (d.rx + size) * 1.3)) continue;
-    const top = -70 + R() * 200 + (rad > 900 ? R() * 250 : 0);
-    deco.push(prepIsland({ x, z, rx: size, rz: size * (0.7 + R() * 0.6), rot: R() * 3, top, depth: size * (3 + R() * 4), kind: 'deco', seed: 100 + i, falls: R() < 0.25 ? [R() * 6.28] : [] }));
+  if (MESA) {
+    for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
+    MW.buildFloor(T, box, islandMat, coarse, holeGroup);
+    MW.buildRocks(T, h, islandMat, holeGroup);
+    MW.scatterShrubs(T, box, coarse, holeGroup);
+    trees.push(...MW.cottonwoodSpots(T, h));
+    mesaCtx = MW.buildProps(h, T, h.tees ? Object.values(h.tees)[0] : h.tee, islandMat, holeGroup);
+  } else {
+    // decorative spires around the hole, kept clear of the corridor
+    const deco = [];
+    for (let i = 0; i < 400 && deco.length < (coarse ? 26 : 38); i++) {
+      const ang = R() * Math.PI * 2, rad = 160 + Math.pow(R(), 0.8) * 1700;
+      const x = b.x * 0.5 + Math.cos(ang) * rad, z = b.y * 0.5 + Math.sin(ang) * rad;
+      if (segDist(x, z) < 120 + rad * 0.05) continue;
+      const size = 18 + R() * 55 + rad * 0.03;
+      if (deco.some(d => Math.hypot(d.x - x, d.z - z) < (d.rx + size) * 1.3)) continue;
+      const top = -70 + R() * 200 + (rad > 900 ? R() * 250 : 0);
+      deco.push(prepIsland({ x, z, rx: size, rz: size * (0.7 + R() * 0.6), rot: R() * 3, top, depth: size * (3 + R() * 4), kind: 'deco', seed: 100 + i, falls: R() < 0.25 ? [R() * 6.28] : [] }));
+    }
+    for (const I of deco) buildIsland(I, { seg: rad2seg(I), side: 18 }, holeGroup, trees);
+    // cloud puffs drifting between islands
+    for (let i = 0; i < (coarse ? 40 : 70); i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, transparent: true, depthWrite: false, opacity: 0.35 + R() * 0.45, fog: true }));
+      const ang = R() * 6.28, rad = 60 + R() * 1400;
+      const x = b.x * 0.5 + Math.cos(ang) * rad, z = b.y * 0.5 + Math.sin(ang) * rad;
+      if (segDist(x, z) < 50) continue;
+      const s = 60 + R() * 220; sp.scale.set(s, s * 0.45, 1);
+      sp.position.set(x, -60 - R() * 180 + (rad > 700 ? R() * 120 : 0), z); sp.userData.v = 0.6 + R(); holeGroup.add(sp);
+    }
+    mesaCtx = null;
   }
-  for (const I of deco) buildIsland(I, { seg: rad2seg(I), side: 18 }, holeGroup, trees);
   buildTrees(trees, holeGroup);
-  // cloud puffs drifting between islands
-  for (let i = 0; i < (coarse ? 40 : 70); i++) {
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, transparent: true, depthWrite: false, opacity: 0.35 + R() * 0.45, fog: true }));
-    const ang = R() * 6.28, rad = 60 + R() * 1400;
-    const x = b.x * 0.5 + Math.cos(ang) * rad, z = b.y * 0.5 + Math.sin(ang) * rad;
-    if (segDist(x, z) < 50) continue;
-    const s = 60 + R() * 220; sp.scale.set(s, s * 0.45, 1);
-    sp.position.set(x, -60 - R() * 180 + (rad > 700 ? R() * 120 : 0), z); sp.userData.v = 0.6 + R(); holeGroup.add(sp);
-  }
-  // pin, flag, cup, tee markers
+  // pin, flag, cup, tee markers (every set, in its colour)
   const pp = h.pinPos;
   pinMesh = new THREE.Mesh(poleGeo, new THREE.MeshStandardMaterial({ color: 0xf4f1e8, roughness: 0.5 })); pinMesh.position.copy(pp); pinMesh.castShadow = true; holeGroup.add(pinMesh);
   const fg = new THREE.PlaneGeometry(0.62, 0.42, 12, 6); fg.translate(0.31, 0, 0);
-  flagMesh = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.75, side: THREE.DoubleSide }));
+  flagMesh = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.75, side: THREE.DoubleSide, emissive: 0xf5c542, emissiveIntensity: TIMES[cond.time]?.night ? 0.5 : 0 }));
   flagMesh.position.set(pp.x + 0.014, pp.y + 2.07, pp.z); flagMesh.userData.base = Float32Array.from(fg.attributes.position.array); flagMesh.castShadow = true; holeGroup.add(flagMesh);
   cupMesh = new THREE.Mesh(new THREE.CircleGeometry(0.054, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x0b0f0c })); cupMesh.position.set(pp.x, pp.y + 0.006, pp.z); holeGroup.add(cupMesh);
-  for (const dx of [-4.5, 4.5]) { const tm = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.4 })); const tx = h.tee[0] + dx, tz = h.tee[1] - 2.5; tm.position.set(tx, groundAt(tx, tz) + 0.08, tz); holeGroup.add(tm); }
+  const teeSpots = h.tees ? TEE_SETS.map(t => [t, h.tees[t.id]]).filter(x => x[1]) : [[TEE_SETS[0], h.tee]];
+  for (const [set, tp] of teeSpots) for (const dx of [-4, 4]) {
+    const tm = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 8), new THREE.MeshStandardMaterial({ color: set.color, roughness: 0.4 }));
+    const tx = tp[0] + dx, tz = tp[1] - 2.5, gy = groundAt(tx, tz); if (gy === null) continue; tm.position.set(tx, gy + 0.1, tz); holeGroup.add(tm);
+  }
+  // night: the green is lit
+  if (greenLight) { scene.remove(greenLight, greenLight.target); greenLight = null; }
+  if (TIMES[cond.time]?.night) {
+    greenLight = new THREE.SpotLight(0xfff1d6, 3.2, 120, 0.55, 0.6, 1.2); greenLight.position.set(pp.x + 14, pp.y + 34, pp.z + 18); greenLight.target.position.copy(pp); scene.add(greenLight, greenLight.target);
+  }
   const dir = new THREE.Vector2(pp.x - h.tee[0], pp.z - h.tee[1]).normalize(); holeDirU.value.copy(dir);
   // plan view for the corner map
+  const shapeOf = I => {
+    const rim = [], fair = [];
+    for (let j = 0; j < 64; j++) { const e = edgeRadius(I, j / 64 * Math.PI * 2); rim.push([e.x, e.z]); fair.push([I.x + (e.x - I.x) * 0.8, I.z + (e.z - I.z) * 0.8]); }
+    return { kind: I.kind, top: I.slope ? Math.max(I.slope.from[2], I.slope.to[2]) : I.top, rim, fair: I.kind === 'fairway' ? fair : null, green: I.green || null, bunkers: I.bunkers || [] };
+  };
   minimap.setHole({
     tee: h.tee, pin: [pp.x, pp.z],
-    shapes: ISL.map(I => {
-      const rim = [], fair = [];
-      for (let j = 0; j < 64; j++) { const e = edgeRadius(I, j / 64 * Math.PI * 2); rim.push([e.x, e.z]); fair.push([I.x + (e.x - I.x) * 0.8, I.z + (e.z - I.z) * 0.8]); }
-      return { kind: I.kind, rim, fair: I.kind === 'fairway' ? fair : null, green: I.green || null, bunkers: I.bunkers || [] };
-    }),
+    shapes: ISL.map(shapeOf).sort((p, q) => p.top - q.top),
+    floor: T.floor ? (T.floor.solid ? 'floor' : 'void') : null,
+    fairways: h.fairways || [], sand: h.sand || [], washes: T.floor ? T.floor.washes : [],
+    rocks: T.rocks.map(r => ({ type: r.type, x: r.x, z: r.z, r: r.type === 'arch' ? r.ao : r.capR, rot: r.rot || 0, d: r.d || 0, ai: r.ai || 0 })),
+    fit: h.line ? [...Object.values(h.tees), [pp.x, pp.z]] : null,
   });
 }
 const rad2seg = I => Math.max(48, Math.min(96, Math.round(I.rx * 1.3)));
@@ -488,7 +604,7 @@ function groundTrack(W, upto) { const out = []; for (let i = 0; i <= upto; i += 
 let mmFrame = 0;
 function drawMinimap() {
   const wrap = document.getElementById('minimapWrap');
-  const show = !!HOLE && state.phase !== 'intro' && document.getElementById('card').hidden;
+  const show = !!HOLE && state.phase !== 'intro' && state.phase !== 'setup' && document.getElementById('card').hidden;
   wrap.classList.toggle('active', state.cam === 'map');
   if (show && wrap.hidden) { wrap.hidden = false; minimap.resize(); }
   wrap.hidden = !show;
@@ -533,17 +649,21 @@ function shotFrame(origin, yaw) {
   const c = Math.cos(yaw), s = Math.sin(yaw);
   const wx = (lx, lz) => origin.x + lx * c - lz * s, wz = (lx, lz) => origin.z + lx * s + lz * c;
   const cupRel = HOLE.pinPos.clone().sub(origin);
+  const solid = T.rocks.length ? (lx, ly, lz) => { const n = T.solidAt(wx(lx, lz), origin.y + ly, wz(lx, lz)); return n && [n[0] * c + n[2] * s, n[1], -n[0] * s + n[2] * c]; } : null;
   return {
     groundAt: (lx, lz) => { const g = groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - origin.y; },
     surfaceAt: (lx, lz) => physSurface(wx(lx, lz), wz(lx, lz)),
+    solidAt: solid,
     cup: { x: cupRel.x * c + cupRel.z * s, z: -cupRel.x * s + cupRel.z * c },
-    voidY: Math.min(...ISL.map(I => I.top)) - 70 - origin.y,
+    voidY: T.voidY - origin.y,
+    wind: windInShot(windVec, yaw), altFt: COURSE.altFt || 0, tempF: tempF(),
   };
 }
 function lieAdjust(shot, lie) {
   const s = { ...shot };
   if (lie === 'rough') { s.Speed *= 0.95; s.TotalSpin *= 0.72; s.VLA += 0.8; }
   else if (lie === 'sand') { s.Speed *= 0.86; s.TotalSpin *= 0.65; s.VLA += 2; }
+  else if (lie === 'desert') { s.Speed *= 0.96; s.TotalSpin *= 0.8; s.VLA += 0.4; }
   return s;
 }
 function clubShot(ci, pk) { return clubShotK(ci, POWERS[pk].k); }
@@ -553,12 +673,14 @@ function clubShotK(ci, k) { // k: swing length, fraction of full
 }
 const carryCache = new Map();
 function carryFor(ci, pk, dy) { return carryForK(ci, POWERS[pk].k, dy); }
-function carryForK(ci, k, dy) { // metres of carry to land at height dy relative to the ball
-  const key = ci + ':' + k.toFixed(3) + ':' + Math.round(dy) + ':' + state.lie;
+function carryForK(ci, k, dy, env) { // metres of carry to land at height dy relative to the ball
+  // env: { headZ (wind along the shot, m/s; + = into you), altFt, tempF, lie }; default = this course now
+  const E = env || { headZ: state.headZ || 0, altFt: COURSE.altFt || 0, tempF: tempF(), lie: state.lie };
+  const key = ci + ':' + k.toFixed(3) + ':' + Math.round(dy) + ':' + E.lie + ':' + E.headZ.toFixed(1) + ':' + E.altFt + ':' + E.tempF;
   if (carryCache.has(key)) return carryCache.get(key);
   const g = Math.round(dy);
   // fly through open air and read off where the descending ball passes the target's height
-  const r = simulate(lieAdjust(clubShotK(ci, k), state.lie), { groundAt: (x, z) => (Math.hypot(x, z) < 6 ? 0 : null), voidY: Math.min(g, 0) - 40, altFt: 0 });
+  const r = simulate(lieAdjust(clubShotK(ci, k), E.lie), { groundAt: (x, z) => (Math.hypot(x, z) < 6 ? 0 : null), voidY: Math.min(g, 0) - 40, altFt: E.altFt, tempF: E.tempF, wind: { x: 0, z: E.headZ } });
   let v = 0, apexSeen = false;
   for (let i = 1; i < r.pts.length; i++) {
     const a = r.pts[i - 1].p, b = r.pts[i].p;
@@ -574,7 +696,9 @@ function suggest(distM, dy) { // pick club + swing length whose carry best match
     if (ci === 0 && !allowDriver) continue;
     for (let pk = 0; pk < POWERS.length; pk++) {
       if (pk > 0 && ci < 5) continue; // partial swings only with short irons and wedges
-      const c = carryFor(ci, pk, dy), err = Math.abs(c - distM) + (pk > 0 ? 2 : 0) + (c < distM ? 1.5 : 0);
+      const c = carryFor(ci, pk, dy);
+      // a target higher than this club can climb (under a rim): prefer the most lofted full swing
+      const err = c <= 0 ? 1e6 - ci * 10 + pk : Math.abs(c - distM) + (pk > 0 ? 2 : 0) + (c < distM ? 1.5 : 0);
       if (!best || err < best.err) best = { ci, pk, err };
     }
   }
@@ -603,6 +727,7 @@ function availableTargets() { // only those still ahead of the ball
 function aimAt(p, autoClub = true) {
   const d = p.clone().sub(state.ball); d.y = 0;
   state.yaw = state.camYaw = Math.atan2(d.x, -d.z); state.aimPoint = p.clone();
+  state.headZ = windInShot(windVec, state.yaw).z;
   if (autoClub) {
     const dist = Math.hypot(d.x, d.z), dy = (p.y - state.ball.y);
     const s = suggest(dist, dy); state.sugg = s.ci; state.suggK = kFor(s.ci, dist, dy);
@@ -638,13 +763,13 @@ function updatePreview() {
   pvTimer = setTimeout(() => {
     pvTimer = 0;
     let fr = shotFrame(state.ball, state.yaw);
-    let r = simulate(lieAdjust(planShot(), state.lie), { ...fr, altFt: 0 });
+    let r = simulate(lieAdjust(planShot(), state.lie), fr);
     if (tool.autoAim && state.aimPoint) {
       const want = Math.atan2(state.aimPoint.x - state.ball.x, -(state.aimPoint.z - state.ball.z));
       for (let it = 0; it < 2; it++) {
         const l = landLocal(r), off = Math.atan2(l[0], -l[2]), err = Math.atan2(Math.sin(want - state.yaw - off), Math.cos(want - state.yaw - off));
         if (Math.abs(err) < 0.0005) break;
-        state.yaw += err; fr = shotFrame(state.ball, state.yaw); r = simulate(lieAdjust(planShot(), state.lie), { ...fr, altFt: 0 });
+        state.yaw += err; fr = shotFrame(state.ball, state.yaw); r = simulate(lieAdjust(planShot(), state.lie), fr);
       }
     }
     state.preview = r;
@@ -662,7 +787,7 @@ function updatePreview() {
     const surf = r.outcome === 'void' ? 'void' : surfaceAt(landW.x, landW.z);
     const endW = toWorld(state.ball, state.yaw, ...pts.at(-1).p, new THREE.Vector3());
     const restSurf = r.outcome === 'void' ? 'void' : r.outcome === 'holed' ? 'holed' : surfaceAt(endW.x, endW.z);
-    const col = { fairway: 0x8fdc8a, tee: 0x8fdc8a, green: 0x8fdc8a, rough: 0xf5c542, sand: 0xe8d29a, void: 0xff7b6b, holed: 0x8fdc8a }[restSurf] ?? 0xf5c542;
+    const col = { fairway: 0x8fdc8a, tee: 0x8fdc8a, green: 0x8fdc8a, rough: 0xf5c542, desert: 0xf5a142, sand: 0xe8d29a, void: 0xff7b6b, holed: 0x8fdc8a }[restSurf] ?? 0xf5c542;
     aimRing.material.color.set(col); aimFill.material.color.set(col);
     const carryM = Math.hypot(pts[end].p[0], pts[end].p[2]);
     const latSd = Math.max(1.5, carryM * 0.05), depSd = Math.max(1.5, carryM * 0.045);
@@ -670,11 +795,11 @@ function updatePreview() {
     restDot.position.copy(endW); restDot.position.y += 0.05; restDot.visible = state.phase === 'address' && r.outcome !== 'void';
     state.previewAim = { land: landW.clone(), rest: r.outcome === 'void' ? null : endW.clone(), color: '#' + new THREE.Color(col).getHexString(), lat: latSd * 1.4, dep: depSd * 1.4 };
     state.previewLand = landW;
-    const names = { fairway: 'Fairway', tee: 'Tee', green: 'Green', rough: 'Rough', sand: 'Bunker', void: 'In the clouds', holed: 'In the hole' };
+    const names = { fairway: 'Fairway', tee: 'Tee', green: 'Green', rough: 'Rough', sand: MESA ? 'Sand' : 'Bunker', desert: 'Canyon floor', void: VOID_TEXT[1].replace('Ends in', 'In'), holed: 'In the hole' };
     const carryYd = Math.round(r.carry);
     $('pvText').innerHTML = r.outcome === 'void'
-      ? `<b style="color:var(--bad)">${carryYd > 0 && r.landed ? carryYd + ' carry · ' : ''}Ends in the clouds</b>`
-      : `${carryYd} carry · ${yd(Math.hypot(endW.x - state.ball.x, endW.z - state.ball.z))} total · <b style="color:${restSurf === 'rough' ? 'var(--warn)' : restSurf === 'sand' ? 'var(--sand)' : 'var(--ok)'}">${names[restSurf]}</b>`;
+      ? `<b style="color:var(--bad)">${carryYd > 0 && r.landed ? carryYd + ' carry · ' : ''}${VOID_TEXT[1]}</b>`
+      : `${carryYd} carry · ${yd(Math.hypot(endW.x - state.ball.x, endW.z - state.ball.z))} total · <b style="color:${restSurf === 'rough' || restSurf === 'desert' ? 'var(--warn)' : restSurf === 'sand' ? 'var(--sand)' : 'var(--ok)'}">${names[restSurf]}</b>`;
     $('pvDot').style.background = '#' + new THREE.Color(col).getHexString();
   }, 30);
 }
@@ -692,17 +817,34 @@ function renderPlan() {
     b.onclick = () => { if (state.phase === 'address') selectTarget(o.i); };
     tw.appendChild(b);
   });
+  if (state.rimDrop && state.phase === 'address') {
+    const b = document.createElement('button'); b.className = 'tgt drop';
+    b.innerHTML = `<b>Back up top</b><span>+1 stroke</span>`;
+    b.onclick = () => { if (state.phase !== 'address' || !state.rimDrop) return; state.strokes++; state.ball.copy(state.rimDrop); state.lie = surfaceAt(state.ball.x, state.ball.z); state.rimDrop = null; toast('Back up top', '+1. Dropped beside where it went over the rim.', 2600); nextLie(); };
+    tw.appendChild(b);
+  }
   if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
-  const lieNames = { tee: 'Tee box', fairway: 'Fairway', rough: 'Rough −5%', sand: 'Bunker −14%', green: 'Green' };
+  const lieNames = { tee: 'Tee box', fairway: 'Fairway', rough: 'Rough −5%', sand: (MESA ? 'Sand' : 'Bunker') + ' −14%', desert: 'Canyon floor −4%', green: 'Green' };
   const pct = state.k < 0.995 ? ` · ${Math.round(state.k * 100)}%` : '';
   $('pvLie').textContent = `${CLUBS[state.club].name}${pct} · Lie: ${lieNames[state.lie] || state.lie}`;
   $('vClub').textContent = CLUBS[state.club].name + pct;
   if (state.lastSentClub !== state.club) { state.lastSentClub = state.club; launchMonitor.setPlayer({ club: CLUBS[state.club].id }); }
 }
+// "plays like": the card yardage after the climb or drop to the green and the course's altitude and
+// temperature, from the flight model (a 7 iron's carry; wind is shown separately)
+function playsLike(h) {
+  const ty = groundAt(h.tee[0], h.tee[1]), dy = h.pinPos.y - ty, y = yardsOf(h);
+  const sea = { headZ: 0, altFt: 0, tempF: 72, lie: 'fairway' }, here = { headZ: 0, altFt: COURSE.altFt || 0, tempF: tempF(), lie: 'fairway' };
+  const flatSea = carryForK(4, 1, 0, sea), flatHere = carryForK(4, 1, 0, here);
+  const dyc = Math.min(dy, 16), drop = carryForK(4, 1, dyc, here);
+  const elev = drop > 0 && Math.abs(dyc) > 0.5 ? (flatHere - drop) * (dy / dyc) : 0;
+  return { yards: Math.round(y * flatSea / flatHere + elev / M_PER_YD), dy };
+}
 function renderHoleCard() {
-  const h = HOLE, n = state.holeIdx + 1;
+  const h = HOLE, n = state.holeIdx + 1, y = yardsOf(h);
   $('hName').textContent = h.name;
-  $('hMeta').textContent = `Hole ${n} · Par ${h.par} · ${h.yards} yd`;
+  const pl = h.playsLike;
+  $('hMeta').textContent = `Hole ${n} · Par ${h.par} · ${y} yd` + (pl && Math.abs(pl.yards - y) >= 4 ? ` · plays ${pl.yards}` : '');
   $('hStroke').textContent = state.phase === 'holed' ? state.strokes : state.strokes + 1;
   const d = Math.hypot(HOLE.pinPos.x - state.ball.x, HOLE.pinPos.z - state.ball.z);
   $('hPin').innerHTML = state.lie === 'green' ? Math.round(d / 0.3048) + '<small>ft</small>' : yd(d) + '<small>yd</small>';
@@ -726,11 +868,13 @@ function setPhaseUI() {
   $('swingUI').hidden = onGreen || state.phase === 'holed' || state.phase === 'rolling'; $('putt').hidden = !(onGreen || state.phase === 'rolling');
   tool.setEnabled(state.phase === 'address');
   $('puttBtn').disabled = state.phase !== 'putt';
-  $('dock').style.visibility = state.phase === 'intro' ? 'hidden' : 'visible';
+  $('dock').style.visibility = state.phase === 'intro' || state.phase === 'setup' ? 'hidden' : 'visible';
+  $('holeCard').style.visibility = state.phase === 'setup' ? 'hidden' : 'visible';
   $('targetsBox').hidden = state.phase !== 'address';
   if (state.phase !== 'address' && tool.isOpen) tool.open(false);
 
   $('skip').hidden = state.phase !== 'intro';
+  $('setup').hidden = state.phase !== 'setup';
   $('intro').hidden = state.phase !== 'intro';
   renderHoleCard();
 }
@@ -796,7 +940,7 @@ function swing(s = { ideal: false }) { if (state.phase !== 'address') return; in
 function launch(raw) {
   const shot = lieAdjust(raw, state.lie);
   const fr = shotFrame(state.ball, state.yaw);
-  const r = simulate(shot, { ...fr, altFt: 0 });
+  const r = simulate(shot, fr);
   const W = r.pts.map(p => ({ t: p.t, phase: p.phase, w: toWorld(state.ball, state.yaw, p.p[0], p.p[1], p.p[2], new THREE.Vector3()) }));
   const lift = state.lie === 'tee' ? 0.045 : 0.0;
   W.forEach(p => { p.w.y += lift * Math.max(0, 1 - p.t * 4); });
@@ -824,7 +968,7 @@ function finishShot() {
     holeOut(); showReadout(r, f.shot, res); return;
   }
   if (r.outcome === 'void') {
-    state.strokes++; // penalty
+    state.strokes++; state.rimDrop = null; // penalty
     // drop near where it left the islands, never closer to the hole than that point
     let entry = f.from;
     for (const p of f.W) if (groundAt(p.w.x, p.w.z) !== null && p.w.distanceTo(f.from) > 15) entry = p.w;
@@ -834,12 +978,24 @@ function finishShot() {
     const drop = (ok.length ? ok : [f.from.clone()]).sort((a, b) => a.distanceTo(entry) - b.distanceTo(entry))[0];
     const isPrev = drop.distanceTo(f.from) < 1;
     state.ball.copy(drop); state.lie = isPrev ? f.fromLie : surfaceAt(drop.x, drop.z);
-    toast('Into the clouds', `+1 penalty. ${isPrev ? 'Replaying from where you hit it.' : 'Dropping beside the gap.'}`, 3200);
+    toast(VOID_TEXT[0], `+1 penalty. ${isPrev ? 'Replaying from where you hit it.' : 'Dropping beside the gap.'}`, 3200);
     res = '<span style="color:var(--bad)">Void +1</span>';
   } else {
     state.ball.copy(end); state.lie = surfaceAt(end.x, end.z);
-    const names = { fairway: 'Fairway', green: 'Green', rough: 'Rough', sand: 'Bunker', tee: 'Tee' };
-    res = `<span style="color:${state.lie === 'rough' ? 'var(--warn)' : state.lie === 'sand' ? 'var(--sand)' : 'var(--ok)'}">${names[state.lie] || state.lie}</span>`;
+    const names = { fairway: 'Fairway', green: 'Green', rough: 'Rough', sand: MESA ? 'Sand' : 'Bunker', tee: 'Tee', desert: 'Floor' };
+    res = `<span style="color:${state.lie === 'rough' || state.lie === 'desert' ? 'var(--warn)' : state.lie === 'sand' ? 'var(--sand)' : 'var(--ok)'}">${names[state.lie] || state.lie}</span>`;
+    state.rimDrop = null;
+    if (HOLE.pinPos.y - end.y > 12) { // under a rim it can't climb: offer a drop back up where it went over (+1)
+      for (let i = f.W.length - 1; i >= 0; i--) {
+        const p = f.W[i].w, g = groundAt(p.x, p.z), I = islandAt(p.x, p.z);
+        if (g === null || g < end.y + 8 || !I || I.kind === 'rock' || surfaceAt(p.x, p.z) === 'desert') continue;
+        const back = new THREE.Vector3(f.from.x - p.x, 0, f.from.z - p.z).setLength(4).add(p);
+        const gb = groundAt(back.x, back.z); if (gb === null) continue;
+        state.rimDrop = back.setY(gb); break;
+      }
+    }
+    if (f.fromLie === 'tee' && state.club === 0 && r.landed) recordDrive(Math.hypot(end.x - f.from.x, end.z - f.from.z) / M_PER_YD);
+    if (r.rockHits && T.rocks.length) toast('Off the rock', '', 1600);
   }
   showReadout(r, f.shot, res);
   state.tracks.push(groundTrack(f.W, f.W.length - 1));
@@ -908,29 +1064,33 @@ function holeOut() {
   setTimeout(() => showCard(true), 2400);
 }
 function showCard(afterHole) {
-  const rows = HOLES.map((h, i) => { const s = state.scores[i]; const d = s != null ? s - h.par : null; return `<tr><td>${i + 1}</td><td class="nm">${h.name}</td><td>${h.yards}</td><td>${h.par}</td><td class="${d < 0 ? 'u' : d > 0 ? 'o' : ''}">${s ?? '—'}</td></tr>`; }).join('');
+  const rows = HOLES.map((h, i) => { const s = state.scores[i]; const d = s != null ? s - h.par : null; return `<tr><td>${i + 1}</td><td class="nm">${h.name}</td><td>${yardsOf(h)}</td><td>${h.par}</td><td class="${d < 0 ? 'u' : d > 0 ? 'o' : ''}">${s ?? '—'}</td></tr>`; }).join('');
   const played = state.scores.filter(s => s != null), parPlayed = HOLES.filter((h, i) => state.scores[i] != null).reduce((a, h) => a + h.par, 0);
   const tot = played.reduce((a, b) => a + b, 0), rel = tot - parPlayed;
-  $('scTable').innerHTML = `<thead><tr><th>Hole</th><th></th><th>Yds</th><th>Par</th><th>Score</th></tr></thead><tbody>${rows}<tr><td></td><td class="nm">Total</td><td>${HOLES.reduce((a, h) => a + h.yards, 0)}</td><td>${HOLES.reduce((a, h) => a + h.par, 0)}</td><td class="${rel < 0 ? 'u' : rel > 0 ? 'o' : ''}">${played.length ? tot + ` (${rel === 0 ? 'E' : rel > 0 ? '+' + rel : rel})` : '—'}</td></tr></tbody>`;
+  $('scTable').innerHTML = `<thead><tr><th>Hole</th><th></th><th>Yds</th><th>Par</th><th>Score</th></tr></thead><tbody>${rows}<tr><td></td><td class="nm">Total</td><td>${HOLES.reduce((a, h) => a + yardsOf(h), 0)}</td><td>${HOLES.reduce((a, h) => a + h.par, 0)}</td><td class="${rel < 0 ? 'u' : rel > 0 ? 'o' : ''}">${played.length ? tot + ` (${rel === 0 ? 'E' : rel > 0 ? '+' + rel : rel})` : '—'}</td></tr></tbody>`;
   const last = state.holeIdx === HOLES.length - 1 && afterHole;
-  $('cardSub').textContent = afterHole ? `Hole ${state.holeIdx + 1} complete` : 'Scorecard';
-  $('cardTitle').textContent = last ? 'Round complete' : 'The Aerie';
+  const set = TEE_SETS.find(t => t.id === cond.tee);
+  $('cardSub').textContent = (afterHole ? `Hole ${state.holeIdx + 1} complete` : 'Scorecard') + (TEE_SETS.length > 1 ? ` · ${set.name} tees` : '');
+  $('cardTitle').textContent = last ? 'Round complete' : COURSE.name;
   $('cardNext').textContent = last ? 'Play again' : 'Next hole';
   $('cardNext').hidden = !afterHole;
   $('card').hidden = false;
 }
-$('cardNext').onclick = () => { $('card').hidden = true; if (state.holeIdx === HOLES.length - 1) { state.scores = []; startHole(0); } else startHole(state.holeIdx + 1); };
+$('cardNext').onclick = () => { $('card').hidden = true; if (state.holeIdx === HOLES.length - 1) { state.scores = []; openSetup(); } else startHole(state.holeIdx + 1); };
 $('cardClose').onclick = () => { $('card').hidden = true; };
 $('btnCard').onclick = () => showCard(false);
 
 function startHole(i) {
-  state.holeIdx = i; state.strokes = 0; state.tracks = []; state.previewAim = null;
+  state.holeIdx = i; state.strokes = 0; state.rimDrop = null; state.tracks = []; state.previewAim = null;
   oldTracers.forEach(o => { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }); oldTracers.length = 0;
   tracerCore.visible = tracerGlow.visible = false;
   buildHole(HOLES[i]);
+  carryCache.clear(); HOLE.playsLike = playsLike(HOLE);
   state.ball.set(HOLE.tee[0], groundAt(HOLE.tee[0], HOLE.tee[1]), HOLE.tee[1]); state.lie = 'tee';
   placeBall();
-  $('iMeta').textContent = `Hole ${i + 1} · Par ${HOLE.par} · ${HOLE.yards} yd`; $('iName').textContent = HOLE.name; $('iText').textContent = HOLE.blurb;
+  const pl = HOLE.playsLike, y = yardsOf(HOLE);
+  $('iMeta').textContent = `Hole ${i + 1} · Par ${HOLE.par} · ${y} yd` + (Math.abs(pl.yards - y) >= 4 ? ` · plays ${pl.yards}` : '') + (Math.abs(pl.dy) > 6 ? ` · ${pl.dy > 0 ? '↑' : '↓'}${Math.round(Math.abs(pl.dy))} m` : '');
+  $('iName').textContent = HOLE.name; $('iText').textContent = HOLE.blurb;
   state.phase = 'intro'; state.flyT = 0; setupFlyover();
   setPhaseUI();
   showReadout({ landed: false, carry: 0, total: 0, outcome: 'void', offline: 0, apexFt: 0 }, { Speed: 0, VLA: 0, TotalSpin: 0, SpinAxis: 0 }, '—');
@@ -944,14 +1104,14 @@ const camState = { pos: new THREE.Vector3(0, 30, 60), look: new THREE.Vector3(0,
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
 let fly = null;
 function setupFlyover() {
-  const t0 = new THREE.Vector3(HOLE.tee[0], 0, HOLE.tee[1]), p = HOLE.pinPos, d = p.clone().sub(t0).setY(0), L = d.length(); d.normalize();
+  const t0 = new THREE.Vector3(HOLE.tee[0], groundAt(HOLE.tee[0], HOLE.tee[1]) ?? 0, HOLE.tee[1]), p = HOLE.pinPos, d = p.clone().sub(t0).setY(0), L = d.length(); d.normalize();
   const side = new THREE.Vector3(-d.z, 0, d.x);
   const mid = t0.clone().lerp(p, 0.5);
   fly = {
     pts: [t0.clone().addScaledVector(d, -55).add(new THREE.Vector3(0, 32, 0)).addScaledVector(side, -20),
           mid.clone().addScaledVector(side, -L * 0.35).add(new THREE.Vector3(0, 70 + L * 0.08, 0)),
           p.clone().addScaledVector(d, 50).addScaledVector(side, 35).add(new THREE.Vector3(0, 28, 0))],
-    looks: [t0.clone().addScaledVector(d, L * 0.45).setY(-10), mid.clone().setY(-20), p.clone().setY(p.y - 2)],
+    looks: [t0.clone().addScaledVector(d, L * 0.45).setY(t0.y + (p.y - t0.y) * 0.45 - 10), mid.clone().setY(mid.y - 20), p.clone().setY(p.y - 2)],
     dur: Math.min(9, 5.5 + L / 160),
   };
   fly.curve = new THREE.CatmullRomCurve3(fly.pts); fly.lookCurve = new THREE.CatmullRomCurve3(fly.looks);
@@ -961,6 +1121,7 @@ const baseFov = v => Math.max(v, Math.min(80, hfovToV(64)));
 function setCam(m) { state.cam = m; camState.cut = true; document.querySelectorAll('[data-cam]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cam === m))); }
 function holeBounds() {
   const b = new THREE.Box3();
+  if (HOLE.line) { for (const p of [...Object.values(HOLE.tees), [HOLE.pinPos.x, HOLE.pinPos.z]]) b.expandByPoint(tmp.set(p[0] - 45, groundAt(p[0], p[1]) ?? 0, p[1] - 20)).expandByPoint(tmp.set(p[0] + 45, groundAt(p[0], p[1]) ?? 0, p[1] + 20)); return b; }
   for (const I of ISL) b.expandByPoint(tmp.set(I.x - I.rx, I.top, I.z - I.rz)).expandByPoint(tmp.set(I.x + I.rx, I.top, I.z + I.rz));
   return b;
 }
@@ -969,6 +1130,11 @@ function camTarget(dt) {
   const ph = state.phase, bp = ball.position;
   const yawDir = dirFromYaw(state.camYaw); // the way you're facing (the aim line can swing off it)
   let pos, look, fov = 50, k = 3, hard = false;
+  if (ph === 'setup' && fly) {
+    state.flyT += dt;
+    const e = 0.08 + 0.08 * (1 - Math.cos(state.flyT * 0.05)) ;
+    return { pos: fly.curve.getPoint(e), look: fly.lookCurve.getPoint(Math.min(1, e + 0.25)), fov: 52, k, hard: true };
+  }
   if (ph === 'intro' && fly) {
     state.flyT += dt;
     const u = Math.min(1, state.flyT / fly.dur), e = u * u * (3 - 2 * u);
@@ -1081,7 +1247,8 @@ function projectTag(el, v) {
   tmp.copy(v).project(camera);
   if (tmp.z > 1 || tmp.z < -1) { el.style.visibility = 'hidden'; return; }
   el.style.visibility = 'visible';
-  el.style.transform = `translate(${(tmp.x * 0.5 + 0.5) * innerWidth}px, ${(-tmp.y * 0.5 + 0.5) * innerHeight - 10}px) translate(-50%, -100%)`;
+  const px = Math.min(innerWidth - 60, Math.max(60, (tmp.x * 0.5 + 0.5) * innerWidth)), py = Math.max(el.offsetHeight + 54, (-tmp.y * 0.5 + 0.5) * innerHeight - 10);
+  el.style.transform = `translate(${px}px, ${py}px) translate(-50%, -100%)`;
 }
 let last = performance.now(), clock = 0;
 function step(dt) {
@@ -1128,9 +1295,14 @@ function step(dt) {
   if (aimRing.visible) { const s = THREE.MathUtils.clamp(camera.position.distanceTo(aimRing.position) * 0.004, 0.2, 1.4); restDot.scale.setScalar(s * 0.9); }
   if (!$('tagLand').hidden && camState.landTag) projectTag($('tagLand'), camState.landTag);
   // flag
-  if (flagMesh) { const p = flagMesh.geometry.attributes.position, b = flagMesh.userData.base; for (let i = 0; i < p.count; i++) { const x = b[i * 3]; p.setZ(i, Math.sin(x * 9 - clock * 5.5) * 0.07 * x + Math.sin(x * 4 + clock * 2.3) * 0.035 * x); } p.needsUpdate = true; flagMesh.geometry.computeVertexNormals(); }
-  // drifting puffs
-  if (holeGroup) for (const o of holeGroup.children) if (o.isSprite) o.position.x += o.userData.v * dt;
+  if (flagMesh) { const p = flagMesh.geometry.attributes.position, b = flagMesh.userData.base; const wf = 0.6 + Math.min(1.6, wind.mph / 8); for (let i = 0; i < p.count; i++) { const x = b[i * 3]; p.setZ(i, (Math.sin(x * 9 - clock * 5.5 * wf) * 0.07 * x + Math.sin(x * 4 + clock * 2.3 * wf) * 0.035 * x) / Math.sqrt(wf)); } p.needsUpdate = true; flagMesh.geometry.computeVertexNormals(); }
+  // drifting puffs; desert props
+  if (holeGroup && !MESA) for (const o of holeGroup.children) if (o.isSprite) o.position.x += o.userData.v * dt;
+  if (mesaCtx) { const wv = { ...windVec, mph: wind.mph }; for (const f of mesaCtx.anims) f(dt, clock, wv); }
+  if (flagMesh) flagMesh.rotation.y = wind.mph > 0.5 ? Math.atan2(windVec.z, windVec.x) * -1 : 0;
+  updateWindHud();
+  if (state.phase === 'address' && HOLE && HOLE.pinPos.y - state.ball.y > 7) { const t = $('tagPin'); if (t.hidden) t.hidden = false; t.innerHTML = `⚑ <b>${yd(Math.hypot(HOLE.pinPos.x - state.ball.x, HOLE.pinPos.z - state.ball.z))}</b> · ↑${Math.round(HOLE.pinPos.y - state.ball.y)} m`; projectTag(t, tmp2.copy(HOLE.pinPos).add(tmp.set(0, 2.6, 0))); }
+  else if (!$('tagPin').hidden) $('tagPin').hidden = true;
   drawMinimap();
   for (const g of oldTracers) g.visible = state.cam === 'map' && g.geometry.attributes.instanceStart && g.geometry.attributes.instanceStart.count > 1;
   updateCamera(dt);
@@ -1141,7 +1313,7 @@ function step(dt) {
 function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; fitToScreen(); step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 // test hooks: step the sim; pass everyFrame=N to render every Nth step like real play
 window.__advance = (sec, everyFrame) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (everyFrame && i % everyFrame === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
-window.__state = state; window.__startHole = i => startHole(i);
+window.__state = state; window.__startHole = i => startHole(i); window.__scene = scene;
 
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; fitW = w; fitH = h; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines(); minimap.resize(); }
 // Fit the renderer to the screen. Phones (iOS especially) fire 'resize' on rotation before
@@ -1159,8 +1331,56 @@ if (window.visualViewport) visualViewport.addEventListener('resize', refit);
 if (window.ResizeObserver) new ResizeObserver(refit).observe(stage);
 addEventListener('resize', refit);
 
+/* ===================== wind on the hole card ===================== */
+function updateWindHud() {
+  const el = $('windStat'); if (!el) return;
+  if (!HOLE || wind.mph < 0.5) { el.hidden = !HOLE || cond.wind === 'calm'; $('hWind').innerHTML = 'Calm'; return; }
+  el.hidden = false;
+  const airDeg = (wind.from + 180 - (HOLE.heading ?? 0)) - THREE.MathUtils.radToDeg(state.camYaw);
+  $('hWind').innerHTML = `<i class="warrow" style="transform:rotate(${airDeg.toFixed(0)}deg)">↑</i>${Math.round(wind.mph)}<small>mph</small>`;
+}
+
+/* ===================== round setup: tees and conditions ===================== */
+const TEE_KEY = `vibegolf.course.${CID}.tee`;
+function openSetup() {
+  state.phase = 'setup'; state.flyT = 0;
+  const sugg = suggestTee(TEE_SETS, recentDrives());
+  let saved = null; try { saved = localStorage.getItem(TEE_KEY); } catch (e) { /* storage off */ }
+  if (!TEE_SETS.some(t => t.id === cond.tee) || !cond.teeChosen) cond.tee = TEE_SETS.some(t => t.id === saved) ? saved : sugg.id;
+  if (!HOLE || state.holeIdx !== 0) { state.holeIdx = 0; buildHole(HOLES[0]); setupFlyover(); }
+  for (const m of [aimRing, aimFill, restDot]) m.visible = false; previewArc.visible = false; ball.visible = false;
+  $('suTitle').textContent = COURSE.name; $('suBlurb').textContent = COURSE.blurb || '';
+  $('suAlt').textContent = COURSE.altFt ? `${COURSE.altFt.toLocaleString()} ft up: the ball carries a little farther here.` : '';
+  const teesBox = $('suTees'); teesBox.innerHTML = '';
+  $('suTeeRow').hidden = TEE_SETS.length < 2;
+  for (const t of TEE_SETS) {
+    const b = document.createElement('button'); b.className = 'suTee'; b.setAttribute('aria-pressed', String(cond.tee === t.id));
+    b.innerHTML = `<i style="background:${t.color}"></i><b>${t.name}</b><span>${teeYards(HOLES, t.id).toLocaleString()} yd</span>${t.id === sugg.id ? '<em>Suggested</em>' : ''}`;
+    b.onclick = () => { cond.tee = t.id; cond.teeChosen = true; openSetup(); };
+    teesBox.appendChild(b);
+  }
+  $('suTeeNote').textContent = sugg.guessed ? 'No drives saved yet, so this is a guess. Hit a few drivers on the range or the course and it will suggest from them.' : `From your recent drives (median ${sugg.median} yd).`;
+  const seg = (id, opts, key) => {
+    const box = $(id); box.innerHTML = '';
+    for (const [k, o] of Object.entries(opts)) { const b = document.createElement('button'); b.textContent = o.label; b.setAttribute('aria-pressed', String(cond[key] === k)); b.onclick = () => { cond[key] = k; openSetup(); }; box.appendChild(b); }
+  };
+  seg('suTime', TIMES, 'time'); seg('suWind', WINDS, 'wind'); seg('suWeather', WEATHER, 'weather'); seg('suTemp', TEMPS, 'temp');
+  const from = $('suFrom'); from.innerHTML = WIND_FROM.map(([v, l]) => `<option value="${v}"${String(cond.windFrom) === String(v) ? ' selected' : ''}>${v === 'random' ? 'Any direction' : 'From the ' + l}</option>`).join('');
+  from.disabled = cond.wind === 'calm';
+  from.onchange = () => { cond.windFrom = from.value === 'random' ? 'random' : +from.value; };
+  applySky(HOLES[0].heading ?? 0);
+  setPhaseUI();
+  $('setup').hidden = false;
+}
+$('suSig').onclick = () => { Object.assign(cond, COURSE.signature); openSetup(); };
+$('suGo').onclick = () => {
+  try { localStorage.setItem(TEE_KEY, cond.tee); } catch (e) { /* storage off */ }
+  $('setup').hidden = true; windRoll = rollWind(cond); state.scores = []; startHole(0); initAudio();
+};
+
 /* ===================== boot ===================== */
 resize();
-startHole(0);
+$('cName').textContent = COURSE.name;
+openSetup();
 renderPlan();
 requestAnimationFrame(t => { last = t; frame(t); });

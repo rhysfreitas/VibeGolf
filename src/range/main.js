@@ -9,6 +9,7 @@ import { CLUB_DELIVERY, deliveryFromBall, renderShotDetail } from './shot-detail
 import { CLUBS, createRangeWorld } from '../world/range-world.js';
 import { FAULTS, applyFault } from '../coach/faults.js';
 import { createCoachUI } from './coach-ui.js';
+import { recordDrive } from '../drives.js';
 
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
 /* ===================== world (shared with the mini games) ===================== */
@@ -387,6 +388,7 @@ function finishShot() {
   $('tagRest').innerHTML = `<b>${yd(r.totalDown)}</b> total`; $('tagRest').hidden = false;
   if (!$('session').hidden) drawSession();
   if (coachUI.active) coachUI.shot(f.shot, CLUBS[state.club].id);
+  if (CLUBS[state.club].id === 'DR') recordDrive(r.total); // course tee suggestions
 }
 
 function samplePos(r, t, out) {

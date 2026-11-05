@@ -8,6 +8,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 |---|---|
 | **Woodson Range** | Opens on a practice menu. **Range**: stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. **Coaching**: the coach reads your shots in fours, names the one fault worth fixing, shows it on a 3D golfer next to the goal swing with two or three likely causes, gives you a cue, and checks your progress after 8 shots. **Short game** is coming. |
 | **The Aerie** | Three holes on floating sky islands. Each hole has a safe route and a carry-the-gap route. Target picks, a shot preview, a corner hole map, penalty drops and auto-putting. |
+| **Red Mesa** | Nine holes (par 36) across and between red-rock mesas, high on the plateau. Miss off the top and you play it from the canyon floor. A 70 m drop par 3, a fairway through a natural arch, hoodoos to drive between, a gorge with a railroad trestle and a steam train, and a climb home to the clubhouse. |
 | **Mini games** | **Shape It** (fly through flight gates that trace a shot shape, out of the open launch bay of a spaceship), **Zombie Siege** (bomb the horde before it breaks your fence, on a fog-bound farm at night) **Island Hopper** (hop floating islands above the clouds, three lives) and **Golf HORSE** (call your shot on a basketball scoreboard in a floodlit cul-de-sac, with Topgolf-style light-up targets; Dusty joins if you're alone) are playable, for 1–4 players, each with their own difficulty. **Carnival Booth** (a life-size tin shooting gallery: cans, bullseye boards, gliding ducks and the prize bell, for tickets and a plush) **Wedge Ladder** (climb a ladder of landing zones down a runway at sunrise with your wedges) and **Golf Bowling** (ten frames of real bowling down the runner rug of a giant toy room, with toppling pins) are playable too. Glass Tower is next. Design in [docs/MINIGAMES.md](docs/MINIGAMES.md). |
 
 ## Play
@@ -15,6 +16,8 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 - **Online:** https://rhysfreitas.github.io/VibeGolf/ (the repo is [rhysfreitas/VibeGolf](https://github.com/rhysfreitas/VibeGolf))
 - **Locally:** `npm start`, then open http://localhost:8080. Any static server works; the pages use ES modules, so opening them from `file://` does not.
 - **Install as an app:** tap **Install app** on the title screen. Chrome and Edge (desktop and Android) show their install prompt. On iPhone/iPad it is Safari's **Share → Add to Home Screen**, and on a Mac with Safari it is **File → Add to Dock**. Firefox on desktop can't install web apps. Once installed, VibeGolf runs full screen and works offline.
+
+Every course starts on a **round setup** screen: four sets of tees (suggested from the median of your recent drives) and the conditions: time of day (morning, midday, golden hour, night), wind (calm to strong, any or a set direction), weather (clear, high haze, overcast) and temperature. Each course opens on its own signature conditions. Hole cards show a "plays like" yardage that includes the climb or drop to the green and the course's altitude.
 
 Without an R10 connected, every swing is simulated from tour-average launch data with realistic dispersion. Shot data can be adjusted in the range's **Adjust** panel.
 
@@ -61,32 +64,35 @@ Chrome and Edge allow a page served over `https://` to reach `ws://localhost`. I
 ```
 index.html            title screen
 range.html            Woodson Range
-course.html           The Aerie
+course.html           the courses (?c=aerie, ?c=redmesa)
 src/physics.js        ball flight, bounce, roll, cup (pure functions, SI units, no Three.js)
 src/launch-monitor.js live shot link + connection popover, shared by every page
 src/range/main.js     range scene, tracers, cameras, session stats, practice menu
 src/range/coach-ui.js the coaching screens: readout, cause cards, chip, progress, drills, explorer
 src/coach/            coaching rules (pure), club windows from the flight model, the condition
                       catalogue, fault presets, and the 3D swing mannequin with its lessons
-src/course/main.js    island renderer, course-management UI, cameras, scoring
-src/course/aerie.js   hole data: islands, targets, drop zones (the future course builder's format)
+src/course/main.js    course renderer, round setup, course-management UI, cameras, scoring
+src/course/terrain.js ground, surfaces and rock for a hole (pure; shared with the physics and tests)
+src/course/conditions.js time of day, wind, weather, temperature, tee suggestion (pure)
+src/course/aerie.js   The Aerie's holes; red-mesa.js Red Mesa's (the course builder's format)
+src/course/mesa-world.js Red Mesa's floor, cliffs, arches, hoodoos, plants, props and wildlife
 src/course/minimap.js corner hole map
 bridge/               GSPro Open Connect → WebSocket relay (Node)
 vendor/three-r147/    Three.js r147 plus Sky and Line2 add-ons, vendored so the app works offline
 tests/                physics calibration, coaching rules, mini games and bridge (`npm test`)
 ```
 
-**Ball flight.** The flight is integrated with RK4 at 240 Hz, using gravity, drag and Magnus lift. The drag coefficient rises with spin ratio and below about 50 m/s (Reynolds effect). The lift coefficient saturates with spin ratio, and spin decays exponentially. The coefficients were fit to TrackMan PGA Tour averages. Carry, apex and landing angle land within about 4% from driver to pitching wedge, and `npm test` fails if a change drifts more than 5%. Air density comes from temperature, altitude and humidity.
+**Ball flight.** The flight is integrated with RK4 at 240 Hz, using gravity, drag and Magnus lift. The drag coefficient rises with spin ratio and below about 50 m/s (Reynolds effect). The lift coefficient saturates with spin ratio, and spin decays exponentially. The coefficients were fit to TrackMan PGA Tour averages. Carry, apex and landing angle land within about 4% from driver to pitching wedge, and `npm test` fails if a change drifts more than 5%. Air density comes from temperature, altitude and humidity. Wind acts on the ball's speed through the air, so a headwind costs more than a tailwind gives.
 
 **Coaching.** Each shot becomes impact numbers (face, path, attack, spin loft, smash, start line). Target windows per club start at the TrackMan tour averages and scale to your club speed through the flight model, so the LPGA averages fall out at their speeds. Four shots with one club that agree raise a condition; when several do, the root cause wins (setup, then path, face, low point, strike). The full design is in [docs/COACHING.md](docs/COACHING.md).
 
-**Ground.** Bounces use an impulse model with Penner's speed-dependent restitution. Friction depends on spin, and each surface (fairway, green, rough, sand) has its own turf loss. Rolls feel slope and rolling resistance. On the course, the ground function returns `null` over open air, so balls can fall into the clouds, hit cliff faces or roll off edges.
+**Ground.** Bounces use an impulse model with Penner's speed-dependent restitution. Friction depends on spin, and each surface (fairway, green, rough, sand) has its own turf loss. Rolls feel slope and rolling resistance. On the course, the ground function returns `null` over open air, so balls can fall into the clouds, hit cliff faces or roll off edges. Red Mesa adds a canyon floor under the mesas, and arches and hoodoos the ball bounces off.
 
 ## Developing
 
 - `npm test` runs the physics calibration and the bridge end-to-end tests.
 - Change a page, refresh the browser. There is no build. Push to `main` and GitHub Pages redeploys in about a minute. The service worker fetches from the network first, so pushes show up on the next load.
-- Course holes are data in `src/course/aerie.js`. Each island is a superellipse with a top height and rock depth, plus optional green, bunkers, waterfalls and trees. Targets and drop zones sit beside the islands.
+- Course holes are data in `src/course/aerie.js` and `src/course/red-mesa.js`. Each island is a superellipse with a top height and rock depth, plus optional green, bunkers, waterfalls and trees. Tees per set, targets and drop zones sit beside the islands; Red Mesa adds a canyon floor, painted fairways and washes, ramps, rock you can hit and props. The format is described in CLAUDE.md.
 - Test hooks for headless screenshots: `window.__lowq = true` (set before load) lowers render quality, `__advance(seconds)` steps the simulation, and `window.__pose = { pos, look, fov }` poses the course camera.
 
 ## Roadmap
@@ -96,5 +102,6 @@ tests/                physics calibration, coaching rules, mini games and bridge
 - Play Golf: multiple players, each on their own tee (set by their difficulty)
 - Course builder that reads and writes the hole format
 - The rest of The Aerie (holes 4–18)
-- Live wind, and a putting green that uses the R10's putt data
+- Red Mesa's back nine
+- A putting green that uses the R10's putt data
 - Native wrappers (Capacitor/Tauri) with direct Bluetooth to the R10
