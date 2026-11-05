@@ -5,17 +5,18 @@ import { fbm, vnoise, rng, sstep, islandF, edgeRadius, hoodooR, prepRock, prepIs
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
-/* ---------- surface paint: R fairway/tee, G green, B sand, A bare desert floor ---------- */
+/* ---------- surface paint: R short grass (fairway, tee, fringe), G green, B sand (bunkers, waste, pond
+   beds), A grass length (1 first cut and shorter, 0.55 rough, 0 native desert) ---------- */
 export function surfaceTexture(T, hole, box, mPerTexel) {
   const W = Math.min(1024, Math.ceil((box.x1 - box.x0) / mPerTexel)), H = Math.min(1536, Math.ceil((box.z1 - box.z0) / mPerTexel));
   const data = new Uint8Array(W * H * 4);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const x = box.x0 + (i + 0.5) / W * (box.x1 - box.x0), z = box.z0 + (j + 0.5) / H * (box.z1 - box.z0);
     const s = T.surfaceAt(x, z), o = (j * W + i) * 4;
-    data[o] = s === 'fairway' || s === 'tee' ? 255 : 0;
+    data[o] = s === 'fairway' || s === 'tee' || s === 'fringe' ? 255 : 0;
     data[o + 1] = s === 'green' ? 255 : 0;
-    data[o + 2] = s === 'sand' ? 255 : 0;
-    data[o + 3] = s === 'desert' || s === 'void' ? 255 : 0;
+    data[o + 2] = s === 'sand' || s === 'waste' || s === 'water' ? 255 : 0;
+    data[o + 3] = s === 'desert' || s === 'void' ? 0 : s === 'rough' || s === 'sand' || s === 'waste' || s === 'water' ? 140 : 255;
   }
   const tex = new THREE.DataTexture(data, W, H, THREE.RGBAFormat);
   tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
@@ -40,7 +41,7 @@ function roughen(geo, amp, scale, seed = 0) {
 }
 
 /* ---------- the canyon floor ---------- */
-export function buildFloor(T, box, mat, coarse, group) {
+export function buildFloor(T, box, mat, coarse, group, playfield = false) {
   const F = T.floor; if (!F) return null;
   const meshes = [];
   const grid = (x0, z0, x1, z1, step, drop) => {
@@ -58,7 +59,7 @@ export function buildFloor(T, box, mat, coarse, group) {
     const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; m.userData.island = { playable: F.solid, floor: true };
     group.add(m); meshes.push(m);
   };
-  grid(box.x0, box.z0, box.x1, box.z1, coarse ? 4 : 3, 0);
+  if (!playfield) grid(box.x0, box.z0, box.x1, box.z1, coarse ? 4 : 3, 0);
   const cx = (box.x0 + box.x1) / 2, cz = (box.z0 + box.z1) / 2, R = 3600;
   grid(cx - R, cz - R, cx + R, cz + R, coarse ? 60 : 40, 3);
   return meshes;
@@ -147,6 +148,13 @@ export function scatterShrubs(T, box, coarse, group) {
 }
 export function cottonwoodSpots(T, hole) {
   const out = [], R = rng(91);
+  // a ring of cottonwoods around each spring pool, kept off the green side
+  for (const W of T.features.water) for (let i = 0; i < 9; i++) {
+    const a = i / 9 * Math.PI * 2 + R() * 0.4, r = 1.5 + R() * 0.5, x = W.x + Math.cos(a) * W.rx * r, z = W.z + Math.sin(a) * W.rz * r;
+    const s = T.surfaceAt(x, z); if (s === 'green' || s === 'fringe' || s === 'fairway' || s === 'water' || s === 'sand') continue;
+    const y = T.groundAt(x, z); if (y === null) continue;
+    out.push({ x, y, z, s: 1.2 + R() * 0.7, type: 'cotton', r: R() });
+  }
   for (const w of (T.floor?.washes || [])) for (let i = 0; i < w.pts.length - 1; i++) {
     const [ax, az] = w.pts[i], [bx, bz] = w.pts[i + 1], L = Math.hypot(bx - ax, bz - az), nx = -(bz - az) / L, nz = (bx - ax) / L;
     for (let d = 8; d < L; d += 22 + R() * 14) {
@@ -436,4 +444,57 @@ export function buildProps(hole, T, tee, mat, group) {
   for (const I of T.ISL) if (I.rail) railing(I, T, ctx);
   petroglyph(hole, T, hole.tees[Object.keys(hole.tees)[0]], ctx);
   return ctx;
+}
+
+/* ---------- the playing surface ---------- */
+// One mesh over the hole's box, sampled from the shaped ground: 24 m tiles, fine (under a metre) where a
+// green, bunker, tee or pond is, coarser elsewhere, with short skirts so tiles of different sizes meet
+// without cracks. Cells that span a cliff are left to the island walls.
+export function buildPlayfield(T, box, mat, coarse, group) {
+  const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
+  const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water];
+  const pos = [], idx = [];
+  for (let tz = box.z0; tz < box.z1; tz += TILE) for (let tx = box.x0; tx < box.x1; tx += TILE) {
+    const hot = busy.some(F => F.x + F.bound > tx && F.x - F.bound < tx + TILE && F.z + F.bound > tz && F.z - F.bound < tz + TILE);
+    const n = Math.max(2, Math.round(TILE / (hot ? fine : mid))), step = TILE / n, base = pos.length / 3, H = [];
+    for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+      const x = tx + i * step, z = tz + j * step, y = T.groundAt(x, z);
+      H.push(y); pos.push(x, y ?? 0, z);
+    }
+    const ok = (...k) => { let lo = Infinity, hi = -Infinity; for (const q of k) { const y = H[q]; if (y === null) return false; lo = Math.min(lo, y); hi = Math.max(hi, y); } return hi - lo < Math.max(2.5, step * 0.9); };
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const a = j * (n + 1) + i, b = a + 1, c = a + n + 1, d = c + 1;
+      if (ok(a, b, c)) idx.push(base + a, base + c, base + b);
+      if (ok(b, c, d)) idx.push(base + b, base + c, base + d);
+    }
+    // skirts down the tile's four edges
+    const edge = [];
+    for (let i = 0; i <= n; i++) edge.push(i);
+    for (let j = 1; j <= n; j++) edge.push(j * (n + 1) + n);
+    for (let i = n - 1; i >= 0; i--) edge.push(n * (n + 1) + i);
+    for (let j = n - 1; j >= 1; j--) edge.push(j * (n + 1));
+    edge.push(0);
+    for (let k = 0; k < edge.length - 1; k++) {
+      const p = edge[k], q = edge[k + 1]; if (H[p] === null || H[q] === null || Math.abs(H[p] - H[q]) > 2.5) continue;
+      const s0 = pos.length / 3; pos.push(pos[(base + p) * 3], H[p] - 0.35, pos[(base + p) * 3 + 2], pos[(base + q) * 3], H[q] - 0.35, pos[(base + q) * 3 + 2]);
+      idx.push(base + p, base + q, s0, base + q, s0 + 1, s0); // facing out, toward any crack
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
+  geo.computeVertexNormals(); rockAttrs(geo, 0);
+  const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; m.userData.island = { playable: true, floor: true };
+  group.add(m);
+  return m;
+}
+
+/* ---------- ponds ---------- */
+const waterMat = new THREE.MeshStandardMaterial({ color: 0x24525e, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.86, envMapIntensity: 1.3 });
+export function buildWater(T, group) {
+  for (const W of T.features.water) {
+    const g = new THREE.CircleGeometry(1, 64); g.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(g, waterMat);
+    m.scale.set(W.rx * 1.45, 1, W.rz * 1.45); m.rotation.y = -W.rot; m.position.set(W.x, W.level, W.z);
+    m.receiveShadow = true; m.renderOrder = 1; group.add(m);
+  }
 }

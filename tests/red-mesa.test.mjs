@@ -29,7 +29,7 @@ const TOUR = { DR: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, '7i': { Speed: 12
 test('nine holes, par 36, four tee sets with the designed totals', () => {
   assert.equal(HOLES.length, 9);
   assert.equal(HOLES.reduce((a, h) => a + h.par, 0), 36);
-  const want = { canyon: 3400, mesa: 3035, sage: 2635, lizard: 2035 };
+  const want = { canyon: 3375, mesa: 3020, sage: 2625, lizard: 2030 }; // hole 7 shortened to be drivable
   for (const s of COURSE.teeSets) assert.equal(teeYards(HOLES, s.id), want[s.id], s.id);
 });
 
@@ -50,6 +50,12 @@ test('every tee is on a tee box and measures its card yardage to the pin', () =>
       assert.ok(Math.abs(y - h.yards[s.id]) / h.yards[s.id] < 0.03, `${h.name} ${s.id}: ${y.toFixed(0)} vs ${h.yards[s.id]}`);
     }
     assert.equal(T[i].surfaceAt(h.pin[0], h.pin[1]), 'green', `${h.name} pin on the green`);
+    // every pin position: on the green, at 3% or less
+    for (const p of h.green.pins) {
+      const t = createTerrain({ ...h, pin: p }), g = t.slopeAt(p[0], p[1]);
+      assert.equal(t.surfaceAt(p[0], p[1]), 'green', `${h.name} pin ${p}`);
+      assert.ok(Math.hypot(g.x, g.z) * 100 <= 3.1, `${h.name} pin ${p}: ${(Math.hypot(g.x, g.z) * 100).toFixed(2)}%`);
+    }
   });
 });
 
@@ -80,7 +86,7 @@ test("Needle's Eye: a normal drive flies through the arch; a skied one clips it"
 
 test('Hoodoos knock a ball down', () => {
   const t = T[6], h = HOLES[6];
-  const hoodoo = h.rocks[2]; // the 22 m one
+  const hoodoo = h.rocks[4]; // the 25 m one, about 200 m out
   // a tour drive is 26 m up there, over the top; an average drive is coming down into it
   const s = shoot(t, h.tees.canyon, [hoodoo.x, hoodoo.z], { Speed: 140, VLA: 13, TotalSpin: 3100 });
   assert.ok(s.r.rockHits >= 1);

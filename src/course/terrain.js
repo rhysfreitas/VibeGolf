@@ -5,12 +5,9 @@
 // an optional canyon floor under them, painted fairways and sand, and rock you can hit (arches and
 // hoodoos). groundAt(x, z) is the highest top under a point, else the floor, else null (open air).
 
-/* ---------- noise ---------- */
-export function hash2(i, j) { let h = Math.imul(i | 0, 374761393) + Math.imul(j | 0, 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
-export function vnoise(x, z) { const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); const a = hash2(i, j), b = hash2(i + 1, j), c = hash2(i, j + 1), d = hash2(i + 1, j + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
-export function fbm(x, z) { return vnoise(x, z) * 0.5 + vnoise(x * 2.03 + 17, z * 2.03 + 5) * 0.25 + vnoise(x * 4.1 + 3, z * 4.1 + 11) * 0.125 + vnoise(x * 8.3, z * 8.3 + 7) * 0.0625; }
-export function rng(seed) { let s = seed >>> 0; return () => { s = Math.imul(s ^ (s >>> 15), 2246822507) + 0x6d2b79f5 >>> 0; return (s >>> 8) / 16777216; }; }
-export const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+import { hash2, vnoise, fbm, rng, sstep } from './noise.js';
+import { prepFeatures } from './features.js';
+export { hash2, vnoise, fbm, rng, sstep };
 
 /* ---------- islands ---------- */
 // Optional fields beyond the Aerie's: p (squareness, default 2.4), slope { from:[x,z,y], to:[x,z,y] }
@@ -146,14 +143,30 @@ export function rockNormal(R, x, y, z) {
 // hole.floor: { y, relief, solid (false = scenery only, open air for the ball), washes:[{pts, w}],
 //               gorges:[{x, z, rx, rz, rot}] (no floor) }
 // hole.fairways: [{ pts:[[x,z,hw]...], hw }] painted fairway on any ground; hole.sand: [[x,z,r]...]
-// hole.tees: { setId: [x, z] }; hole.rocks: arches and hoodoos
+// hole.tees: { setId: [x, z] | {x, z, w, l, h, rot} }; hole.rocks: arches and hoodoos
+// hole.green, bunkers, landforms, water: shaped features (features.js)
+// hole.corridor (m either side of the line kept as rough; default 32), hole.native ([from, to] metres
+// along the line that stay native desert: the carry from the back tee), hole.roughW (rough beyond the
+// fairway's first cut, default 12)
+
+// distance along a polyline and sideways from it
+export function lineProj(L, x, z) {
+  let best = { d: Infinity, s: 0 }, acc = 0;
+  for (let i = 0; i < L.length - 1; i++) {
+    const [ax, az] = L[i], [bx, bz] = L[i + 1], dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1, len = Math.sqrt(L2);
+    const t = Math.min(1, Math.max(0, ((x - ax) * dx + (z - az) * dz) / L2)), d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+    if (d < best.d) best = { d, s: acc + t * len };
+    acc += len;
+  }
+  return best;
+}
 export function createTerrain(hole) {
   const ISL = hole.islands.map(I => prepIsland({ ...I, playable: true }));
   const F = hole.floor ? { relief: 1.6, solid: true, washes: [], gorges: [], ...hole.floor } : null;
   if (F) F.gorges = F.gorges.map((g, i) => prepIsland({ seed: 50 + i, ...g, top: F.y, kind: 'gorge' }));
   const fairways = hole.fairways || [];
   const sand = hole.sand || [];
-  const teeList = Object.values(hole.tees || (hole.tee ? { tee: hole.tee } : {}));
+  const teeEntries = Object.entries(hole.tees || (hole.tee ? { tee: hole.tee } : {}));
 
   const fairwayD = (x, z) => { let d = Infinity; for (const fw of fairways) d = Math.min(d, bandDist(fw.pts, fw.hw ?? 16, x, z) / wobble(x, z, 3)); return d; };
   const washD = (x, z) => { let d = Infinity; if (F) for (const w of F.washes) d = Math.min(d, bandDist(w.pts, w.w / 2, x, z) / wobble(x, z, 7)); return d; };
@@ -181,13 +194,24 @@ export function createTerrain(hole) {
     }
     return best;
   }
-  function groundAt(x, z) {
+  function baseGroundAt(x, z) {
     const t = topAt(x, z), fl = floorAt(x, z);
     if (t && (fl === null || t.h >= fl)) return t.h;
     return fl;
   }
   function islandAt(x, z) { const t = topAt(x, z); return t ? t.I : null; }
-  const inTee = (x, z) => teeList.some(t => Math.abs(x - t[0]) < 4.5 && Math.abs(z - t[1]) < 6);
+  // shaped features: each tee plays toward the next point of the line ahead of it, else the pin
+  const teeSpots = teeEntries.map(([, v]) => (Array.isArray(v) ? [v[0], v[1]] : [v.x, v.z, v]));
+  const aimFrom = ([x, z]) => { const pin = hole.pin || [0, -100]; if (!hole.line) return pin; const L = hole.line, here = lineProj(L, x, z).s; let acc = 0; for (let i = 1; i < L.length; i++) { acc += Math.hypot(L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]); if (acc > here + 30) return L[i]; } return pin; };
+  const FT = prepFeatures(hole, baseGroundAt, teeSpots, teeSpots.map(aimFrom));
+  const groundAt = FT.groundAt;
+  // the corridor: rough along the playing line, native desert outside it and across the carry
+  const corridor = hole.corridor ?? 32, roughW = hole.roughW ?? 12;
+  let native = null;
+  if (hole.line) {
+    const g0 = FT.greens[0], fwS = fairways.length ? lineProj(hole.line, fairways[0].pts[0][0], fairways[0].pts[0][1]).s : g0 ? lineProj(hole.line, g0.x, g0.z).s - g0.rz - 28 : 0;
+    native = hole.native || [24, fwS - 8];
+  }
   // which island is on top, without heights unless they're needed (a lone island, or one well
   // above the floor, needs none: surfaceAt runs a few hundred thousand times per hole for the paint)
   const baseTop = I => (I.slopeAt ? Math.min(I.slope.from[2], I.slope.to[2]) : I.top);
@@ -207,13 +231,18 @@ export function createTerrain(hole) {
     else if (!F || !F.solid || baseTop(t.I) > F.y + F.relief + 2) onFloor = false;
     else { const fl = floorAt(x, z), h = t.h ?? islandH(t.I, x, z, Math.min(1, islandF(t.I, x, z))); onFloor = fl !== null && fl > h; }
     const I = onFloor ? null : t.I;
-    if (inTee(x, z)) return 'tee';
+    const fs = FT.surfaceAt(x, z, () => groundAt(x, z)); if (fs) return fs;
     if (I && I.bunkers) for (const b of I.bunkers) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
     for (const b of sand) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
     if (I && I.kind === 'green') { const d = Math.hypot(x - I.green.x, z - I.green.z); return d < I.green.r ? 'green' : d < I.green.r + 2 ? 'fairway' : 'rough'; }
     if (I && I.green) { const d = Math.hypot(x - I.green.x, z - I.green.z); if (d < I.green.r) return 'green'; if (d < I.green.r + 2.5) return 'fairway'; }
-    if (onFloor && washD(x, z) < 0) return 'sand';
-    if (fairways.length && fairwayD(x, z) < 0) return 'fairway';
+    if (onFloor && washD(x, z) < 0) return 'waste'; // a dry wash: desert waste
+    if (fairways.length) { const d = fairwayD(x, z); if (d < 0) return 'fairway'; if (hole.line && d < 2.2) return 'firstcut'; if (hole.line && d < roughW) return 'rough'; }
+    if (hole.line) { // rough down the corridor, except across the carry; native beyond
+      const p = lineProj(hole.line, x, z);
+      if (p.d < corridor && !(native && p.s > native[0] && p.s < native[1])) return 'rough';
+      return 'desert';
+    }
     if (onFloor) return 'desert';
     if (I.kind === 'tee') return 'rough';
     if (I.kind === 'fairway') return islandF(I, x, z) < 0.8 ? 'fairway' : 'rough';
@@ -225,5 +254,11 @@ export function createTerrain(hole) {
   const lows = ISL.map(I => (I.slope ? Math.min(I.slope.from[2], I.slope.to[2]) : I.top));
   if (F && F.solid) lows.push(F.y - 3);
   const voidY = Math.min(...lows) - 70;
-  return { ISL, floor: F, rocks, groundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, fairwayD, washD, voidY };
+  // slope of the ground (rise per metre along x and z), for lies and green reading
+  function slopeAt(x, z, e = 0.5) {
+    const a = groundAt(x + e, z), b = groundAt(x - e, z), c = groundAt(x, z + e), d = groundAt(x, z - e);
+    if (a === null || b === null || c === null || d === null) return { x: 0, z: 0 };
+    return { x: (a - b) / (2 * e), z: (c - d) / (2 * e) };
+  }
+  return { ISL, floor: F, rocks, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
 }

@@ -12,7 +12,7 @@ const COL = {
   track: 'rgba(245, 197, 66, 0.85)',
   trackOld: 'rgba(245, 197, 66, 0.45)',
   aim: 'rgba(242, 239, 230, 0.75)',
-  floor: '#a26d4a', void: '#15110f', rock: '#8a3e26', mesaRough: '#77743f', hoodoo: '#5a2c1c',
+  floor: '#a26d4a', void: '#15110f', water: '#3f7f95', rock: '#8a3e26', mesaRough: '#77743f', hoodoo: '#5a2c1c',
 };
 
 export function createMinimap(canvas) {
@@ -82,6 +82,15 @@ export function createMinimap(canvas) {
       g.fillStyle = COL.hoodoo; g.strokeStyle = COL.hoodoo;
       if (r.type === 'hoodoo') { const [a, b] = view.map(r.x, r.z); g.beginPath(); g.arc(a, b, Math.max(1.4, r.r * view.k), 0, 7); g.fill(); }
       else if (r.type === 'arch') for (const sd of [-1, 1]) { const c = Math.cos(r.rot), s2 = Math.sin(r.rot), u0 = sd * r.ai, u1 = sd * r.r; const [a1, b1] = view.map(r.x + u0 * c, r.z + u0 * s2), [a2, b2] = view.map(r.x + u1 * c, r.z + u1 * s2); g.lineWidth = Math.max(2, r.d * view.k); g.beginPath(); g.moveTo(a1, b1); g.lineTo(a2, b2); g.stroke(); }
+    }
+    // shaped features: ponds, tee pads, greens, bunkers (outlines in world space)
+    const poly = (pts, fill) => { g.beginPath(); pts.forEach(([x, z], i) => { const [a, b] = view.map(x, z); i ? g.lineTo(a, b) : g.moveTo(a, b); }); g.closePath(); g.fillStyle = fill; g.fill(); };
+    const F = hole.feat;
+    if (F) {
+      for (const w of F.water) poly(w, COL.water);
+      for (const t of F.tees) poly(t, COL.fairway);
+      for (const gr of F.greens) poly(gr, COL.green);
+      for (const b of F.bunkers) poly(b, COL.sand);
     }
     // tee box
     const [ta, tb] = view.map(hole.tee[0], hole.tee[1]);

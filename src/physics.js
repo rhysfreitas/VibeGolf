@@ -16,6 +16,9 @@ const SURFACES = {
   green:   { mu: 0.60, eScale: 0.80, tScale: 0.42, crr: 0.065 },
   rough:   { mu: 0.70, eScale: 0.55, tScale: 0.45, crr: 0.42 },
   sand:    { mu: 0.90, eScale: 0.25, tScale: 0.20, crr: 1.20 },
+  firstcut: { mu: 0.55, eScale: 0.80, tScale: 0.58, crr: 0.26 }, // the step between fairway and rough
+  waste:   { mu: 0.80, eScale: 0.40, tScale: 0.34, crr: 0.80 },  // desert waste area: firm sand and grit
+  water:   { mu: 4.00, eScale: 0.02, tScale: 0.02, crr: 6.00 },  // it stops where it goes in
 };
 
 const DEFAULT_COEF = { cd0: 0.2043, cdS: 0.1414, cdLow: 0.2999, cdV: 51.1, clMax: 0.447, s0: 0.1736, clScale: 1.0, spinTau: 19.9 }; // fit to TrackMan PGA Tour averages
@@ -187,7 +190,6 @@ function simulate(shot, opts = {}) {
       pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight' });
     } else {
       const vh = Math.hypot(s.vel[0], s.vel[2]);
-      if (vh < 0.05) break;
       const x = s.pos[0], z = s.pos[2];
       const surf = SURFACES[surfaceAt(x, z)] || SURFACES.rough;
       // slope pull (rolling sphere: 5/7 g sin θ) then rolling resistance
@@ -195,6 +197,7 @@ function simulate(shot, opts = {}) {
       const h = (a, b) => { const v = groundAt(a, b); return v === null ? s.pos[1] : v; };
       const gx = (h(x + e1, z) - h(x - e1, z)) / (2 * e1);
       const gz = (h(x, z + e1) - h(x, z - e1)) / (2 * e1);
+      if (vh < 0.05 && Math.hypot(gx, gz) < surf.crr) break; // at rest, and the slope can't start it rolling
       let vx = s.vel[0] - (5 / 7) * G * gx * dt, vz = s.vel[2] - (5 / 7) * G * gz * dt;
       const v2 = Math.hypot(vx, vz) || 1e-9;
       const nv = Math.max(0, v2 - surf.crr * G * dt), f = nv / v2;
