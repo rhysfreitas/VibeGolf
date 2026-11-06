@@ -4,6 +4,7 @@ import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
 import { hash2, fbm, rng, sstep, islandF, edgeRadius, islandH, prepIsland, createTerrain } from './terrain.js';
 import { featureOutline } from './features.js';
 import { createTreeField } from './trees.js';
+import { cloudDrop } from './relief.js';
 import { TIMES, WINDS, WEATHER, TEMPS, WIND_FROM, rollWind, holeWind, windVector, windInShot, skyAngles, suggestTee, teeYards } from './conditions.js';
 import { recentDrives, recordDrive } from '../drives.js';
 import { createMinimap } from './minimap.js';
@@ -14,7 +15,7 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie-draft.js' };
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
 const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
 const MESA = COURSE.theme === 'mesa';
@@ -551,10 +552,10 @@ function buildHole(h) {
       deco.push(prepIsland({ x, z, rx: size, rz: size * (0.7 + R() * 0.6), rot: R() * 3, top, depth: size * (3 + R() * 4), kind: 'deco', seed: 100 + i, falls: R() < 0.25 ? [R() * 6.28] : [] }));
     }
     for (const I of deco) buildIsland(I, { seg: rad2seg(I), side: 18 }, holeGroup, trees);
-    if (SHAPED) { // the shaped playing surface over the island tops, ponds, and the draft's stand-ins
+    if (SHAPED) { // the shaped playing surface over the island tops, ponds, and the floating scenery
       MW.buildPlayfield(T, box, playMat, coarse, holeGroup);
       MW.buildWater(T, holeGroup);
-      skyCtx = { group: holeGroup, trees, island: buildIsland, fall: makeFall, prepIsland, edgeRadius, mat: islandMat, T, anims: [], glow: [] };
+      skyCtx = { group: holeGroup, trees, island: buildIsland, fall: makeFall, prepIsland, edgeRadius, buildTrees, mat: islandMat, T, anims: [], glow: [] };
       SP.buildSkyProps(h, skyCtx, LANDMARKS || {});
       if (h.props) { const pc = MW.buildProps({ ...h, props: h.props }, T, h.tee, islandMat, holeGroup, { glyphs: false }); skyCtx.anims.push(...pc.anims); }
     }
@@ -707,7 +708,12 @@ function shotFrame(origin, yaw, live = false) { // live: the real shot, trees an
     groundAt: (lx, lz) => { const g = groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - origin.y; },
     surfaceAt: (lx, lz) => physSurface(wx(lx, lz), wz(lx, lz)),
     solidAt: solid,
-    treeAt: live && treeField && treeField.count ? (lx, ly, lz) => { const r = treeField.at(wx(lx, lz), origin.y + ly, wz(lx, lz)); if (!r || !r.n) return r; const n = r.n; return { n: [n[0] * c + n[2] * s, 0, -n[0] * s + n[2] * c] }; } : null,
+    treeAt: live && (treeField?.count || T.curtains.length) ? (lx, ly, lz) => {
+      const X = wx(lx, lz), Z = wz(lx, lz), Y = origin.y + ly;
+      if (T.curtains.length && T.curtainAt(X, Y, Z)) return { density: 3 }; // a waterfall knocks it down
+      const r = treeField && treeField.count ? treeField.at(X, Y, Z) : null; if (!r || !r.n) return r;
+      const n = r.n; return { n: [n[0] * c + n[2] * s, 0, -n[0] * s + n[2] * c] };
+    } : null,
     cup: { x: cupRel.x * c + cupRel.z * s, z: -cupRel.x * s + cupRel.z * c },
     voidY: T.voidY - origin.y,
     wind: windInShot(windVec, yaw), altFt: COURSE.altFt || 0, tempF: tempF(),
@@ -1045,16 +1051,13 @@ function finishShot() {
   }
   if (r.outcome === 'void') {
     state.strokes++; state.rimDrop = null; // penalty
-    // drop near where it left the islands, never closer to the hole than that point
-    let entry = f.from;
-    for (const p of f.W) if (groundAt(p.w.x, p.w.z) !== null && p.w.distanceTo(f.from) > 15) entry = p.w;
-    const cands = [...HOLE.drops.map(d => new THREE.Vector3(d[0], groundAt(d[0], d[1]), d[1])), f.from.clone()];
-    const entryPin = entry.distanceTo(HOLE.pinPos);
-    const ok = cands.filter(c => c.y !== null && c.distanceTo(HOLE.pinPos) >= Math.min(entryPin, f.from.distanceTo(HOLE.pinPos)) - 5);
-    const drop = (ok.length ? ok : [f.from.clone()]).sort((a, b) => a.distanceTo(entry) - b.distanceTo(entry))[0];
-    const isPrev = drop.distanceTo(f.from) < 1;
+    // a red penalty area: drop within two club lengths of where it last left an island, no nearer the
+    // hole (relief.js); if there's nowhere, play again from where it was hit
+    const rd = cloudDrop({ track: f.W.map(p => [p.w.x, p.w.z]), pin: [HOLE.pinPos.x, HOLE.pinPos.z], groundAt, surfaceAt });
+    const drop = rd ? new THREE.Vector3(rd.x, groundAt(rd.x, rd.z), rd.z) : f.from.clone();
+    const isPrev = !rd || drop.distanceTo(f.from) < 1;
     state.ball.copy(drop); state.lie = isPrev ? f.fromLie : surfaceAt(drop.x, drop.z);
-    toast(VOID_TEXT[0], `+1 penalty. ${isPrev ? 'Replaying from where you hit it.' : 'Dropping beside the gap.'}`, 3200);
+    toast(VOID_TEXT[0], `+1 penalty. ${isPrev ? 'Replaying from where you hit it.' : 'Dropping beside where it went over.'}`, 3200);
     res = '<span style="color:var(--bad)">Void +1</span>';
   } else {
     state.ball.copy(end); state.lie = surfaceAt(end.x, end.z);
@@ -1081,7 +1084,8 @@ function finishShot() {
       }
     }
     if (f.fromLie === 'tee' && state.club === 0 && r.landed) recordDrive(Math.hypot(end.x - f.from.x, end.z - f.from.z) / M_PER_YD);
-    if (r.treeHits) toast('In the trees', '', 1600);
+    if (r.treeHits && T.curtains.length && f.W.some(p => T.curtainAt(p.w.x, p.w.y, p.w.z))) toast('Through the falls', 'The water knocked it down.', 2200);
+    else if (r.treeHits) toast('In the trees', '', 1600);
     else if (r.rockHits && T.rocks.length) toast('Off the rock', '', 1600);
   }
   showReadout(r, f.shot, res);
@@ -1093,6 +1097,7 @@ function finishShot() {
 }
 function nextLie() {
   carryCache.clear();
+  if (SHAPED && skyCtx?.drifts?.length) SP.moveDrifts(skyCtx);
   if (state.lie === 'green' || (state.lie === 'fringe' && state.ball.distanceTo(HOLE.pinPos) < 22)) { startPutting(); return; }
   state.phase = 'address'; state.aimCustom = null;
   const av = availableTargets();

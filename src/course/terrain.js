@@ -105,12 +105,39 @@ export function prepRock(R, groundAt) {
     R.seed = R.seed ?? (R.x * 13.1 + R.z * 7.7);
     R.capH = (R.cap ?? R.r * 1.5) * 0.75; R.capR = R.cap ?? R.r * 1.5;
     R.bound = Math.max(R.capR, R.r * 1.6) + 1;
+  } else if (R.type === 'wedge') { // a tapering prism along an axis (see wedgeParts)
+    const [ax, az, ay] = R.from, [bx, bz, by] = R.to, L = Math.hypot(bx - ax, by - ay, bz - az);
+    R.A = [ax, ay, az]; R.len = L; R.T = [(bx - ax) / L, (by - ay) / L, (bz - az) / L];
+    let S = [-R.T[2], 0, R.T[0]]; const sl = Math.hypot(S[0], S[2]); S = sl < 1e-3 ? [1, 0, 0] : [S[0] / sl, 0, S[2] / sl];
+    R.S = S; R.U = [S[1] * R.T[2] - S[2] * R.T[1], S[2] * R.T[0] - S[0] * R.T[2], S[0] * R.T[1] - S[1] * R.T[0]];
+    if (R.U[1] < 0) R.U = R.U.map(v => -v);
+    R.x = (ax + bx) / 2; R.z = (az + bz) / 2; R.y = 0; R.bound = L / 2 + Math.max(R.w[0], R.h[0]) + 4;
+    return R;
+  } else if (R.type === 'float') { // a floating island: a top at I.top, the underside tapering down depth
+    R.x = R.I.x; R.z = R.I.z; R.y = 0; R.bound = R.I.bound + 2;
+    return R;
   } else if (R.type === 'boulder') {
     R.seed = R.seed ?? (R.x * 3.1 + R.z * 1.7);
     R.a = R.r; R.b = R.r * (R.ratio ?? 0.85); R.hc = R.h / 2; R.cy = R.h * 0.42; R.pe = R.pe ?? 2; // centre above the base
     R.bound = Math.max(R.a, R.b) + 0.5;
   }
   return R;
+}
+// a wedge of rock and, with drop, the buttress carrying it down the island's side under its root:
+// [{ from, to, w, h }] ([x, z, y] ends), shared by the physics and the renderer
+export function wedgeParts(m) {
+  const out = [{ from: m.from, to: m.to, w: m.w, h: m.h }];
+  if (m.drop) {
+    const [ax, az, ay] = m.from, [bx, bz, by] = m.to, L = Math.hypot(bx - ax, by - ay, bz - az), T = [(bx - ax) / L, (by - ay) / L, (bz - az) / L];
+    const k = Math.min(14, L * 0.2), top = [ax + T[0] * k, az + T[2] * k, ay + T[1] * k];
+    out.push({ from: top, to: [top[0] - T[0] * 4, top[1] - T[2] * 4, top[2] - m.drop], w: [m.w[0] * 0.8, m.w[0] * 0.25], h: [m.h[0] * 1.1, m.h[0] * 0.4] });
+  }
+  return out;
+}
+// where a drifting island sits at u (0..1 along its path)
+export function driftTo(R, u) {
+  const [a, b] = R.path; R.u = u;
+  R.I.x = R.x = a[0] + (b[0] - a[0]) * u; R.I.z = R.z = a[1] + (b[1] - a[1]) * u;
 }
 // an arch's outer half-width at height v above its base: the legs flare out toward the foot (shared with the mesh)
 export function archOuterA(R, v) { return R.ao + (R.flare || 0) * Math.pow(Math.max(0, 1 - Math.max(0, v) / R.fh), 2); }
@@ -149,6 +176,25 @@ export function rockNormal(R, x, y, z) {
     }
     if (v < R.h - R.capH && rho < hoodooR(R, v)) return [dx / rho, 0.08, dz / rho];
     return null;
+  }
+  if (R.type === 'wedge') {
+    const p = [x - R.A[0], y - R.A[1], z - R.A[2]], t = p[0] * R.T[0] + p[1] * R.T[1] + p[2] * R.T[2];
+    if (t < -4 || t > R.len + 1) return null;
+    const f = Math.min(1, Math.max(0, t / R.len)), hw = (R.w[0] + (R.w[1] - R.w[0]) * f) / 2, hh = (R.h[0] + (R.h[1] - R.h[0]) * f) / 2;
+    const a = p[0] * R.S[0] + p[1] * R.S[1] + p[2] * R.S[2], b = p[0] * R.U[0] + p[1] * R.U[1] + p[2] * R.U[2];
+    if (Math.abs(a) > hw || Math.abs(b) > hh) return null;
+    const da = hw - Math.abs(a), db = hh - Math.abs(b), dt = R.len + 1 - t; // the nearest face pushes it out
+    const n = db <= da && db <= dt ? R.U.map(v => v * Math.sign(b || 1)) : da <= dt ? R.S.map(v => v * Math.sign(a || 1)) : R.T;
+    return n;
+  }
+  if (R.type === 'float') {
+    const I = R.I, D = R.depth, d = I.top - y;
+    if (d < -0.5 || d > D) return null;
+    const f = islandF(I, x, z), lim = Math.pow(Math.max(0, 1 - Math.max(0, d) / D), 0.75);
+    if (f > lim) return null;
+    if (d < 1.5) return [0, 1, 0]; // on the top
+    const ex = dx / I.rx, ez = dz / I.rz, L = Math.hypot(ex, ez, 0.6) || 1;
+    return [ex / L, -0.6 / L, ez / L]; // the underside: out and down
   }
   if (R.type === 'boulder') {
     const u = dx * R.c + dz * R.s, w = -dx * R.s + dz * R.c, h = v - R.cy;
@@ -293,8 +339,45 @@ export function createTerrain(hole) {
       fallen.push({ type: 'boulder', x, z, r, h: r * (0.9 + R() * 0.5), rot: R() * 6.28, seed: R() * 100 }); k++;
     }
   }
-  const rocks = [...(hole.rocks || []), ...fallen].map(R => prepRock({ ...R }, groundAt)).filter(R => R.solid !== false);
+  // scenery that plays (a sky course): floating and drifting islands and rock wedges are solid; falls are
+  // curtains that knock a ball down. Seeds follow the scenery's order, as the renderer's do.
+  const floats = [], wedges = [], curtains = [];
+  (hole.scenery || []).forEach((m, i) => {
+    if (m.type === 'hanging' || m.type === 'drift') {
+      const r = m.r, I = prepIsland({ x: m.x, z: m.z, rx: m.rx ?? r, rz: m.rz ?? r * 0.85, rot: m.rot || 0, p: m.p, top: m.top, depth: m.top - m.bottom, kind: 'deco', seed: (m.type === 'drift' ? 400 : 300) + i, dome: m.dome || 0, trees: m.trees ?? (m.type === 'drift' ? 4 : m.dome ? 0 : Math.round((m.rx ?? r) * (m.rz ?? r) / 160)) });
+      const F = { type: 'float', I, depth: m.top - m.bottom, mark: m };
+      if (m.type === 'drift') { F.path = m.path; F.drift = true; }
+      floats.push(F);
+    } else if (m.type === 'wedge') for (const w of wedgeParts(m)) wedges.push({ type: 'wedge', ...w });
+  });
+  for (const F of floats) if (F.drift) driftTo(F, F.mark.u ?? 0.5);
+  // falls: a sheet off the nearest rim (a playable island's or a floating one's), as wide as the mark
+  for (const m of hole.scenery || []) if (m.type === 'falls') {
+    const mid = m.pts[Math.floor(m.pts.length / 2)];
+    let best = null;
+    for (const I of [...ISL, ...floats.map(F => F.I)]) for (let k = 0; k < 96; k++) {
+      const th = k / 96 * Math.PI * 2, e = edgeRadius(I, th), d = Math.hypot(e.x - mid[0], e.z - mid[1]);
+      if (!best || d < best.d) best = { I, th, d, e };
+    }
+    if (!best) continue;
+    let w = 0; for (let i = 1; i < m.pts.length; i++) w += Math.hypot(m.pts[i][0] - m.pts[i - 1][0], m.pts[i][1] - m.pts[i - 1][1]);
+    w = Math.max(6, w);
+    const I = best.I, nx = best.e.x - I.x, nz = best.e.z - I.z, nl = Math.hypot(nx, nz) || 1;
+    const top = islandH(I, I.x + nx * 0.98, I.z + nz * 0.98, 0.98);
+    curtains.push({ I, th: best.th, w, top, x: best.e.x + nx / nl * 1.5, z: best.e.z + nz / nl * 1.5, tx: -nz / nl, tz: nx / nl });
+  }
+  const rocks = [...(hole.rocks || []), ...fallen, ...wedges, ...floats].map(R => prepRock(R.type === 'float' ? R : { ...R }, groundAt)).filter(R => R.solid !== false);
   function solidAt(x, y, z) { for (const R of rocks) { const n = rockNormal(R, x, y, z); if (n) return n; } return null; }
+  // inside a waterfall's sheet (it widens a little as it falls)
+  function curtainAt(x, y, z) {
+    for (const C of curtains) {
+      if (y > C.top + 1) continue;
+      const dx = x - C.x, dz = z - C.z, along = dx * C.tx + dz * C.tz, across = Math.abs(dz * C.tx - dx * C.tz);
+      const drop = Math.max(0, C.top - y), half = C.w / 2 * (1 + Math.min(1, drop / 230) * 1.6);
+      if (Math.abs(along) < half && across < 2.5 + drop * 0.03) return C;
+    }
+    return null;
+  }
   // groves: trees placed with the hole (the renderer adds its own scatter; all of them play)
   const trees = (hole.groves || []).flatMap(G => groveTrees(G, groundAt));
   // the lowest height a ball can fall to before it's gone (below every top and the floor)
@@ -307,5 +390,5 @@ export function createTerrain(hole) {
     if (a === null || b === null || c === null || d === null) return { x: 0, z: 0 };
     return { x: (a - b) / (2 * e), z: (c - d) / (2 * e) };
   }
-  return { ISL, floor: F, rocks, trees, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
+  return { ISL, floor: F, rocks, trees, floats, curtains, curtainAt, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
 }

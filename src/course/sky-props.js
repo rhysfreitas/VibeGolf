@@ -1,8 +1,8 @@
-// Aerie stand-ins (global THREE): the things a drafted hole draws but doesn't play yet. Hanging islands,
-// broad waterfalls, rock slabs jutting from an island, the hot air balloon, the drifting island and lanterns,
-// plus the other holes' landmarks in the distance. Built from hole.draft.marks and hole.distant.
+// The Aerie's scenery (global THREE): what floats over a hole, drawn from the same shapes terrain.js makes
+// solid. Hanging islands, the drifting island, rock wedges, broad waterfalls, the hot air balloon and lanterns,
+// plus the other holes' landmarks in the distance. Built from hole.scenery and hole.distant.
 // ctx: { group, trees, island(I, detail, group, trees), fall(I, th, w), prepIsland, edgeRadius, mat, T, anims }
-import { fbm, rng } from './terrain.js';
+import { fbm, rng, wedgeParts, driftTo } from './terrain.js';
 
 const rockAttrs = (geo, depth = 6) => {
   const n = geo.attributes.position.count;
@@ -91,11 +91,6 @@ function wedge(m, ctx, group = ctx.group) {
   let geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
   geo = geo.toNonIndexed(); geo.computeVertexNormals(); rockAttrs(geo, 30);
   const mesh = new THREE.Mesh(geo, facetMat); mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
-  // the buttress: the same rock carried down the island's side under the root, narrowing as it goes
-  if (m.drop) {
-    const top = A.clone().addScaledVector(T, Math.min(14, A.distanceTo(C) * 0.2));
-    wedge({ from: [top.x, top.z, top.y], to: [top.x - T.x * 4, top.z - T.z * 4, top.y - m.drop], w: [m.w[0] * 0.8, m.w[0] * 0.25], h: [m.h[0] * 1.1, m.h[0] * 0.4] }, ctx, group);
-  }
 }
 
 // the hot air balloon: striped envelope, skirt, basket, ropes; it bobs
@@ -153,23 +148,27 @@ function falls(m, ctx, islands) {
 }
 
 export function buildSkyProps(hole, ctx, LANDMARKS) {
-  const marks = hole.draft?.marks || [], R = rng(hole.par * 31 + marks.length);
-  const hung = [];
-  marks.forEach((m, i) => {
-    if (m.type === 'hanging') hung.push(hanging(m, ctx, 300 + i));
-    else if (m.type === 'overhang') slab(m, ctx);
+  const marks = hole.scenery || [], T = ctx.T;
+  // floating islands, from the same shapes the physics hits (terrain.js); a drifting one is built about
+  // its own centre and moved as a group
+  ctx.drifts = [];
+  for (const F of T.floats || []) {
+    if (!F.drift) { ctx.island(F.I, { seg: 96, side: 18 }, ctx.group, ctx.trees); continue; }
+    const g = new THREE.Group(), local = ctx.prepIsland({ ...F.I, x: 0, z: 0 }), trees = [];
+    ctx.island(local, { seg: 72, side: 14 }, g, trees); ctx.buildTrees(trees, g);
+    ctx.group.add(g); const D = { F, g, base: [F.I.x, F.I.z] }; ctx.drifts.push(D);
+    g.position.set(D.base[0], 0, D.base[1]);
+    ctx.anims.push((dt, t) => { g.position.x = D.base[0] + Math.sin(t * 0.25) * 2; g.position.z = D.base[1]; g.position.y = Math.sin(t * 0.4 + 1) * 0.6; });
+  }
+  for (const m of marks) {
+    if (m.type === 'overhang') slab(m, ctx);
     else if (m.type === 'crag') crag(m, ctx);
-    else if (m.type === 'wedge') wedge(m, ctx);
+    else if (m.type === 'wedge') for (const w of wedgeParts(m)) wedge(w, ctx);
     else if (m.type === 'balloon') balloon(m, ctx);
     else if (m.type === 'lanterns') lanterns(m, ctx);
-    else if (m.type === 'drift') { // a small island with trees, swaying a little
-      const g = new THREE.Group(); ctx.group.add(g);
-      hanging({ x: m.x, z: m.z, rx: m.r, rz: m.r * 0.85, top: m.top, bottom: m.bottom, trees: 4 }, ctx, 400 + i, g);
-      ctx.anims.push((dt, t) => { g.position.x = Math.sin(t * 0.25) * 2; g.position.y = Math.sin(t * 0.4 + 1) * 0.6; });
-    }
-  });
-  for (const m of marks) if (m.type === 'falls') falls(m, ctx, [...ctx.T.ISL, ...hung]);
-  // the other holes' landmarks, far off
+  }
+  for (const C of T.curtains || []) ctx.group.add(ctx.fall(C.I, C.th, C.w));
+  // the other holes' landmarks, far off (scenery only)
   for (const d of hole.distant || []) {
     const L = LANDMARKS[d.id]; if (!L) continue;
     const g = new THREE.Group(); g.position.set(d.x, 0, d.z); g.rotation.y = -d.rot * Math.PI / 180; ctx.group.add(g);
@@ -182,7 +181,7 @@ export function buildSkyProps(hole, ctx, LANDMARKS) {
       if (m.type === 'hanging') local.push(hanging(q, sub, 500 + local.length, g));
       else if (m.type === 'overhang') slab(q, sub, g);
       else if (m.type === 'crag') crag(q, sub, g);
-      else if (m.type === 'wedge') wedge(q, sub, g);
+      else if (m.type === 'wedge') for (const w of wedgeParts(q)) wedge(w, sub, g);
       else if (m.type === 'balloon') balloon(q, sub, g, false);
     }
     for (const m of L.marks) if (m.type === 'falls') {
@@ -190,5 +189,13 @@ export function buildSkyProps(hole, ctx, LANDMARKS) {
       falls(q, { ...sub, T: { ISL: [] } }, local);
     }
   }
-  return R;
+}
+
+// between shots a drifting island moves a long way along its path (u in 0..1); the physics moves with it
+export function moveDrifts(ctx, rand = Math.random) {
+  for (const D of ctx?.drifts || []) {
+    let u = D.F.u ?? 0.5, n = u;
+    for (let k = 0; k < 8 && Math.abs(n - u) < 0.35; k++) n = rand();
+    driftTo(D.F, n); D.base = [D.F.I.x, D.F.I.z];
+  }
 }

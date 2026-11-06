@@ -7,7 +7,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 | Mode | What it is |
 |---|---|
 | **Woodson Range** | Opens on a practice menu. **Range**: stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. **Coaching**: the coach reads your shots in fours, names the one fault worth fixing, shows it on a 3D golfer next to the goal swing with two or three likely causes, gives you a cue, and checks your progress after 8 shots. **Short game** is coming. |
-| **The Aerie** | Three holes on floating sky islands. Each hole has a safe route and a carry-the-gap route. Target picks, a shot preview, a corner hole map, penalty drops and auto-putting. |
+| **The Aerie** | Nine holes (par 36) on floating islands over the clouds: a pulled drive knocked down by a waterfall off an island hanging over the first tee, a blind drive at a hot air balloon, a short climb up grass terraces, a Cape over a cove of open sky, a wedge past a drifting island, a dogleg under a granite overhang, rock ceilings jutting from floating islands, and a climb to the clubhouse. Big landing areas and room around every green; the clouds play as a red penalty area (a drop beside where the ball went over). Landmarks from one hole show in the distance on others. |
 | **Red Mesa** | Nine holes (par 36) across and between red-rock mesas, high on the plateau, each built around a classic idea: a Cape, a speed slot into a punchbowl, a Redan from a 70 m drop, a two-tier green past a long natural arch slung across the fairway, a double dogleg with cross waste, a Biarritz over a gorge with a steam train, a drivable par 4 through hoodoos, an Eden with a spring pond, and an Alps finish to the clubhouse. Real green complexes, bunker bowls, rough cuts, tee pads, native carries, sloped lies and pins that change each round. |
 | **Mini games** | **Shape It** (fly through flight gates that trace a shot shape, out of the open launch bay of a spaceship), **Zombie Siege** (bomb the horde before it breaks your fence, on a fog-bound farm at night) **Island Hopper** (hop floating islands above the clouds, three lives) and **Golf HORSE** (call your shot on a basketball scoreboard in a floodlit cul-de-sac, with Topgolf-style light-up targets; Dusty joins if you're alone) are playable, for 1–4 players, each with their own difficulty. **Carnival Booth** (a life-size tin shooting gallery: cans, bullseye boards, gliding ducks and the prize bell, for tickets and a plush) **Wedge Ladder** (climb a ladder of landing zones down a runway at sunrise with your wedges) and **Golf Bowling** (ten frames of real bowling down the runner rug of a giant toy room, with toppling pins) are playable too. Glass Tower is next. Design in [docs/MINIGAMES.md](docs/MINIGAMES.md). |
 
@@ -75,6 +75,8 @@ src/course/main.js    course renderer, round setup, course-management UI, camera
 src/course/terrain.js ground, surfaces and rock for a hole (pure; shared with the physics and tests)
 src/course/conditions.js time of day, wind, weather, temperature, tee suggestion (pure)
 src/course/aerie.js   The Aerie's holes; red-mesa.js Red Mesa's (the course builder's format)
+src/course/sky-props.js  The Aerie's floating islands, rock, falls, balloon and distant landmarks
+src/course/relief.js  penalty relief: the clouds as a red penalty area
 src/course/mesa-world.js Red Mesa's floor, cliffs, arches, hoodoos, plants, props and wildlife
 src/course/minimap.js corner hole map
 bridge/               GSPro Open Connect → WebSocket relay (Node)
@@ -101,7 +103,6 @@ tests/                physics calibration, coaching rules, mini games and bridge
 - Mini games: Glass Tower next
 - Play Golf: multiple players, each on their own tee (set by their difficulty)
 - Course builder that reads and writes the hole format
-- The rest of The Aerie (holes 4–18)
 - Red Mesa's back nine
 - A putting green that uses the R10's putt data
 - Native wrappers (Capacitor/Tauri) with direct Bluetooth to the R10
