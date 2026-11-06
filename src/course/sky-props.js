@@ -33,6 +33,34 @@ function slab(m, ctx, group = ctx.group) {
   group.add(mesh);
 }
 
+// a crag: rock growing out of an island's top and curving away along a Bezier (from -> via -> to), wide and
+// thick at the root where it blends into the island, tapering to the tip. w and h: [root, tip] width and
+// thickness in metres. The root starts a few metres down inside the island.
+function crag(m, ctx, group = ctx.group) {
+  const V3 = (a) => new THREE.Vector3(a[0], a[2], a[1]); // marks give [x, z, y]
+  const A = V3(m.from).add(new THREE.Vector3(0, -6, 0)), B = V3(m.via), C = V3(m.to);
+  const N = 30, K = 18, pos = [], idx = [], seed = (m.from[0] * 7.3 + m.from[1] * 3.1) % 50;
+  const up = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, u = 1 - t;
+    const P = A.clone().multiplyScalar(u * u).add(B.clone().multiplyScalar(2 * u * t)).add(C.clone().multiplyScalar(t * t));
+    const T = B.clone().sub(A).multiplyScalar(2 * u).add(C.clone().sub(B).multiplyScalar(2 * t)).normalize();
+    let S = new THREE.Vector3().crossVectors(T, up); if (S.lengthSq() < 1e-4) S.set(1, 0, 0); S.normalize();
+    const U = new THREE.Vector3().crossVectors(S, T).normalize();
+    const flare = 1 + 0.7 * Math.max(0, 1 - t / 0.18) ** 2;               // the root spreads into the island
+    const w = (m.w[0] + (m.w[1] - m.w[0]) * Math.pow(t, 0.85)) / 2 * flare, h = (m.h[0] + (m.h[1] - m.h[0]) * Math.pow(t, 0.8)) / 2 * flare;
+    for (let k = 0; k <= K; k++) {
+      const a = k / K * Math.PI * 2, n = 1 + 0.28 * (fbm(t * 6 + seed, a * 1.3 + seed) - 0.5) + 0.12 * (fbm(t * 18 + seed, a * 3) - 0.5);
+      const q = i === N ? P : P.clone().addScaledVector(S, Math.cos(a) * w * n).addScaledVector(U, Math.sin(a) * h * n);
+      pos.push(q.x, q.y, q.z);
+    }
+  }
+  for (let i = 0; i < N; i++) for (let k = 0; k < K; k++) { const a = i * (K + 1) + k, b = a + K + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
+  geo.computeVertexNormals(); rockAttrs(geo, 30);
+  const mesh = new THREE.Mesh(geo, ctx.mat); mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
+}
+
 // the hot air balloon: striped envelope, skirt, basket, ropes; it bobs
 const stripeTex = (() => {
   let t = null;
@@ -93,6 +121,7 @@ export function buildSkyProps(hole, ctx, LANDMARKS) {
   marks.forEach((m, i) => {
     if (m.type === 'hanging') hung.push(hanging(m, ctx, 300 + i));
     else if (m.type === 'overhang') slab(m, ctx);
+    else if (m.type === 'crag') crag(m, ctx);
     else if (m.type === 'balloon') balloon(m, ctx);
     else if (m.type === 'lanterns') lanterns(m, ctx);
     else if (m.type === 'drift') { // a small island with trees, swaying a little
@@ -110,9 +139,11 @@ export function buildSkyProps(hole, ctx, LANDMARKS) {
     for (const m of L.marks) {
       const q = { ...m, x: (m.x ?? 0) - L.at[0], z: (m.z ?? 0) - L.at[1] };
       if (m.poly) q.poly = m.poly.map(([x, z]) => [x - L.at[0], z - L.at[1]]);
+      for (const k of ['from', 'via', 'to']) if (m[k]) q[k] = [m[k][0] - L.at[0], m[k][1] - L.at[1], m[k][2]];
       if (m.pts) q.pts = m.pts.map(([x, z]) => [x - L.at[0], z - L.at[1]]);
       if (m.type === 'hanging') local.push(hanging(q, sub, 500 + local.length, g));
       else if (m.type === 'overhang') slab(q, sub, g);
+      else if (m.type === 'crag') crag(q, sub, g);
       else if (m.type === 'balloon') balloon(q, sub, g, false);
     }
     for (const m of L.marks) if (m.type === 'falls') {
