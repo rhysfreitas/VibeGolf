@@ -61,6 +61,43 @@ function crag(m, ctx, group = ctx.group) {
   const mesh = new THREE.Mesh(geo, ctx.mat); mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
 }
 
+// a wedge: a blocky, tapering prism of rock jutting straight out from an island, rooted inside the island and
+// pointing a little up. from/to: [x, z, y] root and tip (the axis), w and h: [root, tip] width and thickness;
+// drop: a buttress carrying the rock down the island's side below the root (m). Faceted, flat shaded.
+let facetMat = null;
+function wedge(m, ctx, group = ctx.group) {
+  if (!facetMat) { facetMat = ctx.mat.clone(); facetMat.onBeforeCompile = ctx.mat.onBeforeCompile; facetMat.flatShading = true; }
+  const A = new THREE.Vector3(m.from[0], m.from[2], m.from[1]), C = new THREE.Vector3(m.to[0], m.to[2], m.to[1]);
+  const T = C.clone().sub(A).normalize(), up = new THREE.Vector3(0, 1, 0);
+  let S = new THREE.Vector3().crossVectors(T, up); if (S.lengthSq() < 1e-4) S.set(1, 0, 0); S.normalize();
+  const U = new THREE.Vector3().crossVectors(S, T).normalize();
+  const R = rng(Math.round(Math.abs(m.from[0] * 13 + m.from[1] * 7)) + 3);
+  // a chamfered rectangle (8 corners) per ring, each corner nudged so the faces break up
+  const ring = [[1, 0.55], [0.6, 1], [-0.6, 1], [-1, 0.55], [-1, -0.55], [-0.6, -1], [0.6, -1], [1, -0.55]];
+  const N = 5, pos = [], idx = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, P = A.clone().lerp(C, t);
+    const w = (m.w[0] + (m.w[1] - m.w[0]) * t) / 2, h = (m.h[0] + (m.h[1] - m.h[0]) * t) / 2;
+    for (const [a, b] of ring) {
+      const j = i === 0 || i === N ? 0.08 : 0.16;
+      const q = P.clone().addScaledVector(S, a * w * (1 + (R() - 0.5) * j * 2)).addScaledVector(U, b * h * (1 + (R() - 0.5) * j * 2)).addScaledVector(T, (R() - 0.5) * 3);
+      pos.push(q.x, q.y, q.z);
+    }
+  }
+  const K = ring.length;
+  for (let i = 0; i < N; i++) for (let k = 0; k < K; k++) { const a = i * K + k, b = i * K + (k + 1) % K, c = a + K, d = b + K; idx.push(a, c, b, b, c, d); }
+  const tip = pos.length / 3; pos.push(...C.clone().addScaledVector(T, 2).toArray()); for (let k = 0; k < K; k++) idx.push(N * K + k, tip, N * K + (k + 1) % K);
+  const root = pos.length / 3; pos.push(...A.clone().addScaledVector(T, -4).toArray()); for (let k = 0; k < K; k++) idx.push(k, (k + 1) % K, root);
+  let geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
+  geo = geo.toNonIndexed(); geo.computeVertexNormals(); rockAttrs(geo, 30);
+  const mesh = new THREE.Mesh(geo, facetMat); mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
+  // the buttress: the same rock carried down the island's side under the root, narrowing as it goes
+  if (m.drop) {
+    const top = A.clone().addScaledVector(T, Math.min(14, A.distanceTo(C) * 0.2));
+    wedge({ from: [top.x, top.z, top.y], to: [top.x - T.x * 4, top.z - T.z * 4, top.y - m.drop], w: [m.w[0] * 0.8, m.w[0] * 0.25], h: [m.h[0] * 1.1, m.h[0] * 0.4] }, ctx, group);
+  }
+}
+
 // the hot air balloon: striped envelope, skirt, basket, ropes; it bobs
 const stripeTex = (() => {
   let t = null;
@@ -122,6 +159,7 @@ export function buildSkyProps(hole, ctx, LANDMARKS) {
     if (m.type === 'hanging') hung.push(hanging(m, ctx, 300 + i));
     else if (m.type === 'overhang') slab(m, ctx);
     else if (m.type === 'crag') crag(m, ctx);
+    else if (m.type === 'wedge') wedge(m, ctx);
     else if (m.type === 'balloon') balloon(m, ctx);
     else if (m.type === 'lanterns') lanterns(m, ctx);
     else if (m.type === 'drift') { // a small island with trees, swaying a little
@@ -144,6 +182,7 @@ export function buildSkyProps(hole, ctx, LANDMARKS) {
       if (m.type === 'hanging') local.push(hanging(q, sub, 500 + local.length, g));
       else if (m.type === 'overhang') slab(q, sub, g);
       else if (m.type === 'crag') crag(q, sub, g);
+      else if (m.type === 'wedge') wedge(q, sub, g);
       else if (m.type === 'balloon') balloon(q, sub, g, false);
     }
     for (const m of L.marks) if (m.type === 'falls') {
