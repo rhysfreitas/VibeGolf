@@ -7,6 +7,7 @@
 
 import { hash2, vnoise, fbm, rng, sstep } from './noise.js';
 import { prepFeatures } from './features.js';
+import { groveTrees } from './trees.js';
 export { hash2, vnoise, fbm, rng, sstep };
 
 /* ---------- islands ---------- */
@@ -90,6 +91,8 @@ const WASH_DEPTH = 1.1;
 // arch:   { type:'arch', x, z, rot, w, h, t, d, y? } span axis along rot (0 = along x), opening w wide
 //         and h tall above its base, a band of rock t thick and d deep (front to back)
 // hoodoo: { type:'hoodoo', x, z, r, h, cap, y? } a column r in radius, h tall, with a cap
+// boulder: { type:'boulder', x, z, r, h, rot, pe?, y? } a lump r in radius (0.85 r front to back), h tall,
+//         sunk a little into the ground; pe > 2 squares it off into a block (a superellipsoid)
 export function prepRock(R, groundAt) {
   R.c = Math.cos(R.rot || 0); R.s = Math.sin(R.rot || 0);
   if (R.y == null) R.y = (groundAt(R.x, R.z) ?? 0) - 0.5;
@@ -100,6 +103,10 @@ export function prepRock(R, groundAt) {
     R.seed = R.seed ?? (R.x * 13.1 + R.z * 7.7);
     R.capH = (R.cap ?? R.r * 1.5) * 0.75; R.capR = R.cap ?? R.r * 1.5;
     R.bound = Math.max(R.capR, R.r * 1.6) + 1;
+  } else if (R.type === 'boulder') {
+    R.seed = R.seed ?? (R.x * 3.1 + R.z * 1.7);
+    R.a = R.r; R.b = R.r * (R.ratio ?? 0.85); R.hc = R.h / 2; R.cy = R.h * 0.42; R.pe = R.pe ?? 2; // centre above the base
+    R.bound = Math.max(R.a, R.b) + 0.5;
   }
   return R;
 }
@@ -139,6 +146,13 @@ export function rockNormal(R, x, y, z) {
     if (v < R.h - R.capH && rho < hoodooR(R, v)) return [dx / rho, 0.08, dz / rho];
     return null;
   }
+  if (R.type === 'boulder') {
+    const u = dx * R.c + dz * R.s, w = -dx * R.s + dz * R.c, h = v - R.cy;
+    const qu = Math.abs(u / R.a), qw = Math.abs(w / R.b), qh = Math.abs(h / R.hc), e = R.pe;
+    if (qu ** e + qw ** e + qh ** e >= 1) return null;
+    const nu = Math.sign(u) * qu ** (e - 1) / R.a, nw = Math.sign(w) * qw ** (e - 1) / R.b, nh = Math.sign(h) * qh ** (e - 1) / R.hc, L = Math.hypot(nu, nw, nh) || 1;
+    return [(nu * R.c - nw * R.s) / L, nh / L, (nu * R.s + nw * R.c) / L];
+  }
   return null;
 }
 
@@ -146,7 +160,9 @@ export function rockNormal(R, x, y, z) {
 // hole.floor: { y, relief, solid (false = scenery only, open air for the ball), washes:[{pts, w}],
 //               gorges:[{x, z, rx, rz, rot}] (no floor) }
 // hole.fairways: [{ pts:[[x,z,hw]...], hw }] painted fairway on any ground; hole.sand: [[x,z,r]...]
-// hole.tees: { setId: [x, z] | {x, z, w, l, h, rot} }; hole.rocks: arches and hoodoos
+// hole.tees: { setId: [x, z] | {x, z, w, l, h, rot} }, hole.teePads: { setId: {w, l, h} } (a bigger or
+// higher pad for an [x, z] tee); hole.rocks: arches, hoodoos and boulders; hole.rockfalls: piles of
+// fallen rock (features.js) with boulders scattered over them; hole.groves: stands of trees (trees.js)
 // hole.green, bunkers, landforms, water: shaped features (features.js)
 // hole.corridor (m either side of the line kept as rough; default 32), hole.native ([from, to] metres
 // along the line that stay native desert: the carry from the back tee), hole.roughW (rough beyond the
@@ -204,7 +220,7 @@ export function createTerrain(hole) {
   }
   function islandAt(x, z) { const t = topAt(x, z); return t ? t.I : null; }
   // shaped features: each tee plays toward the next point of the line ahead of it, else the pin
-  const teeSpots = teeEntries.map(([, v]) => (Array.isArray(v) ? [v[0], v[1]] : [v.x, v.z, v]));
+  const teeSpots = teeEntries.map(([id, v]) => (Array.isArray(v) ? [v[0], v[1], hole.teePads?.[id]] : [v.x, v.z, v]));
   const aimFrom = ([x, z]) => { const pin = hole.pin || [0, -100]; if (!hole.line) return pin; const L = hole.line, here = lineProj(L, x, z).s; let acc = 0; for (let i = 1; i < L.length; i++) { acc += Math.hypot(L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]); if (acc > here + 30) return L[i]; } return pin; };
   const FT = prepFeatures(hole, baseGroundAt, teeSpots, teeSpots.map(aimFrom));
   const groundAt = FT.groundAt;
@@ -238,7 +254,8 @@ export function createTerrain(hole) {
     else if (!F || !F.solid || baseTop(t.I) > F.y + F.relief + 2) onFloor = false;
     else { const fl = floorAt(x, z), h = t.h ?? islandH(t.I, x, z, Math.min(1, islandF(t.I, x, z))); onFloor = fl !== null && fl > h; }
     const I = onFloor ? null : t.I;
-    const fs = FT.surfaceAt(x, z, () => groundAt(x, z)); if (fs) return fs;
+    // features decide first; their outer rough gives way to a fairway mown up to them
+    const fs = FT.surfaceAt(x, z, () => groundAt(x, z)); if (fs && !(fs === 'rough' && fairways.length && fairwayD(x, z) < 0)) return fs;
     if (I && I.bunkers) for (const b of I.bunkers) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
     for (const b of sand) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
     if (I && I.kind === 'green') { const d = Math.hypot(x - I.green.x, z - I.green.z); return d < I.green.r ? 'green' : d < I.green.r + 2 ? 'fairway' : 'rough'; }
@@ -256,8 +273,23 @@ export function createTerrain(hole) {
     if (I.kind === 'fairway') return islandF(I, x, z) < 0.8 ? 'fairway' : 'rough';
     return 'rough';
   }
-  const rocks = (hole.rocks || []).map(R => prepRock({ ...R }, groundAt)).filter(R => R.solid !== false);
+  // boulders scattered over each rockfall: bigger toward the back of a pile, all of them solid
+  const fallen = [];
+  for (const P of FT.rockfalls) {
+    const R = rng(Math.round(P.seed * 13) + 7), [s0, s1] = P.size || [0.6, 2.2];
+    for (let i = 0, k = 0; i < (P.n ?? 18) * 12 && k < (P.n ?? 18); i++) {
+      const a = R() * Math.PI * 2, rr = Math.sqrt(R()) * 0.95, u = Math.cos(a) * rr * P.rx, b = Math.sin(a) * rr * P.rz;
+      const back = Math.min(1, Math.max(0, (b / P.rz + 1) / 2)), r = s0 + (s1 - s0) * Math.pow(R(), 1.6) * (0.45 + 0.55 * back);
+      const x = P.x + u * P.c + b * P.s, z = P.z + u * P.s - b * P.c;
+      if (fallen.some(o => Math.hypot(o.x - x, o.z - z) < (o.r + r) * 0.8)) continue;
+      if (groundAt(x, z) === null) continue;
+      fallen.push({ type: 'boulder', x, z, r, h: r * (0.9 + R() * 0.5), rot: R() * 6.28, seed: R() * 100 }); k++;
+    }
+  }
+  const rocks = [...(hole.rocks || []), ...fallen].map(R => prepRock({ ...R }, groundAt)).filter(R => R.solid !== false);
   function solidAt(x, y, z) { for (const R of rocks) { const n = rockNormal(R, x, y, z); if (n) return n; } return null; }
+  // groves: trees placed with the hole (the renderer adds its own scatter; all of them play)
+  const trees = (hole.groves || []).flatMap(G => groveTrees(G, groundAt));
   // the lowest height a ball can fall to before it's gone (below every top and the floor)
   const lows = ISL.map(I => (I.slope ? Math.min(I.slope.from[2], I.slope.to[2]) : I.top));
   if (F && F.solid) lows.push(F.y - 3);
@@ -268,5 +300,5 @@ export function createTerrain(hole) {
     if (a === null || b === null || c === null || d === null) return { x: 0, z: 0 };
     return { x: (a - b) / (2 * e), z: (c - d) / (2 * e) };
   }
-  return { ISL, floor: F, rocks, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
+  return { ISL, floor: F, rocks, trees, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
 }

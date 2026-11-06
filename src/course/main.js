@@ -3,6 +3,7 @@ import { simulate } from '../physics.js';
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
 import { hash2, fbm, rng, sstep, islandF, edgeRadius, islandH, prepIsland, createTerrain } from './terrain.js';
 import { featureOutline } from './features.js';
+import { createTreeField } from './trees.js';
 import { TIMES, WINDS, WEATHER, TEMPS, WIND_FROM, rollWind, holeWind, windVector, windInShot, skyAngles, suggestTee, teeYards } from './conditions.js';
 import { recentDrives, recordDrive } from '../drives.js';
 import { createMinimap } from './minimap.js';
@@ -484,7 +485,7 @@ const puffTex = (() => {
 /* ---------- hole build ---------- */
 let holeGroup = null, pinMesh = null, flagMesh = null, cupMesh = null;
 const poleGeo = new THREE.CylinderGeometry(0.014, 0.014, 2.3, 8); poleGeo.translate(0, 1.15, 0);
-let mesaCtx = null, greenLight = null;
+let mesaCtx = null, greenLight = null, treeField = null;
 function holeBox(h) { // the area the hole is played over (paint texture, near floor, map view)
   const pts = [...Object.values(h.tees || { t: h.tee }), h.pin || [h.pinPos.x, h.pinPos.z], ...(h.line || [])];
   const xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
@@ -545,7 +546,9 @@ function buildHole(h) {
     }
     mesaCtx = null;
   }
+  trees.push(...T.trees);
   buildTrees(trees, holeGroup);
+  treeField = createTreeField(trees); // every tree plays
   // pin, flag, cup, tee markers (every set, in its colour)
   const pp = h.pinPos;
   pinMesh = new THREE.Mesh(poleGeo, new THREE.MeshStandardMaterial({ color: 0xf4f1e8, roughness: 0.5 })); pinMesh.position.copy(pp); pinMesh.castShadow = true; holeGroup.add(pinMesh);
@@ -672,7 +675,7 @@ function toWorld(origin, yaw, lx, ly, lz, out) {
   return out.set(origin.x + lx * c - lz * s, origin.y + ly, origin.z + lx * s + lz * c);
 }
 // physics runs in the shot's own frame (ball at origin, aim along -z)
-function shotFrame(origin, yaw) {
+function shotFrame(origin, yaw, live = false) { // live: the real shot, trees and all (previews fly clear)
   const c = Math.cos(yaw), s = Math.sin(yaw);
   const wx = (lx, lz) => origin.x + lx * c - lz * s, wz = (lx, lz) => origin.z + lx * s + lz * c;
   const cupRel = HOLE.pinPos.clone().sub(origin);
@@ -681,6 +684,7 @@ function shotFrame(origin, yaw) {
     groundAt: (lx, lz) => { const g = groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - origin.y; },
     surfaceAt: (lx, lz) => physSurface(wx(lx, lz), wz(lx, lz)),
     solidAt: solid,
+    treeAt: live && treeField && treeField.count ? (lx, ly, lz) => { const r = treeField.at(wx(lx, lz), origin.y + ly, wz(lx, lz)); if (!r || !r.n) return r; const n = r.n; return { n: [n[0] * c + n[2] * s, 0, -n[0] * s + n[2] * c] }; } : null,
     cup: { x: cupRel.x * c + cupRel.z * s, z: -cupRel.x * s + cupRel.z * c },
     voidY: T.voidY - origin.y,
     wind: windInShot(windVec, yaw), altFt: COURSE.altFt || 0, tempF: tempF(),
@@ -988,7 +992,7 @@ function launch(raw) {
   state.badLie = false;
   const shot = lieShot(raw);
   if (state.badLie) toast('Bad lie', 'It sat down in the scrub.', 1800);
-  const fr = shotFrame(state.ball, state.yaw);
+  const fr = shotFrame(state.ball, state.yaw, true);
   const r = simulate(shot, fr);
   const W = r.pts.map(p => ({ t: p.t, phase: p.phase, w: toWorld(state.ball, state.yaw, p.p[0], p.p[1], p.p[2], new THREE.Vector3()) }));
   const lift = state.lie === 'tee' ? 0.045 : 0.0;
@@ -1054,7 +1058,8 @@ function finishShot() {
       }
     }
     if (f.fromLie === 'tee' && state.club === 0 && r.landed) recordDrive(Math.hypot(end.x - f.from.x, end.z - f.from.z) / M_PER_YD);
-    if (r.rockHits && T.rocks.length) toast('Off the rock', '', 1600);
+    if (r.treeHits) toast('In the trees', '', 1600);
+    else if (r.rockHits && T.rocks.length) toast('Off the rock', '', 1600);
   }
   showReadout(r, f.shot, res);
   state.tracks.push(groundTrack(f.W, f.W.length - 1));

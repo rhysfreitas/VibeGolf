@@ -93,7 +93,35 @@ export function buildRocks(T, hole, mat, group) {
       const cap = new THREE.Mesh(roughen(new THREE.SphereGeometry(1, 14, 8), 0.12, 0.6, R.seed), capMat);
       cap.scale.set(R.capR, R.capH * 0.6, R.capR * (0.85 + 0.15 * Math.sin(R.seed)));
       cap.position.set(R.x, R.y + R.h - R.capH * 0.5, R.z); cap.rotation.y = R.seed; cap.castShadow = cap.receiveShadow = true; group.add(cap);
+    } else if (R.type === 'boulder' && R.r >= 3) { // a big one: its own mesh in the canyon's rock
+      // craggy: two passes of noise, a flattened base, and a few broken facets
+      const geo = new THREE.IcosahedronGeometry(1, 3), p = geo.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+        const sq = 1 / Math.pow(Math.abs(x) ** R.pe + Math.abs(y) ** R.pe + Math.abs(z) ** R.pe, 1 / R.pe); x *= sq; y *= sq; z *= sq; // the block
+        const k = 1 + 0.22 * (fbm(x * 1.3 + R.seed, (y + z) * 1.3) - 0.5) + 0.09 * (fbm(x * 4 - R.seed, z * 4 + y * 2) - 0.5);
+        const cut = Math.max(0.55, 1 - Math.max(0, Math.abs(Math.sin(Math.atan2(z, x) * 2.5 + R.seed)) - 0.82) * 1.6); // flat-ish facets
+        p.setXYZ(i, x * k * cut, Math.max(-0.75, y * k), z * k * cut);
+      }
+      geo.computeVertexNormals(); rockAttrs(geo);
+      const m = new THREE.Mesh(geo, mat); m.scale.set(R.a, R.hc, R.b); m.position.set(R.x, R.y + R.cy, R.z); m.rotation.y = -(R.rot || 0);
+      m.castShadow = m.receiveShadow = true; group.add(m);
     }
+  }
+  // the rest of the boulders, instanced over a few lumpy shapes
+  const small = T.rocks.filter(R => R.type === 'boulder' && R.r < 3);
+  if (small.length) {
+    const geos = [0, 1, 2].map(k => roughen(new THREE.IcosahedronGeometry(1, 1), 0.3, 0.7, 11 + k * 7));
+    const bm = new THREE.MeshStandardMaterial({ roughness: 0.97, flatShading: true }), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
+    geos.forEach((geo, k) => {
+      const list = small.filter((_, i) => i % 3 === k); if (!list.length) return;
+      const im = new THREE.InstancedMesh(geo, bm, list.length);
+      list.forEach((R, i) => {
+        m4.compose(V(R.x, R.y + R.cy, R.z), q.setFromEuler(new THREE.Euler(0, -(R.rot || 0), 0)), V(R.a, R.hc, R.b)); im.setMatrixAt(i, m4);
+        c.set([0x8c4a30, 0x9a5a3a, 0x7a4430, 0xa86a48][Math.floor(R.seed) % 4]).offsetHSL(0, 0, ((R.seed * 7) % 1 - 0.5) * 0.05); im.setColorAt(i, c);
+      });
+      im.castShadow = im.receiveShadow = true; group.add(im);
+    });
   }
 }
 
@@ -466,7 +494,7 @@ export function buildProps(hole, T, tee, mat, group) {
 // without cracks. Cells that span a cliff are left to the island walls.
 export function buildPlayfield(T, box, mat, coarse, group) {
   const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
-  const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water];
+  const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water, ...FT.rockfalls];
   const pos = [], idx = [], nrm = [];
   for (let tz = box.z0; tz < box.z1; tz += TILE) for (let tx = box.x0; tx < box.x1; tx += TILE) {
     const hot = busy.some(F => F.x + F.bound > tx && F.x - F.bound < tx + TILE && F.z + F.bound > tz && F.z - F.bound < tz + TILE);

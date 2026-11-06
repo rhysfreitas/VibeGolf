@@ -103,6 +103,9 @@ function cor(vn) { return vn < 20 ? Math.max(0.12, 0.510 - 0.0375 * vn + 0.00090
 // opts.wind            -> { x, z } air velocity in m/s, in the shot's frame (calm when omitted)
 // opts.solidAt(x,y,z)  -> outward normal [nx,ny,nz] when the point is inside rock that isn't
 //                         ground (an arch, a spire, a cliff overhang), else null
+// opts.treeAt(x,y,z)   -> { n: [nx,0,nz] } against a trunk, { density } (chance per metre of hitting a
+//                         branch) inside a canopy, else null
+// opts.rng             -> random numbers in [0, 1) for branch hits (Math.random when omitted)
 function simulate(shot, opts = {}) {
   const env = {
     rho: opts.rho ?? airDensity(opts.tempF ?? 72, opts.altFt ?? 0),
@@ -110,6 +113,7 @@ function simulate(shot, opts = {}) {
     wind: [opts.wind?.x || 0, 0, opts.wind?.z || 0],
   };
   const solidAt = opts.solidAt || null;
+  const treeAt = opts.treeAt || null, rand = opts.rng || Math.random;
   const surfaceAt = opts.surfaceAt || (() => 'fairway');
   const groundAt = opts.groundAt || (() => 0);
   const voidY = opts.voidY ?? -1e9;
@@ -119,7 +123,7 @@ function simulate(shot, opts = {}) {
   let s = launchState(shot);
   const pts = [{ t: 0, p: s.pos.slice(), phase: 'flight' }];
   let t = 0, landed = null, apex = 0, bounces = 0, phase = 'flight';
-  let firstDescent = 0, landSpeed = 0, outcome = 'rest', wallHits = 0, rockHits = 0;
+  let firstDescent = 0, landSpeed = 0, outcome = 'rest', wallHits = 0, rockHits = 0, treeHits = 0;
   const nearCup = (x, z) => cup && Math.hypot(x - cup.x, z - cup.z) < CUP_R;
 
   while (t < 40) {
@@ -140,6 +144,28 @@ function simulate(shot, opts = {}) {
         if (++wallHits > 60) { outcome = 'void'; break; }
         pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight', hit: true });
         continue;
+      }
+      const tree = treeAt && treeAt(s.pos[0], s.pos[1], s.pos[2]);
+      if (tree && tree.n) { // off the trunk
+        const n = tree.n, vn = s.vel[0] * n[0] + s.vel[2] * n[2];
+        if (vn < 0) {
+          s = { pos: prev.pos.slice(), vel: [(s.vel[0] - 2 * vn * n[0]) * 0.4, s.vel[1] * 0.6, (s.vel[2] - 2 * vn * n[2]) * 0.4], spin: prev.spin.map(w => w * 0.3) };
+          treeHits++;
+          if (++wallHits > 60) break;
+          pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight', hit: true });
+          continue;
+        }
+      } else if (tree) { // through the leaves: a branch may knock it down or kick it sideways
+        const sp = Math.hypot(...s.vel);
+        if (sp > 0.5 && rand() < 1 - Math.exp(-tree.density * sp * dt)) {
+          const a = rand() * Math.PI * 2, zr = rand() * 2 - 1, q = Math.sqrt(1 - zr * zr);
+          let d = [s.vel[0] / sp * 0.5 + Math.cos(a) * q * 0.9, s.vel[1] / sp * 0.5 + zr * 0.9 - 0.4, s.vel[2] / sp * 0.5 + Math.sin(a) * q * 0.9];
+          const dl = Math.hypot(...d) || 1, keep = 0.15 + 0.4 * rand();
+          s = { pos: s.pos, vel: d.map(v => v / dl * sp * keep), spin: s.spin.map(w => w * 0.25) };
+          treeHits++;
+          pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight', hit: true });
+          continue;
+        }
       }
       const gNow = groundAt(s.pos[0], s.pos[2]);
       if (gNow !== null && s.pos[1] <= gNow && s.vel[1] < 0 || gNow !== null && s.pos[1] < gNow - 0.05) {
@@ -213,7 +239,8 @@ function simulate(shot, opts = {}) {
         if (++wallHits > 60) break;
         continue;
       }
-      const rn = solidAt && ng !== null && solidAt(nx, ng + 0.05, nz);
+      const tk = treeAt && ng !== null && treeAt(nx, ng + 0.05, nz);
+      const rn = tk && tk.n || solidAt && ng !== null && solidAt(nx, ng + 0.05, nz);
       if (rn) { // rolled into rock: reflect off its face
         const vn = s.vel[0] * rn[0] + s.vel[2] * rn[2];
         if (vn < 0) s.vel = [(s.vel[0] - 2 * vn * rn[0]) * 0.4, 0, (s.vel[2] - 2 * vn * rn[2]) * 0.4];
@@ -242,7 +269,7 @@ function simulate(shot, opts = {}) {
     apexFt: apex / 0.3048, apexYd: apex / YD,
     descent: firstDescent, landSpeedMph: landSpeed / MPH,
     flightTime: landed ? landed.t : t, totalTime: t,
-    landed: !!landed, rho: env.rho, rockHits,
+    landed: !!landed, rho: env.rho, rockHits, treeHits,
   };
 }
 

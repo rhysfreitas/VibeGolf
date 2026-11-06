@@ -153,3 +153,39 @@ test('a ball rolling into a hoodoo stops against it instead of passing through',
   const s = shoot(t, from, [R.x, R.z], { Speed: 45, VLA: 3, TotalSpin: 500 });
   assert.ok(s.end.z > R.z + 2, `ends in front of the spire (${(s.end.z - R.z).toFixed(1)} m)`);
 });
+
+test('no tee sits on a fairway: every pad is in the rough or native beside it', () => {
+  HOLES.forEach((h, i) => {
+    for (const [id, tp] of Object.entries(h.tees)) assert.ok(T[i].fairwayD(tp[0], tp[1]) >= 8, `${h.name} ${id} is ${T[i].fairwayD(tp[0], tp[1]).toFixed(1)} m from the fairway`);
+  });
+});
+
+test('Rimrock: a drive pulled left finds the boulder; the ledge drops the corner side a level', () => {
+  const t = T[0], h = HOLES[0];
+  const B = t.rocks.find(r => r.type === 'boulder' && r.r >= 8);
+  const s = shoot(t, h.tees.canyon, [B.x, B.z], { Speed: 140, VLA: 13, TotalSpin: 3100 });
+  assert.ok(s.r.rockHits >= 1, 'hits the boulder');
+  assert.ok(s.end.z > B.z - 2, 'and stops in front of it');
+  const upper = t.groundAt(-8, -222), lower = t.groundAt(12, -270);
+  assert.ok(upper - lower > 1.2, `safe left sits ${(upper - lower).toFixed(1)} m above the corner`);
+});
+
+test('The Chute: a shelf on the left, a grove on the split, a wash short of the green, the green high left', () => {
+  const t = T[1], h = HOLES[1];
+  const shelf = t.groundAt(-16, -280), lower = t.groundAt(12, -280);
+  assert.ok(shelf - lower > 2.8 && shelf - lower < 5, `the shelf stands ${(shelf - lower).toFixed(1)} m above the lower fairway`);
+  assert.equal(t.surfaceAt(-16, -280), 'fairway'); assert.equal(t.surfaceAt(12, -280), 'fairway');
+  assert.ok(t.trees.length >= 5 && t.trees.every(tr => Math.abs(tr.x + 1) < 8 && tr.z < -210 && tr.z > -262), 'the grove sits on the split');
+  for (const x of [-20, 0, 20]) assert.equal(t.surfaceAt(x, -333), 'waste', `the wash crosses at x ${x}`);
+  assert.equal(t.surfaceAt(0, -315), 'fairway'); assert.equal(t.surfaceAt(1, -346), 'fairway');
+  // the walls open where the wash comes through, and close again behind the green
+  assert.ok(t.groundAt(-45, -337) < t.floor.y + 3 && t.groundAt(45, -337) < t.floor.y + 3, 'gaps in both walls');
+  assert.ok(t.groundAt(-45, -300) > t.floor.y + 30, 'the wall stands before the gap');
+  // the green falls from left to right
+  assert.ok(t.groundAt(-9, -374) - t.groundAt(11, -374) > 0.3, 'left side higher');
+  // the rockfall behind the green climbs most of the wall
+  assert.ok(t.groundAt(-37, -399) - t.floor.y > 20, `rockfall ${(t.groundAt(-37, -399) - t.floor.y).toFixed(0)} m up`);
+  // the forward tee stands on its own little plateau, well below the walls
+  const lz = h.tees.lizard, rise = t.groundAt(lz[0], lz[1]) - t.groundAt(0, lz[1]);
+  assert.ok(rise > 1 && rise < 6, `forward tee ${rise.toFixed(1)} m up`);
+});

@@ -92,7 +92,7 @@ tests/                physics calibration, coaching rules, mini games and bridge
 
 - `npm test` runs the physics calibration and the bridge end-to-end tests.
 - Change a page, refresh the browser. There is no build. Push to `main` and GitHub Pages redeploys in about a minute. The service worker fetches from the network first, so pushes show up on the next load.
-- Course holes are data in `src/course/aerie.js` and `src/course/red-mesa.js`. Each island is a superellipse with a top height and rock depth, plus optional green, bunkers, waterfalls and trees. Tees per set, targets and drop zones sit beside the islands; Red Mesa adds a canyon floor, painted fairways and washes, ramps, rock you can hit and props. The format is described in CLAUDE.md.
+- Course holes are data in `src/course/aerie.js` and `src/course/red-mesa.js`. Each island is a superellipse with a top height and rock depth, plus optional green, bunkers, waterfalls and trees. Tees per set, targets and drop zones sit beside the islands; Red Mesa adds a canyon floor, painted fairways and washes, ramps, rock you can hit (arches, hoodoos, boulders and rockfalls), groves and props. Trees on both courses are in play. The format is described in CLAUDE.md.
 - Test hooks for headless screenshots: `window.__lowq = true` (set before load) lowers render quality, `__advance(seconds)` steps the simulation, and `window.__pose = { pos, look, fov }` poses the course camera.
 
 ## Roadmap

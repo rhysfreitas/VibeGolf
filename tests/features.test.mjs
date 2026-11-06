@@ -110,3 +110,67 @@ test('a ball into a pond ends in the water', () => {
   const r = roll(t, [0, -202], [0, -300], { Speed: 85, VLA: 22, TotalSpin: 6500 });
   assert.equal(t.surfaceAt(r.x, r.z), 'water', `ended at z ${r.z.toFixed(1)}`);
 });
+
+// --- trees, boulders and rockfalls ---
+import { createTreeField } from '../src/course/trees.js';
+import { rng } from '../src/course/noise.js';
+// fly a shot with rock and trees (seeded branch luck)
+function flyAll(t, from, to, shot, seed = 1, trees = true) {
+  const o = { x: from[0], y: t.groundAt(from[0], from[1]), z: from[1] };
+  const yaw = Math.atan2(to[0] - o.x, -(to[1] - o.z)), c = Math.cos(yaw), s = Math.sin(yaw);
+  const wx = (lx, lz) => o.x + lx * c - lz * s, wz = (lx, lz) => o.z + lx * s + lz * c;
+  const field = createTreeField(t.trees);
+  const r = simulate({ HLA: 0, SpinAxis: 0, ...shot }, {
+    groundAt: (lx, lz) => { const g = t.groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - o.y; },
+    surfaceAt: (lx, lz) => phys(t.surfaceAt(wx(lx, lz), wz(lx, lz))), voidY: t.voidY - o.y,
+    solidAt: (lx, ly, lz) => { const n = t.solidAt(wx(lx, lz), o.y + ly, wz(lx, lz)); return n && [n[0] * c + n[2] * s, n[1], -n[0] * s + n[2] * c]; },
+    treeAt: trees ? (lx, ly, lz) => { const q = field.at(wx(lx, lz), o.y + ly, wz(lx, lz)); return q && q.n ? { n: [q.n[0] * c + q.n[2] * s, 0, -q.n[0] * s + q.n[2] * c] } : q; } : null,
+    rng: rng(seed),
+  });
+  const e = r.pts.at(-1).p;
+  return { r, x: wx(e[0], e[2]), z: wz(e[0], e[2]) };
+}
+const IRON = { Speed: 112, VLA: 18, TotalSpin: 6500 };
+
+test('a grove of trees knocks most shots flown into it down; a shot over the top is untouched', () => {
+  const t = createTerrain(base({ groves: [{ x: 0, z: -150, rx: 8, rz: 8, n: 4, type: 'cotton', s: [1.6, 1.6], seed: 3 }] }));
+  assert.ok(t.trees.length >= 3, 'the grove has trees');
+  const tallest = Math.max(...t.trees.map(tr => tr.y + 4.5 * tr.s + 3.6 * tr.s * 1.3));
+  // a mid-height iron straight at it
+  const low = { Speed: 100, VLA: 12, TotalSpin: 6000 }; // about 9 m up as it reaches the canopies
+  const open = flyAll(t, [0, -60], [0, -250], low, 1, false);
+  let hit = 0, short = 0;
+  for (let k = 1; k <= 12; k++) { const s = flyAll(t, [0, -60], [0, -250], low, k); if (s.r.treeHits) hit++; if (s.z > open.z + 15) short++; }
+  assert.ok(hit >= 8, `${hit} of 12 hit branches`);
+  assert.ok(short >= 7, `${short} of 12 finished well short of the open-ground shot`);
+  // a high wedge clears it
+  const over = flyAll(t, [0, -60], [0, -250], { Speed: 100, VLA: 30, TotalSpin: 9000 }, 1);
+  assert.ok(tallest < 20 && over.r.treeHits === 0, 'a high shot sails over');
+});
+
+test('a trunk turns a rolling ball back', () => {
+  const t = createTerrain(base({ groves: [{ x: 0, z: -150, rx: 0.1, rz: 0.1, n: 1, type: 'juniper', s: [1, 1], seed: 2 }] }));
+  const tr = t.trees[0];
+  const s = flyAll(t, [tr.x, tr.z + 20], [tr.x, tr.z - 20], { Speed: 30, VLA: 1, TotalSpin: 300 });
+  assert.ok(s.r.treeHits >= 1 || s.z > tr.z, 'it stops at or bounces off the trunk');
+  assert.ok(s.z > tr.z - 0.5, `ends in front of the tree (${(s.z - tr.z).toFixed(1)} m)`);
+});
+
+test('a boulder is solid, and a rockfall heaps up toward its back with boulders over it', () => {
+  const t = createTerrain(base({
+    rocks: [{ type: 'boulder', x: 0, z: -200, r: 8, h: 10 }],
+    rockfalls: [{ x: 60, z: -200, rx: 14, rz: 12, toward: [80, -200], height: 12, n: 20, size: [0.5, 2] }],
+  }));
+  const B = t.rocks.find(r => r.type === 'boulder' && r.r === 8), gy = t.groundAt(0, -200);
+  assert.ok(t.solidAt(0, gy + 3, -200), 'inside the boulder is rock');
+  assert.equal(t.solidAt(0, gy + 12, -200), null, 'above it is air');
+  assert.ok(B);
+  // a low iron straight into it stops short of it
+  const s = flyAll(t, [0, -80], [0, -300], { Speed: 110, VLA: 9, TotalSpin: 5000 });
+  assert.ok(s.r.rockHits >= 1 && s.z > -200, `stops in front of the boulder (${s.z.toFixed(0)})`);
+  // the pile: low at the front, high at the back, native ground, boulders on it
+  const front = t.groundAt(50, -200), back = t.groundAt(69, -200);
+  assert.ok(back - front > 6, `rises ${(back - front).toFixed(1)} m toward the back`);
+  assert.equal(t.surfaceAt(60, -200), 'desert');
+  assert.ok(t.rocks.filter(r => r.type === 'boulder' && Math.hypot(r.x - 60, r.z + 200) < 15).length >= 12, 'boulders scattered over it');
+});

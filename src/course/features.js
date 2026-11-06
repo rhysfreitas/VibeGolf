@@ -6,6 +6,8 @@
 //   tees       raised, mown tee pads, one per set
 //   water      ponds: a basin with a water level                                 (these three are pads:
 //              the ground blends to their own shape, built level from the ground at their centre)
+//   rockfalls  piles of fallen rock: scree heaped against a wall or spilling off a boulder (native
+//              ground; terrain.js scatters boulders over them)
 //   bunkers    bowls with lips, sand flashed up the face toward the target       (added last)
 //
 // Every feature has a local frame: u across (right), b along it toward the back. `rot` is the yaw of
@@ -192,6 +194,25 @@ function waterGround(W, x, z, base) {
   return base + (W.y0 + 0.12 - base) * w - W.depth * (1 - sstep(0.45, 1.12, rho));
 }
 
+/* ---------- rockfalls ---------- */
+// { x, z, rx (half width), rz (half depth), rot|toward (the pile rises toward that point: a wall, a boulder),
+//   height (m at the back; 0 = a scatter of rocks on the ground), n (boulders), size: [min, max] (radius, m) }
+export function prepRockfall(P, baseAt) {
+  if (P.toward && P.rot == null) P.rot = Math.atan2(P.toward[0] - P.x, -(P.toward[1] - P.z));
+  framed(P); P.height = P.height ?? 0; P.seed = P.seed ?? (P.x * 0.7 + P.z * 1.3);
+  const fx = P.x - P.s * P.rz, fz = P.z + P.c * P.rz; // the front (downhill) edge, middle
+  P.y0 = Math.min(baseAt(P.x, P.z), baseAt(fx, fz)); P.bound = Math.max(P.rx, P.rz) * 1.1 + 2;
+  return P;
+}
+export function rockfallRho(P, x, z) { const { u, b } = loc(P, x, z); return Math.hypot(u / P.rx, b / P.rz); }
+function rockfallGround(P, x, z) {
+  if (!P.height || !near(P, x, z)) return null;
+  const { u, b } = loc(P, x, z), rho = Math.hypot(u / P.rx, b / P.rz); if (rho >= 1) return null;
+  const t = Math.min(1, Math.max(0, (b / P.rz + 1) / 2)); // 0 at the front, 1 at the back
+  const edge = 1 - sstep(0.7, 1, Math.hypot(u / P.rx, Math.min(0, b) / P.rz));
+  return P.y0 + P.height * Math.pow(t, 1.6) * edge + Math.min(0.9, P.height * 0.06) * (fbm(x / 3 + P.seed, z / 3) - 0.5) * edge;
+}
+
 /* ---------- tee pads ---------- */
 // tees: { setId: [x, z] | { x, z, w, l, h, rot } }; a pad is w across, l long, raised h
 export function prepTee(T, baseAt) {
@@ -222,12 +243,14 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims) {
   const water = (hole.water || []).map(W => prepWater({ ...W }, (x, z) => shaped(x, z) ?? 0));
   const green0 = greens[0];
   const bunkers = (hole.bunkers || []).map(B => prepBunker({ ...B }, green0 ? [green0.x, green0.z] : pin));
+  const rockfalls = (hole.rockfalls || []).map(P => prepRockfall({ ...P }, (x, z) => shaped(x, z) ?? 0));
 
   function groundAt(x, z) {
     let h = shaped(x, z); if (h === null) return null;
     for (const W of water) { const g = waterGround(W, x, z, h); if (g !== null) h = g; }
     for (const G of greens) { const g = greenGround(G, x, z, h); if (g !== null) h = g; }
     for (const T of tees) { const g = teeGround(T, x, z, h); if (g !== null) h = g; }
+    for (const P of rockfalls) { const g = rockfallGround(P, x, z); if (g !== null && g > h) h = g; }
     for (const B of bunkers) h += bunkerDelta(B, x, z);
     return h;
   }
@@ -239,12 +262,13 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims) {
     let rim = null; // sand beats the green; the green beats a bunker's grassy rim
     for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s === 'sand' || s === 'waste') return s; if (s) rim = s; }
     for (const G of greens) { const s = greenSurface(G, x, z); if (s === 'green' || s === 'fringe') return s; if (s && !rim) rim = s; }
+    for (const P of rockfalls) if (near(P, x, z) && rockfallRho(P, x, z) < 0.92) return 'desert';
     if (rim) return rim;
     for (const T of tees) if (near(T, x, z) && teeDist(T, x, z) < 4) return 'rough';
     return null;
   }
-  const any = landforms.length + greens.length + tees.length + water.length + bunkers.length > 0;
-  return { landforms, greens, tees, water, bunkers, groundAt, surfaceAt, any };
+  const any = landforms.length + greens.length + tees.length + water.length + bunkers.length + rockfalls.length > 0;
+  return { landforms, greens, tees, water, bunkers, rockfalls, groundAt, surfaceAt, any };
 }
 
 /* ---------- outlines, for maps and markers ---------- */

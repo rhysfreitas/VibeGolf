@@ -61,13 +61,17 @@ export const HOLES = [
   {
     name: 'Rimrock', par: 4, heading: 4,
     yards: { canyon: 395, mesa: 355, sage: 310, lizard: 240 },
-    blurb: 'A Cape along the rim: the hole bends right around a notch of canyon to a green out on a promontory. Bite off the corner for a short approach over the notch, or play safe left and come in longer. The landing area tilts toward the edge, and a miss right drops forty metres to the canyon floor.',
+    blurb: 'A Cape along the rim: the hole bends right around a notch of canyon to a green out on a promontory. Bite off the corner for a short approach over the notch, or play safe left and come in longer. The fairway steps down a low ledge toward the edge, a house-sized boulder sits off the left of the landing area, and a miss right drops forty metres to the canyon floor.',
     line: L1, pin: [52, -352],
-    tees: teesOn(L1, { canyon: 395, mesa: 355, sage: 310, lizard: 240 }, { mesa: -1, sage: -2, lizard: -2 }),
+    tees: { ...teesOn(L1, { canyon: 395, mesa: 355, sage: 310, lizard: 240 }, { mesa: -1, sage: -2 }), lizard: [14, -151] },
     floor: { y: -40, relief: 2.2 },
     islands: [
       { x: -45, z: -175, rx: 86, rz: 232, p: 3.2, top: 0, depth: 40, kind: 'mesa', seed: 1, relief: 1.1, trees: 70 },
       { x: 60, z: -354, rx: 34, rz: 31, p: 2.6, top: 0, depth: 40, kind: 'mesa', seed: 2, relief: 0.6, trees: 6 },
+      // more to look at: outcrops on the mesa top to the left, near and far
+      { x: -112, z: -128, rx: 16, rz: 26, rot: 0.3, p: 2.6, top: 9, depth: 49, kind: 'rock', seed: 3 },
+      { x: -100, z: -292, rx: 13, rz: 15, p: 2.4, top: 16, depth: 56, kind: 'rock', seed: 4 },
+      { x: -150, z: -420, rx: 34, rz: 22, rot: -0.4, p: 3, top: 30, depth: 70, kind: 'rock', seed: 5 },
     ],
     fairways: [{ pts: [[-8, -116, 11, 11], [-8, -165, 24, 13], [-2, -220, 27, 15], [8, -266, 19, 11], [22, -294, 11, 9]] }, { pts: [[36, -330, 9, 9], [42, -338, 11, 11]] }],
     green: { x: 52, z: -352, rx: 14, rz: 12, style: 'plateau', raise: 0.9, falseFront: 0.6, side: -1.2, pins: [[52, -352], [49.9, -358.7], [55.5, -345.7], [59.2, -355]] },
@@ -77,9 +81,18 @@ export const HOLES = [
     ],
     landforms: [
       { type: 'tilt', x: -2, z: -225, length: 90, width: 56, grade: -4 },
-      { type: 'mound', x: -32, z: -205, length: 30, width: 24, height: 1.6 },
+      // a low ledge across the landing area: safe left stays up top; the corner side is a level lower
+      { type: 'step', x: 0, z: -246, rot: 0.785, length: 8, width: 150, height: 1.8, run: 400 },
       { type: 'swale', x: 43.6, z: -336.1, rot: 0.483 + Math.PI / 2, length: 30, width: 10, height: 0.6 },
     ],
+    // a house-sized boulder off the left of the landing area, with rock spilled around its foot
+    rocks: [
+      { type: 'boulder', x: -50, z: -207, r: 11, h: 15, rot: 0.5, pe: 3.2 },
+      // spires down on the canyon floor to the right, their tops just over the rim
+      { type: 'hoodoo', x: 96, z: -150, r: 4.2, h: 42 }, { type: 'hoodoo', x: 114, z: -178, r: 5, h: 50 }, { type: 'hoodoo', x: 103, z: -207, r: 3.6, h: 37 },
+      { type: 'hoodoo', x: 130, z: -236, r: 4.6, h: 46 }, { type: 'hoodoo', x: 94, z: -262, r: 3.4, h: 33 },
+    ],
+    rockfalls: [{ x: -45, z: -207, rx: 14, rz: 12, toward: [-56, -208], height: 2.6, n: 26, size: [0.4, 2] }],
     targets: [{ name: 'Safe left', x: -8, z: -222 }, { name: 'Bite the corner', x: 12, z: -270 }, { name: 'Green', pin: true }],
     drops: [],
     props: [{ type: 'windmill', x: 16, z: 14, rot: 0.4 }],
@@ -88,27 +101,42 @@ export const HOLES = [
   {
     name: 'The Chute', par: 4, heading: 82,
     yards: { canyon: 410, mesa: 370, sage: 320, lizard: 250 },
-    blurb: 'Down a sandstone ramp between two plateaus into a box canyon. A hogback splits the ramp, and a steeper slot at the bottom runs a good drive on. The green is a punchbowl walled in on three sides.',
+    blurb: 'Down a sandstone ramp into a box canyon. At the bottom a grove of cottonwoods splits the landing area: left of it, a shelf a few metres up with rock spilling down its face; right, the lower fairway with a speed slot. A dry wash crosses short of the green through gaps in the canyon walls. The green falls from a rockfall on the left toward a pot bunker on the right.',
     line: L2, pin: [1, -374],
-    tees: teesOn(L2, { canyon: 410, mesa: 370, sage: 320, lizard: 250 }),
-    floor: { y: -32, relief: 1.4 }, floorPlay: true, // the box canyon floor is where the hole ends
+    tees: { ...teesOn(L2, { canyon: 410, mesa: 370, sage: 320 }), lizard: [22, -150] },
+    floor: { y: -32, relief: 1.4, washes: [{ pts: [[-150, -342], [-95, -337], [-45, -334], [0, -333], [45, -331], [95, -327], [150, -320]], w: 8 }] },
+    floorPlay: true, // the box canyon floor is where the hole ends
     islands: [
       { x: 0, z: 32, rx: 62, rz: 76, p: 3, top: 0, depth: 32, kind: 'mesa', seed: 21, trees: 16 },
       { x: 0, z: -150, rx: 35, rz: 122, p: 3.6, top: 0, depth: 32, kind: 'mesa', seed: 22, relief: 0.5, slope: { from: [0, -42, 0], to: [0, -236, -32] }, trees: 0 },
-      { x: -88, z: -170, rx: 56, rz: 178, p: 3, top: 14, depth: 46, kind: 'rock', seed: 24, trees: 10 },
-      { x: 88, z: -170, rx: 56, rz: 178, p: 3, top: 16, depth: 48, kind: 'rock', seed: 25, trees: 10 },
-      { x: -72, z: -380, rx: 42, rz: 72, p: 2.6, top: 12, depth: 44, kind: 'rock', seed: 26 },
-      { x: 74, z: -378, rx: 42, rz: 72, p: 2.6, top: 10, depth: 42, kind: 'rock', seed: 27 },
+      // the canyon walls, cut back on both sides where the wash comes through
+      { x: -88, z: -165, rx: 56, rz: 157, p: 4, top: 14, depth: 46, kind: 'rock', seed: 24, trees: 10 },
+      { x: 88, z: -165, rx: 56, rz: 157, p: 4, top: 16, depth: 48, kind: 'rock', seed: 25, trees: 10 },
+      { x: -84, z: -402, rx: 42, rz: 50, p: 2.6, top: 12, depth: 44, kind: 'rock', seed: 26 },
+      { x: 74, z: -400, rx: 42, rz: 50, p: 2.6, top: 10, depth: 42, kind: 'rock', seed: 27 },
       { x: 0, z: -442, rx: 84, rz: 44, p: 2.6, top: 13, depth: 45, kind: 'rock', seed: 28 },
+      // the upper shelf, left of the grove, about 4 m above the lower fairway
+      { x: -17, z: -268, rx: 16, rz: 58, p: 3.5, top: -28, depth: 8, kind: 'mesa', seed: 29, relief: 0.4, trees: 0 },
+      // the forward tee's little plateau on the right of the ramp
+      { x: 22, z: -150, rx: 10, rz: 12, p: 3, top: -15.5, depth: 10, kind: 'mesa', seed: 30, relief: 0.2, trees: 0 },
     ],
-    fairways: [{ pts: [[-9, -112, 8, 5], [-11, -160, 10, 5], [-9, -205, 10, 6]] }, { pts: [[9, -112, 5, 8], [11, -160, 5, 10], [9, -205, 6, 10]] }, { pts: [[1, -200, 20, 20], [2, -235, 24, 24], [3, -280, 18, 16], [2, -345, 11, 11]] }],
-    green: { x: 1, z: -374, rx: 14, rz: 13, style: 'punchbowl', pins: [[1, -374], [-6, -369], [7, -379], [-4, -382]] },
-    bunkers: [{ x: -16, z: -362, rx: 5, rz: 4, style: 'grass' }, { x: 17, z: -381, rx: 4.5, rz: 3.5, style: 'pot' }, { x: -18, z: -268, rx: 8, rz: 5, style: 'flashed' }],
+    fairways: [
+      { pts: [[0, -112, 12, 10], [0, -160, 14, 9], [-1, -204, 17, 14]] },
+      { pts: [[-16, -220, 8, 8], [-17, -260, 10, 10], [-16, -300, 9, 9], [-15, -318, 7, 7]] },   // upper shelf
+      { pts: [[13, -212, 10, 11], [14, -252, 11, 13], [11, -292, 12, 12], [6, -321, 12, 12]] }, // lower right
+      { pts: [[1, -341, 10, 10], [1, -352, 11, 11]] },                                          // between the wash and the green
+    ],
+    green: { x: 1, z: -374, rx: 14, rz: 13, style: 'tilt', tilt: 0.6, side: -2.1, raise: -0.3, mound: 1.2, pins: [[1, -374], [-6, -369], [7, -379], [-4, -381]] },
+    bunkers: [{ x: -16, z: -360, rx: 5, rz: 4, style: 'grass' }, { x: 17, z: -381, rx: 4.5, rz: 3.5, style: 'pot' }, { x: -26, z: -292, rx: 5, rz: 4, style: 'flashed' }],
     landforms: [
-      { type: 'ridge', x: 1, z: -160, length: 110, width: 14, height: 1.3 },
-      { type: 'step', x: 2, z: -222, length: 26, width: 40, height: 3, run: 12 },
+      { type: 'step', x: 12, z: -226, length: 22, width: 24, height: 2.5, run: 12 }, // the speed slot, right side only
     ],
-    targets: [{ name: 'Down the chute', x: 2, z: -235 }, { name: 'Green', pin: true }],
+    groves: [{ x: -1, z: -236, rx: 6, rz: 22, n: 7, type: 'cotton', s: [1.2, 1.7], seed: 5 }],
+    rockfalls: [
+      { x: 3, z: -284, rx: 34, rz: 4.5, toward: [-12, -284], height: 2.6, n: 24, size: [0.35, 1.3] }, // spilled down the shelf's face
+      { x: -28, z: -392, rx: 15, rz: 14, toward: [-44, -404], height: 30, n: 70, size: [0.3, 3.2] }, // the rockfall behind the green
+    ],
+    targets: [{ name: 'Lower right', x: 12, z: -262 }, { name: 'Upper shelf', x: -16, z: -262 }, { name: 'Green', pin: true }],
     drops: [],
     props: [{ type: 'swallows', x: 0, z: -390 }],
     glyph: 'snake',
@@ -143,7 +171,7 @@ export const HOLES = [
     yards: { canyon: 370, mesa: 335, sage: 290, lizard: 225 },
     blurb: 'Through a huge natural arch about 190 yards out, then the fairway turns left around a bunker group to a two-tier green. From the right side you can see the back tier and attack it; from the left you can\'t.',
     line: L4, pin: [-57.2, -322.9],
-    tees: teesOn(L4, { canyon: 370, mesa: 335, sage: 290, lizard: 225 }),
+    tees: { ...teesOn(L4, { canyon: 370, mesa: 335, sage: 290 }), lizard: [21, -130.1] },
     floor: { y: -35, relief: 2 },
     islands: [
       { x: 0, z: 22, rx: 56, rz: 70, p: 3, top: 0, depth: 35, kind: 'mesa', seed: 41, trees: 12 },
@@ -170,7 +198,7 @@ export const HOLES = [
     yards: { canyon: 535, mesa: 485, sage: 425, lizard: 330 },
     blurb: 'A double dogleg along the foot of a long plateau wall, the fairway tilting toward the cliff. A band of desert waste crosses the second-shot zone: carry it or lay up. The crowned green sits in an alcove in the rock.',
     line: L5, pin: [26, -485],
-    tees: teesOn(L5, { canyon: 535, mesa: 485, sage: 425, lizard: 330 }),
+    tees: { ...teesOn(L5, { canyon: 535, mesa: 485 }), sage: [20.3, -101.7], lizard: [32, -190] },
     floor: { y: 0, relief: 1.6, washes: [{ pts: [[46, 60], [42, -110], [62, -215], [84, -300], [92, -385], [80, -445], [96, -540]], w: 18 }] },
     islands: [
       { x: -82, z: -40, rx: 56, rz: 130, p: 3.4, top: 55, depth: 55, kind: 'rock', seed: 51 },
@@ -180,7 +208,7 @@ export const HOLES = [
       { x: 22, z: -562, rx: 92, rz: 56, p: 2.8, top: 57, depth: 57, kind: 'rock', seed: 55 },
       { x: 92, z: -505, rx: 36, rz: 42, p: 2.6, top: 40, depth: 40, kind: 'rock', seed: 56 },
     ],
-    fairways: [{ pts: [[1, -112, 12, 12], [5, -170, 16, 24], [18, -232, 18, 20], [34, -282, 16, 16], [38, -308, 12, 12]] }, { pts: [[43, -344, 20, 18], [44, -375, 22, 16], [38, -420, 14, 12], [33, -452, 12, 12]] }],
+    fairways: [{ pts: [[1, -112, 12, 12], [5, -170, 16, 10], [18, -232, 18, 20], [34, -282, 16, 16], [38, -308, 12, 12]] }, { pts: [[43, -344, 20, 18], [44, -375, 22, 16], [38, -420, 14, 12], [33, -452, 12, 12]] }],
     green: { x: 26, z: -485, rx: 15, rz: 13, style: 'crowned', pins: [[26, -485], [20, -489], [32, -481], [24, -479]] },
     bunkers: [
       { x: 40, z: -330, rx: 28, rz: 6, rot: 0.1, style: 'waste' },
@@ -221,7 +249,7 @@ export const HOLES = [
     yards: { canyon: 320, mesa: 295, sage: 260, lizard: 205 },
     blurb: 'A drivable par four on a bench scattered with hoodoos, capped spires that knock a ball down. Thread a gap and you can reach; the safe play is a flat layup area out to the left. The green is the most contoured on the course, with a spring pool to its right and a balanced rock beyond.',
     line: L7, pin: [-4, -318],
-    tees: teesOn(L7, { canyon: 320, mesa: 295, sage: 260, lizard: 205 }),
+    tees: { ...teesOn(L7, { canyon: 320, mesa: 295, sage: 260 }), lizard: [26, -142] },
     floor: { y: -25, relief: 1.8 },
     islands: [
       { x: 0, z: -165, rx: 88, rz: 232, p: 3, top: 0, depth: 25, kind: 'mesa', seed: 71, trees: 40 },
@@ -249,7 +277,7 @@ export const HOLES = [
     yards: { canyon: 430, mesa: 380, sage: 330, lizard: 255 },
     blurb: 'On the canyon floor along a dry riverbed. The wash crosses the fairway twice as desert waste, a hogback splits the landing area, and the green is an Eden: back to front, deep bunkers either side of the front, and a spring pond behind it under the cottonwoods.',
     line: L8, pin: [-28, -388],
-    tees: teesOn(L8, { canyon: 430, mesa: 380, sage: 330, lizard: 255 }),
+    tees: { ...teesOn(L8, { canyon: 430, mesa: 380, sage: 330 }), lizard: [-40, -174] },
     floor: { y: 0, relief: 1.5, washes: [{ pts: [[-80, -40], [-34, -104], [18, -132], [48, -190], [32, -255], [-16, -288], [-58, -318]], w: 17 }] },
     islands: [
       { x: -134, z: -210, rx: 72, rz: 320, p: 3, top: 48, depth: 48, kind: 'rock', seed: 81 },
@@ -271,7 +299,7 @@ export const HOLES = [
     yards: { canyon: 515, mesa: 460, sage: 400, lizard: 305 },
     blurb: 'The walk home: three tiers stepping back up to the top, each shot up a level. The last rise hides the green, so the third is blind, and the plateau green has a false front: come up short and it rolls back toward the ramp. The clubhouse and a window arch wait on the summit.',
     line: L9, pin: [-6, -468],
-    tees: teesOn(L9, { canyon: 515, mesa: 460, sage: 400, lizard: 305 }),
+    tees: { ...teesOn(L9, { canyon: 515, mesa: 460 }), sage: [-25.9, -105.8], lizard: [18.5, -193.4] },
     floor: { y: 0, relief: 1.5 },
     islands: [
       { x: 0, z: -332, rx: 82, rz: 112, p: 3.2, top: 14, depth: 14, kind: 'mesa', seed: 91, trees: 30 },
