@@ -14,11 +14,14 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js' };
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie-draft.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
-const { COURSE, HOLES } = await import(COURSES[CID]);
+const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
 const MESA = COURSE.theme === 'mesa';
-const MW = MESA ? await import('./mesa-world.js') : null;
+// a sky course drawn from shaped ground (features, a painted surface), like Red Mesa's playfield
+const SHAPED = !MESA && !!COURSE.shaped;
+const MW = MESA || SHAPED ? await import('./mesa-world.js') : null;
+const SP = SHAPED ? await import('./sky-props.js') : null;
 const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
 document.title = COURSE.name;
 
@@ -174,6 +177,7 @@ const surfU = { uSurf: { value: null }, uSurfMin: { value: new THREE.Vector2() }
 islandMat.onBeforeCompile = sh => {
   sh.uniforms.uDir = holeDirU; Object.assign(sh.uniforms, surfU);
   if (MESA) sh.defines = { ...(sh.defines || {}), MESA: '' };
+  if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
     .replace('#include <common>', '#include <common>\nattribute vec4 aW; attribute float aDepth; varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN;')
     .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvW4 = aW; vDepth = aDepth; vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
@@ -228,9 +232,19 @@ col = mix(col, rock, rw);
 diffuseColor.rgb = col;
 #else
 vec3 col = rough;
+#ifdef PAINT
+// a shaped sky course: surfaces from the hole's paint texture (first cut a shade lighter than rough)
+vec2 st = (p.xz - uSurfMin) / uSurfSize;
+float inTex = step(0.0, st.x) * step(st.x, 1.0) * step(0.0, st.y) * step(st.y, 1.0);
+vec4 sf = mix(vec4(0.0), texture2D(uSurf, clamp(st, 0.0, 1.0)), inTex);
+vec3 cut = mix(lin(vec3(0.26,0.43,0.16)), lin(vec3(0.32,0.48,0.19)), mid) * (0.88 + 0.2*fine);
+col = mix(col, cut, smoothstep(0.7, 0.95, sf.a) * (1.0 - sf.r));
+col = mix(col, fair, sf.r); col = mix(col, grn, sf.g); col = mix(col, sand, smoothstep(0.35, 0.75, sf.b));
+#else
 col = mix(col, fair, vW4.x);
 col = mix(col, grn, vW4.y);
 col = mix(col, sand, vW4.z);
+#endif
 // rock: pale sandstone with vertical water streaks, strata and moss on ledges
 float ang = atan(p.z, p.x);
 float streak = fb(vec2(p.x*0.35 + p.z*0.35, p.y*0.02));
@@ -270,7 +284,9 @@ function buildIsland(I, detail, group, trees) {
       const s = rings[r] * 0.999;
       const x = I.x + (e.x - I.x) * s, z = I.z + (e.z - I.z) * s;
       const f = islandF(I, x, z);
-      const y = islandH(I, x, z, Math.min(f, 1));
+      let y = islandH(I, x, z, Math.min(f, 1));
+      if (SHAPED && I.playable && T.topAt(x, z)?.I === I) { const g = T.groundAt(x, z); if (g !== null) y = s < 0.96 ? g - 1.5 : g; }
+      if (I.dome) y += I.dome * (1 - s * s);
       pos.set([x, y, z], vi * 3);
       const sf = I.playable ? surfaceAt(x, z) : 'rough';
       aW.set([sf === 'fairway' || sf === 'tee' ? 1 : 0, sf === 'green' ? 1 : 0, sf === 'sand' ? 1 : 0, 0], vi * 4);
@@ -328,7 +344,7 @@ function buildIsland(I, detail, group, trees) {
     if (I.playable && surfaceAt(x, z) !== 'rough') continue;
     if (I.playable && I.kind !== 'rough' && islandF(I, x, z) < 0.86) continue;
     if (I.kind === 'tee' && Object.values(HOLE.tees || { t: HOLE.tee }).some(t => Math.hypot(x - t[0], z - t[1]) < 12 || (Math.abs(x - t[0]) < 10 && z > t[1] - 4))) continue; // keep the tees and the camera behind them clear
-    trees.push({ x, y: groundAt2(I, x, z), z, s: (I.playable ? 0.9 : 1.2) + R() * 0.8, type: R() < 0.62 ? 'pine' : 'oak', r: R() });
+    trees.push({ x, y: (SHAPED && I.playable ? T.groundAt(x, z) : null) ?? groundAt2(I, x, z), z, s: (I.playable ? 0.9 : 1.2) + R() * 0.8, type: R() < 0.62 ? 'pine' : 'oak', r: R() });
     placed++;
   }
 }
@@ -411,9 +427,9 @@ const fallMat = new THREE.ShaderMaterial({
       #include <fog_fragment>
     }`,
 });
-function makeFall(I, th) {
+function makeFall(I, th, width) {
   const e = edgeRadius(I, th), ox = e.x - I.x, oz = e.z - I.z, ol = Math.hypot(ox, oz);
-  const nx = ox / ol, nz = oz / ol, W = 5 + I.seed % 3, L = 170;
+  const nx = ox / ol, nz = oz / ol, W = width || 5 + I.seed % 3, L = width ? 230 : 170;
   const geo = new THREE.PlaneGeometry(W, L, 1, 24);
   const p = geo.attributes.position;
   for (let i = 0; i < p.count; i++) {
@@ -485,7 +501,7 @@ const puffTex = (() => {
 /* ---------- hole build ---------- */
 let holeGroup = null, pinMesh = null, flagMesh = null, cupMesh = null;
 const poleGeo = new THREE.CylinderGeometry(0.014, 0.014, 2.3, 8); poleGeo.translate(0, 1.15, 0);
-let mesaCtx = null, greenLight = null, treeField = null;
+let mesaCtx = null, skyCtx = null, greenLight = null, treeField = null;
 function holeBox(h) { // the area the hole is played over (paint texture, near floor, map view)
   const pts = [...Object.values(h.tees || { t: h.tee }), h.pin || [h.pinPos.x, h.pinPos.z], ...(h.line || [])];
   const xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
@@ -505,7 +521,7 @@ function buildHole(h) {
   applySky(h.heading ?? 0);
   const trees = [];
   const box = holeBox(h); playBox = MESA ? box : null;
-  if (MESA) { // paint texture first: the island shader reads it
+  if (MESA || SHAPED) { // paint texture first: the island shader reads it
     const tex = MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
     surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
   }
@@ -535,6 +551,13 @@ function buildHole(h) {
       deco.push(prepIsland({ x, z, rx: size, rz: size * (0.7 + R() * 0.6), rot: R() * 3, top, depth: size * (3 + R() * 4), kind: 'deco', seed: 100 + i, falls: R() < 0.25 ? [R() * 6.28] : [] }));
     }
     for (const I of deco) buildIsland(I, { seg: rad2seg(I), side: 18 }, holeGroup, trees);
+    if (SHAPED) { // the shaped playing surface over the island tops, ponds, and the draft's stand-ins
+      MW.buildPlayfield(T, box, playMat, coarse, holeGroup);
+      MW.buildWater(T, holeGroup);
+      skyCtx = { group: holeGroup, trees, island: buildIsland, fall: makeFall, prepIsland, edgeRadius, mat: islandMat, T, anims: [], glow: [] };
+      SP.buildSkyProps(h, skyCtx, LANDMARKS || {});
+      if (h.props) { const pc = MW.buildProps({ ...h, props: h.props }, T, h.tee, islandMat, holeGroup, { glyphs: false }); skyCtx.anims.push(...pc.anims); }
+    }
     // cloud puffs drifting between islands
     for (let i = 0; i < (coarse ? 40 : 70); i++) {
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, transparent: true, depthWrite: false, opacity: 0.35 + R() * 0.45, fog: true }));
@@ -544,7 +567,7 @@ function buildHole(h) {
       const s = 60 + R() * 220; sp.scale.set(s, s * 0.45, 1);
       sp.position.set(x, -60 - R() * 180 + (rad > 700 ? R() * 120 : 0), z); sp.userData.v = 0.6 + R(); holeGroup.add(sp);
     }
-    mesaCtx = null;
+    mesaCtx = SHAPED ? skyCtx : null;
   }
   trees.push(...T.trees);
   buildTrees(trees, holeGroup);

@@ -501,7 +501,7 @@ function railing(I, T, ctx) {
 }
 
 // build every prop on the hole; returns the animation hooks
-export function buildProps(hole, T, tee, mat, group) {
+export function buildProps(hole, T, tee, mat, group, { glyphs = true } = {}) {
   const ctx = { group, anims: [], glow: [] };
   for (const p of hole.props || []) {
     const y = T.groundAt(p.x, p.z);
@@ -519,7 +519,7 @@ export function buildProps(hole, T, tee, mat, group) {
     else if (p.type === 'waterfall') waterfall(p, T, ctx);
   }
   for (const I of T.ISL) if (I.rail) railing(I, T, ctx);
-  petroglyph(hole, T, hole.tees[Object.keys(hole.tees)[0]], ctx);
+  if (glyphs) petroglyph(hole, T, hole.tees[Object.keys(hole.tees)[0]], ctx);
   return ctx;
 }
 
