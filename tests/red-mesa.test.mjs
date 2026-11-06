@@ -78,12 +78,16 @@ test("Needle's Eye: a normal drive flies through the arch; a skied one clips it"
     const am = shoot(t, h.tees[set], [0, -260], { Speed: 140, VLA: 13, TotalSpin: 3100 });
     assert.equal(am.r.rockHits, 0, `${set} amateur drive`);
   }
-  // a high drive reaches the span 30-40 m up and clips it; a truly skied one sails over the top
-  const high = shoot(t, h.tees.canyon, [0, -260], { Speed: 150, VLA: 16, TotalSpin: 3800 });
+  // one long arch, diagonal across the fairway: a high drive reaches the span 34 m up and clips it
+  const R = h.rocks[0];
+  assert.ok(R.w >= 90 && Math.abs(R.rot) > 0.6, 'a long arch, slung diagonally');
+  const high = shoot(t, h.tees.canyon, [0, -260], { Speed: 150, VLA: 17, TotalSpin: 3800 });
   assert.ok(high.r.rockHits >= 1, 'a high drive hits the span');
-  assert.ok(high.end.z > -174, 'and drops short of it');
-  const wide = shoot(t, h.tees.canyon, [-20, -174], TOUR.DR);
-  assert.ok(wide.r.rockHits >= 1, 'a drive at the leg hits it');
+  assert.ok(high.end.z > -175, 'and drops short of it');
+  const left = shoot(t, h.tees.canyon, [-42, -200], TOUR.DR);
+  assert.ok(left.r.rockHits >= 1, 'a drive at the left foot hits it');
+  const right = shoot(t, h.tees.sage, [41, -109], { Speed: 120, VLA: 11, TotalSpin: 3000 });
+  assert.ok(right.r.rockHits >= 1, 'a push from the forward tee hits the right foot');
 });
 
 test('Hoodoos: the table rock knocks a drive down; the plateaus step up; no middle fairway', () => {

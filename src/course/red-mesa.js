@@ -174,10 +174,9 @@ export const HOLES = [
   {
     name: "Needle's Eye", par: 4, heading: 250,
     yards: { canyon: 370, mesa: 335, sage: 290, lizard: 235 },
-    blurb: 'Through a massive double arch about 190 yards out, then the fairway turns left around a bunker group to a two-tier green. From the right side you can see the back tier and attack it; from the left you can\'t.',
+    blurb: 'Through a long arch slung diagonally across the fairway about 170 yards out, then the fairway turns left around a bunker group to a two-tier green. From the right side you can see the back tier and attack it; from the left you can\'t.',
     line: L4, pin: [-57.2, -322.9],
     tees: { ...teesOn(L4, { canyon: 370, mesa: 335, sage: 290 }), lizard: [53, -156] },
-    teePads: { lizard: { rot: -0.26 } }, // the forward tee plays through the small arch to the right side
     floor: { y: -35, relief: 2 },
     islands: [
       { x: 0, z: 22, rx: 56, rz: 70, p: 3, top: 0, depth: 35, kind: 'mesa', seed: 41, trees: 12 },
@@ -194,14 +193,14 @@ export const HOLES = [
       { type: 'swale', x: -52.6, z: -311.6, rot: -0.547 + Math.PI / 2, length: 34, width: 10, height: 0.7 },
     ],
     rocks: [
-      // a massive arch: thick weathered legs flaring into buttresses, a thinner span, rubble at its feet
-      { type: 'arch', x: 0, z: -174, rot: 0, w: 34, h: 32, t: 16, d: 22, crown: 0.58, flare: 11, fh: 20 },
-      // and a smaller arch springing from its right foot: a double arch (the forward tee plays through it)
-      { type: 'arch', x: 44, z: -196, rot: -0.75, w: 22, h: 24, t: 8, d: 11, crown: 0.7, flare: 6 },
+      // one long arch slung diagonally across the fairway, about 130 m foot to foot: the right foot 120 yd out
+      // on the right, the left foot 220 yd out on the left. Thick buttressed legs, a thin span 34 m over the fairway
+      { type: 'arch', x: -1, z: -155, rot: 0.83, y: 1.8, w: 100, h: 36, t: 14, d: 20, crown: 0.55, flare: 12, fh: 22 },
     ],
-    rockfalls: [
-      { x: -48, z: -174, rx: 13, rz: 9, toward: [-30, -174], height: 6, n: 22, size: [0.4, 2.4] },
-      { x: 50, z: -166, rx: 10, rz: 8, toward: [34, -172], height: 5, n: 16, size: [0.4, 2] },
+    rockfalls: [ // rubble heaped against each foot
+      { x: 50, z: -99, rx: 14, rz: 10, toward: [41, -109], height: 6, n: 22, size: [0.4, 2.4] },
+      { x: -52, z: -211, rx: 14, rz: 10, toward: [-43, -201], height: 6, n: 22, size: [0.4, 2.4] },
+      { x: 30, z: -122, rx: 8, rz: 6, toward: [41, -109], height: 3, n: 10, size: [0.4, 1.6] },
     ],
     targets: [{ name: 'Through the arch', x: -4, z: -218 }, { name: 'Right side', x: 2, z: -246 }, { name: 'Green', pin: true }],
     drops: [],
