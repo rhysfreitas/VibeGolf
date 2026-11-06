@@ -5,6 +5,7 @@
 //   green      a green complex: tilt, tiers, swale, crown, punchbowl, false front, raised or sunk
 //   tees       raised, mown tee pads, one per set
 //   water      ponds: a basin with a water level                                 (these three are pads:
+//   rivers     a channel along a smoothed polyline, filled to one level
 //              the ground blends to their own shape, built level from the ground at their centre)
 //   rockfalls  piles of fallen rock: scree heaped against a wall or spilling off a boulder (native
 //              ground; terrain.js scatters boulders over them)
@@ -213,6 +214,50 @@ function rockfallGround(P, x, z) {
   return P.y0 + P.height * Math.pow(t, 1.6) * edge + Math.min(0.9, P.height * 0.06) * (fbm(x / 3 + P.seed, z / 3) - 0.5) * edge;
 }
 
+/* ---------- rivers ---------- */
+// { pts: [[x, z]...], w (water width, m), depth (m below the level at the middle) }: the line is smoothed
+// (Catmull-Rom), the water sits at one level just under the lowest bank, and the banks blend back to
+// the ground over a few metres
+function catmull(P, step = 3) {
+  const out = [];
+  for (let i = 0; i < P.length - 1; i++) {
+    const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+    const n = Math.max(1, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+    for (let k = 0; k < n; k++) {
+      const t = k / n, t2 = t * t, t3 = t2 * t;
+      const f = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+      out.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]);
+    }
+  }
+  out.push(P.at(-1));
+  return out;
+}
+export function prepRiver(V, baseAt) {
+  V.line = catmull(V.pts); V.w = V.w || 12; V.depth = V.depth ?? 1.1; V.hw = V.w / 2; V.bank = V.bank ?? 5;
+  let lo = Infinity; for (const [x, z] of V.line) { const b = baseAt(x, z); if (b !== null && b < lo) lo = b; }
+  V.level = (Number.isFinite(lo) ? lo : 0) - 0.3;
+  const xs = V.line.map(p => p[0]), zs = V.line.map(p => p[1]), m = V.hw + V.bank + 2;
+  V.box = [Math.min(...xs) - m, Math.max(...xs) + m, Math.min(...zs) - m, Math.max(...zs) + m];
+  return V;
+}
+export function riverDist(V, x, z) {
+  if (x < V.box[0] || x > V.box[1] || z < V.box[2] || z > V.box[3]) return Infinity;
+  let best = Infinity; const L = V.line;
+  for (let i = 0; i < L.length - 1; i++) {
+    const [ax, az] = L[i], [bx, bz] = L[i + 1], dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1;
+    const t = Math.min(1, Math.max(0, ((x - ax) * dx + (z - az) * dz) / l2)), d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+    if (d < best) best = d;
+  }
+  return best;
+}
+function riverGround(V, x, z, base) {
+  const d = riverDist(V, x, z); if (d > V.hw + V.bank) return null;
+  if (base > V.level + 6) return null; // a cliff it runs past (or falls from) stays a cliff
+  if (d < V.hw) return V.level - V.depth * (1 - (d / V.hw) ** 2) - 0.12;
+  const edge = V.level + 0.1;
+  return edge + (Math.max(base, edge) - edge) * sstep(V.hw, V.hw + V.bank, d);
+}
+
 /* ---------- tee pads ---------- */
 // tees: { setId: [x, z] | { x, z, w, l, h, rot } }; a pad is w across, l long, raised h
 export function prepTee(T, baseAt) {
@@ -228,6 +273,7 @@ function teeGround(T, x, z, base) {
   if (!near(T, x, z)) return null;
   const d = teeDist(T, x, z); if (d > 2.6) return null;
   const { b } = loc(T, x, z), flat = T.y0 + 0.004 * b;
+  if (base < flat - 3) return null; // a pad never hangs out over a drop: it stops at the lip
   return d <= 0 ? flat : base + (flat - base) * (1 - sstep(0, 2.6, d));
 }
 
@@ -244,10 +290,12 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims) {
   const green0 = greens[0];
   const bunkers = (hole.bunkers || []).map(B => prepBunker({ ...B }, green0 ? [green0.x, green0.z] : pin));
   const rockfalls = (hole.rockfalls || []).map(P => prepRockfall({ ...P }, (x, z) => shaped(x, z) ?? 0));
+  const rivers = (hole.rivers || []).map(V => prepRiver({ ...V }, shaped));
 
   function groundAt(x, z) {
     let h = shaped(x, z); if (h === null) return null;
     for (const W of water) { const g = waterGround(W, x, z, h); if (g !== null) h = g; }
+    for (const V of rivers) { const g = riverGround(V, x, z, h); if (g !== null) h = g; }
     for (const G of greens) { const g = greenGround(G, x, z, h); if (g !== null) h = g; }
     for (const T of tees) { const g = teeGround(T, x, z, h); if (g !== null) h = g; }
     for (const P of rockfalls) { const g = rockfallGround(P, x, z); if (g !== null && g > h) h = g; }
@@ -259,6 +307,7 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims) {
   function surfaceAt(x, z, groundOf) {
     for (const T of tees) if (near(T, x, z)) { const d = teeDist(T, x, z); if (d < 0) return 'tee'; }
     for (const W of water) if (near(W, x, z) && waterRho(W, x, z) < 1.4) { const g = groundOf(); if (g !== null && g < W.level) return 'water'; }
+    for (const V of rivers) { const d = riverDist(V, x, z); if (d < V.hw) return 'water'; if (d < V.hw + 2) return 'waste'; }
     let rim = null; // sand beats the green; the green beats a bunker's grassy rim
     for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s === 'sand' || s === 'waste') return s; if (s) rim = s; }
     for (const G of greens) { const s = greenSurface(G, x, z); if (s === 'green' || s === 'fringe') return s; if (s && !rim) rim = s; }
@@ -267,8 +316,8 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims) {
     for (const T of tees) if (near(T, x, z) && teeDist(T, x, z) < 4) return 'rough';
     return null;
   }
-  const any = landforms.length + greens.length + tees.length + water.length + bunkers.length + rockfalls.length > 0;
-  return { landforms, greens, tees, water, bunkers, rockfalls, groundAt, surfaceAt, any };
+  const any = landforms.length + greens.length + tees.length + water.length + bunkers.length + rockfalls.length + rivers.length > 0;
+  return { landforms, greens, tees, water, rivers, bunkers, rockfalls, groundAt, surfaceAt, any };
 }
 
 /* ---------- outlines, for maps and markers ---------- */

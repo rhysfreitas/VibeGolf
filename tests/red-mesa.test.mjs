@@ -29,7 +29,7 @@ const TOUR = { DR: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, '7i': { Speed: 12
 test('nine holes, par 36, four tee sets with the designed totals', () => {
   assert.equal(HOLES.length, 9);
   assert.equal(HOLES.reduce((a, h) => a + h.par, 0), 36);
-  const want = { canyon: 3375, mesa: 3020, sage: 2625, lizard: 2030 }; // hole 7 shortened to be drivable
+  const want = { canyon: 3395, mesa: 3040, sage: 2640, lizard: 2020 };
   for (const s of COURSE.teeSets) assert.equal(teeYards(HOLES, s.id), want[s.id], s.id);
 });
 
@@ -86,13 +86,16 @@ test("Needle's Eye: a normal drive flies through the arch; a skied one clips it"
   assert.ok(wide.r.rockHits >= 1, 'a drive at the leg hits it');
 });
 
-test('Hoodoos knock a ball down', () => {
-  const t = T[6], h = HOLES[6];
-  const hoodoo = h.rocks[4]; // the 25 m one, about 200 m out
-  // a tour drive is 26 m up there, over the top; an average drive is coming down into it
-  const s = shoot(t, h.tees.canyon, [hoodoo.x, hoodoo.z], { Speed: 140, VLA: 13, TotalSpin: 3100 });
-  assert.ok(s.r.rockHits >= 1);
-  assert.ok(s.end.z > hoodoo.z - 12, 'stops near or short of the spire');
+test('Hoodoos: the table rock knocks a drive down; the plateaus step up; no middle fairway', () => {
+  const t = T[6], h = HOLES[6], R = h.rocks[0];
+  const s = shoot(t, h.tees.canyon, [R.x, R.z], { Speed: 140, VLA: 13, TotalSpin: 3100 });
+  assert.ok(s.r.rockHits >= 1, 'hits the rock');
+  assert.ok(s.end.z > R.z - 25, 'and finishes near or short of it');
+  const bench = t.groundAt(10, -100), tees = t.groundAt(-33, -100), fw = t.groundAt(-50, -215);
+  assert.ok(tees - bench > 2.5 && fw - tees > 1.2, `bench ${bench.toFixed(1)}, tee plateau ${tees.toFixed(1)}, fairway plateau ${fw.toFixed(1)}`);
+  assert.equal(t.surfaceAt(-50, -215), 'fairway'); assert.equal(t.surfaceAt(25, -270), 'fairway');
+  assert.equal(t.surfaceAt(10, -160), 'desert', 'the middle is native now');
+  assert.equal(t.surfaceAt(-92, -180), 'sand', 'the huge bunker');
 });
 
 test('missing off a mesa lands on the canyon floor; the gorge on 6 is gone', () => {
@@ -146,7 +149,7 @@ test('tee suggestion follows the median drive', () => {
 });
 
 test('a ball rolling into a hoodoo stops against it instead of passing through', () => {
-  const t = T[6], h = HOLES[6], R = h.rocks[0];
+  const t = T[6], h = HOLES[6], R = h.rocks[3];
   const from = [R.x, R.z + 30];
   const free = simulate({ Speed: 45, VLA: 3, TotalSpin: 500, HLA: 0, SpinAxis: 0 }, { altFt: COURSE.altFt });
   assert.ok(-free.pts.at(-1).p[2] > 40, 'on open ground it would roll past');
@@ -170,22 +173,33 @@ test('Rimrock: a drive pulled left finds the boulder; the ledge drops the corner
   assert.ok(upper - lower > 1.2, `safe left sits ${(upper - lower).toFixed(1)} m above the corner`);
 });
 
-test('The Chute: a shelf on the left, a grove on the split, a wash short of the green, the green high left', () => {
+test('The Chute: a wide plateau on the left, a grove on the split, walls cut back, a wash short of the green', () => {
   const t = T[1], h = HOLES[1];
-  const shelf = t.groundAt(-16, -280), lower = t.groundAt(12, -280);
-  assert.ok(shelf - lower > 2.8 && shelf - lower < 5, `the shelf stands ${(shelf - lower).toFixed(1)} m above the lower fairway`);
-  assert.equal(t.surfaceAt(-16, -280), 'fairway'); assert.equal(t.surfaceAt(12, -280), 'fairway');
-  assert.ok(t.trees.length >= 5 && t.trees.every(tr => Math.abs(tr.x + 1) < 8 && tr.z < -210 && tr.z > -262), 'the grove sits on the split');
-  for (const x of [-20, 0, 20]) assert.equal(t.surfaceAt(x, -333), 'waste', `the wash crosses at x ${x}`);
-  assert.equal(t.surfaceAt(0, -315), 'fairway'); assert.equal(t.surfaceAt(1, -346), 'fairway');
-  // the walls open where the wash comes through, and close again behind the green
-  assert.ok(t.groundAt(-45, -337) < t.floor.y + 3 && t.groundAt(45, -337) < t.floor.y + 3, 'gaps in both walls');
-  assert.ok(t.groundAt(-45, -300) > t.floor.y + 30, 'the wall stands before the gap');
-  // the green falls from left to right
-  assert.ok(t.groundAt(-9, -374) - t.groundAt(11, -374) > 0.3, 'left side higher');
-  // the rockfall behind the green climbs most of the wall
+  const upper = t.groundAt(-46, -262), lower = t.groundAt(12, -262);
+  assert.ok(upper - lower > 2.8 && upper - lower < 6, `the plateau stands ${(upper - lower).toFixed(1)} m above the lower fairway`);
+  assert.equal(t.surfaceAt(-46, -262), 'fairway'); assert.equal(t.surfaceAt(12, -262), 'fairway');
+  assert.ok(t.trees.length >= 5 && t.trees.every(tr => tr.x > -24 && tr.x < -6 && tr.z < -200 && tr.z > -262), 'the grove sits on the split');
+  // the canyon opens out around the fork: plateau on the left to x -75, open ground on the right to x 60
+  assert.ok(t.groundAt(-70, -200) < t.floor.y + 15, 'no wall at x -70 by the fork');
+  assert.ok(t.groundAt(-95, -200) > t.floor.y + 30, 'the left wall stands beyond the plateau');
+  assert.ok(t.groundAt(58, -200) < t.floor.y + 15, 'no wall at x 58 by the fork');
+  assert.ok(t.groundAt(-45, -60) > t.floor.y + 30, 'narrow by the tee');
+  for (const x of [-20, 0, 20]) assert.equal(t.surfaceAt(x, -326), 'waste', `the wash crosses at x ${x}`);
+  assert.ok(t.groundAt(-60, -340) < t.floor.y + 3 && t.groundAt(60, -325) < t.floor.y + 3, 'gaps in both walls where the wash comes through');
+  assert.equal(t.surfaceAt(1, -342), 'fairway');
+  assert.ok(t.groundAt(-9, -374) - t.groundAt(11, -374) > 0.3, 'the green is higher on the left');
   assert.ok(t.groundAt(-37, -399) - t.floor.y > 20, `rockfall ${(t.groundAt(-37, -399) - t.floor.y).toFixed(0)} m up`);
-  // the forward tee stands on its own little plateau, well below the walls
-  const lz = h.tees.lizard, rise = t.groundAt(lz[0], lz[1]) - t.groundAt(0, lz[1]);
+  const lz = h.tees.lizard, rise = t.groundAt(lz[0], lz[1]) - t.groundAt(20, lz[1]);
   assert.ok(rise > 1 && rise < 6, `forward tee ${rise.toFixed(1)} m up`);
+});
+
+test('Dry Wash: a river from the falls crosses the hole twice and leaves the canyon; a drive into it is wet', () => {
+  const t = T[7], h = HOLES[7], V = t.features.rivers[0];
+  assert.ok(V && V.level < t.floor.y, 'the river sits below the floor');
+  for (const [x, z] of [[-40, -110], [50, -180], [-10, -275], [-52, -400]]) assert.equal(t.surfaceAt(x, z), 'water', `water at ${x}, ${z}`);
+  assert.equal(t.surfaceAt(-3, -200), 'fairway', 'the fairway inside the bend is dry');
+  assert.ok(t.groundAt(-60, -515) < 5, 'the river leaves through a gap at the back left');
+  // a drive pushed right finds the water
+  const wet = shoot(t, h.tees.canyon, [50, -190], { Speed: 140, VLA: 12, TotalSpin: 2800 });
+  assert.equal(t.surfaceAt(wet.end.x, wet.end.z), 'water');
 });

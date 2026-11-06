@@ -89,7 +89,8 @@ const WASH_DEPTH = 1.1;
 
 /* ---------- rock you can hit ---------- */
 // arch:   { type:'arch', x, z, rot, w, h, t, d, y? } span axis along rot (0 = along x), opening w wide
-//         and h tall above its base, a band of rock t thick and d deep (front to back)
+//         and h tall above its base, a band of rock t thick and d deep (front to back); crown (thickness at the
+//         top as a share of t, default 0.85), flare (m the legs widen at the foot) up to fh (default half its height)
 // hoodoo: { type:'hoodoo', x, z, r, h, cap, y? } a column r in radius, h tall, with a cap
 // boulder: { type:'boulder', x, z, r, h, rot, pe?, y? } a lump r in radius (0.85 r front to back), h tall,
 //         sunk a little into the ground; pe > 2 squares it off into a block (a superellipsoid)
@@ -97,8 +98,9 @@ export function prepRock(R, groundAt) {
   R.c = Math.cos(R.rot || 0); R.s = Math.sin(R.rot || 0);
   if (R.y == null) R.y = (groundAt(R.x, R.z) ?? 0) - 0.5;
   if (R.type === 'arch') {
-    R.ai = R.w / 2; R.bi = R.h; R.ao = R.ai + R.t; R.bo = R.bi + R.t * 0.85;
-    R.bound = R.ao + R.d;
+    R.ai = R.w / 2; R.bi = R.h; R.ao = R.ai + R.t; R.bo = R.bi + R.t * (R.crown ?? 0.85);
+    R.flare = R.flare || 0; R.fh = R.fh ?? R.bo * 0.5;
+    R.bound = R.ao + R.flare + R.d;
   } else if (R.type === 'hoodoo') {
     R.seed = R.seed ?? (R.x * 13.1 + R.z * 7.7);
     R.capH = (R.cap ?? R.r * 1.5) * 0.75; R.capR = R.cap ?? R.r * 1.5;
@@ -110,6 +112,8 @@ export function prepRock(R, groundAt) {
   }
   return R;
 }
+// an arch's outer half-width at height v above its base: the legs flare out toward the foot (shared with the mesh)
+export function archOuterA(R, v) { return R.ao + (R.flare || 0) * Math.pow(Math.max(0, 1 - Math.max(0, v) / R.fh), 2); }
 // radius of a hoodoo column at height v above its base (shared with the mesh)
 export function hoodooR(R, v) {
   const t = v / R.h;
@@ -125,13 +129,13 @@ export function rockNormal(R, x, y, z) {
   if (R.type === 'arch') {
     const u = dx * R.c + dz * R.s, w = -dx * R.s + dz * R.c;
     if (Math.abs(w) > R.d / 2 || v < 0) return null;
-    const ein = (u / R.ai) ** 2 + (v / R.bi) ** 2, eout = (u / R.ao) ** 2 + (v / R.bo) ** 2;
+    const aoV = archOuterA(R, v), ein = (u / R.ai) ** 2 + (v / R.bi) ** 2, eout = (u / aoV) ** 2 + (v / R.bo) ** 2;
     if (eout >= 1 || ein <= 1) return null;
-    const pIn = (Math.sqrt(ein) - 1) * Math.min(R.ai, R.bi), pOut = (1 - Math.sqrt(eout)) * Math.min(R.ao, R.bo), pFace = R.d / 2 - Math.abs(w);
+    const pIn = (Math.sqrt(ein) - 1) * Math.min(R.ai, R.bi), pOut = (1 - Math.sqrt(eout)) * Math.min(aoV, R.bo), pFace = R.d / 2 - Math.abs(w);
     let nu, nv, nw = 0;
     if (pFace < pIn && pFace < pOut) { nu = 0; nv = 0; nw = Math.sign(w) || 1; }
     else if (pIn < pOut) { nu = -u / (R.ai * R.ai); nv = -v / (R.bi * R.bi); }
-    else { nu = u / (R.ao * R.ao); nv = v / (R.bo * R.bo); }
+    else { nu = u / (aoV * aoV); nv = v / (R.bo * R.bo); }
     const L = Math.hypot(nu, nv, nw) || 1; nu /= L; nv /= L; nw /= L;
     return [nu * R.c - nw * R.s, nv, nu * R.s + nw * R.c];
   }
@@ -255,7 +259,10 @@ export function createTerrain(hole) {
     else { const fl = floorAt(x, z), h = t.h ?? islandH(t.I, x, z, Math.min(1, islandF(t.I, x, z))); onFloor = fl !== null && fl > h; }
     const I = onFloor ? null : t.I;
     // features decide first; their outer rough gives way to a fairway mown up to them
-    const fs = FT.surfaceAt(x, z, () => groundAt(x, z)); if (fs && !(fs === 'rough' && fairways.length && fairwayD(x, z) < 0)) return fs;
+    const fs = FT.surfaceAt(x, z, () => groundAt(x, z));
+    // a wash runs on through a green's surrounds (it can come right up to the putting surface)
+    if (fs && onFloor && (fs === 'fringe' || fs === 'firstcut' || fs === 'rough') && F && F.washes.length && washD(x, z) < 0) return 'waste';
+    if (fs && !(fs === 'rough' && fairways.length && fairwayD(x, z) < 0)) return fs;
     if (I && I.bunkers) for (const b of I.bunkers) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
     for (const b of sand) if (Math.hypot(x - b[0], z - b[1]) < b[2] * (1 + 0.12 * Math.sin(Math.atan2(z - b[1], x - b[0]) * 3 + b[0]))) return 'sand';
     if (I && I.kind === 'green') { const d = Math.hypot(x - I.green.x, z - I.green.z); return d < I.green.r ? 'green' : d < I.green.r + 2 ? 'fairway' : 'rough'; }

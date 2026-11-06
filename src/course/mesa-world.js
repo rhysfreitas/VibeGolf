@@ -1,7 +1,7 @@
 // Red Mesa scenery (global THREE): the canyon floor, the surface paint texture, distant mesas,
 // arches and hoodoos built from the same shapes the physics hits, desert plants, props and
 // wildlife. Everything for one hole goes into the group passed in; update(dt, t) animates it.
-import { fbm, vnoise, rng, sstep, islandF, edgeRadius, hoodooR, prepRock, prepIsland } from './terrain.js';
+import { fbm, vnoise, rng, sstep, islandF, edgeRadius, hoodooR, archOuterA, prepRock, prepIsland } from './terrain.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
@@ -68,14 +68,46 @@ export function buildFloor(T, box, mat, coarse, group, playfield = false) {
 /* ---------- rock you can hit ---------- */
 export function archGeometry(R) {
   const s = new THREE.Shape(), N = 40, foot = -4;
-  s.moveTo(R.ao, foot);
-  for (let i = 0; i <= N; i++) { const a = (i / N) * Math.PI; s.lineTo(R.ao * Math.cos(a), R.bo * Math.sin(a)); }
-  s.lineTo(-R.ao, foot); s.lineTo(-R.ai, foot);
+  const fl = R.flare ? archOuterA(R, 0) : R.ao; // flared legs: the outer line widens toward the foot
+  s.moveTo(fl + 1, foot);
+  for (let i = 0; i <= N; i++) { const a = (i / N) * Math.PI, v = R.bo * Math.sin(a); s.lineTo(archOuterA(R, v) * Math.cos(a), v); }
+  s.lineTo(-fl - 1, foot); s.lineTo(-R.ai, foot);
   for (let i = N; i >= 0; i--) { const a = (i / N) * Math.PI; s.lineTo(R.ai * Math.cos(a), R.bi * Math.sin(a)); }
   s.lineTo(R.ai, foot); s.lineTo(R.ao, foot);
   const geo = new THREE.ExtrudeGeometry(s, { depth: R.d, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 1.2, bevelSegments: 2, curveSegments: 8, steps: 3 });
   geo.translate(0, 0, -R.d / 2);
   return geo;
+}
+
+/* ---------- waterfalls: a sheet of water down a cliff, a stream across the top, spray at the foot ---------- */
+// prop { type: 'waterfall', x, z (the lip), rot (the way the water falls out of the cliff), w, top, back (m of
+// stream on top) }
+const fallTex = (() => {
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 256; const g = cv.getContext('2d'), R = rng(77);
+  g.fillStyle = 'rgba(220,235,240,0.55)'; g.fillRect(0, 0, 64, 256);
+  for (let i = 0; i < 160; i++) { const x = R() * 64, y = R() * 256, l = 20 + R() * 70; g.fillStyle = `rgba(255,255,255,${0.25 + R() * 0.6})`; g.fillRect(x, y, 1 + R() * 2.5, l); g.fillRect(x, y - 256, 1 + R() * 2.5, l); }
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; return t;
+})();
+function waterfall(p, T, ctx) {
+  const dx = Math.sin(p.rot), dz = Math.cos(p.rot), w = p.w || 10;
+  // find the lip: walk out from inside the rock until the ground falls away
+  let lx = p.x - dx * 30, lz = p.z - dz * 30; const top = p.top ?? T.groundAt(lx, lz) ?? 0;
+  for (let k = 0; k < 160; k++) { const g = T.groundAt(lx + dx * 0.5, lz + dz * 0.5); if (g === null || g < top - 3) break; lx += dx * 0.5; lz += dz * 0.5; }
+  p = { ...p, x: lx, z: lz };
+  const bottom = T.groundAt(p.x + dx * 8, p.z + dz * 8) ?? top - 40, H = top - bottom;
+  const tex = fallTex.clone(); tex.needsUpdate = true; tex.repeat.set(w / 8, H / 30);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide, color: 0xe8f3f6 });
+  // the sheet bows out from the cliff as it falls
+  const geo = new THREE.PlaneGeometry(w, H, 4, 20), q = geo.attributes.position;
+  for (let i = 0; i < q.count; i++) { const y = q.getY(i), t = (H / 2 - y) / H; q.setXYZ(i, q.getX(i) * (1 + t * 0.35), -t * H, 0.8 + t * t * 5 + t * 1.5); }
+  const sheet = new THREE.Mesh(geo, mat); sheet.position.set(p.x, top + 0.3, p.z); sheet.rotation.y = p.rot; sheet.renderOrder = 2; ctx.group.add(sheet);
+  // the stream across the top, back from the lip
+  const back = p.back || 60, sg = new THREE.PlaneGeometry(w * 0.8, back, 1, 8); sg.rotateX(-Math.PI / 2); sg.translate(0, 0, -back / 2);
+  const stream = new THREE.Mesh(sg, waterMat); stream.position.set(p.x, top + 0.15, p.z); stream.rotation.y = p.rot; ctx.group.add(stream);
+  // spray at the foot
+  const spray = [], sm = new THREE.SpriteMaterial({ map: fallTex, color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false });
+  for (let i = 0; i < 9; i++) { const s = new THREE.Sprite(sm); const k = i / 9; s.scale.set(w * (0.9 + k), w * 0.7, 1); s.position.set(p.x + dx * (6 + k * 6) + (k - 0.5) * w * dz, bottom + 2 + k * 3, p.z + dz * (6 + k * 6) - (k - 0.5) * w * dx); ctx.group.add(s); spray.push(s); }
+  ctx.anims.push((dt, t) => { tex.offset.y = t * 0.9; spray.forEach((s, i) => { s.material.opacity = 0.25 + 0.12 * Math.sin(t * 2 + i); }); });
 }
 export function buildRocks(T, hole, mat, group) {
   const capMat = new THREE.MeshStandardMaterial({ color: 0x5f4a3c, roughness: 0.95 });
@@ -196,7 +228,7 @@ export function cottonwoodSpots(T, hole) {
     const y = T.groundAt(x, z); if (y === null) continue;
     out.push({ x, y, z, s: 1.2 + R() * 0.7, type: 'cotton', r: R() });
   }
-  for (const w of (T.floor?.washes || [])) for (let i = 0; i < w.pts.length - 1; i++) {
+  for (const w of [...(T.floor?.washes || []), ...T.features.rivers.map(V => ({ pts: V.line.filter((_, k) => k % 6 === 0), w: V.w + 6 }))]) for (let i = 0; i < w.pts.length - 1; i++) {
     const [ax, az] = w.pts[i], [bx, bz] = w.pts[i + 1], L = Math.hypot(bx - ax, bz - az), nx = -(bz - az) / L, nz = (bx - ax) / L;
     for (let d = 8; d < L; d += 22 + R() * 14) {
       const side = R() < 0.5 ? -1 : 1, off = w.w / 2 + 5 + R() * 9;
@@ -215,6 +247,8 @@ const woodDark = new THREE.MeshStandardMaterial({ color: 0x4e3a2a, roughness: 1 
 const iron = new THREE.MeshStandardMaterial({ color: 0x3d3833, roughness: 0.6, metalness: 0.5 });
 const rust = new THREE.MeshStandardMaterial({ color: 0x7c3f22, roughness: 0.8, metalness: 0.3 });
 const tin = new THREE.MeshStandardMaterial({ color: 0xb8b4aa, roughness: 0.45, metalness: 0.7 });
+const waterMat = new THREE.MeshStandardMaterial({ color: 0x24525e, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.86, envMapIntensity: 1.3 });
+const riverMat = new THREE.MeshStandardMaterial({ color: 0x2f5f63, roughness: 0.12, metalness: 0.15, transparent: true, opacity: 0.88, envMapIntensity: 1.2, side: THREE.DoubleSide });
 const box = (w, h, d, mat, x, y, z, ry = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = true; m.receiveShadow = true; return m; };
 const cyl = (r0, r1, h, mat, seg = 12) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), mat); m.castShadow = true; m.receiveShadow = true; return m; };
 function beam(a, b, w, mat) { // a timber from point a to point b
@@ -482,6 +516,7 @@ export function buildProps(hole, T, tee, mat, group) {
     else if (p.type === 'clubhouse') clubhouse(p, T, ctx);
     else if (p.type === 'observatory') observatory(p, T, ctx);
     else if (p.type === 'windowArch') windowArch(p, T, mat, ctx);
+    else if (p.type === 'waterfall') waterfall(p, T, ctx);
   }
   for (const I of T.ISL) if (I.rail) railing(I, T, ctx);
   petroglyph(hole, T, hole.tees[Object.keys(hole.tees)[0]], ctx);
@@ -540,9 +575,18 @@ export function buildPlayfield(T, box, mat, coarse, group) {
   return m;
 }
 
-/* ---------- ponds ---------- */
-const waterMat = new THREE.MeshStandardMaterial({ color: 0x24525e, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.86, envMapIntensity: 1.3 });
+/* ---------- ponds and rivers ---------- */
 export function buildWater(T, group) {
+  for (const V of T.features.rivers || []) { // a ribbon at the river's level, a little wider than the water
+    const L = V.line, pos = [], idx = [], hw = V.hw + 0.8;
+    for (let i = 0; i < L.length; i++) {
+      const a = L[Math.max(0, i - 1)], b = L[Math.min(L.length - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1;
+      pos.push(L[i][0] - dz / l * hw, V.level, L[i][1] + dx / l * hw, L[i][0] + dz / l * hw, V.level, L[i][1] - dx / l * hw);
+      if (i) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i - 1, 2 * i + 1, 2 * i);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, riverMat); m.receiveShadow = true; m.renderOrder = 1; group.add(m);
+  }
   for (const W of T.features.water) {
     const g = new THREE.CircleGeometry(1, 64); g.rotateX(-Math.PI / 2);
     const m = new THREE.Mesh(g, waterMat);

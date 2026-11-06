@@ -582,7 +582,7 @@ function buildHole(h) {
     tee: h.tee, pin: [pp.x, pp.z],
     shapes: ISL.map(shapeOf).sort((p, q) => p.top - q.top),
     floor: T.floor ? (T.floor.solid ? 'floor' : 'void') : null,
-    fairways: h.fairways || [], sand: h.sand || [], washes: T.floor ? T.floor.washes : [],
+    fairways: h.fairways || [], sand: h.sand || [], washes: T.floor ? T.floor.washes : [], rivers: T.features.rivers.map(V => ({ pts: V.line, w: V.w })),
     rocks: T.rocks.map(r => ({ type: r.type, x: r.x, z: r.z, r: r.type === 'arch' ? r.ao : r.capR, rot: r.rot || 0, d: r.d || 0, ai: r.ai || 0 })),
     fit: h.line ? [...Object.values(h.tees).map(t => (Array.isArray(t) ? t : [t.x, t.z])), [pp.x, pp.z]] : null,
     feat: { greens: T.features.greens.map(G => featureOutline(G, 'green')), bunkers: T.features.bunkers.map(B => featureOutline(B, 'bunker', 24)), tees: T.features.tees.map(t => featureOutline(t, 'tee')), water: T.features.water.map(W => featureOutline(W, 'water')) },
