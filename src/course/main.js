@@ -383,7 +383,7 @@ function buildMesa(I, N, rings, group, trees) {
     for (const rr of rings) {
       const sc = rr * 0.999, x = I.x + (e.x - I.x) * sc, z = I.z + (e.z - I.z) * sc;
       let y = islandH(I, x, z, Math.min(islandF(I, x, z), 1));
-      if (CAVE && T.topAt(x, z)?.I === I) { const g = T.groundAt(x, z); if (g !== null) y = g; } // landforms (terraces, crests) move the rim too
+      if (CAVE) { const g = T.groundAt(x, z); if (g !== null && y > g) y = g; } // terraces lower the ground: the rim comes down with it
       pos.set([x, y, z], vi * 3); aW.set([0, 0, 0, 0], vi * 4); aD[vi] = 0; vi++; ry = y;
     }
     const ox = e.x - I.x, oz = e.z - I.z, ol = Math.hypot(ox, oz) || 1, nx = ox / ol, nz = oz / ol;
