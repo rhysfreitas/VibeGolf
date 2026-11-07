@@ -156,7 +156,7 @@ export const HOLES = [
     islands: [isl(...c(-172, 262), 30, 14, -31), cap(c(-174, 246), c(-190, 150), 100, -31, -50, { kind: 'rough' }),
       cap(c(-190, 150), c(-205, 20), 120, -50, -52), cap(c(-205, 20), c(-332, -96), 120, -52, -49),
       pad(...c(-172, 255), -30.4, 41), isl(...c(-182, 222), 9, 9, -36.4), pad(...c(-182, 222), -35.8, 42), isl(...c(-205, 180), 9, 9, -44.6), pad(...c(-205, 180), -44, 43), pad(...c(-218, 130), -49.4, 44),
-      isl(...c(-300, 70), 52, 62, 75, { kind: 'rock', depth: 300 })],
+      isl(...c(-330, 70), 82, 62, 75, { kind: 'rock', depth: 300 })],
     landforms: [cant(...c(-198, 80), c(-188, 150), -5, 170, 120)],
     fairways: [{ pts: [[...c(-188, 140), 30], [...c(-196, 80), 40], [...c(-205, 20), 44], [...c(-230, -30), 36], [...c(-280, -70), 28]] }],
     green: { x: c(-332, -96)[0], z: c(-332, -96)[1], rx: 16, rz: 14, style: 'tilt', tilt: 2, raise: 2.4, apron: 8, runoff: true, from: c(-230, -30), pins: [c(-330, -96), c(-338, -88), c(-326, -104), c(-344, -100)] },
@@ -165,7 +165,7 @@ export const HOLES = [
     roof: { y: HOLLOW.roofY },
     marks: [
       ...hollowMarks,
-      { type: 'text', x: c(-300, 70)[0], z: c(-300, 70)[1], label: 'cave wall\n(floor to roof)' },
+      { type: 'text', x: c(-310, 70)[0], z: c(-310, 70)[1], label: 'cave wall\n(floor to roof)' },
       { type: 'text', x: c(-120, 120)[0], z: c(-120, 120)[1], label: 'fairway cants 5% toward the Deep' },
       { type: 'crystals', pts: [c(-372, -120), c(-360, -140), c(-300, -150)], label: 'crystal veins in the bay walls' },
       { type: 'lanterns', pts: [c(-230, 200), c(-245, 120), c(-262, 40), c(-290, -40)], label: 'lanterns along the wall' },
