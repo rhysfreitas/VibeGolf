@@ -148,3 +148,38 @@ span.co-ico { width: 24px; height: 24px; border-radius: 50%; display: grid; plac
 .pr-card:disabled { opacity: 0.5; cursor: default; }
 .pr-card em { font-style: normal; font-family: var(--f-data); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--flag); }
 @media (max-width: 560px) { .pr-cards { grid-template-columns: 1fr; } .pr-card { min-height: 0; } }
+
+/* ---------- Learn a skill ---------- */
+.co-sheet.wide { width: min(780px, calc(100vw - 20px)); max-height: min(440px, calc(100vh - 16px)); }
+.co-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+.co-pick { appearance: none; text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--bone); cursor: pointer; }
+.co-pick:hover, .co-pick:focus-visible { border-color: var(--flag); background: rgba(245, 197, 66, 0.1); }
+.co-pick b { font-family: var(--f-data); font-size: 20px; font-weight: 700; letter-spacing: 0.03em; }
+.co-pick span { font-size: 13px; line-height: 1.4; color: #c9cfc3; }
+.co-head .co-back2 { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--bone); border-radius: 8px; padding: 3px 9px; font-size: 12px; cursor: pointer; margin-left: auto; }
+.co-head .co-back2 + .co-x { margin-left: 6px; }
+.co-skills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; overflow-y: auto; min-height: 0; scrollbar-width: thin; padding-right: 2px; }
+.co-skill { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); cursor: pointer; }
+.co-skill:hover, .co-skill:focus-visible { border-color: var(--flag); background: rgba(245, 197, 66, 0.08); outline: none; }
+.co-skill b { font-family: var(--f-data); font-size: 15px; font-weight: 700; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.co-skill b em { font-style: normal; font-size: 10.5px; letter-spacing: 0.06em; color: var(--co-goal); font-weight: 600; }
+.co-skill > span { font-size: 11.5px; line-height: 1.35; color: #c9cfc3; }
+.co-opts { display: flex; gap: 4px; margin-top: 2px; }
+.co-opts button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--bone); border-radius: 999px; padding: 2px 9px; font-size: 11px; cursor: pointer; }
+.co-opts button[aria-pressed="true"] { border-color: var(--flag); background: rgba(245, 197, 66, 0.16); }
+.co-goals { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.co-goals > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 5px 8px; border-radius: 8px; background: rgba(110, 227, 138, 0.08); border: 1px solid rgba(110, 227, 138, 0.25); font-size: 12.5px; flex-wrap: wrap; }
+.co-goals > div b { color: var(--co-goal); font-family: var(--f-data); font-size: 13.5px; }
+.co-goals > div small { flex-basis: 100%; font-size: 10.5px; color: var(--sage); }
+.co-note { margin: 0; font-size: 12px; line-height: 1.35; color: var(--flag); }
+.co-mini { display: block; width: 120px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.co-mini i { display: block; height: 100%; background: var(--co-goal); }
+.co-dots i.miss { background: #ff8a5c; }
+.co-badge { align-self: flex-start; font-family: var(--f-data); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; color: #0e1a12; background: var(--co-goal); border-radius: 999px; padding: 5px 14px; }
+@media (max-height: 420px) {
+  .co-sheet.wide { max-height: calc(100vh - 16px); }
+  .co-pick { min-height: 0; padding: 10px 12px; }
+  .co-pick span { font-size: 12px; }
+  .co-skill { padding: 7px 9px; gap: 3px; }
+  .co-skill > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}

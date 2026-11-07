@@ -590,7 +590,12 @@ addEventListener('resize', refit);
 /* ===================== practice modes: Range, Coaching, Short game ===================== */
 // The range opens on the practice menu (unless the address says ?mode=…). Coaching mounts the
 // coach (src/range/coach-ui.js) over the same range; Range is the free range as before.
-const coachUI = createCoachUI({ clubName: id => (CLUBS.find(c => c.id === id) || {}).name || id });
+const coachUI = createCoachUI({
+  clubName: id => (CLUBS.find(c => c.id === id) || {}).name || id,
+  currentClub: () => CLUBS[state.club].id,
+  // a lesson that needs another club (driver, an iron) picks it up
+  setClub: id => { const i = CLUBS.findIndex(c => c.id === id); if (i >= 0) { loadClub(i); if (tool) tool.setClub(i); } },
+});
 window.__coachUI = coachUI; // test hook
 const MODE_KEY = 'vibegolf.practice';
 function setMode(mode) {
@@ -604,11 +609,12 @@ function setMode(mode) {
 }
 function openPractice() {
   const s = coachUI.summary(), box = $('prSum');
-  box.hidden = !s || !s.worked.length;
+  box.hidden = !s || (!s.worked.length && !s.skill);
   if (s && s.worked.length) {
     const names = s.worked.map(w => `${w.name.toLowerCase()}${w.progress != null ? ` (${Math.round(w.progress * 100)}% of the way)` : ''}`);
     box.innerHTML = `<b>This session:</b> ${s.shots} shots with the coach, worked on ${names.join(', ')}.${s.cue ? ` <b>Cue to keep:</b> ${s.cue}.` : ''}`;
-  }
+  } else if (s && s.skill) box.innerHTML = '';
+  if (s && s.skill) box.innerHTML += `${box.innerHTML ? ' ' : ''}<b>Learning:</b> ${s.skill.name}, ${Math.round(s.skill.meter * 100)}% to the goal${s.skill.passed ? ' (learned)' : ''}.`;
   $('practice').hidden = false;
 }
 document.querySelectorAll('.pr-card[data-mode]').forEach(b => { b.onclick = () => { if (!b.disabled) setMode(b.dataset.mode); }; });
@@ -616,6 +622,9 @@ $('btnPractice').onclick = openPractice;
 {
   const q = new URLSearchParams(location.search).get('mode');
   if (q === 'coach' || q === 'range') setMode(q); else { setMode('range'); openPractice(); }
+  // ?mode=coach&skill=shape.draw opens that lesson
+  const sq = new URLSearchParams(location.search).get('skill');
+  if (q === 'coach' && sq) setTimeout(() => coachUI.learn(sq), 0);
 }
 
 /* ===================== boot ===================== */

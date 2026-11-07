@@ -18,6 +18,14 @@ export const FAULTS = [
   { id: 'twoWay', name: 'Two-way' },
   { id: 'aimedOff', name: 'Aimed right' },
   { id: 'ballBack', name: 'Ball back' },
+  // skill attempts (Learn a skill): the swing doing what the lesson asks
+  { id: 'draw', name: 'Skill: draw swing' },
+  { id: 'fade', name: 'Skill: fade swing' },
+  { id: 'compress', name: 'Skill: compressed' },
+  { id: 'hitUp', name: 'Skill: hitting up' },
+  { id: 'low', name: 'Skill: knockdown' },
+  { id: 'high', name: 'Skill: high shot' },
+  { id: 'faster', name: 'Skill: faster swing' },
 ];
 
 // delivery changes: face, path, attack, loft (deg), smash ×, spin ×, launch + (strike effects)
@@ -32,6 +40,13 @@ const DELTA = {
   thin: { smash: 0.95, spinMul: 0.65, launch: -5 },
   aimedOff: { face: 4, path: 4 },
   ballBack: { aoa: -4, path: 4.5, face: 3, loft: -3 },
+  draw: { face: 1.5, path: 5 },
+  fade: { face: -1.5, path: -5 },
+  compress: { loft: -4, aoa: -1.5, smash: 1.01 },
+  hitUp: { aoa: 5.5, loft: 3 },
+  low: { loft: -7, aoa: -1, launch: -1 },
+  high: { loft: 6 },
+  faster: { speed: 1.06 },
 };
 
 // shot: a simulated ball with Club data (as the range's realSwing makes); returns a new shot
@@ -48,7 +63,8 @@ export function applyFault(shot, id, clubId, rnd = Math.random) {
   s.SpinAxis = (s.SpinAxis || 0) + 1.9 * (face - path);
   s.VLA = s.VLA + 0.8 * loft + (d.launch || 0);
   s.TotalSpin = Math.max(300, (s.TotalSpin + perDeg * (loft - aoa)) * (d.spinMul || 1));
-  s.Speed = s.Speed * (d.smash || 1);
+  s.Speed = s.Speed * (d.smash || 1) * (d.speed || 1);
+  if (d.speed && c.Speed !== undefined) c.Speed = +c.Speed * d.speed;
   if (c.Path !== undefined) c.Path = +c.Path + path; else c.Path = path;
   if (c.FaceToTarget !== undefined) c.FaceToTarget = +c.FaceToTarget + face; else c.FaceToTarget = face;
   c.AngleOfAttack = (c.AngleOfAttack !== undefined ? +c.AngleOfAttack : ref.aoa) + aoa;

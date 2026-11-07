@@ -10,6 +10,19 @@ The range opens on a practice menu: **Range** (free hitting), **Coaching** and *
 4. **Progress.** After 8 shots: your first 4 as an orange ghost against a figure blended toward the goal by how far your numbers moved, a shot-by-shot chart, and *8 more*, *Next cause* (when it stalled), *Try a drill* or *Done*.
 5. **Quiet.** A condition you dismissed or finished isn't raised again for 10 shots unless it gets worse. A shank is flagged on the first one; fatigue after a long block with falling club speed and strike.
 
+## Learn a skill
+
+Coaching opens on a choice: **Watch my swing** (the loop above) or **Learn a skill**. Nine skills: Shape it (draw or fade), Compress your irons, Hit up on the driver, Flight it high or low, Start it on your line, Find the centre, Wedge distance control (9 o'clock, 10:30, full), Tighten your pattern and Add speed.
+
+1. **Pick.** The skill and its option. A skill that needs a club (driver, an iron, a wedge) switches to it.
+2. **Keys.** The intro shows the skill's two or three keys on the mannequin (your normal swing against the skill's swing as the green goal), the goal numbers and the cue.
+3. **Baseline.** Skills measured against your own shot (Flight it, Wedges, Add speed) start with four normal swings, unless the session already has four with that club.
+4. **Hit in fours.** Every shot is scored against the goal windows (1 inside every window, less the further out). After each four, the first of the skill's blockers that holds is shown with its lesson, your numbers against the goal, the meter and the shot-by-shot chart. With nothing in the way, a toast says how close you are.
+5. **Learned, then the test.** 3 of 4 in the goal starts the test: 5 of the next 8. Passing saves the skill (`localStorage` `vibegolf.skills.v1`, a tick on its card); missing goes back to learning. After passing it stays open-ended: the meter keeps tracking and the reads go on.
+6. **Focus.** Only a shank or a run of fat shots interrupts a lesson. Other faults wait for Watch mode.
+
+`range.html?mode=coach&skill=shape.draw` opens a lesson directly. The shot tool's *Swing fault* list has skill attempts (draw swing, fade swing, compressed, hitting up, knockdown, high shot, faster swing) so every lesson can be tried without an R10.
+
 ## Code
 
 | File | Kind | What it does |
@@ -18,12 +31,13 @@ The range opens on a practice menu: **Range** (free hitting), **Coaching** and *
 | `src/coach/coach-logic.js` | Pure | `shotMetrics` (impact numbers, D-plane inverse when there's no club data), `RULES` per condition, `evaluate` (the 4-shot window), `pick` (explained conditions drop out, then priority group), `rankCauses`, `progressOf`, and `createCoach()` (the session state machine) |
 | `src/coach/conditions.js` | Data | The catalogue: headline, one line, cue, evidence, and up to three causes each with a check, a lesson and a drill |
 | `src/coach/faults.js` | Pure | Swing-fault presets for simulated shots (the shot tool's *Swing fault* picker on the range) |
+| `src/coach/skills.js` | Pure | Learn a skill: `SKILLS` (options, clubs, keys, goals, blockers per skill), `scoreShot`, `skillMetrics` (adds peak height and carry from the flight model) and `createSkillCoach()` (baseline → learn → test → open) |
 | `src/coach/lessons.js` | Data | Mannequin lessons, one per cause: changes to the base swing, camera, pause point, highlighted body part, readout, caption |
 | `src/coach/mannequin.js` | Three.js | The rig (cylinders and spheres, two-bone IK), the ten P-position base swing blended in the chest's frame, one renderer moved between slots, drills, and numbers read off the scene |
 | `src/range/coach-ui.js` | DOM | The chip, readout, explorer, progress, drill and notice screens; history in `localStorage` (`vibegolf.coach.v1`) |
 | `styles/coach.css` | CSS | Coach sheet, chip, explorer, practice menu |
 
-Tests: `tests/coach.test.mjs` (windows, every condition, the window rule, priority, confidence, the focus loop, presets against a decent amateur's misses) and `tests/lessons.test.mjs` (lesson data).
+Tests: `tests/coach.test.mjs` (windows, every condition, the window rule, priority, confidence, the focus loop, presets against a decent amateur's misses), `tests/lessons.test.mjs` (lesson data) and `tests/skills.test.mjs` (each skill's goal reached by the swing it teaches, the usual miss naming the right blocker, the learn → test → open flow).
 
 ## Rules of thumb
 

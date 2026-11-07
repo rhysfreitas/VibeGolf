@@ -63,6 +63,56 @@ export const LESSONS = {
   'thin-standup': { title: 'Standing up', caption: 'The chest rises early and the arms pull in, so the club meets the ball high.', cam: 'dtlPanel', mode: 'impact', highlight: 'shoulders', readout: 'attack', you: { over: { bend: [40, 40, 38, 36, 36, 32, 27, 22, 16, 6], drop: [0, 0, 0.005, 0.01, 0, -0.02, -0.04, -0.04, -0.04, -0.04] }, impact: [6, -1], keys: { 5: { H: [-0.15, 1.04, 0.24] }, 7: { H: [0.28, 0.97, 0.12] } } }, goal: {} },
 };
 
+// ---------------- Learn a skill (skills.js) ----------------
+// Each skill key is a lesson: "you" is a typical swing (your normal one, or the usual miss), the
+// goal is the skill's swing. The numbers on screen are read off the mannequin.
+const ten = v => Array(10).fill(v);
+const DRAW = { yaw: -3, impact: [8, -2] };
+const FADE = { yaw: 2, impact: [8, 2], keys: { 5: { H: [-0.14, 0.96, 0.32], d: [-0.94, 0.16, 0.19] }, 7: { H: [0.3, 0.92, 0.19], d: [0.95, 0.125, -0.145] } } };
+const COMPRESS = { impact: [14, 0], over: { shift: [0, -0.015, -0.025, -0.03, 0.05, 0.085, 0.1, 0.12, 0.13, 0.14] } };
+const DRIVER = { impact: [-6, 0], over: { stance: ten(-0.24), side: [12, 11, 9, 6, 15, 20, 24, 19, 14, 9] }, keys: { 5: { H: [-0.175, 0.925, 0.3], d: [-0.965, -0.05, 0.025] } } };
+const SHORT_FINISH = { 8: { H: [0.5, 1.0, 0.25], d: [0.85, 0.5, -0.15] } };
+const LOW = { impact: [15, 0], over: { stance: ten(0.08) }, keys: SHORT_FINISH };
+const HIGH = { impact: [3, 0], over: { stance: ten(-0.06), side: [8, 7, 5, 2, 10, 13, 17, 15, 13, 10] } };
+const NINE = { over: { pelvis: [0, 12, 28, 30, 18, -10, -38, -58, -80, -100], chest: [0, 32, 68, 72, 60, 36, -15, -52, -90, -124] }, keys: { 3: { H: [-0.42, 1.14, 0.17], d: [-0.2, 0.88, -0.42], f: [0.35, 0.3, 0.88] }, ...SHORT_FINISH } };
+const TEN30 = { over: { pelvis: [0, 12, 28, 37, 18, -10, -38, -58, -80, -100], chest: [0, 32, 68, 82, 62, 36, -15, -52, -90, -124] }, keys: { 3: { H: [-0.38, 1.27, 0.15], d: [0.38, 0.39, -0.31], f: [0.28, 0.45, 0.82] } } };
+const SPEED_TURN = { over: { pelvis: [0, 13, 30, 52, 20, -12, -42, -62, -84, -104], chest: [0, 34, 74, 106, 70, 38, -18, -56, -94, -128] } };
+const SPEED_GROUND = { over: { knee: [0, 0, 0, 0.05, 0.25, 0.35, 0.3, 0.45, 0.55, 0.6], drop: [0, 0, 0.005, 0.02, 0.05, 0.04, 0, -0.01, -0.01, -0.04] } };
+const sk = (title, caption, you, goal, o) => ({ title, caption, you, goal, cam: 'panel', mode: 'impact', ...o });
+
+Object.assign(LESSONS, {
+  'skill-draw-setup': sk('Set up a touch right', 'Feet and body a few degrees right of the target, the face at the target.', {}, DRAW, { cam: 'top', mode: 'setup', highlight: 'feet', readout: 'path' }),
+  'skill-draw-path': sk('Swing out to the right', 'The club comes from inside and swings out toward right field through the ball.', {}, DRAW, { cam: 'dtlPanel', mode: 'down', highlight: 'hands', readout: 'path', plane: true }),
+  'skill-draw-face': sk('Face closed to the path', 'At impact the face points left of the path but right of the target: it starts right and curves back.', {}, DRAW, { cam: 'close', mode: 'impact', readout: 'face' }),
+  'skill-fade-setup': sk('Set up a touch left', 'Feet and body a few degrees left of the target, the face at the target.', {}, FADE, { cam: 'top', mode: 'setup', highlight: 'feet', readout: 'path' }),
+  'skill-fade-path': sk('Swing across to the left', 'The club swings left through the ball, along the line of your feet.', {}, FADE, { cam: 'dtlPanel', mode: 'down', highlight: 'hands', readout: 'path', plane: true }),
+  'skill-fade-face': sk('Face open to the path', 'At impact the face points right of the path but left of the target: it starts left and curves back.', {}, FADE, { cam: 'close', mode: 'impact', readout: 'face' }),
+  'skill-compress-pressure': sk('Pressure forward', 'Before the arms come down, the pressure moves into the lead foot.', {}, COMPRESS, { mode: 'down', highlight: 'hips', readout: 'attack' }),
+  'skill-compress-hands': sk('Hands ahead at impact', 'The hands lead the clubhead into the ball, taking loft off and squeezing the ball.', {}, COMPRESS, { mode: 'impact', highlight: 'hands', readout: 'loft' }),
+  'skill-compress-low': sk('Low point past the ball', 'The club is still going down when it meets the ball and bottoms out in front of it: ball, then turf.', FLIP_WEIGHT, COMPRESS, { cam: 'dtlPanel', mode: 'impact', highlight: 'hips', readout: 'attack' }),
+  'skill-driver-setup': sk('Ball forward, tee it high', 'The ball sits off the lead heel, teed so half of it is above the face.', {}, DRIVER, { mode: 'setup', highlight: 'feet', readout: 'attack' }),
+  'skill-driver-tilt': sk('Tilt away from the target', 'The spine leans away a little at address and keeps that tilt through the ball.', {}, DRIVER, { mode: 'impact', highlight: 'shoulders', readout: 'attack' }),
+  'skill-driver-up': sk('Up through the ball', 'The club passes its low point before the ball and meets it on the way up.', {}, DRIVER, { cam: 'panel', mode: 'impact', highlight: 'hands', readout: 'attack' }),
+  'skill-low-setup': sk('Ball back, hands ahead', 'The ball moves back an inch or two, the hands stay ahead of it: less loft at impact.', {}, LOW, { mode: 'setup', highlight: 'feet', readout: 'loft' }),
+  'skill-low-impact': sk('Hold the angle through it', 'The hands stay ahead through impact, so the face keeps its lower loft.', {}, LOW, { mode: 'impact', highlight: 'wrists', readout: 'loft' }),
+  'skill-low-finish': sk('Short, low finish', 'The arms stop around chest height: a shorter, quieter finish adds less spin.', {}, LOW, { mode: 'through', highlight: 'arms', readout: null }),
+  'skill-high-setup': sk('Ball forward', 'The ball moves forward an inch, so the club arrives with more loft.', {}, HIGH, { mode: 'setup', highlight: 'feet', readout: 'loft' }),
+  'skill-high-impact': sk('Let the club release', 'Less forward shaft lean: the clubhead catches up to the hands and adds loft.', {}, HIGH, { mode: 'impact', highlight: 'wrists', readout: 'loft' }),
+  'skill-high-finish': sk('Full, high finish', 'Keep the speed through the ball all the way to a high, balanced finish.', {}, HIGH, { mode: 'full', highlight: 'arms', readout: null }),
+  'skill-line-aim': sk('Aim the face first', 'Set the face at the target, then set your feet and body square to it.', LESSONS['aim-body'].you, {}, { cam: 'top', mode: 'setup', highlight: 'feet', readout: 'path' }),
+  'skill-line-top': sk('Square at the top', 'A flat lead wrist at the top keeps the face square, so it needs no fixing on the way down.', LESSONS['open-wrist'].you, {}, { cam: 'dtlPanel', mode: 'top', highlight: 'wrists', readout: 'face' }),
+  'skill-line-body': sk('The body squares it', 'Keep turning through the ball: the body brings the face back square, not the hands.', LESSONS['closed-body'].you, {}, { mode: 'impact', highlight: 'hips', readout: 'face' }),
+  'skill-centre-posture': sk('Keep your posture', 'The hips stay back and the chest stays over the ball until it has gone.', LESSONS['thin-extension'].you, {}, { cam: 'dtlPanel', mode: 'impact', highlight: 'hips', readout: null }),
+  'skill-centre-finish': sk('Balanced finish', 'Finish tall on the lead foot. If you can hold it, the strike was centred.', FLIP_WEIGHT, {}, { mode: 'full', highlight: 'feet', readout: null }),
+  'skill-pattern-tempo': sk('Tempo, not effort', 'Start down smoothly with the arms dropping, the same way every time.', LESSONS['ott-shoulders'].you, {}, { cam: 'dtlPanel', mode: 'down', highlight: 'shoulders', readout: 'path', plane: true }),
+  'skill-wedge-nine': sk("Back to 9 o'clock", 'The lead arm stops level with the ground. Same turn, same pace through.', {}, NINE, { mode: 'top', highlight: 'arms', readout: null }),
+  'skill-wedge-ten30': sk('Back to 10:30', 'The lead arm stops halfway between level and the top. Same pace through.', {}, TEN30, { mode: 'top', highlight: 'arms', readout: null }),
+  'skill-wedge-full': sk('A full turn', 'The same full turn every time, at the same pace.', {}, {}, { mode: 'full', highlight: 'shoulders', readout: null, show: { goalSolid: 1 } }),
+  'skill-wedge-through': sk('Same tempo through', 'The club speeds up through the ball whatever the length. Never slow down into it.', {}, NINE, { mode: 'full', highlight: 'arms', readout: null }),
+  'skill-speed-turn': sk('A bigger turn', 'Turn the shoulders further going back, the lead arm still long.', {}, SPEED_TURN, { mode: 'top', highlight: 'shoulders', readout: null }),
+  'skill-speed-ground': sk('Ground pressure', 'Sit into the ground as you start down, then push up through it as you unwind.', {}, SPEED_GROUND, { mode: 'down', highlight: 'feet', readout: null }),
+});
+
 // drills the mannequin can demonstrate
 export const DRILL_DEMOS = { 'Impact hold': 'impactHold', 'Pump drill': 'pump' };
 
