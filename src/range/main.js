@@ -7,6 +7,7 @@ import { launchMonitor, mountLaunchMonitorUI, parseShot } from '../launch-monito
 import { STANCE, stanceView } from '../stance.js';
 import { CLUB_DELIVERY, deliveryFromBall, renderShotDetail } from './shot-detail.js';
 import { CLUBS, createRangeWorld } from '../world/range-world.js';
+import { createPracticeGround } from '../world/practice-ground.js';
 import { FAULTS, applyFault } from '../coach/faults.js';
 import { createCoachUI } from './coach-ui.js';
 import { recordDrive } from '../drives.js';
@@ -14,7 +15,11 @@ import { recordDrive } from '../drives.js';
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
 /* ===================== world (shared with the mini games) ===================== */
 const stage = document.getElementById('stage');
-const world = createRangeWorld(stage);
+// ?world=pg opens the Practice Ground blockout (the night campus that will replace Woodson Range)
+const PG = new URLSearchParams(location.search).get('world') === 'pg';
+const world = PG ? createPracticeGround(stage) : createRangeWorld(stage);
+window.__world = world; // test hook
+if (PG) { document.title = 'Practice Ground'; const t = document.querySelector('.brand b'); if (t && /Woodson/.test(t.textContent)) t.textContent = 'Practice Ground'; }
 const { renderer, scene, camera, sun, sunDir, groundAt, surfaceAt, flags, signs, coarse } = world;
 function setSun(key) { world.setSun(key); state.sunKey = key; }
 
@@ -388,6 +393,7 @@ function finishShot() {
   $('tagRest').innerHTML = `<b>${yd(r.totalDown)}</b> total`; $('tagRest').hidden = false;
   if (!$('session').hidden) drawSession();
   if (coachUI.active) coachUI.shot(f.shot, CLUBS[state.club].id);
+  if (world.showShot) world.showShot(r, f.shot);
   if (CLUBS[state.club].id === 'DR') recordDrive(r.total); // course tee suggestions
 }
 
@@ -554,6 +560,7 @@ function step(dt) {
     for (let i = 0; i < p.count; i++) { const x = b[i * 3]; p.setZ(i, Math.sin(x * 9 - clock * 5.5 * flagWind + ph) * 0.07 * x + Math.sin(x * 4 + clock * 2.3 + ph) * 0.035 * x); }
     p.needsUpdate = true; fl.geometry.computeVertexNormals();
   }
+  if (world.tick) world.tick(clock);
   updateCamera(dt);
   // shadow box follows what the camera is looking at
   const focus = state.phase === 'idle' && state.camMode !== 'top' ? tmp.set(0, 0, -50) : tmp.copy(camState.look).lerp(camera.position, 0.35);
@@ -591,10 +598,11 @@ const MODE_KEY = 'vibegolf.practice';
 function setMode(mode) {
   state.mode = mode;
   coachUI.setActive(mode === 'coach');
+  if (world.setStation) world.setStation(mode === 'coach' ? 'lab' : mode === 'short' ? 'short' : 'tee');
   $('practice').hidden = true;
   $('btnPractice').textContent = mode === 'coach' ? 'Coaching' : 'Practice';
   document.querySelectorAll('.pr-card').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
-  try { localStorage.setItem(MODE_KEY, mode); history.replaceState(null, '', `?mode=${mode}`); } catch (e) { /* storage blocked */ }
+  try { localStorage.setItem(MODE_KEY, mode); { const q = new URLSearchParams(location.search); q.set('mode', mode); history.replaceState(null, '', `?${q}`); } } catch (e) { /* storage blocked */ }
 }
 function openPractice() {
   const s = coachUI.summary(), box = $('prSum');
