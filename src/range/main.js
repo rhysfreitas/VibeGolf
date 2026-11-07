@@ -1,4 +1,4 @@
-// Woodson Range — driving range mode.
+// The Practice Ground: the range and the coach, on one floodlit night campus.
 import { simulate, airDensity, DEFAULT_COEF } from '../physics.js';
 import { createSimTool } from '../sim-tool.js';
 import { toolBall, landOf, bearingOf, turnBall, turnPts, aimTurn } from '../minigames/aim.js';
@@ -6,7 +6,7 @@ import { createAimLine } from '../aim-line.js';
 import { launchMonitor, mountLaunchMonitorUI, parseShot } from '../launch-monitor.js';
 import { STANCE, stanceView } from '../stance.js';
 import { CLUB_DELIVERY, deliveryFromBall, renderShotDetail } from './shot-detail.js';
-import { CLUBS, createRangeWorld } from '../world/range-world.js';
+import { CLUBS } from '../world/clubs.js';
 import { createPracticeGround } from '../world/practice-ground.js';
 import { FAULTS, applyFault } from '../coach/faults.js';
 import { createCoachUI } from './coach-ui.js';
@@ -15,11 +15,9 @@ import { recordDrive } from '../drives.js';
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
 /* ===================== world (shared with the mini games) ===================== */
 const stage = document.getElementById('stage');
-// ?world=pg opens the Practice Ground blockout (the night campus that will replace Woodson Range)
-const PG = new URLSearchParams(location.search).get('world') === 'pg';
-const world = PG ? createPracticeGround(stage) : createRangeWorld(stage);
+// one night campus, a station per mode (the tee line, the Swing Lab, the short-game tee)
+const world = createPracticeGround(stage);
 window.__world = world; // test hook
-if (PG) { document.title = 'Practice Ground'; const t = document.querySelector('.brand b'); if (t && /Woodson/.test(t.textContent)) t.textContent = 'Practice Ground'; }
 const { renderer, scene, camera, sun, sunDir, groundAt, surfaceAt, flags, signs, coarse } = world;
 function setSun(key) { world.setSun(key); state.sunKey = key; }
 
@@ -311,7 +309,7 @@ function receiveShot(shot) {
 }
 launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
 mountLaunchMonitorUI({ dot: $('lmDot'), text: $('lmText'), button: $('lmBtn') });
-window.WoodsonRange = { receiveShot: msg => { const shot = parseShot(msg); if (shot) receiveShot(shot); } };
+window.PracticeGround = window.WoodsonRange = { receiveShot: msg => { const shot = parseShot(msg); if (shot) receiveShot(shot); } };
 
 // the ball for a simulated shot: your exact numbers, or the club's average at the tool's swing
 // length with its trajectory and shape (started out so the curve comes back toward the target line)

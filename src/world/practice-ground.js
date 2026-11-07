@@ -1,11 +1,11 @@
-// The Practice Ground (BLOCKOUT): a floodlit tour campus at blue hour, with a city skyline glowing past
+// The Practice Ground: a floodlit tour campus at blue hour, with a city skyline glowing past
 // the range. One campus holds every practice mode, each at its own station:
 //   'tee'   the main tee line (Range, Bag Mapping)          ball at (0, 0)
 //   'lab'   the Swing Lab, a glass studio at the right end   ball at (64, -0.4)
 //   'short' the short-game tee behind the lit hedge          ball at (-80, -92)
 // The world is built in campus coordinates; setStation() slides it so the active station's ball sits at the
 // origin, so the range code (ball at the origin, aiming down -z) works unchanged at every station.
-// Same interface as createRangeWorld: renderer, scene, camera, sun, sunDir, setSun, groundAt, surfaceAt, flags, signs.
+// The range page's world: renderer, scene, camera, sun, sunDir, setSun, groundAt, surfaceAt, flags, signs.
 import { fbm, rng, sstep, GLSL_NOISE } from './stage.js';
 
 const YD = 0.9144;
@@ -307,7 +307,7 @@ export function createPracticeGround(stage, opts = {}) {
       const x = i * 3.2; if (x > 46) continue;
       add(matGeo, matMat, x, 0.015, 0.45, { cast: false, recv: true });
       add(new THREE.BoxGeometry(0.5, 0.034, 1.6), stripMat, x + 0.35, 0.016, 0.45, { cast: false, recv: true });
-      if (i !== 0 && i !== -1) { add(new THREE.BoxGeometry(0.06, 0.95, 1.3), divMat, x - 1.6, 0.47, 1.3); add(new THREE.BoxGeometry(0.08, 0.04, 1.3), capMat, x - 1.6, 0.96, 1.3, { cast: false }); }
+      if (i !== 0 && i !== -1) { add(new THREE.BoxGeometry(0.06, 0.8, 1.2), divMat, x - 1.6, 0.4, 2.9); add(new THREE.BoxGeometry(0.08, 0.04, 1.2), capMat, x - 1.6, 0.81, 2.9, { cast: false }); }
     }
     // the Academy behind the tee line (seen from the overview only)
     add(new THREE.BoxGeometry(60, 9, 22), M(0x262c33, { roughness: 0.5 }), 0, 4.5, 35);

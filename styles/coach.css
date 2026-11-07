@@ -135,11 +135,11 @@ span.co-ico { width: 24px; height: 24px; border-radius: 50%; display: grid; plac
 
 /* ---------- practice menu ---------- */
 #practice { position: fixed; inset: 0; z-index: 12; display: grid; place-items: center; padding: 16px; background: rgba(8, 14, 12, 0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.pr-box { width: min(760px, 100%); display: flex; flex-direction: column; gap: 12px; }
+.pr-box { width: min(880px, 100%); display: flex; flex-direction: column; gap: 12px; }
 .pr-box h2 { margin: 0; font-family: var(--f-data); font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 .pr-sum { padding: 10px 12px; font-size: 13px; line-height: 1.4; color: #c9cfc3; }
 .pr-sum b { color: var(--bone); }
-.pr-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pr-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .pr-card { appearance: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; min-height: 132px; }
 .pr-card b { font-family: var(--f-data); font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
 .pr-card span { font-size: 12.5px; line-height: 1.35; color: #c9cfc3; }

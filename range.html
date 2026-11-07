@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="VibeGolf">
-<title>Woodson Range</title>
+<title>Practice Ground · VibeGolf</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="styles/range.css">
@@ -21,7 +21,7 @@
 
 <div id="top">
   <div class="brand glass">
-    <b>Woodson Range</b>
+    <b>Practice Ground</b>
     <button class="lm-btn status" id="lmBtn" title="Launch monitor"><i class="dot" id="lmDot"></i><span id="lmText">R10 offline · simulated swings</span></button>
   </div>
   <div class="tools glass">
@@ -81,12 +81,6 @@
     <div class="row"><label for="sTemp">Temperature</label><output id="oTemp"></output><input type="range" id="sTemp" min="35" max="110" step="1"></div>
     <div class="row"><label for="sAlt">Altitude</label><output id="oAlt"></output><input type="range" id="sAlt" min="0" max="8000" step="10"></div>
     <p class="note" id="oRho"></p>
-    <span class="lbl">Light</span>
-    <div class="seg" role="group" aria-label="Time of day" id="sunSeg">
-      <button class="tbtn" data-sun="morning" aria-pressed="false">Morning</button>
-      <button class="tbtn" data-sun="midday" aria-pressed="false">Midday</button>
-      <button class="tbtn" data-sun="golden" aria-pressed="true">Golden</button>
-    </div>
   </div>
   <div class="group">
     <span class="lbl">Flight model trim</span>
@@ -123,7 +117,7 @@
 <!-- the practice menu: free range, the coach, or (soon) the short game area -->
 <div id="practice" hidden>
   <div class="pr-box">
-    <h2>Practice</h2>
+    <h2>Practice Ground</h2>
     <div class="pr-sum glass" id="prSum" hidden></div>
     <div class="pr-cards">
       <button class="pr-card glass" data-mode="range" aria-pressed="false">
@@ -134,7 +128,10 @@
         <b>Coaching</b><span>The coach reads your shots, shows the fault on a 3D golfer, and tracks the fix.</span></button>
       <button class="pr-card glass" data-mode="short" disabled>
         <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M8 28h20" stroke="#a3b59c" stroke-width="2" stroke-linecap="round"/><path d="M22 28V8l8 3-8 3" fill="none" stroke="#a3b59c" stroke-width="2" stroke-linejoin="round"/></svg>
-        <b>Short game</b><span>Chips, pitches and wedge distances.</span><em>Coming soon</em></button>
+        <b>Short game</b><span>Wedge pods from 30 to 110 yd, a chipping green and lies.</span><em>Coming soon</em></button>
+      <button class="pr-card glass" data-mode="bag" disabled>
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M6 28V18M12 28V13M18 28V9M24 28V6" fill="none" stroke="#a3b59c" stroke-width="3" stroke-linecap="round"/></svg>
+        <b>Bag Mapping</b><span>Every club's carry and spread, saved as My bag.</span><em>Coming soon</em></button>
     </div>
   </div>
 </div>
