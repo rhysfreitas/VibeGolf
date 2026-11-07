@@ -64,6 +64,8 @@ Chrome and Edge allow a page served over `https://` to reach `ws://localhost`. I
 ```
 index.html            title screen
 practice.html         the Practice Ground's page: Range, Coaching, Short game, Bag Mapping
+courses.html          Play Golf: pick a course
+online.html           Online: the friends lobby (coming)
 range.html            the Practice Ground (?mode=range|coach)
 course.html           the courses (?c=aerie, ?c=redmesa)
 src/physics.js        ball flight, bounce, roll, cup (pure functions, SI units, no Three.js)

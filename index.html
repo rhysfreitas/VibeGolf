@@ -51,6 +51,7 @@ a.mode:hover { background: var(--glass-hi); border-color: rgba(245,197,66,0.5); 
 .mode .meta { display: block; margin-top: 6px; font-family: var(--f-data); font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--flag); }
 .mode.soon { opacity: 0.72; }
 .mode.soon .meta { color: var(--mist); }
+.thumb.online { display: grid; place-items: center; background: linear-gradient(135deg, #1f3a4a, #0d161c); }
 .mode.soon .thumb { display: grid; place-items: center; font-family: var(--f-data); font-size: 12px; letter-spacing: 0.12em; color: var(--mist); text-transform: uppercase; background: rgba(255,255,255,0.05); border: 1px dashed var(--line); }
 #topbar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; padding: 8px 12px; }
 .lm-btn span { font-family: var(--f-data); font-size: 13px; letter-spacing: 0.06em; color: var(--mist); }
@@ -86,17 +87,17 @@ footer kbd { font-family: inherit; border: 1px solid var(--line); border-radius:
       <span class="thumb" style="background-image:url(assets/thumb-practice.jpg)" role="img" aria-label="A floodlit driving range at night with a big screen and a city skyline"></span>
       <span><h2>Practice Ground</h2><p>A floodlit campus at night: the range, coaching in the Swing Lab, and soon the short game.</p><span class="meta">Range · Coaching</span></span>
     </a>
-    <a class="mode glass" href="course.html">
+    <a class="mode glass" href="courses.html">
       <span class="thumb" style="background-image:url(assets/thumb-aerie.jpg)" role="img" aria-label="Floating island holes above the clouds"></span>
-      <span><h2>The Aerie</h2><p>Nine holes over the clouds, with room to miss.</p><span class="meta">9 holes · Par 36 · 3,385 yd</span></span>
-    </a>
-    <a class="mode glass" href="course.html?c=redmesa">
-      <span class="thumb" style="background-image:url(assets/thumb-redmesa.jpg)" role="img" aria-label="A fairway running through a red-rock arch at golden hour"></span>
-      <span><h2>Red Mesa</h2><p>Across and between red-rock mesas. Miss off the top and play it from the canyon floor.</p><span class="meta">9 holes · Par 36 · 3,395 yd</span></span>
+      <span><h2>Play Golf</h2><p>Pick a course: The Aerie over the clouds or Red Mesa's canyons, with more on the way.</p><span class="meta">2 courses · 18 holes</span></span>
     </a>
     <a class="mode glass" href="games.html">
       <span class="thumb" style="background-image:url(assets/thumb-shape-it.jpg)" role="img" aria-label="Glowing flight gates seen from a spaceship launch bay"></span>
       <span><h2>Mini games</h2><p>Seven games are ready, from Shape It to Golf Bowling. One more is on the way.</p><span class="meta">7 of 8 ready</span></span>
+    </a>
+    <a class="mode glass" href="online.html">
+      <span class="thumb online" role="img" aria-label="Friends linked up online"><svg viewBox="0 0 64 40" width="56" height="35" aria-hidden="true"><circle cx="20" cy="14" r="6" fill="#6ee38a"/><path d="M9 33c1-7 6-11 11-11s10 4 11 11" fill="#6ee38a"/><circle cx="44" cy="14" r="6" fill="#f5c542"/><path d="M33 33c1-7 6-11 11-11s10 4 11 11" fill="#f5c542"/><path d="M27 9q5-5 10 0" fill="none" stroke="#cfe2ea" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <span><h2>Online</h2><p>Link up with your friends in a lobby and play together.</p><span class="meta">Coming soon</span></span>
     </a>
   </nav>
   <div class="install">
