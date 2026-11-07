@@ -8,6 +8,7 @@
 import { hash2, vnoise, fbm, rng, sstep } from './noise.js';
 import { prepFeatures } from './features.js';
 import { groveTrees } from './trees.js';
+import { createCave } from './cave.js';
 export { hash2, vnoise, fbm, rng, sstep };
 
 /* ---------- islands ---------- */
@@ -144,6 +145,7 @@ export function archOuterA(R, v) { return R.ao + (R.flare || 0) * Math.pow(Math.
 // radius of a hoodoo column at height v above its base (shared with the mesh)
 export function hoodooR(R, v) {
   const t = v / R.h;
+  if (R.taper) return R.r * (1 + 0.6 * Math.pow(Math.max(0, 1 - v / 3), 2)) * (1 + 0.07 * Math.sin(v * 1.3 + R.seed)) * Math.max(0.1, 1 - 0.9 * t); // a stalagmite: a tapering cone
   const flare = 1 + 0.9 * Math.pow(Math.max(0, 1 - v / 4), 2);                // talus at the foot
   const bands = 1 + 0.14 * Math.sin(v * 0.9 + R.seed) + 0.08 * Math.sin(v * 2.3 + R.seed * 2);
   const neck = 1 - 0.28 * sstep(0.7, 0.92, t);                                  // pinches under the cap
@@ -367,7 +369,9 @@ export function createTerrain(hole) {
     curtains.push({ I, th: best.th, w, top, x: best.e.x + nx / nl * 1.5, z: best.e.z + nz / nl * 1.5, tx: -nz / nl, tz: nx / nl });
   }
   const rocks = [...(hole.rocks || []), ...fallen, ...wedges, ...floats].map(R => prepRock(R.type === 'float' ? R : { ...R }, groundAt)).filter(R => R.solid !== false);
-  function solidAt(x, y, z) { for (const R of rocks) { const n = rockNormal(R, x, y, z); if (n) return n; } return null; }
+  // caverns (cave.js): the roof, its walls and stalactites are rock too
+  const cave = hole.cave ? createCave(hole.cave) : null;
+  function solidAt(x, y, z) { for (const R of rocks) { const n = rockNormal(R, x, y, z); if (n) return n; } return cave ? cave.solidAt(x, y, z) : null; }
   // inside a waterfall's sheet (it widens a little as it falls)
   function curtainAt(x, y, z) {
     for (const C of curtains) {
@@ -390,5 +394,5 @@ export function createTerrain(hole) {
     if (a === null || b === null || c === null || d === null) return { x: 0, z: 0 };
     return { x: (a - b) / (2 * e), z: (c - d) / (2 * e) };
   }
-  return { ISL, floor: F, rocks, trees, floats, curtains, curtainAt, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
+  return { ISL, floor: F, cave, rocks, trees, floats, curtains, curtainAt, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
 }

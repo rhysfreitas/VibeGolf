@@ -15,13 +15,15 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js' };
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
 const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
-const MESA = COURSE.theme === 'mesa';
+const CAVE = COURSE.theme === 'cave'; // underground: built like Red Mesa (floor, playfield, rocks), under a roof
+const MESA = COURSE.theme === 'mesa' || CAVE;
 // a sky course drawn from shaped ground (features, a painted surface), like Red Mesa's playfield
 const SHAPED = !MESA && !!COURSE.shaped;
 const MW = MESA || SHAPED ? await import('./mesa-world.js') : null;
+const CW = CAVE ? await import('./cave-world.js') : null;
 const SP = SHAPED ? await import('./sky-props.js') : null;
 const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
 document.title = COURSE.name;
@@ -49,7 +51,7 @@ const islandAt = (x, z) => T.islandAt(x, z);
 const surfaceAt = (x, z) => T.surfaceAt(x, z);
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' ? 'fairway' : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
-const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: 'Waste area', water: 'Water', green: 'Green' };
+const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: 'Waste area', water: 'Water', green: 'Green' };
 const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' ? 'var(--sand)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
 
 /* ---------- conditions and tees (set on the round setup screen) ---------- */
@@ -107,6 +109,8 @@ function lightPreset() {
     night: { sun: 0x9fb4ff, si: 0.55, hs: 0x31436a, hg: 0x1a1612, hi: 0.4, exp: 0.9, turb: 1.5, ray: 0.4, mie: 0.003, fog: 0x0e1626 },
   }[t] || {};
   const P = { ...L, near: MESA ? 420 : 320, far: MESA ? 5200 : 4200 };
+  // in the caverns: no sky, a dim cool fill, dark air; the light comes from lanterns and the sun through the roof
+  if (CAVE) return { ...P, si: 0, hs: 0x5c6880, hg: 0x221f1b, hi: 0.5, exp: 1.05, fog: 0x080a0d, near: 120, far: 1700 };
   if (w === 'haze') { P.turb += 5; P.si *= 0.82; P.hi *= 1.15; P.near *= 0.55; P.far *= 0.6; }
   if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : MESA ? 0xa89c92 : 0xa9b0b6; P.exp *= 1.05; }
   return P;
@@ -122,6 +126,7 @@ function applySky(heading = 0) {
   hemi.color.set(P.hs); hemi.groundColor.set(P.hg); hemi.intensity = P.hi;
   renderer.toneMappingExposure = P.exp;
   FOG_COLOR.set(P.fog); scene.fog.near = P.near; scene.fog.far = P.far;
+  if (CAVE) { sky.visible = false; scene.background = FOG_COLOR; sun.castShadow = false; stars.visible = false; scene.environment = null; ball.material.emissive.set(0xa8c4d0); ball.material.emissiveIntensity = 0.35; return; }
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
   ball.material.emissive.set(T0.night ? 0xbfe8ff : 0x000000); ball.material.emissiveIntensity = T0.night ? 1.4 : 0;
@@ -178,6 +183,7 @@ const surfU = { uSurf: { value: null }, uSurfMin: { value: new THREE.Vector2() }
 islandMat.onBeforeCompile = sh => {
   sh.uniforms.uDir = holeDirU; Object.assign(sh.uniforms, surfU);
   if (MESA) sh.defines = { ...(sh.defines || {}), MESA: '' };
+  if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
     .replace('#include <common>', '#include <common>\nattribute vec4 aW; attribute float aDepth; varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN;')
@@ -211,6 +217,11 @@ vec4 sf = mix(vec4(0.0), texture2D(uSurf, clamp(st, 0.0, 1.0)), inTex);
 vec3 scrub = mix(lin(vec3(0.5,0.42,0.28)), lin(vec3(0.6,0.47,0.31)), mid) * (0.8 + 0.4*fine);
 scrub = mix(scrub, lin(vec3(0.68,0.42,0.27)), smoothstep(0.45, 0.75, fb(p.xz*0.06)) * 0.7);
 vec3 dirt = mix(lin(vec3(0.66,0.4,0.25)), lin(vec3(0.76,0.52,0.33)), mid) * (0.85 + 0.3*fine);
+#ifdef CAVE
+// a cave: damp mud and broken stone off the play, darker on the floor
+scrub = mix(lin(vec3(0.34,0.3,0.26)), lin(vec3(0.42,0.37,0.31)), mid) * (0.75 + 0.45*fine);
+dirt = mix(lin(vec3(0.22,0.2,0.18)), lin(vec3(0.3,0.27,0.23)), mid) * (0.8 + 0.35*fine);
+#endif
 vec3 col = mix(scrub, dirt, 1.0 - step(uFloorY + 4.0, p.y));
 // grass by length: rough (dry, tufted), first cut, then the mown surfaces
 vec3 mrough = mix(lin(vec3(0.42,0.44,0.22)), lin(vec3(0.5,0.5,0.26)), mid) * (0.72 + 0.5*fine);
@@ -228,6 +239,12 @@ float steep = 1.0 - abs(vWN.y);
 float varnish = smoothstep(0.42, 0.78, fb(vec2((p.x+p.z)*0.22, p.y*0.012))) * steep;
 rock = mix(rock, lin(vec3(0.2,0.1,0.07)), varnish * 0.7);
 rock *= (0.8 + 0.2*fine) * (0.9 + 0.1*strataLine(p.y));
+#ifdef CAVE
+// limestone: grey, banded, with pale flowstone running down the faces
+rock = mix(lin(vec3(0.42,0.4,0.37)), lin(vec3(0.58,0.55,0.5)), band);
+rock = mix(rock, lin(vec3(0.78,0.72,0.6)), smoothstep(0.55, 0.8, fb(vec2((p.x+p.z)*0.25, p.y*0.02))) * steep * 0.6);
+rock *= (0.8 + 0.2*fine) * (0.9 + 0.1*strataLine(p.y));
+#endif
 float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
 col = mix(col, rock, rw);
 diffuseColor.rgb = col;
@@ -455,6 +472,7 @@ const trunkGeo = new THREE.CylinderGeometry(0.12, 0.22, 1, 6); trunkGeo.translat
 const foliageMat = new THREE.MeshStandardMaterial({ roughness: 0.92, envMapIntensity: 0.5 });
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 });
 function buildTrees(list, group) {
+  list = list.filter(t => t.type !== 'mushroom'); // cave-world.js draws the giant mushrooms (they still play)
   const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type !== 'pine');
   const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * 3);
   const blobs = new THREE.InstancedMesh(blobGeo, foliageMat, oaks.length * 4);
@@ -531,14 +549,17 @@ function buildHole(h) {
   const a = new THREE.Vector2(h.tee[0], h.tee[1]), b = new THREE.Vector2(h.pinPos.x, h.pinPos.z);
   const segDist = (x, z) => { const ab = b.clone().sub(a), t = THREE.MathUtils.clamp(new THREE.Vector2(x, z).sub(a).dot(ab) / ab.lengthSq(), 0, 1); return new THREE.Vector2(x, z).distanceTo(a.clone().addScaledVector(ab, t)); };
   if (MESA) {
-    for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
+    if (!CAVE) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
     MW.buildFloor(T, box, islandMat, coarse, holeGroup, true);
     MW.buildPlayfield(T, box, playMat, coarse, holeGroup);
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
-    MW.scatterShrubs(T, box, coarse, holeGroup);
-    trees.push(...MW.cottonwoodSpots(T, h));
-    mesaCtx = MW.buildProps(h, T, h.tees ? Object.values(h.tees)[0] : h.tee, islandMat, holeGroup);
+    if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
+    else {
+      MW.scatterShrubs(T, box, coarse, holeGroup);
+      trees.push(...MW.cottonwoodSpots(T, h));
+      mesaCtx = MW.buildProps(h, T, h.tees ? Object.values(h.tees)[0] : h.tee, islandMat, holeGroup);
+    }
   } else {
     // decorative spires around the hole, kept clear of the corridor
     const deco = [];
@@ -703,7 +724,7 @@ function shotFrame(origin, yaw, live = false) { // live: the real shot, trees an
   const c = Math.cos(yaw), s = Math.sin(yaw);
   const wx = (lx, lz) => origin.x + lx * c - lz * s, wz = (lx, lz) => origin.z + lx * s + lz * c;
   const cupRel = HOLE.pinPos.clone().sub(origin);
-  const solid = T.rocks.length ? (lx, ly, lz) => { const n = T.solidAt(wx(lx, lz), origin.y + ly, wz(lx, lz)); return n && [n[0] * c + n[2] * s, n[1], -n[0] * s + n[2] * c]; } : null;
+  const solid = T.rocks.length || T.cave ? (lx, ly, lz) => { const n = T.solidAt(wx(lx, lz), origin.y + ly, wz(lx, lz)); return n && [n[0] * c + n[2] * s, n[1], -n[0] * s + n[2] * c]; } : null;
   return {
     groundAt: (lx, lz) => { const g = groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - origin.y; },
     surfaceAt: (lx, lz) => physSurface(wx(lx, lz), wz(lx, lz)),
@@ -903,7 +924,7 @@ function renderPlan() {
     tw.appendChild(b);
   }
   if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
-  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut −2%', rough: 'Rough −6%', sand: 'Bunker −14%', waste: 'Waste area −6%', desert: (MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green' };
+  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut −2%', rough: 'Rough −6%', sand: 'Bunker −14%', waste: 'Waste area −6%', desert: (CAVE ? 'Cave floor' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green' };
   const pct = state.k < 0.995 ? ` · ${Math.round(state.k * 100)}%` : '';
   const L = lieSlope(), slopeTxt = [Math.abs(L.up) >= 2 ? `${L.up > 0 ? 'uphill' : 'downhill'} ${Math.round(Math.abs(L.up))}°` : '', Math.abs(L.side) >= 2 ? `ball ${L.side > 0 ? 'above' : 'below'} feet` : ''].filter(Boolean).join(', ');
   $('pvLie').textContent = `${CLUBS[state.club].name}${pct} · Lie: ${lieNames[state.lie] || state.lie}${slopeTxt ? ' · ' + slopeTxt : ''}`;

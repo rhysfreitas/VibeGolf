@@ -9,9 +9,9 @@ import { rng } from './noise.js';
 
 // [height of the bare trunk per unit scale, canopy size per unit scale, trunk thickness] (the
 // renderer's shapes; pines are cones and are handled apart)
-export const TREE_SHAPES = { oak: [2.5, 3, 1], juniper: [0.5, 1.5, 0.6], pinyon: [1.2, 1.9, 0.7], cotton: [4.5, 3.6, 1.4] };
+export const TREE_SHAPES = { oak: [2.5, 3, 1], juniper: [0.5, 1.5, 0.6], pinyon: [1.2, 1.9, 0.7], cotton: [4.5, 3.6, 1.4], mushroom: [3.2, 2.4, 1.8] };
 // chance per metre of hitting a branch inside the canopy
-const DENSITY = { pine: 0.34, oak: 0.3, juniper: 0.5, pinyon: 0.42, cotton: 0.28 };
+const DENSITY = { pine: 0.34, oak: 0.3, juniper: 0.5, pinyon: 0.42, cotton: 0.28, mushroom: 0.6 }; // a giant mushroom's cap is dense
 
 export function treeBody(t) {
   if (t.type === 'pine') {
