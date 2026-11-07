@@ -4,7 +4,7 @@
 //   scenery  floating things over the hole: 'hanging' islands (top, underside down to bottom), 'drift' (a
 //            small island that moves along path between shots), 'wedge' rock jutting from an island (from/to
 //            [x, z, y], w/h [root, tip], drop: a buttress down its side), 'falls' (a sheet off the nearest rim,
-//            as wide as pts), the 'balloon', 'lanterns'. Islands and wedges are solid; falls knock a ball down.
+//            as wide as pts), the 'balloon'. Islands and wedges are solid; falls knock a ball down.
 //   distant  the other holes' LANDMARKS, placed where the course map puts them (rot: degrees to turn them)
 // The clouds are a red penalty area: one stroke, a drop beside where the ball went over (relief.js).
 // The course builder will read and write this same shape.
@@ -104,7 +104,7 @@ export const HOLES = [
     drops: [],
     targets: [{"name":"Bailout","x":-46,"z":-110},{"name":"Green","pin":true}],
     scenery: [
-      {"type":"lanterns","x":-8,"z":-153,"r":21,"n":12},
+      
     ],
     distant: [
       {"id":"veil","x":-321.4,"z":61.4,"rot":-47},

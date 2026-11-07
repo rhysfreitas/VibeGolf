@@ -1,5 +1,5 @@
 // The Aerie's scenery (global THREE): what floats over a hole, drawn from the same shapes terrain.js makes
-// solid. Hanging islands, the drifting island, rock wedges, broad waterfalls, the hot air balloon and lanterns,
+// solid. Hanging islands, the drifting island, rock wedges, broad waterfalls, and the hot air balloon,
 // plus the other holes' landmarks in the distance. Built from hole.scenery and hole.distant.
 // ctx: { group, trees, island(I, detail, group, trees), fall(I, th, w), prepIsland, edgeRadius, mat, T, anims }
 import { fbm, rng, wedgeParts, driftTo } from './terrain.js';
@@ -121,19 +121,6 @@ function balloon(m, ctx, group = ctx.group, bob = true) {
   return g;
 }
 
-// lanterns on posts round a green
-function lanterns(m, ctx) {
-  const post = new THREE.MeshStandardMaterial({ color: 0x3b2f24, roughness: 0.9 });
-  const glow = new THREE.MeshStandardMaterial({ color: 0x3a2a14, emissive: 0xffc46a, emissiveIntensity: 1.4, roughness: 0.5 });
-  for (let i = 0; i < m.n; i++) {
-    const a = i / m.n * Math.PI * 2, x = m.x + Math.cos(a) * m.r, z = m.z + Math.sin(a) * m.r * 0.92, y = ctx.T.groundAt(x, z);
-    if (y === null) continue;
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.2, 6), post); p.position.set(x, y + 1.1, z);
-    const l = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.42, 0.34), glow); l.position.set(x, y + 2.35, z);
-    ctx.group.add(p, l);
-  }
-}
-
 // a waterfall off the nearest rim (a playable island or a hanging one), as wide as the mark
 function falls(m, ctx, islands) {
   const mid = m.pts[Math.floor(m.pts.length / 2)];
@@ -165,7 +152,6 @@ export function buildSkyProps(hole, ctx, LANDMARKS) {
     else if (m.type === 'crag') crag(m, ctx);
     else if (m.type === 'wedge') for (const w of wedgeParts(m)) wedge(w, ctx);
     else if (m.type === 'balloon') balloon(m, ctx);
-    else if (m.type === 'lanterns') lanterns(m, ctx);
   }
   for (const C of T.curtains || []) ctx.group.add(ctx.fall(C.I, C.th, C.w));
   // the other holes' landmarks, far off (scenery only)
