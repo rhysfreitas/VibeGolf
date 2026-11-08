@@ -82,13 +82,23 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   geo.setIndex(idx); geo.computeVertexNormals();
+  // where the sheet stands up as wall, push it in and out across its face: buttresses, recesses, broken rock
+  { const nr = geo.attributes.normal;
+    for (let k = 0; k < Y.length; k++) {
+      if (Number.isNaN(Y[k])) continue;
+      const nx_ = nr.getX(k), nz_ = nr.getZ(k), hz = Math.hypot(nx_, nz_); if (hz < 0.35) continue;
+      const x = pos[k * 3], y = pos[k * 3 + 1], z = pos[k * 3 + 2];
+      const o = ((fbm(x / 13 + 2.2, z / 13 + y / 11) - 0.5) * 11 + (fbm(x / 4.5, z / 4.5 - y / 5) - 0.5) * 4) * Math.min(1, (hz - 0.35) * 2.5);
+      pos[k * 3] += nx_ / hz * o; pos[k * 3 + 2] += nz_ / hz * o;
+    }
+    geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); }
   const roof = new THREE.Mesh(geo, rockMat); roof.receiveShadow = true; group.add(roof);
 
   /* ---------- the foot of the walls: rubble, fallen blocks and flowstone, so no wall meets the floor clean ---------- */
   const bx0 = box0.x0 - 160, bx1 = box0.x1 + 160, bz0 = box0.z0 - 160, bz1 = box0.z1 + 160;
   const PLAY = new Set(['green', 'fringe', 'fairway', 'tee', 'sand', 'water']);
   const rubble = [], blocks = [], flows = [], q0 = new THREE.Quaternion(), eul = new THREE.Euler();
-  const wantR = coarse ? 900 : 1700, wantB = coarse ? 110 : 180, wantF = coarse ? 45 : 80;
+  const wantR = coarse ? 900 : 1700, wantB = coarse ? 110 : 180, wantF = coarse ? 80 : 130;
   for (let t = 0; t < 40000 && (rubble.length < wantR || blocks.length < wantB || flows.length < wantF); t++) {
     const x = bx0 + R() * (bx1 - bx0), z = bz0 + R() * (bz1 - bz0), d = C.wallDepth(x, z);
     if (d < -5 || d > 10) continue;
@@ -103,6 +113,18 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       const w = 2.5 + R() * 5; flows.push({ p: V(x, g - 0.6, z), q: q0.clone().setFromEuler(eul.set(0, R() * 6.3, 0)), s: V(w, top - g + 4, w * (0.55 + R() * 0.3)), c: 0.62 + R() * 0.3 });
     }
   }
+  // knobs and ledges of rock standing out of the wall sheet, from the foot most of the way up
+  const knobs = [], wantK = coarse ? 600 : 950;
+  for (let t = 0; t < 40000 && knobs.length < wantK; t++) {
+    const x = bx0 + R() * (bx1 - bx0), z = bz0 + R() * (bz1 - bz0), d = C.wallDepth(x, z);
+    if (d < 0.2 || d > 10) continue;
+    const y = C.ceilingAt(x, z); if (y === null) continue;
+    const g = gy(x, z); if (y - g < 2.5) continue;
+    const k = 3 + R() * R() * 10, e = 1.5, gx = C.wallDepth(x + e, z) - C.wallDepth(x - e, z), gz = C.wallDepth(x, z + e) - C.wallDepth(x, z - e), gl = Math.hypot(gx, gz) || 1;
+    // set into the wall (away from the hall) so only part of each stands proud
+    knobs.push({ p: V(x - gx / gl * k * 0.55, y - k * 0.1, z - gz / gl * k * 0.55), q: q0.clone().setFromEuler(eul.set((R() - 0.5) * 0.8, R() * 6.3, (R() - 0.5) * 0.8)), s: V(k * (1 + R() * 0.9), k * (0.5 + R() * 0.7), k * (1 + R() * 0.9)), c: 0.5 + R() * 0.4 });
+  }
+  if (knobs.length) group.add(instances(lumpy(1, 5.3, 0.5), rockMat, knobs, true));
   const flowMat = new THREE.MeshStandardMaterial({ color: 0x9a8b76, roughness: 0.75, metalness: 0, vertexColors: true });
   if (rubble.length) group.add(instances(lumpy(1, 3.1, 0.35), rockMat, rubble, true));
   if (blocks.length) group.add(instances(lumpy(1, 7.7, 0.45), rockMat, blocks, true));
@@ -247,11 +269,14 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       // the broken-open geode behind a green: its shell of rock lined with crystals, all facing in, the open
       // side toward the tee (from)
       const back = Math.atan2(M.z - M.from[1], M.x - M.from[0]), purple = [], cyan = [];
-      for (let k = 0; k < (coarse ? 260 : 480); k++) {
-        const a = back + (R() - 0.5) * 2 * 1.9, rr = M.r * (0.88 + R() * 0.28), x = M.x + Math.cos(a) * rr, z = M.z + Math.sin(a) * rr;
-        const g = gy(x, z), hgt = R() * R() * 30, len = 1.4 + R() * R() * 7;
-        const dir = V(M.x - x, (R() - 0.2) * rr * 0.9, M.z - z).normalize();
-        const o = { p: V(x, g + hgt - 0.5, z), q: new THREE.Quaternion().setFromUnitVectors(UP, dir), s: V(len * 0.32, len, len * 0.32), c: 0.85 + R() * 0.3 };
+      for (let k = 0; k < (coarse ? 700 : 1200); k++) {
+        // out from the middle until the ray meets the shell (rock rising above that height), then on its face
+        const a = back + (R() - 0.5) * 2 * 1.9, ca = Math.cos(a), sa = Math.sin(a), y = gy(M.x, M.z) + R() * R() * 34;
+        let rr = M.r * 0.5, hit = false; for (; rr < M.r * 1.8; rr += 0.7) { const g = T.groundAt(M.x + ca * rr, M.z + sa * rr); if (g !== null && g > y + 0.5) { hit = true; break; } }
+        if (!hit) continue;
+        const x = M.x + ca * (rr - 0.6), z = M.z + sa * (rr - 0.6), len = 1.4 + R() * R() * 7;
+        const dir = V(-ca, 0.2 + R() * 0.9, -sa).normalize();
+        const o = { p: V(x, Math.max(y, gy(x, z)) - 0.3, z), q: new THREE.Quaternion().setFromUnitVectors(UP, dir), s: V(len * 0.32, len, len * 0.32), c: 0.85 + R() * 0.3 };
         (R() < 0.7 ? purple : cyan).push(o);
       }
       for (const [L, hue] of [[purple, 0x9b6bff], [cyan, 0x5fd8ff]]) {

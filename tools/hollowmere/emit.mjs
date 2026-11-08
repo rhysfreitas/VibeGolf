@@ -37,7 +37,10 @@ const out = HOLES.map((h0, i) => {
   };
   for (const k of ['bunkers', 'landforms', 'water']) if (h0[k]) H[k] = h0[k].map(feat);
   if (h0.groves) H.groves = h0.groves.map(G => { const { r, kind, ...g } = feat(G); return kind === 'mushroom' ? { ...g, rx: r, rz: r, type: 'mushroom', s: [1.8, 2.8] } : { ...g, rx: r, rz: r, type: 'oak', s: [1.1, 1.6] }; });
-  if (h0.rocks) H.rocks = h0.rocks.map(xz);
+  const rock = R => { const o = xz(R); if (R.rot !== undefined) o.rot = rot(R.rot); return o; };
+  // this hole's rocks, then other holes' arches and columns in the same caverns (solid here too: one world)
+  const theirs = HOLES.flatMap((o, j) => j === i ? [] : (o.rocks || []).filter(R => (R.type === 'arch' || R.column) && Math.hypot(R.x - tee[0], R.z - tee[1]) < 900 && (clearLine(tee, [R.x, R.z]) || clearLine(pin, [R.x, R.z]))));
+  if (h0.rocks || theirs.length) H.rocks = [...(h0.rocks || []), ...theirs].map(rock);
   if (h0.rivers) H.rivers = h0.rivers.map(r => ({ ...r, pts: r.pts.map(P) }));
   // the other holes' ground in view: islands in the same caverns with a clear line from this hole's tee or green
   const near = (x, z) => [tee, pin, ...h0.line].some(p => Math.hypot(x - p[0], z - p[1]) < 700) && (clearLine(tee, [x, z]) || clearLine(pin, [x, z]));

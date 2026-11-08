@@ -117,6 +117,9 @@ const L9 = [[421, -479], [385, -321], [246, -260]];
 const FIN = { c: [333, -369], ax: [-0.782, -0.626] }, finAt = u => [FIN.c[0] + FIN.ax[0] * u, FIN.c[1] + FIN.ax[1] * u];
 const FINROT = Math.atan2(FIN.ax[1], FIN.ax[0]);
 
+// the knoll the 6th tees off, beside the 5th green: a natural rise, no cliff (shared by both holes)
+const KNOLL6 = { type: 'mound', x: c(-204, -214)[0], z: c(-204, -214)[1], from: c(-118, -222), length: 120, width: 74, height: 14.5 };
+
 export const HOLES = [
   /* 1 ---------------------------------------------------------------------------------------------- */
   {
@@ -246,7 +249,7 @@ export const HOLES = [
     islands: [
       // the geode's shell behind the green, floor to roof
       isl(...c(-168, -282), 16, 7, 80, { kind: 'rock', depth: 300, rot: 2.3 }), isl(...c(-156, -258), 16, 7, 80, { kind: 'rock', depth: 300, rot: 1.6 }), isl(...c(-188, -292), 16, 7, 80, { kind: 'rock', depth: 300, rot: 3.0 })],
-    landforms: [{ type: 'mound', x: c(-192, -246)[0], z: c(-192, -246)[1], from: c(-298, -150), length: 120, width: 96, height: 13 }],
+    landforms: [{ type: 'mound', x: c(-192, -246)[0], z: c(-192, -246)[1], from: c(-298, -150), length: 120, width: 96, height: 13 }, KNOLL6],
     green: { x: c(-190, -250)[0], z: c(-190, -250)[1], rx: 15, rz: 12, style: 'plateau', raise: 1.4, falseFront: 0.9, apron: 8, runoff: true, pins: [c(-190, -250), c(-184, -256), c(-193, -255), c(-182, -246)] },
     bunkers: [{ x: c(-205, -232)[0], z: c(-205, -232)[1], rx: 5, rz: 3, style: 'flashed', toward: c(-190, -250) }, { x: c(-172, -258)[0], z: c(-172, -258)[1], rx: 3.5, rz: 3, style: 'pot', sand: 'crystal' }],
     groves: [shrooms(at(L5, 96, 32), 9, 5), shrooms(at(L5, 64, -36), 8, 4)],
@@ -269,13 +272,14 @@ export const HOLES = [
     line: L6,
     tees: { eagle: c(-198, -212), hawk: c(-176, -238), swift: c(-146, -240), wren: c(-112, -248) },
     floor: hollowFloor,
-    islands: [isl(...c(-204, -214), 22, 20, -52), cap(c(-196, -214), c(-118, -222), 96, -52, -64, { kind: 'rough' }), pad(...c(-198, -212), -51.4, 61)],
-    landforms: [crest(...c(10, -207), c(-112, -230), 26, 70, 2.5), roll(...c(-60, -250), 60, 40, 3), roll(...c(60, -238), 50, 30, 2.2), swale(...c(-30, -205), c(-110, -214), 60, 30, 1)],
+    islands: [],
+    landforms: [KNOLL6, crest(...c(10, -207), c(-112, -230), 26, 70, 2.5), roll(...c(-60, -250), 60, 40, 3), roll(...c(60, -238), 50, 30, 2.2), swale(...c(-30, -205), c(-110, -214), 60, 30, 1)],
     fairways: [{ pts: [[...c(-110, -214), 30], [...c(-40, -206), 42], [...c(20, -205), 44], [...c(70, -212), 36], [...c(112, -200), 30]] }, { pts: [[...c(140, -172), 18], [...c(150, -142), 16]] }],
     green: { x: c(154, -112)[0], z: c(154, -112)[1], rx: 15, rz: 13, style: 'tilt', tilt: 1.5, raise: 1.6, apron: 7, runoff: true, from: c(-20, -205), pins: [c(154, -112), c(148, -106), c(160, -118), c(150, -120)] },
     bunkers: [bunker(at(L6, 230, -34), L6[0], L6[1], 8, 20), { x: c(132, -126)[0], z: c(132, -126)[1], rx: 5, rz: 4, style: 'flashed', toward: c(154, -112) }, { x: c(174, -98)[0], z: c(174, -98)[1], rx: 4, rz: 3, style: 'pot' }],
     groves: [{ x: c(186, -132)[0], z: c(186, -132)[1], r: 14, n: 8, kind: 'jungle' }, shrooms(at(L6, 150, -48), 10, 5)],
-    rocks: [...stand(at(L6, 110, 46), 6, 8, 61), ...stand(at(L6, 200, -52), 6, 9, 62, 6, 18), ...stand(c(90, -232), 5, 7, 63)],
+    rocks: [{ type: 'arch', x: c(-100, -300)[0], z: c(-100, -300)[1], rot: 0.25, y: -67.5, w: 26, h: 24, t: 10, d: 9, crown: 0.7 }, // an eyelet for looks against the south wall
+      ...stand(at(L6, 110, 46), 6, 8, 61), ...stand(at(L6, 200, -52), 6, 9, 62, 6, 18), ...stand(c(90, -232), 5, 7, 63)],
     roof: { y: HOLLOW.roofY },
     marks: [
       ...hollowMarks,
@@ -285,8 +289,8 @@ export const HOLES = [
       { type: 'text', x: c(-150, -262)[0], z: c(-150, -262)[1], label: 'tee on a rock ledge, 12 m up' },
     ],
     idea: 'Across the inlet, beside the falls',
-    play: 'From a rock ledge 12 m up, the drive runs east along the Hollow floor, over a gentle crest that hides the landing area (a lantern on the crest shows the line). Then the hole turns right around the inlet, a bite of the chasm with the falls pouring into it through the Great Shaft from the cavern above. The hero second carries 110 yd of open air under giant stalactites: a high shot can clip them. The safe way goes left round the top of the inlet to a lay-up, then a wedge. The green sits beside the falls in the shaft of sunlight.',
-    features: ['Tee on a rock ledge 12 m above the floor', 'A crest on the drive: blind landing, lantern on the line', 'The hero second: 110 yd over the inlet', 'Giant stalactites over the hero line: a high shot clips them', 'Safe way round the top of the inlet', 'Green beside the falls in the shaft of sunlight; a small jungle under the opening (plays as trees)'],
+    play: 'From a knoll 14 m up beside the geode, the drive runs down onto the Hollow floor, over a gentle crest that hides the landing area (a lantern on the crest shows the line). Then the hole turns right around the inlet, a bite of the chasm with the falls pouring into it through the Great Shaft from the cavern above. The hero second carries 110 yd of open air under giant stalactites: a high shot can clip them. The safe way goes left round the top of the inlet to a lay-up, then a wedge. The green sits beside the falls in the shaft of sunlight.',
+    features: ['Tee on a knoll 14 m above the floor', 'A crest on the drive: blind landing, lantern on the line', 'The hero second: 110 yd over the inlet', 'Giant stalactites over the hero line: a high shot clips them', 'Safe way round the top of the inlet', 'Green beside the falls in the shaft of sunlight; a small jungle under the opening (plays as trees)'],
   },
   /* 7 ---------------------------------------------------------------------------------------------- */
   {
@@ -328,7 +332,7 @@ export const HOLES = [
     green: { x: 504, z: -598, rx: 14, rz: 13, style: 'punchbowl', apron: 6, runoff: true, from: [540, -720], pins: [[504, -598], [498, -604], [510, -592], [498, -592]] },
     bunkers: [{ x: 575, z: -790, rx: 7, rz: 4, style: 'flashed', toward: [452, -908] }, bunker(at(L8, 120, -32), L8[0], L8[1], 7, 18), { x: 520, z: -612, rx: 4, rz: 3, style: 'pot' }],
     groves: [shrooms([528, -745], 14, 6), shrooms([482, -818], 12, 5), shrooms([556, -690], 10, 4), shrooms(at(L8, 260, 40), 10, 5), shrooms([598, -830], 10, 5)],
-    rocks: [column([467.4, -863.1], 5.5, 74), ...stand([590, -730], 5, 7, 81), ...stand([466, -640], 5, 7, 82)],
+    rocks: [column([467.4, -863.1], 5.5, 74), { type: 'arch', x: 590, z: -700, rot: 1.1, y: -48.3, w: 16, h: 14, t: 7, d: 7, crown: 0.7 } /* an eyelet for looks */, ...stand([590, -730], 5, 7, 81), ...stand([466, -640], 5, 7, 82)],
     roof: { y: 12 },
     marks: [
       { type: 'glowworms', poly: [[420, -940], [610, -800], [600, -640], [540, -570], [460, -570], [420, -760]], dense: true, label: 'a ceiling of glowworms, thick as a night sky' },
