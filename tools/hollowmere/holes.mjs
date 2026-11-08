@@ -1,9 +1,14 @@
-// Hollowmere, all nine holes: a DRAFT for the plan book. One world frame for the whole course (metres;
-// x east, -z north; y up, 0 = the surface at the mine entrance), because four holes share one cavern.
-// Engine hole format (islands with slopes, floor with gorges, fairways, green, bunkers, water, rivers,
-// rocks) plus: words for the plan book, `marks` (what the engine doesn't build yet: skylights, falls,
-// lanterns, crystals, glowworms, mushrooms, the trestle, stalactites) and `roof` (the cavern roof's
-// height over the hole, for the profiles). HALLS outline the caverns: outside them is rock.
+// Hollowmere, all nine holes (draft 3, after the first blockout markups). One world frame for the whole
+// course (metres; x east, -z north; y up, 0 = the surface at the mine entrance), because four holes share
+// one cavern. Engine hole format (islands with slopes, floor with gorges, fairways, green, bunkers, water,
+// rivers, rocks, groves) plus: words for the plan book, `marks` (scenery cave-world.js draws: skylights,
+// falls, lanterns, crystals, glowworms, the trestle, stalactites, the geode...), `streams` (water that runs
+// downhill: split into level river pools below), and `roof` (the cavern roof over the hole, for the
+// profiles). HALLS outline the caverns: outside them is rock.
+// Rules from the markups: holes play on the cave floor, not on plateaus (drop-offs only where they mean
+// something: the ledge tees, the Deep, the fissure, the terraces); a big miss finds stalagmite stands,
+// glowing mushrooms or rubble at the wall's foot; forward tees sit off the fairways.
+import { createTerrain } from '../../src/course/terrain.js';
 
 const cap = (a, b, w, y0, y1, o = {}) => {   // a floor island along a hall from a to b, sloping y0 -> y1
   const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
@@ -12,16 +17,35 @@ const cap = (a, b, w, y0, y1, o = {}) => {   // a floor island along a hall from
 };
 const pad = (x, z, top, seed, r = 8) => ({ x, z, rx: r * 0.85, rz: r, top, depth: 60, kind: 'tee', seed, trees: 0 });
 const isl = (x, z, rx, rz, top, o = {}) => ({ x, z, rx, rz, top, depth: 200, kind: 'rough', seed: Math.round(Math.abs(x * 3 + z)) % 89 + 2, trees: 0, ...o });
-// stalagmites along a line from a to b: [s along it, offset to its right, r, h]
-const forest = (a, b, list) => { const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, rx = -uz, rz = ux;
-  return list.map(([sv, o, rr, hh]) => [a[0] + ux * sv + rx * o, a[1] + uz * sv + rz * o, rr, hh]); };
-// cave landforms: a crest you can't see over, a rimstone terrace step, a cant toward trouble
+const yaw = (a, b) => Math.atan2(b[0] - a[0], -(b[1] - a[1]));
+// a point along a polyline, s metres from its start, pushed `off` metres to the right of travel
+function at(line, s, off = 0) {
+  for (let i = 0; i < line.length - 1; i++) {
+    const [ax, az] = line[i], [bx, bz] = line[i + 1], l = Math.hypot(bx - ax, bz - az);
+    if (s <= l || i === line.length - 2) { const ux = (bx - ax) / l, uz = (bz - az) / l; return [ax + ux * s - uz * off, az + uz * s + ux * off]; }
+    s -= l;
+  }
+}
+// a seeded scatter (the same every run)
+const rnd = seed => { let t = seed * 9301 + 49297; return () => ((t = (t * 9301 + 49297) % 233280) / 233280); };
+// a stand of stalagmites around a point: solid, tapering cones that stop a big miss (n of them, spread m)
+const stand = ([x, z], n, spread, seed, hmin = 5, hmax = 15) => { const R = rnd(seed); return Array.from({ length: n }, () => {
+  const a = R() * 6.283, d = Math.sqrt(R()) * spread, h = hmin + R() * (hmax - hmin);
+  return { type: 'hoodoo', x: x + Math.cos(a) * d, z: z + Math.sin(a) * d, r: 0.9 + h * 0.14 + R() * 0.6, h, cap: 0, taper: true }; }); };
+// a floor-to-roof flowstone column (a stalactite and stalagmite grown together)
+const column = ([x, z], r, h = 160) => ({ type: 'hoodoo', x, z, r, h, cap: 0, column: true });
+// giant glowing mushrooms: they play as trees
+const shrooms = ([x, z], r, n) => ({ x, z, r, n, kind: 'mushroom' });
+const bunker = (p, a, b, rx, rz, o = {}) => ({ x: p[0], z: p[1], rx, rz, rot: yaw(a, b), style: 'flashed', ...o });
+// cave landforms: a crest you can't see over, a rimstone terrace step, a cant toward trouble, rolls
 const crest = (x, z, from, length, width, height) => ({ type: 'mound', x, z, from, length, width, height });
 const terrace = (x, z, from, height, width = 120, run = 400) => ({ type: 'step', x, z, from, length: 9, width, height, run });
 const cant = (x, z, from, grade, length, width) => ({ type: 'tilt', x, z, from, grade, length, width });
-const stalagmites = (pts) => pts.map(([x, z, r, h]) => ({ type: 'hoodoo', x, z, r: r * 1.3, h, cap: 0, taper: true }));
+const roll = (x, z, length, width, height, rot = 0) => ({ type: 'mound', x, z, rot, length, width, height });
+const swale = (x, z, from, length, width, height) => ({ type: 'swale', x, z, from, length, width, height });
 
-// the Hollow: one great cavern, the chasm in its middle, an inlet under the falls and a fissure to the east
+// the Hollow: one great cavern, the chasm in its middle, an inlet under the falls, a fissure to the east
+// and a gorge carrying the stream off hole 3's ledge into the Deep
 export const C = [175, -1200];
 const c = (dx, dz) => [C[0] + dx, C[1] + dz];
 export const HOLLOW = {
@@ -30,37 +54,46 @@ export const HOLLOW = {
     { x: C[0], z: C[1], rx: 140, rz: 100, rot: 0.1 },                 // the chasm: the Deep
     { x: c(70, -140)[0], z: c(70, -140)[1], rx: 48, rz: 44, rot: 0.3 }, // the inlet under the falls
     { x: c(205, 40)[0], z: c(205, 40)[1], rx: 92, rz: 13, rot: -0.04, p: 2.6 }, // the fissure the trestle spans
+    { x: 72, z: -1062, rx: 8, rz: 62, rot: -0.38, p: 2.4 },            // the stream gorge from hole 3's falls to the Deep
   ],
-  skylight: { x: c(118, -150)[0], z: c(118, -150)[1], r: 42 },
-  falls: { pts: [c(58, -106), c(78, -97), c(98, -100)], top: 55 },
+  // the Great Shaft: an opening into a second cavern above, lit by its own skylight; the falls pour from it
+  skylight: { x: c(118, -150)[0], z: c(118, -150)[1], r: 50, upper: { h: 60, r: 115, sky: 20 } },
+  falls: { pts: [c(84, -112), c(98, -106), c(112, -104)], top: 112 },
 };
-const hollowFloor = { y: HOLLOW.floorY, relief: 2.5, solid: true, gorges: HOLLOW.gorges };
+const hollowFloor = { y: HOLLOW.floorY, relief: 3.2, solid: true, gorges: HOLLOW.gorges };
 export const caveFloor = y => ({ y, relief: 2.5, solid: true, gorges: HOLLOW.gorges });
 const hollowMarks = [
-  { type: 'skylight', ...HOLLOW.skylight, label: 'the Great Shaft: open sky' },
-  { type: 'falls', pts: HOLLOW.falls.pts, top: HOLLOW.falls.top, label: 'the falls, 120 m to the rim and on into the Deep' },
+  { type: 'skylight', ...HOLLOW.skylight, label: 'the Great Shaft: up into a cavern above' },
+  { type: 'falls', pts: HOLLOW.falls.pts, top: HOLLOW.falls.top, label: 'the falls, from the upper cavern into the Deep' },
   { type: 'deep', x: C[0], z: C[1], label: 'THE DEEP' },
 ];
 
 export const HALLS = [
   // holes 1-3: down from the mine entrance (roof: the cavern roof's height; foot: where its walls meet the floor)
-  { a: [0, 40], b: [20, -230], w: 150, roof: 55, foot: -46 }, { a: [20, -230], b: [80, -390], w: 170, roof: 55, foot: -46 },
-  { e: [120, -455], rx: 115, rz: 120, roof: 32, foot: -58 },
-  { a: [175, -505], b: [160, -790], w: 160, roof: 18, foot: -66 }, { a: [160, -790], b: [0, -960], w: 200, roof: 18, foot: -66 },
+  { a: [0, 40], b: [20, -230], w: 150, roof: 72, foot: -50 }, { a: [20, -230], b: [80, -390], w: 170, roof: 62, foot: -50 },
+  { e: [120, -455], rx: 115, rz: 120, roof: 32, foot: -60 },
+  { a: [175, -505], b: [160, -790], w: 160, roof: 18, foot: -70 }, { a: [160, -790], b: [0, -960], w: 200, roof: 18, foot: -70 },
   // the Hollow, its north-west bay and the geode pocket
-  { e: C, rx: 405, rz: 335, p: 2.6, roof: 55, foot: -66 }, { e: c(-320, -95), rx: 105, rz: 95, roof: 40, foot: -66 }, { e: c(-190, -250), rx: 45, rz: 40, roof: 2, foot: -60 },
-  // the glowworm grotto and the climb to the cenote
-  { a: [440, -915], b: [565, -760], w: 125, roof: 12, foot: -66 }, { a: [565, -760], b: [490, -585], w: 125, roof: 12, foot: -66 },
-  { a: [470, -565], b: [405, -385], w: 120, roof: 30, foot: -50 }, { a: [405, -385], b: [255, -255], w: 120, roof: 30, foot: -50 }, { e: [250, -250], rx: 75, rz: 75, roof: 30, foot: -50 },
+  { e: C, rx: 405, rz: 335, p: 2.6, roof: 55, foot: -80 }, { e: c(-320, -95), rx: 105, rz: 95, roof: 40, foot: -80 }, { e: c(-200, -238), rx: 42, rz: 38, roof: 2, foot: -80 },
+  // the glowworm grotto, the cenote chamber, the climb from the grotto, the cenote
+  { a: [440, -915], b: [565, -760], w: 125, roof: 12, foot: -70 }, { a: [565, -760], b: [490, -585], w: 125, roof: 12, foot: -70 },
+  { a: [490, -585], b: [432, -470], w: 80, roof: 20, foot: -50 },
+  { e: [360, -392], rx: 150, rz: 130, roof: 60, foot: -42 }, { e: [250, -250], rx: 75, rz: 75, roof: 30, foot: -42 },
+  // side passages and fissures: offshoots into the dark that make it a cave network (no play in them)
+  { a: [-50, -60], b: [-120, -90], w: 26, roof: 30, foot: -50 }, { a: [70, -280], b: [150, -250], w: 22, roof: 40, foot: -50 },
+  { a: [-40, -905], b: [-115, -868], w: 44, roof: 10, foot: -70 },            // hole 3's side bay, where its stream rises
+  { a: [230, -640], b: [300, -610], w: 20, roof: 10, foot: -70 }, { a: [70, -560], b: [10, -600], w: 26, roof: 25, foot: -70 },
+  { a: c(-405, 20), b: c(-470, 60), w: 30, roof: 20, foot: -80 }, { a: c(390, -60), b: c(460, -40), w: 24, roof: 30, foot: -80 }, { a: c(120, 330), b: c(150, 400), w: 28, roof: 20, foot: -80 },
+  { a: [600, -700], b: [660, -720], w: 22, roof: 0, foot: -70 }, { a: [420, -290], b: [480, -250], w: 22, roof: 30, foot: -42 },
 ];
 // sky over the course: the cenote and the skylights (the rest is roof)
 export const SKY = [{ x: 250, z: -250, r: 68, name: 'the cenote' }, { x: 138, z: -532, r: 16, name: 'first light' }, { x: 152, z: -805, r: 11, name: 'a pinhole' }, { ...HOLLOW.skylight, name: 'the Great Shaft' }];
 
 export const LANDMARKS = [
   { id: 'adit', name: 'The mine entrance', short: 'Mine entrance', x: 0, z: 30 },
-  { id: 'falls', name: 'The falls and the Great Shaft', short: 'The falls', x: c(80, -100)[0], z: c(80, -100)[1] },
+  { id: 'falls', name: 'The falls and the Great Shaft', short: 'The falls', x: c(98, -106)[0], z: c(98, -106)[1] },
   { id: 'cenote', name: 'The cenote', short: 'Cenote light', x: 250, z: -250 },
-  { id: 'geode', name: 'The geode', short: 'Geode glow', x: c(-190, -250)[0], z: c(-190, -250)[1] },
+  { id: 'geode', name: 'The geode', short: 'Geode glow', x: c(-180, -262)[0], z: c(-180, -262)[1] },
 ];
 
 export const COURSE = {
@@ -69,11 +102,23 @@ export const COURSE = {
     { id: 'swift', name: 'Swift', color: '#c94a3a' }, { id: 'wren', name: 'Wren', color: '#e0b84a' }],
 };
 
+const L1 = [[0, 0], [10, -215], [72, -358]];
+const L3 = [[0, 0], [165, -778], [-8, -948]], L3b = [[165, -778], [-8, -948]];
+const L4 = [c(-172, 255), c(-200, 22), c(-330, -92)], L4b = [c(-200, 22), c(-330, -92)];
+const L5 = [c(-298, -150), c(-190, -248)];
+const L6 = [c(-198, -212), c(-20, -205), c(152, -114)];
+const L7 = [c(200, -205), c(232, -20), c(196, 150), c(262, 272)];
+const L8 = [[452, -908], [556, -772], [505, -600]];
+const L9 = [[430, -450], [283, -406], [246, -260]];
+// hole 9's fin with its eyelet: across the direct line from the tee to the green, 150 m out
+const FIN = { c: [352.8, -315.6], ax: [0.718, 0.696] }, finAt = u => [FIN.c[0] + FIN.ax[0] * u, FIN.c[1] + FIN.ax[1] * u];
+const FINROT = Math.atan2(FIN.ax[1], FIN.ax[0]);
+
 export const HOLES = [
   /* 1 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Adit', par: 4, shape: 'Off a ledge, bends right',
-    line: [[0, 0], [10, -215], [72, -358]],
+    line: L1,
     tees: { eagle: [0, 0], hawk: [-6, -34], swift: [-20, -78], wren: [-22, -122] },
     islands: [
       isl(0, 10, 36, 20, 0), cap([2, -10], [8, -135], 110, 0, -25, { kind: 'rough' }),
@@ -82,216 +127,267 @@ export const HOLES = [
     ],
     fairways: [{ pts: [[4, -140, 26], [8, -200, 36], [18, -250, 34], [40, -300, 26], [58, -335, 18]] }],
     green: { x: 74, z: -362, rx: 16, rz: 14, style: 'tilt', tilt: 1.5, raise: 3.2, falseFront: 0.6, apron: 9, runoff: true, from: [20, -250], pins: [[76, -364], [68, -356], [80, -370], [70, -368]] },
-    bunkers: [{ x: 44, z: -196, rx: 9, rz: 5, style: 'flashed', toward: [0, 0] }, { x: 56, z: -370, rx: 5, rz: 4, style: 'flashed', toward: [74, -362] }, { x: 92, z: -350, rx: 4, rz: 3, style: 'pot' }],
-    landforms: [cant(12, -190, [8, -135], -3, 110, 110), { type: 'swale', x: 30, z: -270, from: [14, -215], length: 80, width: 50, height: 1.2 }],
+    bunkers: [{ x: 44, z: -196, rx: 9, rz: 5, style: 'flashed', toward: [0, 0] },
+      bunker(at(L1, 232, -30), L1[1], L1[2], 7, 15), bunker(at(L1, 346, -27), L1[1], L1[2], 8, 11),
+      { x: 56, z: -370, rx: 5, rz: 4, style: 'flashed', toward: [74, -362] }, { x: 92, z: -350, rx: 4, rz: 3, style: 'pot' }, { x: 90, z: -378, rx: 6, rz: 5, style: 'flashed', toward: [74, -362] }],
+    landforms: [cant(12, -190, [8, -135], -3, 110, 110), swale(30, -270, [14, -215], 80, 50, 1.2), roll(-30, -250, 50, 40, 2.4), roll(55, -250, 40, 36, 1.8)],
+    groves: [shrooms(at(L1, 302, -46), 11, 6), shrooms(at(L1, 170, 52), 9, 4)],
+    rocks: [...stand(at(L1, 200, -52), 7, 9, 11), ...stand(at(L1, 270, 55), 6, 8, 12), ...stand(at(L1, 120, 54), 5, 7, 13, 4, 10)],
     roof: { y: 55 },
     marks: [
       { type: 'adit', x: 0, z: 30, label: 'timber-framed mine entrance, daylight behind you' },
       { type: 'text', x: -40, z: -95, label: 'breakdown slope: 25 m down' },
-      { type: 'lanterns', pts: [[-34, -40], [-30, -120], [-24, -200], [-10, -270], [20, -330], [50, -390]], label: 'lanterns on old props' },
+      { type: 'lanterns', pts: [[-34, -40], [-30, -120], [-24, -200], [20, -330], [50, -390]], label: 'lanterns on old props' },
       { type: 'rails', pts: [[-60, -10], [-52, -150], [-40, -260], [0, -400]], label: 'old cart rails along the wall' },
+      { type: 'mushrooms', pts: [[...at(L1, 302, -46), 11]], label: 'glowing mushrooms left (play as trees)' },
+      { type: 'crystals', pts: [[-58, -230], [-50, -300], [96, -300]], label: 'crystal seams in the walls' },
     ],
     idea: 'Into the dark, off the ledge',
-    play: 'You tee off from a ledge at the mine entrance, daylight behind you, and drive out over a 25 m drop into the first hall: the ball hangs in the lantern light for a long time. Below, a slope of fallen roof blocks (rough) runs down to a fairway canted gently right, into the bend. The approach climbs back up a little to a green on a flowstone mound with a soft false front, so a short approach rolls back off. Wide and friendly: it plays much shorter than the card.',
-    features: ['Tee ledge 25 m above the landing area: the big opener', 'Breakdown slope below the tee (rough), carried by any decent drive', 'Fairway canted right, into the bend; bunker at the corner', 'Green on a flowstone mound 3 m up, soft false front', 'Lanterns on old mine props down the left', 'Roof 55 m over the tee, 85 m over the fairway'],
+    play: 'You tee off from a ledge at the mine entrance, daylight behind you, and drive out over a 25 m drop into the first hall: the ball hangs in the lantern light for a long time. Below, a slope of fallen roof blocks (rough) runs down to a fairway canted gently right, into the bend, with a bunker on each side of the landing area. Miss wide and you are among stalagmites or under the glowing mushrooms on the left. The approach climbs back up a little to a green on a flowstone mound with a soft false front and bunkers left and right.',
+    features: ['Tee ledge 25 m above the landing area: the big opener', 'Bunkers both sides of the landing area; glowing mushrooms beyond the left one', 'Stands of stalagmites beyond the rough: a big miss is blocked', 'Fairway canted right, into the bend', 'Green on a flowstone mound 3 m up, bunkers left and right', 'Roof 55 m over the tee, 85 m over the fairway'],
   },
   /* 2 ---------------------------------------------------------------------------------------------- */
   {
     name: 'Mirror Lake', par: 3, shape: 'Steeply downhill over water',
-    line: [[0, 0], [138, -532]],
+    line: [[104, -382], [138, -532]],
     tees: { eagle: [104, -382], hawk: [108, -398], swift: [114, -420], wren: [124, -448] },
+    floor: { ...caveFloor(-53), relief: 1.2 },
     islands: [
       isl(104, -376, 16, 14, -30, { kind: 'rough' }), pad(104, -382, -29.4, 21), isl(108, -400, 9, 8, -33.6), pad(108, -398, -33, 22),
       isl(116, -422, 10, 10, -37), pad(114, -420, -36.4, 23), isl(124, -450, 10, 10, -45), pad(124, -448, -44.4, 24),
-      isl(122, -470, 80, 75, -52), isl(146, -530, 30, 24, -50), isl(190, -480, 26, 55, -50, { rot: 0.2, slope: { from: [176, -440, -45], to: [190, -520, -50] } }),
     ],
+    landforms: [roll(146, -532, 70, 60, 4.5), roll(186, -480, 110, 50, 6, 0.2)],
     fairways: [{ pts: [[180, -470, 16], [178, -505, 14]] }],
-    water: [{ x: 120, z: -478, rx: 46, rz: 40, rot: 0.2, depth: 2.5 }],
-    green: { x: 140, z: -534, rx: 14, rz: 12, style: 'crowned', raise: 2.6, apron: 8, runoff: true, pins: [[140, -534], [134, -528], [146, -540], [134, -540]] },
+    water: [{ x: 120, z: -478, rx: 50, rz: 42, rot: 0.2, depth: 2.5 }],
+    green: { x: 140, z: -534, rx: 14, rz: 12, style: 'crowned', raise: 1.4, apron: 8, runoff: true, pins: [[140, -534], [134, -528], [146, -540], [134, -540]] },
     bunkers: [{ x: 124, z: -548, rx: 4, rz: 3, style: 'pot' }],
+    rocks: [...stand([62, -470], 9, 12, 21, 6, 22), ...stand([70, -520], 6, 9, 22, 5, 16), ...stand([196, -548], 5, 7, 23, 4, 12)],
     roof: { y: 32 },
     marks: [
       { type: 'skylight', x: 138, z: -532, r: 16, label: 'first light: a sunbeam on the green' },
       { type: 'lanterns', pts: [[176, -450], [196, -500], [176, -540]], label: 'lanterns along the shore' },
       { type: 'stalactites', pts: [[90, -470, 62], [110, -440, 60], [150, -455, 66]], label: 'stalactites over the lake, 60–66 m up' },
+      { type: 'hang', pts: [[70, -440, 26, 4], [60, -480, 34, 5], [85, -515, 22, 3.5], [180, -430, 24, 4], [200, -520, 30, 4.5], [160, -575, 20, 3]], label: 'curtains of stalactites over the banks' },
+      { type: 'crystals', pts: [[40, -470], [46, -430], [52, -520], [205, -440], [210, -560]], label: 'crystal along the walls' },
+      { type: 'text', x: 50, z: -500, label: 'stalagmites on the far bank' },
     ],
     idea: 'Over the still water',
-    play: 'From a flowstone ledge 22 m above the lake, a short iron drops onto a crowned green on a point, lit by the first sunbeam. It plays a club less than the yardage. The lake reflects the shaft of light. Bail out right onto the shore, which slopes down toward the green and leaves an easy chip; the forward tees step down the ledge.',
-    features: ['Tee ledge 22 m above the lake; the shot falls 18 m to the green', 'Carry 120 yd over water from the back tee', 'Crowned green on a point, raised 2.5 m, lit from a skylight', 'Shore bail-out right, sloping toward the green', 'Forward tees on lower shelves of the ledge', 'Stalactites over the lake, well above the shot'],
+    play: 'From a flowstone ledge 22 m above the lake, a short iron drops onto a crowned green on a point, lit by the first sunbeam. It plays a club less than the yardage. The lake reflects the shaft of light, curtains of stalactites hang over the banks, stalagmites crowd the far shore and crystal glints in the walls. Bail out right onto the shore, which slopes down toward the green and leaves an easy chip; the forward tees step down the ledge.',
+    features: ['Tee ledge 22 m above the lake; the shot falls 20 m to the green', 'Carry 120 yd over water from the back tee', 'Crowned green on a point, lit from a skylight', 'Shore bail-out right, sloping toward the green', 'Stalactite curtains, stalagmites and crystal all round the lake (scenery)'],
   },
   /* 3 ---------------------------------------------------------------------------------------------- */
   {
     name: 'Stalagmite Forest', par: 5, shape: 'Dogleg left: down the terraces, up the slope',
-    line: [[0, 0], [165, -778], [-8, -948]],
-    tees: { eagle: [184, -522], hawk: [178, -556], swift: [158, -600], wren: [190, -650] },
+    line: [[184, -522], [165, -778], [-8, -948]],
+    tees: { eagle: [184, -522], hawk: [204, -556], swift: [150, -600], wren: [202, -646] },
     islands: [
       cap([184, -505], [165, -790], 120, -46, -52), cap([165, -790], [-10, -962], 150, -52, -26),
-      pad(184, -522, -45.8, 31), pad(178, -556, -46.2, 32), pad(158, -600, -46.7, 33), pad(190, -650, -48.2, 34),
     ],
     fairways: [{ pts: [[178, -620, 28], [172, -700, 34], [176, -770, 30]] }, { pts: [[196, -790, 22], [172, -842, 28], [120, -880, 28], [60, -912, 26], [10, -935, 18]] }],
-    rocks: stalagmites(forest([165, -778], [-8, -948], [[22, -14, 2.2, 9], [30, 8, 1.6, 6], [38, -24, 2.6, 12], [46, 16, 1.8, 7], [52, -4, 2.0, 10], [62, 22, 2.4, 11],
-      [66, -18, 1.5, 5], [74, 4, 1.7, 8], [82, -26, 2.1, 9], [88, 14, 1.9, 7], [96, -8, 2.8, 13], [104, 24, 1.6, 6], [112, -16, 2.2, 9], [118, 6, 1.8, 7]])),
-    rivers: [{ pts: [[226, -560], [234, -690], [228, -800], [196, -870], [150, -930]], w: 9, depth: 1.6 }],
+    rocks: [...stand(at(L3b, 30, -16), 4, 6, 31, 7, 18), ...stand(at(L3b, 70, -24), 5, 7, 32, 8, 20), ...stand(at(L3b, 100, 2), 4, 6, 33, 6, 16), ...stand(at(L3b, 128, -18), 4, 6, 34, 7, 18),
+      ...stand([232, -620], 6, 8, 35, 5, 14), ...stand([120, -660], 6, 8, 36, 5, 14), ...stand([102, -770], 5, 7, 37)],
+    streams: [{ pts: [[-56, -905], [-44, -930], [-36, -965], [-10, -990], [18, -998]], w: 8, depth: 1.4 }],
+    rivers: [{ pts: [[226, -560], [234, -690], [228, -800], [196, -870]], w: 9, depth: 1.6 }],
     green: { x: -8, z: -952, rx: 15, rz: 13, style: 'tiered', tiers: [{ b: 5, step: 0.6 }], apron: 6, runoff: true, from: [80, -900], pins: [[-6, -954], [-14, -946], [-2, -960], [-16, -958]] },
-    bunkers: [{ x: 186, z: -760, rx: 7, rz: 4, style: 'flashed', toward: [184, -522] }, { x: 14, z: -930, rx: 5, rz: 4, style: 'flashed', toward: [-8, -952] }, { x: -24, z: -966, rx: 4, rz: 3, style: 'pot' }],
+    bunkers: [{ x: 186, z: -760, rx: 7, rz: 4, style: 'flashed', toward: [184, -522] }, bunker(at(L3b, 150, 36), L3b[0], L3b[1], 8, 18), { x: 14, z: -930, rx: 5, rz: 4, style: 'flashed', toward: [-8, -952] }, { x: -24, z: -966, rx: 4, rz: 3, style: 'pot' }],
     landforms: [terrace(176, -672, [184, -522], 2, 600, 2000), terrace(174, -727, [184, -522], 2, 600, 2000), terrace(171, -777, [184, -522], 2, 600, 2000)],
     roof: { y: 18 },
     marks: [
       { type: 'skylight', x: 152, z: -805, r: 11, label: 'a pinhole of light over the stalagmites' },
       { type: 'lanterns', pts: [[214, -590], [210, -680], [214, -780], [170, -880], [80, -960]], label: 'lanterns on the safe side' },
-      { type: 'text', x: 70, z: -790, label: 'stalagmite forest, 5–13 m tall' },
+      { type: 'falls', pts: [[16, -996], [22, -999], [28, -1002]], top: -33, label: 'the stream falls off the ledge, down its gorge into the Deep' },
+      { type: 'text', x: 70, z: -790, label: 'stalagmite forest, 6–20 m tall' },
+      { type: 'text', x: -96, z: -878, label: 'side bay: the stream rises here' },
       { type: 'text', x: 128, z: -700, label: 'rimstone terraces: three 2 m steps' },
-      { type: 'text', x: 40, z: -1000, label: 'the hall opens into the Hollow: first sight of the falls' },
+      { type: 'text', x: 40, z: -1030, label: 'the hall opens into the Hollow: first sight of the falls' },
     ],
     idea: 'Thread it or go round',
-    play: 'Down, then up. The drive falls onto rimstone terraces: three 2 m steps like rice paddies, so where you stop decides the lie (just short of a step leaves the ball above your feet on a downslope). Then the hole turns left and climbs 26 m up a slope of fallen blocks. The direct line threads a forest of stalagmites growing up the slope and can get you home in two; the safe way swings right around them on a lit path and leaves a wedge. The green sits on a ledge at the top, where the hall opens out and you look down into the Hollow and see the falls for the first time.',
-    features: ['The drive falls 12 m down three rimstone terraces', 'The second climbs 26 m up the breakdown slope: it plays a club longer', 'A forest of stalagmites up the slope, 5–13 m tall: solid', 'The safe line swings right around the forest', 'A stream down the right off the tee (water)', 'Two-tier green on a ledge 34 m above the Hollow floor'],
+    play: 'Down, then up. The drive falls onto rimstone terraces: three 2 m steps like rice paddies, so where you stop decides the lie. Then the hole turns left and climbs 26 m up a slope of fallen blocks. The direct line threads a forest of tall stalagmites growing up the slope and can get you home in two; the safe way swings right around them past a long bunker and leaves a wedge. A stream rises in a side bay left of the green, runs round the back of it and falls off the ledge, down a gorge into the Deep.',
+    features: ['The drive falls 12 m down three rimstone terraces', 'The second climbs 26 m up the breakdown slope: it plays a club longer', 'A forest of stalagmites up the slope, 6–20 m tall: solid', 'The safe line swings right, past a long bunker', 'A stream behind the green that falls off the ledge into the Deep (water)', 'Two-tier green on a ledge 34 m above the Hollow floor'],
   },
   /* 4 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Rim', par: 4, shape: 'Downhill dogleg left, canted toward the Deep',
-    line: [[0, 0], c(-200, 22), c(-330, -92)],
-    tees: { eagle: c(-172, 255), hawk: c(-182, 222), swift: c(-205, 180), wren: c(-218, 130) },
+    line: L4,
+    tees: { eagle: c(-172, 255), hawk: c(-182, 222), swift: c(-205, 180), wren: c(-238, 126) },
     floor: hollowFloor,
-    islands: [isl(...c(-172, 262), 30, 14, -31), cap(c(-174, 246), c(-190, 150), 100, -31, -50, { kind: 'rough' }),
-      cap(c(-190, 150), c(-205, 20), 120, -50, -52), cap(c(-205, 20), c(-332, -96), 120, -52, -49),
-      pad(...c(-172, 255), -30.4, 41), isl(...c(-182, 222), 9, 9, -36.4), pad(...c(-182, 222), -35.8, 42), isl(...c(-205, 180), 9, 9, -44.6), pad(...c(-205, 180), -44, 43), pad(...c(-218, 130), -49.4, 44),
+    islands: [isl(...c(-172, 262), 30, 14, -31), cap(c(-174, 246), c(-188, 140), 110, -31, -64, { kind: 'rough' }),
+      pad(...c(-172, 255), -30.4, 41), isl(...c(-182, 222), 9, 9, -39), pad(...c(-182, 222), -38.4, 42), isl(...c(-205, 180), 9, 9, -52), pad(...c(-205, 180), -51.4, 43),
       isl(...c(-330, 70), 82, 62, 75, { kind: 'rock', depth: 300 })],
-    landforms: [cant(...c(-198, 80), c(-188, 150), -5, 170, 120)],
+    landforms: [cant(...c(-198, 80), c(-188, 150), -5, 170, 120), roll(...c(-150, 60), 60, 40, 3), roll(...c(-240, 120), 50, 40, 2.5), swale(...c(-262, -40), c(-205, 20), 60, 30, 1.2)],
     fairways: [{ pts: [[...c(-188, 140), 30], [...c(-196, 80), 40], [...c(-205, 20), 44], [...c(-230, -30), 36], [...c(-280, -70), 28]] }],
     green: { x: c(-332, -96)[0], z: c(-332, -96)[1], rx: 16, rz: 14, style: 'tilt', tilt: 2, raise: 2.4, apron: 8, runoff: true, from: c(-230, -30), pins: [c(-330, -96), c(-338, -88), c(-326, -104), c(-344, -100)] },
-    bunkers: [{ x: c(-250, 18)[0], z: c(-250, 18)[1], rx: 7, rz: 5, style: 'flashed', toward: c(-172, 255) }, { x: c(-345, -76)[0], z: c(-345, -76)[1], rx: 5, rz: 4, style: 'flashed', toward: c(-332, -96) }],
-    rocks: stalagmites([[...c(-152, 40), 2.4, 10], [...c(-148, 0), 1.8, 7]]),
+    bunkers: [{ x: c(-250, 18)[0], z: c(-250, 18)[1], rx: 7, rz: 5, style: 'flashed', toward: c(-172, 255) },
+      bunker(at(L4b, 112, -30), L4b[0], L4b[1], 11, 30, { depth: 1.4 }), { x: c(-345, -76)[0], z: c(-345, -76)[1], rx: 5, rz: 4, style: 'flashed', toward: c(-332, -96) }],
+    rocks: [...stand(at(L4, 210, 50), 8, 10, 41, 6, 18), ...stand(at(L4, 120, 52), 5, 8, 42), ...stand(at(L4, 300, -44), 4, 6, 43), ...stand(c(-150, -60), 6, 8, 44, 6, 16)],
+    groves: [shrooms(at(L4, 330, 45), 10, 5)],
     roof: { y: HOLLOW.roofY },
     marks: [
       ...hollowMarks,
       { type: 'text', x: c(-310, 70)[0], z: c(-310, 70)[1], label: 'cave wall\n(floor to roof)' },
       { type: 'text', x: c(-120, 120)[0], z: c(-120, 120)[1], label: 'fairway cants 5% toward the Deep' },
-      { type: 'crystals', pts: [c(-372, -120), c(-360, -140), c(-300, -150)], label: 'crystal veins in the bay walls' },
+      { type: 'text', x: c(-310, -10)[0], z: c(-310, -10)[1], label: 'the big bunker' },
+      { type: 'crystals', pts: [c(-372, -120), c(-360, -140), c(-390, -90)], label: 'crystal veins in the bay walls' },
       { type: 'lanterns', pts: [c(-230, 200), c(-245, 120), c(-262, 40), c(-290, -40)], label: 'lanterns along the wall' },
     ],
     idea: 'Along the edge of the Deep',
-    play: 'The view of the course. You step out onto a ledge 20 m above the Hollow: the chasm opens on your right, the falls pour into it ahead, and holes 5 to 7 sit across it in the distance. The drive drops onto a fairway that runs north along the rim and cants toward the Deep, so a ball that lands on the right half keeps rolling right. Then the hole turns left around a nose of cave wall and climbs a little to a green on a shelf in a quiet bay. Bail away from the Deep and the wall blocks the green, so the drive has to be long enough to see around the corner.',
-    features: ['Tee ledge 20 m above the fairway', 'The Deep all down the right, 40–70 m from the fairway', 'Fairway cants 5% toward the Deep: aim left of where you want to finish', 'A nose of cave wall inside the corner, floor to roof', 'Green on a shelf 2.5 m up, tilted toward you', 'The falls ahead across the chasm; roof 85 m over the tee'],
+    play: 'The view of the course. You step out onto a ledge 33 m above the Hollow: the chasm opens on your right, the falls pour through the Great Shaft from a cavern above into the Deep, and holes 5 to 7 sit across it in the distance. The drive drops down the breakdown slope onto the cave floor along the rim, which cants toward the Deep, so a ball on the right half keeps rolling right. Then the hole turns left around a nose of cave wall to a green on a shelf in a quiet bay, with a huge bunker all down the left of the approach.',
+    features: ['Tee ledge 33 m above the fairway', 'The Deep all down the right, 40–70 m from the fairway', 'Fairway cants 5% toward the Deep: aim left of where you want to finish', 'A nose of cave wall inside the corner, floor to roof', 'A huge bunker down the left of the approach', 'Green on a shelf 2.5 m up, tilted toward you'],
   },
   /* 5 ---------------------------------------------------------------------------------------------- */
   {
-    name: 'The Geode', par: 3, shape: 'Steeply uphill, into a crystal pocket',
-    line: [[0, 0], c(-190, -248)],
-    tees: { eagle: c(-298, -150), hawk: c(-288, -162), swift: c(-270, -178), wren: c(-252, -196) },
+    name: 'The Geode', par: 3, shape: 'Steeply uphill, into a broken-open geode',
+    line: L5,
+    tees: { eagle: c(-298, -150), hawk: c(-276, -142), swift: c(-262, -158), wren: c(-232, -186) },
     floor: hollowFloor,
-    islands: [isl(...c(-294, -154), 26, 24, -50), cap(c(-284, -166), c(-212, -234), 64, -50, -38, { kind: 'rough' }), isl(...c(-192, -248), 30, 26, -38, { kind: 'rough' }),
-      pad(...c(-298, -150), -49.4, 51), pad(...c(-288, -162), -49.4, 52), pad(...c(-270, -178), -47.8, 53), pad(...c(-252, -196), -45.4, 54)],
-    green: { x: c(-190, -250)[0], z: c(-190, -250)[1], rx: 15, rz: 12, style: 'plateau', raise: 2.2, falseFront: 0.9, apron: 8, runoff: true, pins: [c(-190, -250), c(-184, -256), c(-193, -255), c(-182, -246)] },
+    islands: [
+      // the geode's shell behind the green, floor to roof
+      isl(...c(-168, -282), 16, 7, 80, { kind: 'rock', depth: 300, rot: 2.3 }), isl(...c(-156, -258), 16, 7, 80, { kind: 'rock', depth: 300, rot: 1.6 }), isl(...c(-188, -292), 16, 7, 80, { kind: 'rock', depth: 300, rot: 3.0 })],
+    landforms: [{ type: 'mound', x: c(-192, -246)[0], z: c(-192, -246)[1], from: c(-298, -150), length: 120, width: 96, height: 13 }],
+    green: { x: c(-190, -250)[0], z: c(-190, -250)[1], rx: 15, rz: 12, style: 'plateau', raise: 1.4, falseFront: 0.9, apron: 8, runoff: true, pins: [c(-190, -250), c(-184, -256), c(-193, -255), c(-182, -246)] },
     bunkers: [{ x: c(-205, -232)[0], z: c(-205, -232)[1], rx: 5, rz: 3, style: 'flashed', toward: c(-190, -250) }, { x: c(-172, -258)[0], z: c(-172, -258)[1], rx: 3.5, rz: 3, style: 'pot', sand: 'crystal' }],
+    groves: [shrooms(at(L5, 96, 32), 9, 5), shrooms(at(L5, 64, -36), 8, 4)],
+    rocks: [...stand(at(L5, 40, 40), 5, 7, 51), ...stand(at(L5, 110, -34), 4, 6, 52, 5, 12)],
     roof: { y: 2 },
     marks: [
-      { type: 'crystals', pts: [c(-220, -280), c(-200, -292), c(-175, -290), c(-155, -270), c(-150, -245), c(-158, -222)], label: 'the geode: crystal walls all round the back' },
+      { type: 'geode', x: c(-190, -250)[0], z: c(-190, -250)[1], r: 30, from: c(-298, -150), label: 'the geode: a broken-open shell of crystal behind the green' },
+      { type: 'crystals', pts: [at(L5, 30, -48), at(L5, 55, -50), at(L5, 80, -48), at(L5, 30, 50), at(L5, 60, 52), at(L5, 90, 50), at(L5, 115, 46)], label: 'crystals scattered along both walls' },
+      { type: 'mushrooms', pts: [[...at(L5, 96, 32), 9], [...at(L5, 64, -36), 8]], label: 'glowing mushrooms (play as trees)' },
       { type: 'stalactites', pts: [[...c(-200, -270), 22], [...c(-170, -262), 20]], label: 'crystal stalactites over the back, 20–22 m up' },
       { type: 'text', x: c(-150, -210)[0], z: c(-150, -210)[1], label: 'looking back from the green: the Hollow and the falls' },
     ],
     idea: 'Into the jewel box',
-    play: 'Straight up into the jewel box. A short iron climbs 13 m up a flowstone slope to a green on a mound in a pocket of the north wall, lined with crystal. From the tee you see the flag and the glow, not the putting surface. It plays a club longer, and the front of the green is a false front: come up short and the ball rolls back down the slope. Long is crystal wall, and a ball off it comes back at speed.',
-    features: ['Green 13 m above the tee, on a flowstone mound: you see the flag, not the surface', 'False front: short rolls back down the slope', 'Crystal walls round the back and sides: hard, lively rebounds', 'Crystal sand in the back pot bunker', 'From the green: the whole Hollow and the falls below'],
+    play: 'Straight up into the jewel box. A short iron climbs 13 m up a flowstone mound to a green set right against a geode that has been broken open: a shell of rock behind the green, its inside packed with crystal. Crystals glint along both walls on the way and glowing mushrooms crowd either side of the slope. From the tee you see the flag and the glow, not the putting surface; short rolls back down the false front, and long is crystal wall.',
+    features: ['Green 13 m above the tee, on a flowstone mound: you see the flag, not the surface', 'False front: short rolls back down the slope', 'A broken-open geode right behind the green: crystal walls, floor to roof', 'Glowing mushrooms both sides of the slope (play as trees)', 'Crystals along both walls; nothing in the way off the tee'],
   },
   /* 6 ---------------------------------------------------------------------------------------------- */
   {
-    name: 'The Falls', par: 4, shape: 'Cape dogleg right, downhill across the inlet',
-    line: [[0, 0], c(-20, -205), c(152, -114)],
-    tees: { eagle: c(-198, -212), hawk: c(-178, -214), swift: c(-150, -218), wren: c(-112, -230) },
+    name: 'The Falls', par: 4, shape: 'Cape dogleg right, across the inlet',
+    line: L6,
+    tees: { eagle: c(-198, -212), hawk: c(-176, -238), swift: c(-146, -240), wren: c(-112, -248) },
     floor: hollowFloor,
-    islands: [isl(...c(-204, -214), 22, 20, -42), cap(c(-200, -212), c(-20, -208), 84, -42, -45), cap(c(-20, -208), c(95, -224), 56, -45, -48),
-      cap(c(95, -224), c(140, -168), 44, -48, -54, { kind: 'rough' }), isl(...c(156, -112), 32, 28, -54),
-      pad(...c(-198, -212), -41.4, 61), pad(...c(-178, -214), -41.8, 62), pad(...c(-150, -218), -42.3, 63), pad(...c(-112, -230), -43, 64)],
-    landforms: [crest(...c(10, -207), c(-112, -230), 26, 70, 2.5)],
+    islands: [isl(...c(-204, -214), 22, 20, -52), cap(c(-196, -214), c(-118, -222), 96, -52, -64, { kind: 'rough' }), pad(...c(-198, -212), -51.4, 61)],
+    landforms: [crest(...c(10, -207), c(-112, -230), 26, 70, 2.5), roll(...c(-60, -250), 60, 40, 3), roll(...c(60, -238), 50, 30, 2.2), swale(...c(-30, -205), c(-110, -214), 60, 30, 1)],
     fairways: [{ pts: [[...c(-110, -214), 30], [...c(-40, -206), 42], [...c(20, -205), 44], [...c(70, -212), 36], [...c(112, -200), 30]] }, { pts: [[...c(140, -172), 18], [...c(150, -142), 16]] }],
-    green: { x: c(154, -112)[0], z: c(154, -112)[1], rx: 15, rz: 13, style: 'tilt', tilt: 1.5, apron: 7, runoff: true, from: c(-20, -205), pins: [c(154, -112), c(148, -106), c(160, -118), c(150, -120)] },
-    bunkers: [{ x: c(132, -126)[0], z: c(132, -126)[1], rx: 5, rz: 4, style: 'flashed', toward: c(154, -112) }, { x: c(174, -98)[0], z: c(174, -98)[1], rx: 4, rz: 3, style: 'pot' }],
-    groves: [{ x: c(186, -132)[0], z: c(186, -132)[1], r: 14, n: 8, kind: 'jungle' }],
+    green: { x: c(154, -112)[0], z: c(154, -112)[1], rx: 15, rz: 13, style: 'tilt', tilt: 1.5, raise: 1.6, apron: 7, runoff: true, from: c(-20, -205), pins: [c(154, -112), c(148, -106), c(160, -118), c(150, -120)] },
+    bunkers: [bunker(at(L6, 230, -34), L6[0], L6[1], 8, 20), { x: c(132, -126)[0], z: c(132, -126)[1], rx: 5, rz: 4, style: 'flashed', toward: c(154, -112) }, { x: c(174, -98)[0], z: c(174, -98)[1], rx: 4, rz: 3, style: 'pot' }],
+    groves: [{ x: c(186, -132)[0], z: c(186, -132)[1], r: 14, n: 8, kind: 'jungle' }, shrooms(at(L6, 150, -48), 10, 5)],
+    rocks: [...stand(at(L6, 110, 46), 6, 8, 61), ...stand(at(L6, 200, -52), 6, 9, 62, 6, 18), ...stand(c(90, -232), 5, 7, 63)],
     roof: { y: HOLLOW.roofY },
     marks: [
       ...hollowMarks,
       { type: 'jungle', x: c(186, -132)[0], z: c(186, -132)[1], r: 16, label: 'a small jungle under the shaft' },
-      { type: 'stalactites', pts: [[...c(30, -178), -13, 1], [...c(62, -160), -15, 1], [...c(92, -144), -14, 1], [...c(118, -130), -12, 1]], label: 'stalactites over the hero line, tips 30–33 m above the gallery' },
+      { type: 'stalactites', pts: [[...c(16, -186), -34, 1, 9], [...c(40, -174), -36, 1, 10], [...c(62, -168), -33, 1, 8], [...c(24, -158), -30, 1, 7]], label: 'giant stalactites over the hero line: a high shot clips them' },
       { type: 'text', x: c(58, -124)[0], z: c(58, -124)[1], label: 'the inlet: carry it, or go round' },
-      { type: 'text', x: c(-110, -262)[0], z: c(-110, -262)[1], label: 'gallery ledge, 20 m above the floor' },
+      { type: 'text', x: c(-150, -262)[0], z: c(-150, -262)[1], label: 'tee on a rock ledge, 12 m up' },
     ],
     idea: 'Across the inlet, beside the falls',
-    play: 'The drive runs east along a gallery ledge high on the north wall, over a gentle crest that hides the landing area from the tee (a lantern on the crest shows the line). Then the hole turns right around the inlet, a bite of the chasm with the falls pouring into it from the Great Shaft. The hero second plays downhill, 9 m down across 110 yd of open air under a fringe of stalactites, with the falls pouring in just to the right. The safe way goes left round the top of the inlet and down a ramp to a lay-up, then a wedge. The green sits on a ledge beside the falls, lit by the shaft, with a small jungle under the light.',
-    features: ['A gallery ledge 20 m above the Hollow floor', 'A crest on the drive: blind landing, lantern on the line', 'The hero second: downhill 9 m over 110 yd of the inlet', 'Stalactites over the hero line: a high shot can clip them', 'Safe way round the top and down a ramp to a lay-up', 'Green on a ledge beside the falls, in the shaft of sunlight; a small jungle under the opening (plays as trees)'],
+    play: 'From a rock ledge 12 m up, the drive runs east along the Hollow floor, over a gentle crest that hides the landing area (a lantern on the crest shows the line). Then the hole turns right around the inlet, a bite of the chasm with the falls pouring into it through the Great Shaft from the cavern above. The hero second carries 110 yd of open air under giant stalactites: a high shot can clip them. The safe way goes left round the top of the inlet to a lay-up, then a wedge. The green sits beside the falls in the shaft of sunlight.',
+    features: ['Tee on a rock ledge 12 m above the floor', 'A crest on the drive: blind landing, lantern on the line', 'The hero second: 110 yd over the inlet', 'Giant stalactites over the hero line: a high shot clips them', 'Safe way round the top of the inlet', 'Green beside the falls in the shaft of sunlight; a small jungle under the opening (plays as trees)'],
   },
   /* 7 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Trestle', par: 5, shape: 'S-bend over the fissure, down the terraces',
-    line: [[0, 0], c(232, -20), c(196, 150), c(262, 272)],
-    tees: { eagle: c(200, -205), hawk: c(206, -170), swift: c(220, -135), wren: c(240, -95) },
+    line: L7,
+    tees: { eagle: c(200, -205), hawk: c(178, -160), swift: c(182, -118), wren: c(190, -82) },
     floor: hollowFloor,
-    islands: [cap(c(200, -215), c(232, -20), 90, -52, -49), cap(c(214, 84), c(244, 240), 90, -49, -49), isl(...c(262, 276), 34, 30, -49),
-      cap(c(250, -30), c(326, -40), 50, -49, -49), cap(c(326, -40), c(310, 110), 54, -49, -49), cap(c(310, 110), c(244, 170), 54, -49, -49),
-      pad(...c(200, -205), -51.4, 71), pad(...c(206, -170), -50.8, 72), pad(...c(220, -135), -50.3, 73), pad(...c(240, -95), -49.6, 74)],
-    landforms: [terrace(...c(213, 102), c(214, 62), 2.5, 420, 260), terrace(...c(211, 150), c(214, 62), 2.5, 420, 210), terrace(...c(222, 206), c(214, 62), 2, 420, 160)],
+    islands: [],
+    landforms: [terrace(...c(213, 102), c(214, 62), 2.5, 420, 260), terrace(...c(211, 150), c(214, 62), 2.5, 420, 210), terrace(...c(222, 206), c(214, 62), 2, 420, 160),
+      roll(...c(250, -60), 60, 40, 2.5), roll(...c(300, 20), 50, 40, 2), swale(...c(228, -120), c(200, -205), 70, 30, 1.2)],
     fairways: [{ pts: [[...c(210, -120), 30], [...c(228, -60), 40], [...c(236, -10), 38]] }, { pts: [[...c(214, 70), 32], [...c(198, 130), 38], [...c(214, 190), 34], [...c(244, 240), 26]] },
       { pts: [[...c(326, -40), 26], [...c(338, 20), 24], [...c(334, 70), 24], [...c(310, 110), 26]] }],
     green: { x: c(262, 274)[0], z: c(262, 274)[1], rx: 16, rz: 13, style: 'redan', side: 1.5, apron: 7, runoff: true, from: c(214, 190), pins: [c(262, 274), c(256, 268), c(270, 280), c(254, 280)] },
-    bunkers: [{ x: c(250, 70)[0], z: c(250, 70)[1], rx: 6, rz: 4, style: 'flashed', toward: c(200, -205) }, { x: c(244, 290)[0], z: c(244, 290)[1], rx: 6, rz: 4, style: 'flashed', toward: c(262, 274) }, { x: c(282, 260)[0], z: c(282, 260)[1], rx: 4, rz: 3, style: 'pot' }],
+    bunkers: [bunker(at(L7, 150, 34), L7[0], L7[1], 7, 22), { x: c(250, 70)[0], z: c(250, 70)[1], rx: 6, rz: 4, style: 'flashed', toward: c(200, -205) }, bunker(at(L7, 330, -34), L7[2], L7[3], 7, 20),
+      { x: c(244, 290)[0], z: c(244, 290)[1], rx: 6, rz: 4, style: 'flashed', toward: c(262, 274) }, { x: c(282, 260)[0], z: c(282, 260)[1], rx: 4, rz: 3, style: 'pot' }],
+    rocks: [column(c(224, -158), 6, 128), ...stand(at(L7, 120, -50), 6, 8, 71), ...stand(at(L7, 280, 48), 6, 9, 72, 6, 18), ...stand(c(150, 200), 6, 9, 73), ...stand(c(300, 220), 5, 8, 74)],
+    groves: [shrooms(c(176, 40), 10, 5)],
     roof: { y: HOLLOW.roofY },
     marks: [
       ...hollowMarks,
       { type: 'trestle', pts: [c(214, 12), c(212, 68)], label: 'the old rail trestle over the fissure' },
       { type: 'rails', pts: [c(150, -260), c(214, -60), c(214, 120), c(330, 330)], label: 'cart rails' },
+      { type: 'text', x: c(262, -160)[0], z: c(262, -160)[1], label: 'a flowstone column splits the tees' },
       { type: 'text', x: c(330, -40)[0], z: c(330, -40)[1], label: 'safe: round the end of the fissure' },
       { type: 'text', x: c(160, 150)[0], z: c(160, 150)[1], label: 'rimstone terraces: three steps down to the green' },
     ],
     idea: 'Over the trestle or round the end',
-    play: 'A three-shotter down the east side of the Hollow, climbing gently to a shelf north of the fissure, a slot of open air 25 m wide running in from the chasm. Second shot: carry it beside the old rail trestle onto a staircase of rimstone terraces that steps 7 m down to the green, or play round the far end of the fissure along the east wall and come down a ramp for a longer third. On the terraces, where the ball stops matters: on a flat tread or on a step with the ball below your feet. The green is a redan, kicking right to left, on the bottom terrace.',
-    features: ['The fissure: 25 m wide, a carry of 30–40 yd on the hero line', 'Three rimstone terraces after the fissure, 7 m down in all', 'The old rail trestle spans it (scenery)', 'Safe route round the fissure\'s east end and down a ramp', 'An S-bend: right, then left', 'Redan green kicking right to left'],
+    play: 'A three-shotter down the east side of the Hollow, on the cave floor. From the back tee a floor-to-roof flowstone column stands just right of the line, so the drive has to start left of it. Second shot: carry the fissure beside the old rail trestle onto a staircase of rimstone terraces that steps 7 m down to the green, or play round the far end of the fissure for a longer third. Long bunkers line the landing areas; stalagmite stands catch the big misses. The green is a redan on the bottom terrace.',
+    features: ['A flowstone column in front of the back tee: start it left', 'The fissure: 25 m wide, a carry of 30–40 yd on the hero line', 'Three rimstone terraces after the fissure, 7 m down in all', 'The old rail trestle spans it (scenery)', 'Long bunkers lining both landing areas', 'Redan green kicking right to left'],
   },
   /* 8 ---------------------------------------------------------------------------------------------- */
   {
     name: 'Glowworm Grotto', par: 4, shape: 'Short dogleg right, up over a blind crest',
-    line: [[0, 0], [556, -772], [505, -600]],
-    tees: { eagle: [452, -908], hawk: [470, -886], swift: [488, -862], wren: [512, -832] },
-    islands: [cap([440, -915], [565, -760], 110, -57, -50), cap([565, -760], [495, -590], 110, -50, -40),
-      pad(452, -908, -56, 81), pad(470, -886, -55, 82), pad(488, -862, -54, 83), pad(512, -832, -52.6, 84)],
+    line: L8,
+    tees: { eagle: [452, -908], hawk: [489, -899], swift: [509, -876], wren: [532, -850] },
+    islands: [cap([440, -915], [565, -760], 110, -57, -50), cap([565, -760], [495, -590], 110, -50, -40)],
     landforms: [crest(540, -792, [452, -908], 34, 100, 3.4), { type: 'ridge', x: 532, z: -680, from: [556, -772], length: 60, width: 26, height: 1.6 }],
     fairways: [{ pts: [[500, -846, 28], [528, -810, 34], [550, -770, 32], [540, -720, 26], [522, -665, 22]] }],
     green: { x: 504, z: -598, rx: 14, rz: 13, style: 'punchbowl', apron: 6, runoff: true, from: [540, -720], pins: [[504, -598], [498, -604], [510, -592], [498, -592]] },
-    bunkers: [{ x: 575, z: -790, rx: 7, rz: 4, style: 'flashed', toward: [452, -908] }, { x: 520, z: -612, rx: 4, rz: 3, style: 'pot' }],
-    groves: [{ x: 528, z: -745, r: 14, n: 6, kind: 'mushroom' }, { x: 482, z: -818, r: 12, n: 5, kind: 'mushroom' }, { x: 556, z: -690, r: 10, n: 4, kind: 'mushroom' }],
+    bunkers: [{ x: 575, z: -790, rx: 7, rz: 4, style: 'flashed', toward: [452, -908] }, bunker(at(L8, 120, -32), L8[0], L8[1], 7, 18), { x: 520, z: -612, rx: 4, rz: 3, style: 'pot' }],
+    groves: [shrooms([528, -745], 14, 6), shrooms([482, -818], 12, 5), shrooms([556, -690], 10, 4), shrooms(at(L8, 260, 40), 10, 5), shrooms([598, -830], 10, 5)],
+    rocks: [column([467.4, -863.1], 5.5, 74), ...stand([590, -730], 5, 7, 81), ...stand([466, -640], 5, 7, 82)],
     roof: { y: 12 },
     marks: [
-      { type: 'glowworms', poly: [[440, -930], [600, -790], [560, -600], [470, -580], [430, -760]], label: 'glowworm ceiling, 55–70 m up' },
-      { type: 'mushrooms', pts: [[528, -745, 14], [482, -818, 12], [556, -690, 10]], label: 'giant glowing mushrooms (play as trees)' },
+      { type: 'glowworms', poly: [[420, -940], [610, -800], [600, -640], [540, -570], [460, -570], [420, -760]], dense: true, label: 'a ceiling of glowworms, thick as a night sky' },
+      { type: 'mushrooms', pts: [[528, -745, 14], [482, -818, 12], [556, -690, 10], [598, -830, 10]], label: 'giant glowing mushrooms (play as trees)' },
       { type: 'lanterns', pts: [[490, -620], [520, -620], [505, -580]], label: 'lanterns round the green' },
+      { type: 'text', x: 430, z: -880, label: 'a flowstone column splits the tees' },
     ],
     idea: 'Under the stars, underground',
-    play: 'The darkest hole: a short par 4 under a ceiling of glowworms that looks like a night sky. The drive climbs to a crest you cannot see over (the glow of the mushrooms beyond shows the line), and the fairway bends right around a stand of giant glowing mushrooms. Cut the corner over them and you have a flick; miss into them and they knock the ball down like trees. The approach plays up a ridge-backed fairway to a punchbowl green ringed by lanterns that gathers anything close.',
-    features: ['Glowworm ceiling 55–70 m up', 'A blind crest on the drive, 3.5 m high', 'Giant glowing mushrooms inside the corner: they play as trees', 'A cut over the mushrooms leaves 80 yd', 'Uphill 14 m tee to green; a punchbowl green ringed by lanterns'],
+    play: 'The darkest hole, under a ceiling so thick with glowworms it lights the grotto blue-green like a night sky. From the back tee a flowstone column pinches the drive. The drive climbs to a crest you cannot see over (the glow of the mushrooms beyond shows the line), and the fairway bends right around a stand of giant glowing mushrooms. Cut the corner over them and you have a flick; miss into them and they knock the ball down like trees. The approach plays up a ridge-backed fairway to a punchbowl green ringed by lanterns.',
+    features: ['A dramatic glowworm ceiling, 55–70 m up', 'A flowstone column in front of the back tee', 'A blind crest on the drive, 3.5 m high', 'Giant glowing mushrooms inside the corner and beyond the rough: they play as trees', 'Uphill 14 m tee to green; a punchbowl green ringed by lanterns'],
   },
   /* 9 ---------------------------------------------------------------------------------------------- */
   {
-    name: 'The Cenote', par: 4, shape: 'Uphill dogleg left, up onto the collapse cone', corridor: 60,
-    line: [[0, 0], [402, -386], [252, -256]],
-    tees: { eagle: [476, -575], hawk: [466, -545], swift: [452, -505], wren: [440, -470] },
-    islands: [cap([470, -580], [405, -385], 110, -40, -28), cap([405, -385], [262, -262], 110, -28, -16),
-      isl(250, -252, 64, 64, -16), pad(476, -575, -39.3, 91), pad(466, -545, -37.5, 92), pad(452, -505, -35, 93), pad(440, -470, -33, 94)],
-    landforms: [{ type: 'mound', x: 252, z: -254, rot: 0.8, length: 125, width: 125, height: 11 }],
-    fairways: [{ pts: [[462, -520, 28], [440, -460, 34], [410, -400, 34], [372, -350, 28], [320, -305, 24]] }],
-    water: [{ x: 292, z: -214, rx: 16, rz: 12, rot: 0.5, depth: 2.5 }],
-    green: { x: 246, z: -260, rx: 16, rz: 14, style: 'tiered', tiers: [{ b: 5, step: 0.7 }], apron: 8, runoff: true, from: [330, -310], pins: [[246, -260], [240, -254], [252, -268], [240, -266]] },
-    bunkers: [{ x: 386, z: -350, rx: 8, rz: 4, style: 'flashed', toward: [476, -575] }, { x: 226, z: -270, rx: 5, rz: 4, style: 'flashed', toward: [246, -260] }],
-    roof: { y: 30, open: { x: 250, z: -250, r: 68 } },
+    name: 'The Cenote', par: 4, shape: 'Drivable dogleg left: through the eyelet, up onto the cone', corridor: 46,
+    line: L9,
+    tees: { eagle: [430, -450], hawk: [404, -466], swift: [380, -456], wren: [350, -446] },
+    floor: { y: -36, relief: 2.5, solid: true, gorges: [...HOLLOW.gorges, { x: 346, z: -398, rx: 7, rz: 34, rot: -0.15, p: 2.4 }] },
+    islands: [
+      isl(434, -456, 26, 22, -10), cap([418, -450], [308, -416], 110, -10, -35, { kind: 'rough' }),
+      cap([280, -380], [256, -296], 96, -36, -16), isl(250, -252, 64, 64, -16),
+      // the fin across the direct line, floor to roof, with the eyelet in it
+      isl(...finAt(-59), 11, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }), isl(...finAt(21), 49, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }),
+      isl(...finAt(-38), 10, 5, 10, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }),
+      pad(430, -450, -9.4, 91),
+    ],
+    rocks: [{ type: 'arch', x: finAt(-38)[0], z: finAt(-38)[1], rot: FINROT, y: 10, w: 20, h: 22, t: 14, d: 10, crown: 2.0 },
+      ...stand([300, -470], 6, 9, 91), ...stand([214, -340], 5, 8, 92), ...stand([398, -488], 4, 6, 93)],
+    landforms: [{ type: 'mound', x: 252, z: -254, rot: 0.8, length: 125, width: 125, height: 11 }, roll(290, -410, 60, 50, 2)],
+    fairways: [{ pts: [[372, -432, 22], [320, -418, 30], [286, -398, 32], [272, -350, 28], [262, -305, 22]] }],
+    streams: [{ pts: [[276, -238], [290, -262], [300, -300], [304, -340], [318, -378], [336, -394]], w: 7, depth: 1.2 }],
+    water: [{ x: 250, z: -228, rx: 24, rz: 8, rot: 0, depth: 1.6 }, { x: 228, z: -240, rx: 11, rz: 7, rot: 0.9, depth: 1.4 }, { x: 272, z: -240, rx: 11, rz: 7, rot: -0.9, depth: 1.4 }],
+    green: { x: 246, z: -260, rx: 16, rz: 14, style: 'tilt', tilt: 1.4, raise: 1.2, apron: 7, runoff: true, from: [270, -330], pins: [[246, -260], [240, -264], [252, -266], [240, -258]] },
+    bunkers: [bunker([318, -440], L9[0], L9[1], 7, 16), { x: 226, z: -272, rx: 5, rz: 4, style: 'flashed', toward: [246, -260] }, { x: 264, z: -280, rx: 4, rz: 3, style: 'pot' }],
+    roof: { y: 46, open: { x: 250, z: -250, r: 68 } },
     marks: [
       { type: 'skylight', x: 250, z: -250, r: 68, label: 'the cenote: open sky, walls 35 m to the rim' },
-      { type: 'falls', pts: [[296, -196], [306, -208], [312, -222]], top: 25, label: 'falls pour in from the rim' },
+      { type: 'falls', pts: [[232, -192], [250, -186], [268, -192]], top: 25, label: 'falls from the rim behind the green, into the pool' },
       { type: 'clubhouse', x: 210, z: -320, label: 'clubhouse on the rim above' },
-      { type: 'ferns', pts: [[226, -206, 10], [205, -238, 8]], label: 'vines and ferns under the rim' },
-      { type: 'text', x: 300, z: -300, label: 'the collapse cone: 11 m up' },
+      { type: 'ferns', pts: [[214, -206, 10], [290, -210, 8]], label: 'vines and ferns under the rim' },
+      { type: 'text', x: 330, z: -300, label: 'the fin and its eyelet: the bold line to the green' },
+      { type: 'text', x: 370, z: -392, label: 'the stream drops into a fissure' },
     ],
-    idea: 'Back into the light',
-    play: 'The climb home. The drive goes up a rising hall, and the fairway bends left at the top where daylight starts to show. The approach plays up out of the dark into the cenote, a round sinkhole open to the sky, onto the cone of rubble that fell when its roof collapsed: the green sits near the top of the cone, so anything short runs back down. Vines hang down the walls and a waterfall pours in from the rim into a pool at the foot of the cone, right. The clubhouse looks down from the rim.',
-    features: ['Uphill 33 m tee to green: the longest-playing hole', 'Dogleg left at the top of the hall', 'The approach climbs onto the collapse cone, from shadow into full daylight', 'Short runs back down the cone', 'A pool at the foot of the cone, right, fed by falls from the rim', 'Two-tier green under open sky; clubhouse on the rim above'],
+    idea: 'Through the eye, into the light',
+    play: 'The finish. From high tees on a ledge at the top of the chamber, the green is in reach: the bold line flies straight at it through an eyelet in a rock fin that stands across the corner, floor to roof, and on up onto the cone under the open sky. The safe way drops down the slope of fallen blocks to the floor, bends left round the end of the fin and climbs to the green. Behind the green the falls pour from the rim into a pool wrapped round its back; the pool drains down the left of the fairway in a stream that disappears into a fissure.',
+    features: ['Drivable from the high back tee: through the eyelet in the fin', 'The safe way: down the breakdown slope, round the fin, up the cone', 'A pool round the back of the green, fed by falls from the rim', 'The stream down the left of the fairway drops into a fissure (water)', 'The end of the hole climbs out of the dark onto the cone, into daylight', 'Clubhouse on the rim above'],
   },
 ];
 // fairway widths above are roughly half-widths drawn generously; trim them to 55-65 m landing areas
 HOLES.forEach(h => (h.fairways || []).forEach(f => f.pts.forEach(p => { p[2] = Math.round(p[2] * 0.75); })));
+// streams run downhill: split each into level pools along the ground, a few metres of fall apart
+HOLES.forEach(h => {
+  if (!h.streams) return;
+  const T = createTerrain({ ...h, rivers: [], streams: undefined, line: h.line, pin: h.green.pins[0] });
+  const g = (x, z) => T.groundAt(x, z) ?? (h.floor ? h.floor.y : 0);
+  for (const S of h.streams) {
+    const P = []; // the line every 4 m
+    for (let i = 0; i < S.pts.length - 1; i++) { const [ax, az] = S.pts[i], [bx, bz] = S.pts[i + 1], n = Math.ceil(Math.hypot(bx - ax, bz - az) / 4); for (let k = 0; k < n; k++) P.push([ax + (bx - ax) * k / n, az + (bz - az) * k / n]); }
+    P.push(S.pts.at(-1));
+    let seg = [P[0]], top = g(...P[0]);
+    for (let i = 1; i < P.length; i++) {
+      seg.push(P[i]);
+      if (top - g(...P[i]) > 3.5 || i === P.length - 1) { if (seg.length > 1) (h.rivers = h.rivers || []).push({ pts: seg, w: S.w, depth: S.depth }); seg = [P[i]]; top = g(...P[i]); }
+    }
+  }
+});

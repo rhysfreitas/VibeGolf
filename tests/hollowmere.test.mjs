@@ -8,14 +8,14 @@ import { HOLES, COURSE } from '../src/course/hollowmere.js';
 
 const T = HOLES.map(h => createTerrain(h));
 // fly a shot from the back tee straight at a point, with the cave's rock solid
-function shoot(t, from, to, shot) {
+function shoot(t, from, to, shot, solid = t.solidAt) {
   const o = { x: from[0], y: t.groundAt(from[0], from[1]), z: from[1] };
   const yaw = Math.atan2(to[0] - o.x, -(to[1] - o.z)), c = Math.cos(yaw), s = Math.sin(yaw);
   const wx = (lx, lz) => o.x + lx * c - lz * s, wz = (lx, lz) => o.z + lx * s + lz * c;
   const r = simulate({ HLA: 0, SpinAxis: 0, ...shot }, {
     groundAt: (lx, lz) => { const g = t.groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - o.y; },
     surfaceAt: () => 'fairway',
-    solidAt: (lx, ly, lz) => { const n = t.solidAt(wx(lx, lz), o.y + ly, wz(lx, lz)); return n && [n[0] * c + n[2] * s, n[1], -n[0] * s + n[2] * c]; },
+    solidAt: (lx, ly, lz) => { const n = solid(wx(lx, lz), o.y + ly, wz(lx, lz)); return n && [n[0] * c + n[2] * s, n[1], -n[0] * s + n[2] * c]; },
     voidY: t.voidY - o.y, altFt: 0,
   });
   return r.pts.map(p => ({ x: wx(p.p[0], p.p[2]), y: o.y + p.p[1], z: wz(p.p[0], p.p[2]), hit: p.hit, phase: p.phase }));
@@ -37,7 +37,9 @@ test('cave.js: hall depth, the roof, open sky and solid rock', () => {
   assert.equal(C.ceilingAt(0, -150), null, 'no roof under the opening');
   assert.ok(C.solidAt(0, 60, -60), 'above the roof is rock');
   assert.equal(C.solidAt(0, 20, -60), null, 'the hall is open');
-  const n = C.solidAt(49, 0, -60); assert.ok(n && n[0] < 0, 'a wall pushes back into the hall');
+  let n = null; for (let x = 20; x < 80 && !n; x += 0.5) n = C.solidAt(x, 0, -60);
+  assert.ok(n && n[0] < 0, 'a wall pushes back into the hall');
+  assert.ok(n.soak > 0 && n.soak < 1, 'and soaks up some balls');
   assert.equal(C.solidAt(0, 80, -150), null, 'open to the sky');
   const S = createCave({ halls: C.halls, stalactites: [{ x: 0, z: -60, y: 25, r: 3 }] });
   assert.ok(S.solidAt(0.5, 30, -60), 'a stalactite is solid');
@@ -60,17 +62,30 @@ test('every tee and green has ground, with the roof at least 45 m over every tee
   });
 });
 
-test('normal drives clear the roof; one hit straight up comes back down', () => {
+test('normal drives clear the roof and walls; a skied wedge stays under the roof', () => {
   const DR = { Speed: 167, VLA: 10.9, TotalSpin: 2686 };
   HOLES.forEach((h, i) => {
-    if (h.par === 3) return;
-    const W = shoot(T[i], h.tees.eagle, h.line[1], DR);
-    assert.ok(!W.some(p => p.hit && p.phase === 'flight'), `${h.name}: the drive hits nothing in the air`);
+    if (h.par === 3 || i === 8) return; // the 9th is drivable: tested through its eyelet below
+    // the roof and walls only: stalagmite stands through a dogleg are meant to catch a drive that runs on
+    const W = shoot(T[i], h.tees.eagle, h.line[1], DR, T[i].cave.solidAt);
+    assert.ok(!W.some(p => p.hit && p.phase === 'flight'), `${h.name}: the drive hits nothing overhead`);
   });
   // a skied wedge under the low roof of the geode pocket (hole 5) is knocked back down by the rock
   const t = T[4], h = HOLES[4], W = shoot(t, h.tees.eagle, h.pin, { Speed: 70, VLA: 70, TotalSpin: 9000 });
   const top = Math.max(...W.map(p => p.y)), roof = t.cave.ceilingAt(h.pin[0] * 0.3, h.pin[1] * 0.3);
   assert.ok(roof === null || top <= roof + 1, `stays under the roof (${top.toFixed(1)} vs ${roof?.toFixed(1)})`);
+});
+
+test('the Cenote is drivable through the eyelet in its fin; the fin stops a drive that misses the window', () => {
+  const t = T[8], h = HOLES[8], DR = { Speed: 167, VLA: 10.9, TotalSpin: 2686 };
+  const W = shoot(t, h.tees.eagle, h.pin, DR);
+  assert.ok(!W.some(p => p.hit && p.phase === 'flight'), 'straight at the green: through the window');
+  const land = W.find(p => p.phase !== 'flight') || W.at(-1), d = Math.hypot(land.x - h.pin[0], land.z - h.pin[1]);
+  assert.ok(d < 45, `lands near the green (${d.toFixed(0)} m away)`);
+  // a low drive meets the sill under the window and never gets past the fin
+  const fin = h.rocks.find(r => r.type === 'arch'), reach = Math.hypot(fin.x - h.tees.eagle[0], fin.z - h.tees.eagle[1]);
+  const low = shoot(t, h.tees.eagle, h.pin, { Speed: 150, VLA: 4, TotalSpin: 2400 });
+  assert.ok(low.every(p => Math.hypot(p.x - h.tees.eagle[0], p.z - h.tees.eagle[1]) < reach + 4), 'a low drive is stopped by the fin');
 });
 
 test('the hero line on the Falls clips a stalactite; the Deep is open air', () => {

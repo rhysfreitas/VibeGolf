@@ -145,6 +145,7 @@ export function archOuterA(R, v) { return R.ao + (R.flare || 0) * Math.pow(Math.
 // radius of a hoodoo column at height v above its base (shared with the mesh)
 export function hoodooR(R, v) {
   const t = v / R.h;
+  if (R.column) return R.r * (1 + 1.4 * Math.pow(Math.abs(2 * Math.min(1, v / R.h) - 1), 3)) * (1 + 0.08 * Math.sin(v * 0.7 + R.seed)); // floor to roof: flared at both ends
   if (R.taper) return R.r * (1 + 0.6 * Math.pow(Math.max(0, 1 - v / 3), 2)) * (1 + 0.07 * Math.sin(v * 1.3 + R.seed)) * Math.max(0.1, 1 - 0.9 * t); // a stalagmite: a tapering cone
   const flare = 1 + 0.9 * Math.pow(Math.max(0, 1 - v / 4), 2);                // talus at the foot
   const bands = 1 + 0.14 * Math.sin(v * 0.9 + R.seed) + 0.08 * Math.sin(v * 2.3 + R.seed * 2);
@@ -317,6 +318,7 @@ export function createTerrain(hole) {
     if (I && I.green) { const d = Math.hypot(x - I.green.x, z - I.green.z); if (d < I.green.r) return 'green'; if (d < I.green.r + 2.5) return 'fairway'; }
     if (onFloor && washD(x, z) < 0) return 'waste'; // a dry wash: desert waste
     if (fairways.length) { const d = fairwayD(x, z); if (d < 0) return 'fairway'; if (hole.line && d < 2.2) return 'firstcut'; if (hole.line && d < roughW) return 'rough'; }
+    if (cave && cave.wallDepth(x, z) < 9) return 'desert';  // broken rock at a cave wall's foot: a bad lie
     if (onFloor && !floorPlays) return 'desert';
     if (hole.line) { // rough down the corridor, except across the carry; native beyond
       const p = lineProj(hole.line, x, z);

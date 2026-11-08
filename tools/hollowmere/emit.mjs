@@ -61,7 +61,7 @@ const out = HOLES.map((h0, i) => {
   // this hole's marks, then the landmarks of other holes nearby (scenery only)
   const absTip = p => (p.length > 3 ? p[2] : (T.groundAt(p[0], p[1]) ?? floor0.y) + p[2]);
   const addMarks = (list, own) => { for (const mk of list) {
-    if (mk.type === 'stalactites') { for (const p of mk.pts) stalactites.push({ ...xz({ x: p[0], z: p[1] }), y: r1(absTip(p)), r: 2.6 }); if (own) marks.push({ type: 'text', label: mk.label }); continue; }
+    if (mk.type === 'stalactites') { for (const p of mk.pts) stalactites.push({ ...xz({ x: p[0], z: p[1] }), y: r1(absTip(p)), r: p[4] || 2.6 }); if (own) marks.push({ type: 'text', label: mk.label }); continue; }
     const o = { ...mk };
     if (mk.pts) o.pts = mk.pts.map(P);
     if (mk.poly) o.poly = mk.poly.map(L);

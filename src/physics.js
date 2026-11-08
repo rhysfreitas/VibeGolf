@@ -101,7 +101,8 @@ function cor(vn) { return vn < 20 ? Math.max(0.12, 0.510 - 0.0375 * vn + 0.00090
 // opts.voidY           -> stop and report `void` once the ball falls below this height
 // opts.cup             -> { x, z } hole position; the ball drops if it reaches it slowly enough
 // opts.wind            -> { x, z } air velocity in m/s, in the shot's frame (calm when omitted)
-// opts.solidAt(x,y,z)  -> outward normal [nx,ny,nz] when the point is inside rock that isn't
+// opts.solidAt(x,y,z)  -> outward normal [nx,ny,nz] (optional .soak: the chance a hit kills the ball's
+//                         speed so it drops at the face) when the point is inside rock that isn't
 //                         ground (an arch, a spire, a cliff overhang), else null
 // opts.treeAt(x,y,z)   -> { n: [nx,0,nz] } against a trunk, { density } (chance per metre of hitting a
 //                         branch) inside a canopy, else null
@@ -138,7 +139,9 @@ function simulate(shot, opts = {}) {
         const vn = s.vel[0] * nrm[0] + s.vel[1] * nrm[1] + s.vel[2] * nrm[2];
         if (vn < 0) {
           const tv = s.vel.map((v, i) => v - vn * nrm[i]);
-          s = { pos: prev.pos.slice(), vel: tv.map((v, i) => v * 0.55 - 0.4 * vn * nrm[i]), spin: prev.spin.map(w => w * 0.3) };
+          // some rock soaks the ball up (a cave wall): it dies against the face and drops at its foot
+          if (nrm.soak && rand() < nrm.soak) s = { pos: prev.pos.slice(), vel: [nrm[0] * 1.2, Math.min(0, s.vel[1] * 0.1) - 0.5, nrm[2] * 1.2], spin: [0, 0, 0] };
+          else s = { pos: prev.pos.slice(), vel: tv.map((v, i) => v * 0.55 - 0.4 * vn * nrm[i]), spin: prev.spin.map(w => w * 0.3) };
           rockHits++;
         } else s = { ...s, pos: s.pos.map((p, i) => p + nrm[i] * 0.02) };
         if (++wallHits > 60) { outcome = 'void'; break; }
