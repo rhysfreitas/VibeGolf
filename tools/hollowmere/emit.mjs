@@ -65,7 +65,8 @@ const out = HOLES.map((h0, i) => {
     const o = { ...mk };
     if (mk.pts) o.pts = mk.pts.map(P);
     if (mk.poly) o.poly = mk.poly.map(L);
-    if (mk.x !== undefined) Object.assign(o, L([mk.x, mk.z]));
+    if (mk.x !== undefined) [o.x, o.z] = L([mk.x, mk.z]);
+    if (mk.from) o.from = L(mk.from);
     if (!own) o.distant = true;
     if (mk.type !== 'text') marks.push(o);
   } };

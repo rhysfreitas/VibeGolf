@@ -79,12 +79,14 @@ export const HALLS = [
   { a: [440, -915], b: [565, -760], w: 125, roof: 12, foot: -70 }, { a: [565, -760], b: [490, -585], w: 125, roof: 12, foot: -70 },
   { a: [490, -585], b: [432, -470], w: 80, roof: 20, foot: -50 },
   { e: [360, -392], rx: 150, rz: 130, roof: 60, foot: -42 }, { e: [250, -250], rx: 75, rz: 75, roof: 30, foot: -42 },
+  { a: [442, -508], b: [386, -340], w: 110, roof: 60, foot: -42 },           // the Cenote's tee ledge, high in the chamber
   // side passages and fissures: offshoots into the dark that make it a cave network (no play in them)
   { a: [-50, -60], b: [-120, -90], w: 26, roof: 30, foot: -50 }, { a: [70, -280], b: [150, -250], w: 22, roof: 40, foot: -50 },
   { a: [-40, -905], b: [-115, -868], w: 44, roof: 10, foot: -70 },            // hole 3's side bay, where its stream rises
   { a: [230, -640], b: [300, -610], w: 20, roof: 10, foot: -70 }, { a: [70, -560], b: [10, -600], w: 26, roof: 25, foot: -70 },
   { a: c(-405, 20), b: c(-470, 60), w: 30, roof: 20, foot: -80 }, { a: c(390, -60), b: c(460, -40), w: 24, roof: 30, foot: -80 }, { a: c(120, 330), b: c(150, 400), w: 28, roof: 20, foot: -80 },
   { a: [600, -700], b: [660, -720], w: 22, roof: 0, foot: -70 }, { a: [420, -290], b: [480, -250], w: 22, roof: 30, foot: -42 },
+  { a: [350, -276], b: [384, -214], w: 16, roof: 0, foot: -42 },             // the crack the Cenote's stream disappears into
 ];
 // sky over the course: the cenote and the skylights (the rest is roof)
 export const SKY = [{ x: 250, z: -250, r: 68, name: 'the cenote' }, { x: 138, z: -532, r: 16, name: 'first light' }, { x: 152, z: -805, r: 11, name: 'a pinhole' }, { ...HOLLOW.skylight, name: 'the Great Shaft' }];
@@ -109,9 +111,10 @@ const L5 = [c(-298, -150), c(-190, -248)];
 const L6 = [c(-198, -212), c(-20, -205), c(152, -114)];
 const L7 = [c(200, -205), c(232, -20), c(196, 150), c(262, 272)];
 const L8 = [[452, -908], [556, -772], [505, -600]];
-const L9 = [[430, -450], [283, -406], [246, -260]];
-// hole 9's fin with its eyelet: across the direct line from the tee to the green, 150 m out
-const FIN = { c: [352.8, -315.6], ax: [0.718, 0.696] }, finAt = u => [FIN.c[0] + FIN.ax[0] * u, FIN.c[1] + FIN.ax[1] * u];
+const L9 = [[421, -479], [385, -321], [246, -260]];
+// hole 9's fin with its eyelet: across the direct line from the tee to the green, 155 m out. c is the eyelet; ax
+// runs from it away from the fairway, into the inside of the dogleg and on into the wall
+const FIN = { c: [333, -369], ax: [-0.782, -0.626] }, finAt = u => [FIN.c[0] + FIN.ax[0] * u, FIN.c[1] + FIN.ax[1] * u];
 const FINROT = Math.atan2(FIN.ax[1], FIN.ax[0]);
 
 export const HOLES = [
@@ -179,7 +182,7 @@ export const HOLES = [
   {
     name: 'Stalagmite Forest', par: 5, shape: 'Dogleg left: down the terraces, up the slope',
     line: [[184, -522], [165, -778], [-8, -948]],
-    tees: { eagle: [184, -522], hawk: [204, -556], swift: [150, -600], wren: [202, -646] },
+    tees: { eagle: [184, -522], hawk: [204, -556], swift: [150, -600], wren: [212, -646] },
     islands: [
       cap([184, -505], [165, -790], 120, -46, -52), cap([165, -790], [-10, -962], 150, -52, -26),
     ],
@@ -289,7 +292,7 @@ export const HOLES = [
   {
     name: 'The Trestle', par: 5, shape: 'S-bend over the fissure, down the terraces',
     line: L7,
-    tees: { eagle: c(200, -205), hawk: c(178, -160), swift: c(182, -118), wren: c(190, -82) },
+    tees: { eagle: c(200, -205), hawk: c(178, -160), swift: c(173, -118), wren: c(184, -74) },
     floor: hollowFloor,
     islands: [],
     landforms: [terrace(...c(213, 102), c(214, 62), 2.5, 420, 260), terrace(...c(211, 150), c(214, 62), 2.5, 420, 210), terrace(...c(222, 206), c(214, 62), 2, 420, 160),
@@ -318,7 +321,7 @@ export const HOLES = [
   {
     name: 'Glowworm Grotto', par: 4, shape: 'Short dogleg right, up over a blind crest',
     line: L8,
-    tees: { eagle: [452, -908], hawk: [489, -899], swift: [509, -876], wren: [532, -850] },
+    tees: { eagle: [452, -908], hawk: [489, -899], swift: [509, -876], wren: [540, -856] },
     islands: [cap([440, -915], [565, -760], 110, -57, -50), cap([565, -760], [495, -590], 110, -50, -40)],
     landforms: [crest(540, -792, [452, -908], 34, 100, 3.4), { type: 'ridge', x: 532, z: -680, from: [556, -772], length: 60, width: 26, height: 1.6 }],
     fairways: [{ pts: [[500, -846, 28], [528, -810, 34], [550, -770, 32], [540, -720, 26], [522, -665, 22]] }],
@@ -339,38 +342,41 @@ export const HOLES = [
   },
   /* 9 ---------------------------------------------------------------------------------------------- */
   {
-    name: 'The Cenote', par: 4, shape: 'Drivable dogleg left: through the eyelet, up onto the cone', corridor: 46,
+    name: 'The Cenote', par: 4, shape: 'Drivable dogleg right: through the eyelet, up onto the cone', corridor: 46,
     line: L9,
-    tees: { eagle: [430, -450], hawk: [404, -466], swift: [380, -456], wren: [350, -446] },
-    floor: { y: -36, relief: 2.5, solid: true, gorges: [...HOLLOW.gorges, { x: 346, z: -398, rx: 7, rz: 34, rot: -0.15, p: 2.4 }] },
+    tees: { eagle: [421, -479], hawk: [404, -452], swift: [436, -426], wren: [372, -401] },
+    floor: { y: -36, relief: 2.5, solid: true, gorges: [...HOLLOW.gorges, { x: 362, z: -248, rx: 6, rz: 28, rot: 0.45, p: 2.4 }] },
     islands: [
-      isl(434, -456, 26, 22, -10), cap([418, -450], [308, -416], 110, -10, -35, { kind: 'rough' }),
-      cap([280, -380], [256, -296], 96, -36, -16), isl(250, -252, 64, 64, -16),
-      // the fin across the direct line, floor to roof, with the eyelet in it
-      isl(...finAt(-59), 11, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }), isl(...finAt(21), 49, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }),
-      isl(...finAt(-38), 10, 5, 10, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }),
-      pad(430, -450, -9.4, 91),
+      isl(424, -486, 26, 22, -10), cap([420, -466], [398, -372], 100, -10, -35, { kind: 'rough' }),
+      cap([350, -310], [292, -282], 96, -36, -16), isl(250, -252, 64, 64, -16),
+      // the fin across the direct line, floor to roof, with the eyelet in it: a short end toward the fairway,
+      // a long one into the inside of the dogleg and the wall
+      isl(...finAt(-16), 6, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }), isl(...finAt(58), 48, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }),
+      isl(...finAt(0), 10, 5, 10, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }),
+      pad(421, -479, -9.4, 91),
     ],
-    rocks: [{ type: 'arch', x: finAt(-38)[0], z: finAt(-38)[1], rot: FINROT, y: 10, w: 20, h: 22, t: 14, d: 10, crown: 2.0 },
-      ...stand([300, -470], 6, 9, 91), ...stand([214, -340], 5, 8, 92), ...stand([398, -488], 4, 6, 93)],
-    landforms: [{ type: 'mound', x: 252, z: -254, rot: 0.8, length: 125, width: 125, height: 11 }, roll(290, -410, 60, 50, 2)],
-    fairways: [{ pts: [[372, -432, 22], [320, -418, 30], [286, -398, 32], [272, -350, 28], [262, -305, 22]] }],
-    streams: [{ pts: [[276, -238], [290, -262], [300, -300], [304, -340], [318, -378], [336, -394]], w: 7, depth: 1.2 }],
-    water: [{ x: 250, z: -228, rx: 24, rz: 8, rot: 0, depth: 1.6 }, { x: 228, z: -240, rx: 11, rz: 7, rot: 0.9, depth: 1.4 }, { x: 272, z: -240, rx: 11, rz: 7, rot: -0.9, depth: 1.4 }],
-    green: { x: 246, z: -260, rx: 16, rz: 14, style: 'tilt', tilt: 1.4, raise: 1.2, apron: 7, runoff: true, from: [270, -330], pins: [[246, -260], [240, -264], [252, -266], [240, -258]] },
-    bunkers: [bunker([318, -440], L9[0], L9[1], 7, 16), { x: 226, z: -272, rx: 5, rz: 4, style: 'flashed', toward: [246, -260] }, { x: 264, z: -280, rx: 4, rz: 3, style: 'pot' }],
+    rocks: [{ type: 'arch', x: FIN.c[0], z: FIN.c[1], rot: FINROT, y: 10, w: 20, h: 22, t: 14, d: 10, crown: 2.0 },
+      ...stand([470, -392], 6, 9, 91), ...stand([424, -268], 5, 8, 92), ...stand([206, -318], 4, 6, 93)],
+    landforms: [{ type: 'mound', x: 252, z: -254, rot: 0.8, length: 125, width: 125, height: 11 }, roll(366, -300, 50, 40, 2)],
+    fairways: [{ pts: [[410, -410, 22], [403, -380, 30], [393, -345, 30], [378, -318, 28], [348, -304, 28], [310, -290, 24], [276, -275, 22]] }],
+    // the pool wrapped round the back of the green, fed by the falls; it drains down the left of the fairway
+    // and disappears into a crack in the wall
+    streams: [{ pts: [[240, -228], [262, -230], [286, -240], [310, -254], [332, -264], [356, -272]], w: 7, depth: 1.2 }],
+    water: [{ x: 213, z: -260, rx: 8, rz: 21, rot: 0, depth: 1.6 }, { x: 228, z: -286, rx: 13, rz: 6, rot: 0.55, depth: 1.4 }, { x: 228, z: -234, rx: 13, rz: 6, rot: -0.55, depth: 1.4 }],
+    green: { x: 246, z: -260, rx: 15, rz: 14, style: 'tilt', tilt: 1.4, raise: 1.2, apron: 6, runoff: true, from: [348, -304], pins: [[246, -260], [240, -266], [252, -254], [241, -254]] },
+    bunkers: [bunker([420, -337], L9[0], L9[1], 7, 16), { x: 268, z: -282, rx: 6, rz: 4, style: 'flashed', toward: [246, -260] }, { x: 272, z: -244, rx: 4, rz: 3, style: 'pot' }],
     roof: { y: 46, open: { x: 250, z: -250, r: 68 } },
     marks: [
       { type: 'skylight', x: 250, z: -250, r: 68, label: 'the cenote: open sky, walls 35 m to the rim' },
-      { type: 'falls', pts: [[232, -192], [250, -186], [268, -192]], top: 25, label: 'falls from the rim behind the green, into the pool' },
-      { type: 'clubhouse', x: 210, z: -320, label: 'clubhouse on the rim above' },
-      { type: 'ferns', pts: [[214, -206, 10], [290, -210, 8]], label: 'vines and ferns under the rim' },
-      { type: 'text', x: 330, z: -300, label: 'the fin and its eyelet: the bold line to the green' },
-      { type: 'text', x: 370, z: -392, label: 'the stream drops into a fissure' },
+      { type: 'falls', pts: [[189, -238], [185, -260], [189, -282]], top: 25, label: 'falls from the rim behind the green, into the pool' },
+      { type: 'clubhouse', x: 290, z: -205, label: 'clubhouse on the rim above' },
+      { type: 'ferns', pts: [[214, -200, 10], [212, -306, 8]], label: 'vines and ferns under the rim' },
+      { type: 'text', x: 316, z: -392, label: 'the fin and its eyelet: the bold line to the green' },
+      { type: 'text', x: 372, z: -236, label: 'the stream disappears into a crack' },
     ],
     idea: 'Through the eye, into the light',
-    play: 'The finish. From high tees on a ledge at the top of the chamber, the green is in reach: the bold line flies straight at it through an eyelet in a rock fin that stands across the corner, floor to roof, and on up onto the cone under the open sky. The safe way drops down the slope of fallen blocks to the floor, bends left round the end of the fin and climbs to the green. Behind the green the falls pour from the rim into a pool wrapped round its back; the pool drains down the left of the fairway in a stream that disappears into a fissure.',
-    features: ['Drivable from the high back tee: through the eyelet in the fin', 'The safe way: down the breakdown slope, round the fin, up the cone', 'A pool round the back of the green, fed by falls from the rim', 'The stream down the left of the fairway drops into a fissure (water)', 'The end of the hole climbs out of the dark onto the cone, into daylight', 'Clubhouse on the rim above'],
+    play: 'The finish. From high tees on a ledge at the top of the chamber, the green is in reach: the bold line flies straight at it through an eyelet in a rock fin that stands across the inside of the corner, floor to roof, and on up onto the cone under the open sky. The safe way drops down the slope of fallen blocks to the floor, bends right round the end of the fin and climbs to the green. Behind the green the falls pour from the rim into a pool wrapped round its back; the pool drains down the left of the fairway in a stream that disappears into a fissure.',
+    features: ['Drivable from the high back tee: through the eyelet in the fin', 'The safe way: down the breakdown slope, right round the end of the fin, up the cone', 'A pool round the back of the green, fed by falls from the rim', 'The stream down the left of the fairway drops into a fissure (water)', 'The end of the hole climbs out of the dark onto the cone, into daylight', 'Clubhouse on the rim above'],
   },
 ];
 // fairway widths above are roughly half-widths drawn generously; trim them to 55-65 m landing areas
