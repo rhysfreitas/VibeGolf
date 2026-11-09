@@ -190,8 +190,10 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       const sm = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: false })); sm.position.set(S.x, 0, S.z); group.add(sm);
       if (CN) group.add(cenotePlants(S, rim, CN, sd));
       // the sky past the rim: a dome, so nothing black shows round the opening
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(open * 3, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: CN ? 0xbfd9ef : 0x8fa6ba, side: THREE.BackSide, fog: false }));
-      dome.position.set(S.x, top + 2, S.z); group.add(dome);
+      // (a small shaft just ends in a disc of sky: a dome would show through gaps in the rock round it)
+      const dome = CN ? new THREE.Mesh(new THREE.SphereGeometry(open * 1.6, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xbfd9ef, side: THREE.BackSide, fog: false }))
+        : new THREE.Mesh(new THREE.CircleGeometry(open * 1.08, 40).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xcfdcea, fog: false }));
+      dome.position.set(S.x, top + (CN ? 2 : 3.5), S.z); group.add(dome);
     }
     if (U) { const skyDisc = new THREE.Mesh(new THREE.CircleGeometry(open * 1.2, 40).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe9f3ff, fog: false })); skyDisc.position.set(S.x, top + 9, S.z); group.add(skyDisc); }
     open = U ? U.sky : S.r; // the beam is as wide as the hole it comes through
