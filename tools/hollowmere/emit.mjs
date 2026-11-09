@@ -58,7 +58,7 @@ const out = HOLES.map((h0, i) => {
   // the caverns
   const T = createTerrain({ ...h0, line: [tee, ...h0.line.slice(1)], pin, floor: floor0 });
   const halls = HALLS.filter(Hl => { const c = Hl.e || Hl.a; return [tee, pin].some(p => Math.hypot(c[0] - p[0], c[1] - p[1]) < 1500); })
-    .map(Hl => Hl.e ? { e: L(Hl.e), rx: Hl.rx, rz: Hl.rz, rot: rot(Hl.rot || 0), p: Hl.p || 2, roof: Hl.roof, foot: Hl.foot } : { a: L(Hl.a), b: L(Hl.b), w: Hl.w, roof: Hl.roof, foot: Hl.foot });
+    .map(Hl => Hl.e ? { e: L(Hl.e), rx: Hl.rx, rz: Hl.rz, rot: rot(Hl.rot || 0), p: Hl.p || 2, roof: Hl.roof, foot: Hl.foot, ...(Hl.wall ? { wall: Hl.wall } : {}) } : { a: L(Hl.a), b: L(Hl.b), w: Hl.w, roof: Hl.roof, foot: Hl.foot });
   const sky = SKY.filter(S => Math.hypot(S.x - tee[0], S.z - tee[1]) < 1600).map(S => ({ ...xz(S), name: S.name }));
   const stalactites = [], marks = [];
   // this hole's marks, then the landmarks of other holes nearby (scenery only)
