@@ -106,3 +106,11 @@ test('the Adit\'s ore cart is solid where it stands, and rolls on between shots'
   const s0 = t.cart.s; let r = 0.1; t.cart.next(() => (r = (r + 0.37) % 1));
   assert.ok(Math.abs(t.cart.s - s0) >= 20, 'it moves on');
 });
+
+test('every hole has somewhere to aim: targets on short grass, then the green', () => {
+  HOLES.forEach((h, i) => {
+    assert.ok(h.targets.at(-1).pin, `${h.name}: the green is the last target`);
+    for (const t of h.targets) if (!t.pin) assert.ok(['fairway', 'fringe'].includes(T[i].surfaceAt(t.x, t.z)), `${h.name} ${t.name} is on the fairway`);
+    if (h.par > 3) assert.ok(h.targets.length > 1, `${h.name}: a tee-shot target`);
+  });
+});

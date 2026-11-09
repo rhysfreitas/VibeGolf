@@ -69,6 +69,14 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
 - When the owner circles a feature as "in the way", move it out of the line enough to leave a real shot
   (the grotto's mushrooms at the bend).
 - Test that normal drives clear the roof and walls, and that the bold lines work.
+- **Give every hole course-management targets** (`targets`, on fairway, tested), with the green last:
+  a safe one and, where there is one, a bold one. Auto-aim plays the pin when it's in reach and
+  otherwise the first target it can reach, so a dogleg with only the pin aims straight through the rock
+  at the corner (the Rim's 4th hit the nose nine times running). Put a target on each leg of a long
+  hole, and check its surface: a lay-up that lands in a bunker isn't a lay-up.
+- **Play every hole headless before calling it done**: tee to holed with the simulated tool and auto-aim
+  on, logging each lie. A hole that never finishes, or a run of the same lie, is a layout bug, not bad
+  luck.
 
 ## Water
 
@@ -90,6 +98,27 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
 - A smaller, ragged opening in a domed roof, hung with vines, reads better than a wide-open pit.
 - Signature features need a real hook: a cracked geode around the green, a cenote, rimstone pools in a
   recess, a crystal cave, a cart on rails that rolls and plays.
+
+## Using height and slope (what worked on Hollowmere)
+
+- **Mix the kinds of height change across the nine**: a drop off a ledge (the Adit's tee at the mine
+  mouth), a long fall to a lake (Mirror Lake), terraces stepping down (the Stalagmite Forest), a climb
+  out of a bowl (the Geode), and a finish that rises into the light (the Cenote). No two holes in a row
+  should use the same kind.
+- **Let the height tell the player where to go.** A green set level with a pool behind it reads as safe
+  ground in the right place; a fairway that climbs to it makes the approach a little longer without
+  punishing a miss. A tee high over the landing area shows the whole hole; a blind crest hides it, so
+  put a marker on the line.
+- **Terraces are where the ball stops.** Rimstone banks (`step` landforms of a couple of metres with a
+  short `run`) set the next lie: a ball on the upper terrace has a flat stance, one short of it a
+  downslope.
+- **A cant is a soft hazard.** Tilt a fairway a percent or two toward trouble only on a hole that's
+  otherwise easy; on a hole that's already hard, keep it level.
+- **Green surrounds decide how hard a hole plays.** A rim or bowl (the geode) keeps near misses at green
+  level; a false front sends short shots back; a punchbowl gathers. Pick one per green, matched to how
+  hard the shot in already is.
+- **The view sells the height.** Big drops need something to read them by: a waterfall, a lantern line
+  down the fairway, a lit green far below. Check each from the tee render, not the plan.
 
 ## Gotchas in the pipeline (Hollowmere)
 

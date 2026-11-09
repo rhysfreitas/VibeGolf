@@ -29,7 +29,8 @@ const out = HOLES.map((h0, i) => {
     tees: Object.fromEntries(Object.entries(h0.tees).map(([k, p]) => [k, L(p)])),
     yards: Object.fromEntries(Object.entries(m.tees).map(([k, t]) => [k, t.yd])),
     line: [tee, ...h0.line.slice(1)].map(L), pin: L(pin), corridor: h0.corridor ?? 38,
-    targets: [{ name: 'Green', pin: true }], drops: [],
+    // course-management picks (where to aim the tee shot, a lay-up), then the green
+    targets: [...(h0.targets || []).map(t => { const [x, z] = L([t.x, t.z]); return { name: t.name, x, z }; }), { name: 'Green', pin: true }], drops: [],
     islands: h0.islands.map(island),
     floor: { ...floor0, gorges: floor0.gorges.map(g => ({ ...xz(g), rot: rot(g.rot) })) },
     fairways: (h0.fairways || []).map(f => ({ ...f, pts: f.pts.map(P) })),

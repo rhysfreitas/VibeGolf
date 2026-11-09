@@ -152,6 +152,7 @@ export const HOLES = [
   /* 1 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Adit', par: 4, shape: 'Off a ledge, bends right',
+    targets: [{ name: 'Fairway', x: 12, z: -222 }, { name: 'Bite the corner', x: 22, z: -258 }],
     line: L1,
     tees: { eagle: [0, 0], hawk: [-6, -34], swift: [-20, -78], wren: [-22, -122] },
     islands: [
@@ -188,6 +189,7 @@ export const HOLES = [
   /* 2 ---------------------------------------------------------------------------------------------- */
   {
     name: 'Mirror Lake', par: 3, shape: 'Steeply downhill over water',
+    targets: [{ name: 'Bail out right', x: 178, z: -500 }],
     line: [[104, -382], [138, -532]],
     tees: { eagle: [104, -382], hawk: [108, -398], swift: [114, -420], wren: [124, -448] },
     floor: { ...caveFloor(-53), relief: 1.2 },
@@ -217,6 +219,7 @@ export const HOLES = [
   /* 3 ---------------------------------------------------------------------------------------------- */
   {
     name: 'Stalagmite Forest', par: 5, shape: 'Dogleg left: down the terraces, up the slope',
+    targets: [{ name: 'Down the terraces', x: 172, z: -712 }, { name: 'Lay up right', x: 168, z: -846 }, { name: 'Thread the stalagmites', x: 72, z: -906 }],
     line: [[184, -522], [165, -778], [-8, -948]],
     tees: { eagle: [184, -522], hawk: [204, -556], swift: [150, -600], wren: [212, -646] },
     // on the cave floor (no slabs: their edges stood as cliffs beside the 2nd green): down the terraces, then
@@ -251,6 +254,7 @@ export const HOLES = [
   /* 4 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Rim', par: 4, shape: 'Downhill dogleg left, canted toward the Deep',
+    targets: [{ name: 'Fairway', x: c(-200, 40)[0], z: c(-200, 40)[1] }, { name: 'Bite the corner', x: c(-222, 0)[0], z: c(-222, 0)[1] }],
     line: L4,
     tees: { eagle: c(-172, 255), hawk: c(-182, 222), swift: c(-205, 180), wren: c(-238, 126) },
     floor: hollowFloor,
@@ -309,6 +313,7 @@ export const HOLES = [
   /* 6 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Falls', par: 4, shape: 'Cape dogleg right, across the inlet',
+    targets: [{ name: 'Safe left', x: c(0, -208)[0], z: c(0, -208)[1] }],
     line: L6,
     tees: { eagle: c(-198, -212), hawk: c(-176, -238), swift: c(-146, -240), wren: c(-112, -248) },
     floor: hollowFloor,
@@ -335,6 +340,7 @@ export const HOLES = [
   /* 7 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Trestle', par: 5, shape: 'S-bend over the fissure, down the terraces',
+    targets: [{ name: 'Fairway', x: c(236, -10)[0], z: c(236, -10)[1] }, { name: 'Over the trestle', x: c(206, 140)[0], z: c(206, 140)[1] }, { name: 'Round the end', x: c(334, 60)[0], z: c(334, 60)[1] }],
     line: L7,
     tees: { eagle: c(200, -205), hawk: c(178, -160), swift: c(173, -118), wren: c(184, -74) },
     floor: hollowFloor,
@@ -365,6 +371,7 @@ export const HOLES = [
   /* 8 ---------------------------------------------------------------------------------------------- */
   {
     name: 'Glowworm Grotto', par: 4, shape: 'Short dogleg right, up over a blind crest',
+    targets: [{ name: 'Fairway', x: 546, z: -776 }],
     line: L8,
     tees: { eagle: [452, -908], hawk: [489, -899], swift: [509, -876], wren: [540, -856] },
     // on the grotto floor, rising gently all the way (no slabs, no edges): 7 m along the first leg, 10 m up the second
@@ -390,6 +397,7 @@ export const HOLES = [
   /* 9 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Cenote', par: 4, shape: 'Drivable dogleg right: through the eyelet, up into the cenote', corridor: 46,
+    targets: [{ name: 'Safe round the fin', x: 384, z: -330 }],
     line: L9,
     tees: { eagle: [421, -479], hawk: [404, -452], swift: [436, -426], wren: [372, -401] },
     floor: { y: -24, relief: 1.2, solid: true, gorges: [...HOLLOW.gorges, { x: 404, z: -168, rx: 6, rz: 24, rot: 0.2, p: 2.4 }] },
