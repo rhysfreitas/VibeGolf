@@ -527,12 +527,20 @@ export function buildProps(hole, T, tee, mat, group, { glyphs = true } = {}) {
 // One mesh over the hole's box, sampled from the shaped ground: 24 m tiles, fine (under a metre) where a
 // green, bunker, tee or pond is, coarser elsewhere, with short skirts so tiles of different sizes meet
 // without cracks. Cells that span a cliff are left to the island walls.
-export function buildPlayfield(T, box, mat, coarse, group) {
+export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false } = {}) {
   const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
   const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water, ...FT.rockfalls];
+  // (caves: banks with no island wall to cover a dropped cell)
   const pos = [], idx = [], nrm = [];
   for (let tz = box.z0; tz < box.z1; tz += TILE) for (let tx = box.x0; tx < box.x1; tx += TILE) {
-    const hot = busy.some(F => F.x + F.bound > tx && F.x - F.bound < tx + TILE && F.z + F.bound > tz && F.z - F.bound < tz + TILE);
+    // fine where a feature is, and wherever the ground is steep (banks down to water, rimstone steps): a
+    // coarse tile there drops its tall cells and leaves jagged holes
+    const steep = () => { const S = 4, m = TILE / S; let prev = null;
+      for (let j = 0; j <= m; j++) for (let i = 0; i <= m; i++) {
+        const y = T.groundAt(tx + i * S, tz + j * S), l = i ? prev : null, u = j ? T.groundAt(tx + i * S, tz + (j - 1) * S) : null; prev = y;
+        if (y !== null && ((l !== null && Math.abs(y - l) > 2.2) || (u !== null && Math.abs(y - u) > 2.2))) return true;
+      } return false; };
+    const hot = busy.some(F => F.x + F.bound > tx && F.x - F.bound < tx + TILE && F.z + F.bound > tz && F.z - F.bound < tz + TILE) || (steepFine && steep());
     const n = Math.max(2, Math.round(TILE / (hot ? fine : mid))), step = TILE / n, base = pos.length / 3, H = [];
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
       const x = tx + i * step, z = tz + j * step, y = T.groundAt(x, z);

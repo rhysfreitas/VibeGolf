@@ -47,6 +47,32 @@ function beam(a, b, w, mat) { // a timber from a to b
 // how far the wall's face stands in (+) or out from the solid shape at a point (the knobs follow it)
 const wallPush = (x, y, z) => (fbm(x / 13 + 2.2, z / 13 + y / 11) - 0.5) * 8 + (fbm(x / 4.5, z / 4.5 - y / 5) - 0.5) * 3;
 
+// a cenote's greenery: shrubs and small trees along every ledge, vines hanging down the wall below it
+function cenotePlants(S, rim, CN, sd) {
+  const G = new THREE.Group(), R = rng(Math.round(S.x * 7 + S.z * 13)), shrubs = [], vines = [], trunks = [];
+  let r = S.r;
+  for (let k = 0; k < CN.terraces; k++) {
+    const y = rim + (k + 1) * CN.step + 0.6, mid = r + CN.ledge * 0.55, n = Math.round(mid * 0.55);
+    for (let i = 0; i < n; i++) {
+      const a = (i + R() * 0.8) / n * Math.PI * 2, rr = mid + (R() - 0.5) * CN.ledge * 0.5, x = Math.cos(a) * rr, z = Math.sin(a) * rr, s = 1.4 + R() * 2.6;
+      shrubs.push({ p: V(S.x + x, y + s * 0.4, S.z + z), q: new THREE.Quaternion(), s: V(s, s * 0.75, s), c: 0.75 + R() * 0.5 });
+      if (R() < 0.18) { const th = 4 + R() * 5; trunks.push({ p: V(S.x + x, y, S.z + z), q: new THREE.Quaternion(), s: V(0.35, th, 0.35), c: 1 }); shrubs.push({ p: V(S.x + x, y + th, S.z + z), q: new THREE.Quaternion(), s: V(3.2, 2.4, 3.2), c: 0.8 + R() * 0.3 }); }
+    }
+    const nv = Math.round(r * 0.9);
+    for (let i = 0; i < nv; i++) { // vines from the lip of the ledge below this one, down the wall
+      const a = (i + R()) / nv * Math.PI * 2, len = 3 + R() * R() * CN.step, x = Math.cos(a) * (r + 1.2), z = Math.sin(a) * (r + 1.2);
+      vines.push({ p: V(S.x + x, rim + k * CN.step + CN.step * 0.95 - len, S.z + z), q: new THREE.Quaternion().setFromAxisAngle(UP, -a + Math.PI / 2), s: V(0.6 + R() * 1.4, len, 1), c: 0.7 + R() * 0.5 });
+    }
+    r += CN.ledge;
+  }
+  const leaf = new THREE.MeshBasicMaterial({ color: 0x4f8a3a, vertexColors: true, fog: false });
+  G.add(instances(lumpy(1, 2.2, 0.3), leaf, shrubs, true));
+  G.add(instances(withColor(new THREE.CylinderGeometry(1, 1, 1, 5).translate(0, 0.5, 0)), new THREE.MeshBasicMaterial({ color: 0x5a4632, vertexColors: true, fog: false }), trunks, true));
+  const vg = withColor(new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0));
+  G.add(instances(vg, new THREE.MeshBasicMaterial({ color: 0x3f7a34, vertexColors: true, side: THREE.DoubleSide, fog: false }), vines, true));
+  return G;
+}
+
 export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   const C = T.cave, R = rng(h.par * 7919 + (h.yards?.eagle || 1));
   const ctx = { anims: [], lights: [] };
@@ -129,8 +155,10 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     if (Math.hypot(S.x - cx, S.z - cz) > reach + 400) continue;
     let rim = -Infinity; for (let a = 0; a < 16; a++) { const y = C.ceilingAt(S.x + Math.cos(a / 16 * 6.283) * (S.r + 4), S.z + Math.sin(a / 16 * 6.283) * (S.r + 4)); if (y !== null) rim = Math.max(rim, y); }
     if (rim === -Infinity) rim = 40;
+    if (S.cenote) rim = gy(S.x, S.z) + 0.5; // a cenote's walls step up from its floor: no cave roof round it
     S.rim = rim;
-    const U = S.upper, shaftH = U ? U.h : S.r > 40 ? 26 : 34, top = rim + shaftH, open = U ? U.sky : S.r;
+    const U = S.upper, CN = S.cenote, shaftH = U ? U.h : CN ? CN.terraces * CN.step + 6 : S.r > 40 ? 26 : 34, top = rim + shaftH;
+    let open = U ? U.sky : S.r;
     if (U) {
       // a second cavern above the opening: its floor runs out from the lip, the walls rise and close over
       // to its own skylight. The falls pour off the lip into the cavern below.
@@ -143,10 +171,30 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       const um = new THREE.Mesh(ug, rockMat); um.position.set(S.x, 0, S.z); um.receiveShadow = true; group.add(um);
       const B = new THREE.PointLight(0xe9e0cc, 1.0, U.r * 2.6, 1.1); B.position.set(S.x, rim + U.h * 0.45, S.z); group.add(B); ctx.lights.push(B);
     } else {
-      const sh = new THREE.Mesh(new THREE.CylinderGeometry(S.r * 1.15, S.r, shaftH + 6, 40, 4, true), rockMat); sh.position.set(S.x, rim + shaftH / 2 - 3, S.z); group.add(sh);
+      // the shaft up to daylight: a ragged funnel, flaring as it rises (a cenote steps back in terraces
+      // with plants on every ledge), lit by the sky: dark rock at the foot, sunlit rock at the top
+      const P = [[S.r * 0.97, rim - 5]];
+      if (CN) { let r = S.r; for (let k = 0; k < CN.terraces; k++) { const y0 = rim + k * CN.step; P.push([r + 1.5, y0 + CN.step * 0.85], [r + 2.2, y0 + CN.step], [r + CN.ledge, y0 + CN.step + 0.6]); r += CN.ledge; } P.push([r + 3, top + 4]); open = r + 3; }
+      else P.push([S.r * 1.04, rim + shaftH * 0.4], [S.r * 1.18, rim + shaftH * 0.8], [S.r * 1.3, top + 4]), (open = S.r * 1.3);
+      const sg = new THREE.LatheGeometry(P.map(([r, y]) => new THREE.Vector2(r, y)), 64), sp = sg.attributes.position;
+      for (let k = 0; k < sp.count; k++) { const x = sp.getX(k), y = sp.getY(k), z = sp.getZ(k), f = 1 + 0.07 * (fbm(x / 14 + 3, z / 14 + y / 12) - 0.5) + 0.04 * (fbm(x / 4, z / 4 - y / 5) - 0.5); sp.setXYZ(k, x * f, y, z * f); }
+      sg.computeVertexNormals(); withColor(sg);
+      const sc = sg.attributes.color, sn = sg.attributes.normal;
+      for (let k = 0; k < sc.count; k++) {
+        const y = sp.getY(k), t = Math.max(0, Math.min(1, (y - rim) / (top - rim))), ny = sn.getY(k);
+        const lit = 0.35 + 0.65 * Math.max(0, -(sn.getX(k) * sd.x + ny * sd.y + sn.getZ(k) * sd.z));  // baked sunlight
+        const ledge = CN && ny < -0.6;                                                                    // (normals face in: up-facing ledges point down)
+        const v = (CN ? 0.18 + 0.75 * t * t : 0.1 + 0.5 * Math.pow(t, 1.6)) * lit, n = 0.85 + 0.3 * fbm(sp.getX(k) / 9, sp.getZ(k) / 9 + y / 7);
+        if (ledge) sc.setXYZ(k, 0.32 * v * n + 0.05, 0.62 * v * n + 0.08, 0.24 * v * n + 0.03); else sc.setXYZ(k, 0.86 * v * n, 0.8 * v * n, 0.7 * v * n);
+      }
+      const sm = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: false })); sm.position.set(S.x, 0, S.z); group.add(sm);
+      if (CN) group.add(cenotePlants(S, rim, CN, sd));
+      // the sky past the rim: a dome, so nothing black shows round the opening
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(open * 3, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: CN ? 0xbfd9ef : 0x8fa6ba, side: THREE.BackSide, fog: false }));
+      dome.position.set(S.x, top + 2, S.z); group.add(dome);
     }
-    const skyDisc = new THREE.Mesh(new THREE.CircleGeometry(open * 1.2, 40).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe9f3ff, fog: false }));
-    skyDisc.position.set(S.x, top + (U ? 9 : 3), S.z); group.add(skyDisc);
+    if (U) { const skyDisc = new THREE.Mesh(new THREE.CircleGeometry(open * 1.2, 40).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe9f3ff, fog: false })); skyDisc.position.set(S.x, top + 9, S.z); group.add(skyDisc); }
+    open = U ? U.sky : S.r; // the beam is as wide as the hole it comes through
     // the beam, leaning with the sun, down to the ground
     const g0 = gy(S.x, S.z), H = top - g0, lean = V(-sd.x / sd.y, 0, -sd.z / sd.y).multiplyScalar(H * 0.35);
     const bg = new THREE.CylinderGeometry(open * 0.95, open * 1.05 + (S.r - open) * 0.5, H, 32, 1, true); bg.translate(0, -H / 2, 0);
@@ -242,8 +290,11 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       // a sheet along the lip points, from the top down to the floor (or on into the Deep)
       const pts = M.pts.map(([x, z]) => V(x, 0, z)), m0 = pts[Math.floor(pts.length / 2)];
       const lip = C.sky.find(S => S.upper && S.rim !== undefined && Math.hypot(m0.x - S.x, m0.z - S.z) < S.r + 20);
+      // a step of a cascade down a cenote's terraces: from ledge k+1 down to ledge k (or the pool)
+      const cn = M.cascade !== undefined && C.sky.find(S => S.cenote && S.rim !== undefined && Math.hypot(m0.x - S.x, m0.z - S.z) < S.r + 60);
+      if (cn) { M.top = cn.rim + (M.cascade + 1) * cn.cenote.step + 0.6; if (M.cascade) M.bottom = cn.rim + M.cascade * cn.cenote.step + 0.6; }
       const top = lip ? lip.rim + 1 : M.top ?? 30;
-      const mid = m0, bot = Math.min(gy(mid.x, mid.z), T.floor ? T.floor.y : -60) - (T.inGorge?.(mid.x, mid.z) ? 140 : 0);
+      const mid = m0, bot = M.bottom ?? Math.min(gy(mid.x, mid.z), T.floor ? T.floor.y : -60) - (T.inGorge?.(mid.x, mid.z) ? 140 : 0); // bottom: a cascade step
       const Hh = top - bot, W = pts.reduce((s, p, k) => s + (k ? p.distanceTo(pts[k - 1]) : 0), 0) || 12;
       const tex = fallTex.clone(); tex.needsUpdate = true; tex.repeat.set(W / 8, Hh / 30);
       const fg = new THREE.PlaneGeometry(1, 1, pts.length * 3, 24), fp = fg.attributes.position;
@@ -259,25 +310,55 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       ctx.anims.push((dt, t) => { tex.offset.y = t * 0.8; mist.forEach((s, i) => { s.material.opacity = 0.14 + 0.06 * Math.sin(t * 1.7 + i); }); });
     }
     else if (M.type === 'geode') {
-      // the broken-open geode behind a green: its shell of rock lined with crystals, all facing in, the open
-      // side toward the tee (from)
-      const back = Math.atan2(M.z - M.from[1], M.x - M.from[0]), purple = [], cyan = [];
-      for (let k = 0; k < (coarse ? 700 : 1200); k++) {
-        // out from the middle until the ray meets the shell (rock rising above that height), then on its face
-        const a = back + (R() - 0.5) * 2 * 1.9, ca = Math.cos(a), sa = Math.sin(a), y = gy(M.x, M.z) + R() * R() * 34;
-        let rr = M.r * 0.5, hit = false; for (; rr < M.r * 1.8; rr += 0.7) { const g = T.groundAt(M.x + ca * rr, M.z + sa * rr); if (g !== null && g > y + 0.5) { hit = true; break; } }
-        if (!hit) continue;
-        const x = M.x + ca * (rr - 0.6), z = M.z + sa * (rr - 0.6), len = 1.4 + R() * R() * 7;
-        const dir = V(-ca, 0.2 + R() * 0.9, -sa).normalize();
-        const o = { p: V(x, Math.max(y, gy(x, z)) - 0.3, z), q: new THREE.Quaternion().setFromUnitVectors(UP, dir), s: V(len * 0.32, len, len * 0.32), c: 0.85 + R() * 0.3 };
-        (R() < 0.7 ? purple : cyan).push(o);
+      // a geode cracked open, like a halved stone: the green sits in the lower half (crystals lining the
+      // inside of its rim, an agate band along the crest) and the upper half stands on end behind it
+      // (grey shell, agate rings, a hollow packed with crystal facing the tee)
+      const dx0 = M.x - M.from[0], dz0 = M.z - M.from[1], dl = Math.hypot(dx0, dz0), d = V(dx0 / dl, 0, dz0 / dl), side = V(-d.z, 0, d.x);
+      const purple = [], blue = [], white = [], put = (L, p, dir, len, w = 0.32) => L.push({ p, q: new THREE.Quaternion().setFromUnitVectors(UP, dir.normalize()), s: V(len * w, len, len * w), c: 0.85 + R() * 0.3 });
+      const pick = () => { const r = R(); return r < 0.55 ? purple : r < 0.85 ? blue : white; };
+      // the lower half: crest of the rim along each ray, crystals on its inner face
+      const band = [], N = 48;
+      for (let k = 0; k <= N; k++) {
+        const a = (k / N - 0.5) * 2 * 1.95, ca = Math.cos(a), sa = Math.sin(a), rx = d.x * ca - d.z * sa, rz = d.x * sa + d.z * ca;
+        let best = 0, bh = -Infinity; for (let r = 14; r < M.r * 1.5; r += 0.8) { const g = gy(M.x + rx * r, M.z + rz * r); if (g > bh) { bh = g; best = r; } }
+        band.push([rx, rz, best]);
+        for (let j = 0; j < (coarse ? 6 : 10); j++) {
+          const r = best * (0.62 + R() * 0.4), x = M.x + rx * r, z = M.z + rz * r;
+          put(pick(), V(x, gy(x, z) - 0.2, z), V(-rx + (R() - 0.5) * 0.6, 0.7 + R() * 0.9, -rz + (R() - 0.5) * 0.6), 0.8 + R() * R() * 3.2);
+        }
       }
-      for (const [L, hue] of [[purple, 0x9b6bff], [cyan, 0x5fd8ff]]) {
-        const mat = new THREE.MeshStandardMaterial({ color: hue, emissive: hue, emissiveIntensity: 0.75, roughness: 0.15, metalness: 0.1, vertexColors: true });
+      // the agate band along the crest: white outside, lavender, a thin line of blue inside
+      { const pos = [], col = [], idx = [], cols = [[0.55, 0.56, 0.6], [0.93, 0.92, 0.97], [0.74, 0.66, 0.92], [0.5, 0.45, 0.88]], offs = [2.4, 1.2, 0, -1.1];
+        band.forEach(([rx, rz, r], k) => offs.forEach((o, j) => { const x = M.x + rx * (r + o), z = M.z + rz * (r + o); pos.push(x, gy(x, z) + 0.25, z); col.push(...cols[j]); if (k) for (const q of [j]) if (q < offs.length - 1) { const a0 = (k - 1) * 4 + q, b0 = k * 4 + q; idx.push(a0, b0, a0 + 1, b0, b0 + 1, a0 + 1); } }));
+        const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); bg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); bg.setIndex(idx);
+        group.add(new THREE.Mesh(bg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: !far }))); }
+      // the upper half on end: rings of agate round a hollow of crystal, facing the tee
+      if (M.back) {
+        const B = M.back, gb = gy(M.x, M.z), cy = gb + B.y0 + B.h, face = V(B.x, cy, B.z).addScaledVector(d, -9); // stands clear of the slab's ragged face
+        // a broken, irregular outline (the same wobble for every ring, so the bands stay concentric)
+        const wob = t => 1 + 0.07 * Math.sin(5 * t + 1.3) + 0.04 * Math.sin(11 * t + 0.4) + 0.025 * Math.sin(23 * t);
+        const loop = (P, sc, rev) => { for (let k = 0; k <= 72; k++) { const t = (rev ? -1 : 1) * k / 72 * Math.PI * 2, f = wob(t) * sc; k ? P.lineTo(Math.cos(t) * B.w * f, Math.sin(t) * B.h * f) : P.moveTo(Math.cos(t) * B.w * f, Math.sin(t) * B.h * f); } };
+        const ring = (s0, s1, color, push = 0) => { const sh = new THREE.Shape(), hole = new THREE.Path(); loop(sh, s1, false); loop(hole, s0, true); sh.holes.push(hole);
+          const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 48), new THREE.MeshStandardMaterial({ color, roughness: 0.6, emissive: color, emissiveIntensity: 0.25, side: THREE.DoubleSide }));
+          m.position.copy(face).addScaledVector(d, push); m.lookAt(m.position.clone().sub(d)); group.add(m); };
+        ring(1.0, 1.12, 0x55585e); ring(0.93, 1.0, 0xeae6f2, -0.05); ring(0.86, 0.93, 0xb6a3e2, -0.1); ring(0.82, 0.86, 0x7a6fd6, -0.15); ring(0.79, 0.82, 0xf2eff8, -0.2);
+        // the hollow: a dish set back into the slab, dark violet, crystals standing out of it toward the tee
+        const dsh = new THREE.Shape(); loop(dsh, 1, false);
+        const dish = new THREE.Mesh(new THREE.ShapeGeometry(dsh, 48), new THREE.MeshStandardMaterial({ color: 0x2b1f55, roughness: 0.5, emissive: 0x24164f, emissiveIntensity: 0.6, side: THREE.DoubleSide }));
+        dish.scale.set(0.8, 0.8, 1); dish.position.copy(face).addScaledVector(d, 0.05); dish.lookAt(dish.position.clone().sub(d)); group.add(dish);
+        for (let k = 0; k < (coarse ? 260 : 420); k++) {
+          const a = R() * Math.PI * 2, rr = Math.sqrt(R()) * 0.78 * wob(a), u = Math.cos(a) * rr * B.w, v = Math.sin(a) * rr * B.h;
+          const p = face.clone().addScaledVector(side, u).add(V(0, v, 0)).addScaledVector(d, -0.1 - rr * 0.6); // the rim stands proudest: the middle reads as a hollow
+          const out = V(-d.x, 0, -d.z).addScaledVector(side, -u / B.w * 0.5).add(V(0, -v / B.h * 0.45 + 0.25, 0)).add(V((R() - 0.5) * 0.5, (R() - 0.5) * 0.5, (R() - 0.5) * 0.5));
+          put(rr > 0.6 && R() < 0.4 ? white : pick(), p, out, 1.2 + R() * R() * (5 - rr * 3));
+        }
+        if (!far) { const P = new THREE.PointLight(0xa57bff, 2.4, 80, 1.3); P.position.copy(face).addScaledVector(d, -12); group.add(P); ctx.lights.push(P); }
+      }
+      for (const [L, hue] of [[purple, 0x9b6bff], [blue, 0x5f8dff], [white, 0xe6e2ff]]) if (L.length) {
+        const mat = new THREE.MeshStandardMaterial({ color: hue, emissive: hue, emissiveIntensity: 0.7, roughness: 0.15, metalness: 0.1, vertexColors: true });
         group.add(instances(crystalGeo, mat, L, true));
       }
-      for (let k = 0; k < 5; k++) { const a = back + (k - 2) * 0.6, gl = glow(k % 2 ? 0x5fd8ff : 0x9b6bff, 26, 0.35); gl.position.set(M.x + Math.cos(a) * M.r * 0.9, gy(M.x, M.z) + 8 + R() * 10, M.z + Math.sin(a) * M.r * 0.9); group.add(gl); }
-      if (!far) { const P = new THREE.PointLight(0xa57bff, 2.2, 90, 1.3); P.position.set(M.x + Math.cos(back) * M.r * 0.5, gy(M.x, M.z) + 12, M.z + Math.sin(back) * M.r * 0.5); group.add(P); ctx.lights.push(P); }
+      for (let k = 0; k < 4; k++) { const a = (k - 1.5) * 0.7, gl = glow(k % 2 ? 0x6f8dff : 0x9b6bff, 22, 0.3); gl.position.set(M.x + (d.x * Math.cos(a) - d.z * Math.sin(a)) * M.r, gy(M.x, M.z) + 4, M.z + (d.x * Math.sin(a) + d.z * Math.cos(a)) * M.r); group.add(gl); }
     }
     else if (M.type === 'adit') {
       // the timber-framed mine entrance, daylight beyond it (it faces down the hole)
@@ -290,10 +371,54 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       const rk = new THREE.Mesh(new THREE.TorusGeometry(w * 0.9, 4.5, 6, 18, Math.PI), rockMat); rk.position.set(x, y - 1, z + 1); group.add(rk);
     }
     else if (M.type === 'rails') {
-      const P = [];
-      for (let k = 0; k < M.pts.length - 1; k++) { const [ax, az] = M.pts[k], [bx, bz] = M.pts[k + 1], L = Math.hypot(bx - ax, bz - az), n = Math.ceil(L / 3), px = -(bz - az) / L, pz = (bx - ax) / L;
-        for (let s = 0; s < n; s++) { const t0 = s / n, t1 = (s + 1) / n; for (const o of [-0.55, 0.55]) { const xa = ax + (bx - ax) * t0 + px * o, za = az + (bz - az) * t0 + pz * o, xb = ax + (bx - ax) * t1 + px * o, zb = az + (bz - az) * t1 + pz * o; P.push(xa, gy(xa, za) + 0.15, za, xb, gy(xb, zb) + 0.15, zb); } } }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x2a2622 })));
+      // two steel rails on timber sleepers, following the ground
+      const ties = [], bars = [];
+      for (let k = 0; k < M.pts.length - 1; k++) { const [ax, az] = M.pts[k], [bx, bz] = M.pts[k + 1], L = Math.hypot(bx - ax, bz - az), yaw = Math.atan2(bz - az, bx - ax);
+        const q = new THREE.Quaternion().setFromAxisAngle(UP, -yaw), n = Math.ceil(L / 1.1);
+        for (let j = 0; j < n; j++) { const t = (j + 0.5) / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t; ties.push({ p: V(x, gy(x, z) + 0.06, z), q, s: V(0.28, 0.14, 1.9), c: 0.7 + R() * 0.4 }); }
+        const m = Math.ceil(L / 4); for (let j = 0; j < m; j++) for (const o of [-0.55, 0.55]) { const t = (j + 0.5) / m, x = ax + (bx - ax) * t - Math.sin(yaw) * o, z = az + (bz - az) * t + Math.cos(yaw) * o; bars.push({ p: V(x, gy(x, z) + 0.2, z), q, s: V(L / m + 0.05, 0.1, 0.08), c: 1 }); }
+      }
+      const unit = withColor(new THREE.BoxGeometry(1, 1, 1));
+      group.add(instances(unit, timberMat, ties, true), instances(unit, new THREE.MeshStandardMaterial({ color: 0x4a4038, metalness: 0.6, roughness: 0.5, vertexColors: true }), bars, true));
+    }
+    else if (M.type === 'crystalcave') {
+      // a side cave lined with glowing crystal: clusters over the floor, hanging from the roof, banked at the walls
+      const L = [[], [], []], hues = [0x8f6bff, 0x5fd8ff, 0xd8f4ff];
+      for (let k = 0, made = 0; k < 9000 && made < (coarse ? 700 : 1300); k++) {
+        const a = R() * 6.283, r = Math.sqrt(R()) * M.r, x = M.x + Math.cos(a) * r, z = M.z + Math.sin(a) * r, d = C.wallDepth(x, z);
+        if (d < 0.5) continue;
+        const g = gy(x, z), top = C.ceilingAt(x, z), L1 = L[Math.floor(R() * 3)], len = 0.6 + R() * R() * (d < 6 ? 6 : 3.5);
+        const where = R(); made++;
+        if (where < 0.45 || top === null) L1.push({ p: V(x, g - 0.2, z), q: new THREE.Quaternion().setFromUnitVectors(UP, V((R() - 0.5) * 0.8, 1, (R() - 0.5) * 0.8).normalize()), s: V(len * 0.3, len, len * 0.3), c: 0.85 + R() * 0.3 });
+        else L1.push({ p: V(x, top + 0.4, z), q: new THREE.Quaternion().setFromUnitVectors(UP, V((R() - 0.5) * 0.7, -1, (R() - 0.5) * 0.7).normalize()), s: V(len * 0.3, len, len * 0.3), c: 0.85 + R() * 0.3 });
+      }
+      L.forEach((list, i) => list.length && group.add(instances(crystalGeo, new THREE.MeshStandardMaterial({ color: hues[i], emissive: hues[i], emissiveIntensity: 0.8, roughness: 0.15, vertexColors: true }), list, true)));
+      if (!far) for (let k = 0; k < 3; k++) { const P = new THREE.PointLight(k % 2 ? 0x6fd8ff : 0x9b7bff, 1.6, 70, 1.3), a = k * 2.1; P.position.set(M.x + Math.cos(a) * M.r * 0.4, gy(M.x, M.z) + 6, M.z + Math.sin(a) * M.r * 0.4); group.add(P); ctx.lights.push(P); }
+      for (let k = 0; k < 5; k++) { const gl = glow(k % 2 ? 0x6fd8ff : 0x9b7bff, 26, 0.25), a = R() * 6.28, r = R() * M.r * 0.7; gl.position.set(M.x + Math.cos(a) * r, gy(M.x, M.z) + 3 + R() * 8, M.z + Math.sin(a) * r); group.add(gl); }
+    }
+    else if (M.type === 'gours') {
+      // rimstone pools: each a glowing turquoise pool held back by a cream lip of flowstone
+      const d0 = V(M.pts[0][0] - M.from[0], 0, M.pts[0][1] - M.from[1]).normalize(), yaw = Math.atan2(d0.x, -d0.z);
+      const water = new THREE.MeshStandardMaterial({ color: 0x2fd8c8, emissive: 0x1fbfb0, emissiveIntensity: 0.9, roughness: 0.1, transparent: true, opacity: 0.88 });
+      const lip = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.6, emissive: 0x2a3a36, emissiveIntensity: 0.5 });
+      M.pts.forEach(([x, z], k) => {
+        const rx = 15 - k, rz = 3.8, g = Math.min(gy(x, z), gy(x + d0.x * 2, z + d0.z * 2), gy(x - d0.x * 2, z - d0.z * 2));
+        const pool = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), water); pool.scale.set(rx, 1, rz); pool.rotation.y = -yaw; pool.position.set(x, g + 0.3, z); group.add(pool);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.08, 6, 48).rotateX(Math.PI / 2), lip); rim.scale.set(rx + 0.4, 6, rz + 0.4); rim.rotation.y = -yaw; rim.position.set(x, g + 0.25, z); group.add(rim);
+        const gl = glow(0x3fe6d6, rx * 1.6, 0.3); gl.position.set(x, g + 2.5, z); group.add(gl);
+      });
+      if (!far) { const [x, z] = M.pts[1], P = new THREE.PointLight(0x3fe6d6, 2.6, 90, 1.2); P.position.set(x, gy(x, z) + 6, z); group.add(P); ctx.lights.push(P); }
+    }
+    else if (M.type === 'stack') {
+      // fallen rock stacked up a steep bank: wherever the ground in front of the green rises sharply
+      const back = Math.atan2(M.z - M.from[1], M.x - M.from[0]), list = [];
+      for (let k = 0; k < 140; k++) {
+        const a = back + Math.PI + (R() - 0.5) * 2.2, r = M.r0 + R() * (M.r1 - M.r0), x = M.x + Math.cos(a) * r, z = M.z + Math.sin(a) * r;
+        const e = 1.2, sl = Math.hypot(gy(x + e, z) - gy(x - e, z), gy(x, z + e) - gy(x, z - e)) / (2 * e); if (sl < 0.22) continue;
+        const k1 = 0.8 + R() * 1.6; list.push({ p: V(x, gy(x, z) + k1 * 0.2, z), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(R() * 0.5, R() * 6.3, R() * 0.5)), s: V(k1 * 1.3, k1 * 0.7, k1), c: 0.55 + R() * 0.35 });
+        if (R() < 0.5) { const k2 = k1 * 0.7; list.push({ p: V(x + (R() - 0.5), gy(x, z) + k1 * 0.75 + k2 * 0.2, z + (R() - 0.5)), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(R(), R() * 6.3, R())), s: V(k2 * 1.2, k2 * 0.7, k2), c: 0.55 + R() * 0.35 }); }
+      }
+      if (list.length) group.add(instances(lumpy(1, 9.1, 0.4), rockMat, list, true));
     }
     else if (M.type === 'trestle') {
       const [a, b] = M.pts, ya = gy(a[0], a[1]), yb = gy(b[0], b[1]), y = Math.max(ya, yb) + 0.5, A = V(a[0], y, a[1]), B = V(b[0], y, b[1]);
@@ -331,5 +456,19 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   // a softer light down the fairway from the tee, so the landing area reads
   const mid = V((h.tee[0] + pin.x) / 2, 0, (h.tee[1] + pin.z) / 2); mid.y = gy(mid.x, mid.z);
   const fL = new THREE.SpotLight(0xffe2b8, 1.3, 600, 0.55, 0.9, 1); fL.position.set(h.tee[0], gy(h.tee[0], h.tee[1]) + 40, h.tee[1] + 30); fL.target.position.copy(mid); group.add(fL, fL.target); ctx.lights.push(fL);
+  // the ore cart on its rails: rolls to where the course put it (T.cart.s), a few metres a second
+  if (T.cart) {
+    const cartG = new THREE.Group(), iron = new THREE.MeshStandardMaterial({ color: 0x6b4a34, metalness: 0.55, roughness: 0.6 });
+    const tub = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 0.85, 1.1, 4, 1).rotateY(Math.PI / 4), iron); tub.scale.set(1.25, 1, 0.72); tub.position.y = 0.95; cartG.add(tub);
+    for (const [u, v] of [[-0.8, -0.62], [0.8, -0.62], [-0.8, 0.62], [0.8, 0.62]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.14, 12).rotateX(Math.PI / 2), iron); w.position.set(u, 0.32, v); cartG.add(w); }
+    const ore = instances(lumpy(1, 4.4, 0.4), rockMat, Array.from({ length: 9 }, () => ({ p: V((R() - 0.5) * 1.6, 1.45 + R() * 0.2, (R() - 0.5) * 0.7), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(R(), R(), R())), s: V(0.35, 0.3, 0.32), c: 0.5 + R() * 0.3 })), true);
+    cartG.add(ore);
+    const gem = new THREE.Mesh(crystalGeo, new THREE.MeshStandardMaterial({ color: 0x8f6bff, emissive: 0x8f6bff, emissiveIntensity: 0.9 })); gem.scale.set(0.25, 0.8, 0.25); gem.position.set(0.3, 1.5, 0); cartG.add(gem);
+    group.add(cartG);
+    let shown = T.cart.s;
+    const place = () => { const P = T.cart.at(shown); cartG.position.set(P.x, gy(P.x, P.z) + 0.15, P.z); cartG.rotation.y = -P.yaw; };
+    place();
+    ctx.anims.push(dt => { const d = T.cart.s - shown; if (Math.abs(d) > 0.01) { shown += Math.sign(d) * Math.min(Math.abs(d), dt * 4); place(); } });
+  }
   return ctx;
 }

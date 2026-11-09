@@ -70,6 +70,7 @@ const out = HOLES.map((h0, i) => {
     if (mk.poly) o.poly = mk.poly.map(L);
     if (mk.x !== undefined) [o.x, o.z] = L([mk.x, mk.z]);
     if (mk.from) o.from = L(mk.from);
+    if (mk.back) { const [bx, bz] = L([mk.back.x, mk.back.z]); o.back = { ...mk.back, x: bx, z: bz }; }
     if (!own) o.distant = true;
     if (mk.type !== 'text') marks.push(o);
   } };
@@ -77,11 +78,13 @@ const out = HOLES.map((h0, i) => {
   const seen = new Set(h0.marks.map(mk => mk.type + (mk.label || '')));
   HOLES.forEach((o, j) => { if (j === i) return; addMarks(o.marks.filter(mk => {
     const p = mk.x !== undefined ? [mk.x, mk.z] : mk.pts ? mk.pts[0] : mk.poly ? mk.poly[0] : null;
-    if (!p || seen.has(mk.type + (mk.label || '')) || ['text', 'lanterns', 'rails', 'stalactites', 'skylight', 'deep'].includes(mk.type)) return false;
+    const key = mk.type + (mk.label || JSON.stringify(p));
+    if (!p || seen.has(key) || ['text', 'lanterns', 'rails', 'stalactites', 'skylight', 'deep'].includes(mk.type)) return false;
     if (Math.hypot(p[0] - tee[0], p[1] - tee[1]) > 1100 || !(clearLine(tee, p) || clearLine(pin, p))) return false;
-    seen.add(mk.type + (mk.label || '')); return true;
+    seen.add(key); return true;
   }), false); });
   H.cave = { halls, sky, wall: 34, stalactites, marks: marks.filter(mk => mk.type !== 'text') };
+  if (h0.cart) H.cave.cart = { ...h0.cart, route: h0.cart.route.map(L) };
   return H;
 });
 

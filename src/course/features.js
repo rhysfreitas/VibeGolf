@@ -279,9 +279,17 @@ function teeGround(T, x, z, base) {
 
 /* ---------- all of a hole's features ---------- */
 // teeSpots: [[x, z, extra?]...]; teeAims: the point each tee plays toward (sets the pad's direction)
-export function prepFeatures(hole, baseAt, teeSpots, teeAims) {
+// sceneryAt(x, z) (optional): { top, floor } where another hole's ground (scenery) is the top there; this hole's
+// landforms shape its own floor, not that ground, so the higher of the two wins
+export function prepFeatures(hole, baseAt, teeSpots, teeAims, sceneryAt = null) {
   const landforms = (hole.landforms || []).map(L => prepLandform({ ...L }));
-  const shaped = (x, z) => { const b = baseAt(x, z); if (b === null) return null; let d = 0; for (const L of landforms) d += landformDelta(L, x, z); return b + d; };
+  const shaped = (x, z) => {
+    const b = baseAt(x, z); if (b === null) return null;
+    let d = 0; for (const L of landforms) d += landformDelta(L, x, z);
+    const S = d && sceneryAt ? sceneryAt(x, z) : null;
+    if (S) return S.floor === null ? S.top : Math.max(S.top, S.floor + d);
+    return b + d;
+  };
   const greenSpec = hole.green && !Array.isArray(hole.green) ? [hole.green] : hole.green || [];
   const pin = hole.pin;
   const greens = greenSpec.map(G => prepGreen({ ...G }, (x, z) => shaped(x, z) ?? 0, hole.line ? hole.line.at(-2) : teeSpots[0]));

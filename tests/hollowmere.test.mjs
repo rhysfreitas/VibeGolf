@@ -94,3 +94,12 @@ test('the hero line on the Falls clips a stalactite; the Deep is open air', () =
   const h = HOLES[5], deep = h.floor.gorges[0];
   assert.equal(t.groundAt(deep.x, deep.z), null, 'the chasm has no bottom');
 });
+
+test('the Adit\'s ore cart is solid where it stands, and rolls on between shots', () => {
+  const t = T[0]; assert.ok(t.cart, 'the 1st has a cart');
+  const P = t.cart.pose(), g = t.groundAt(P.x, P.z);
+  assert.ok(t.solidAt(P.x, g + 0.8, P.z), 'a ball at the cart hits it');
+  assert.equal(t.solidAt(P.x, g + 3, P.z), null, 'over it is open');
+  const s0 = t.cart.s; let r = 0.1; t.cart.next(() => (r = (r + 0.37) % 1));
+  assert.ok(Math.abs(t.cart.s - s0) >= 20, 'it moves on');
+});

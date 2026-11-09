@@ -136,6 +136,19 @@ export function wedgeParts(m) {
   return out;
 }
 // where a drifting island sits at u (0..1 along its path)
+// the ore cart: its size, and a route it runs along (s: metres from the start)
+export const CART = { l: 2.6, w: 1.5, h: 1.5 };
+export function makeCart(route) {
+  const seg = []; let L = 0;
+  for (let k = 0; k < route.length - 1; k++) { const [ax, az] = route[k], [bx, bz] = route[k + 1], l = Math.hypot(bx - ax, bz - az); seg.push({ ax, az, bx, bz, l, s0: L }); L += l; }
+  const at = s => { s = Math.max(0, Math.min(L, s)); const g = seg.find(q => s <= q.s0 + q.l) || seg[seg.length - 1], t = (s - g.s0) / g.l;
+    return { x: g.ax + (g.bx - g.ax) * t, z: g.az + (g.bz - g.az) * t, yaw: Math.atan2(g.bz - g.az, g.bx - g.ax) }; };
+  const C = { length: L, s: L * 0.35, at, pose: () => at(C.s),
+    // roll on 25 to 60 m, turning back at either end of the line
+    next(rand = Math.random) { const d = 25 + rand() * 35; let n = C.s + (C.dir || 1) * d; if (n > L || n < 0) { C.dir = -(C.dir || 1); n = C.s + C.dir * d; } C.from = C.s; C.s = Math.max(0, Math.min(L, n)); return C.s; } };
+  return C;
+}
+
 export function driftTo(R, u) {
   const [a, b] = R.path; R.u = u;
   R.I.x = R.x = a[0] + (b[0] - a[0]) * u; R.I.z = R.z = a[1] + (b[1] - a[1]) * u;
@@ -275,7 +288,8 @@ export function createTerrain(hole) {
   // shaped features: each tee plays toward the next point of the line ahead of it, else the pin
   const teeSpots = teeEntries.map(([id, v]) => (Array.isArray(v) ? [v[0], v[1], hole.teePads?.[id]] : [v.x, v.z, v]));
   const aimFrom = ([x, z]) => { const pin = hole.pin || [0, -100]; if (!hole.line) return pin; const L = hole.line, here = lineProj(L, x, z).s; let acc = 0; for (let i = 1; i < L.length; i++) { acc += Math.hypot(L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]); if (acc > here + 30) return L[i]; } return pin; };
-  const FT = prepFeatures(hole, baseGroundAt, teeSpots, teeSpots.map(aimFrom));
+  const sceneryAt = (x, z) => { const t = topAt(x, z); if (!t || !t.I.scenery) return null; const fl = floorAt(x, z); return fl !== null && fl > t.h ? null : { top: t.h, floor: fl }; };
+  const FT = prepFeatures(hole, baseGroundAt, teeSpots, teeSpots.map(aimFrom), sceneryAt);
   const groundAt = FT.groundAt;
   // the corridor: rough along the playing line, native desert outside it and across the carry
   const corridor = hole.corridor ?? 32, roughW = hole.roughW ?? 12;
@@ -373,7 +387,19 @@ export function createTerrain(hole) {
   const rocks = [...(hole.rocks || []), ...fallen, ...wedges, ...floats].map(R => prepRock(R.type === 'float' ? R : { ...R }, groundAt)).filter(R => R.solid !== false);
   // caverns (cave.js): the roof, its walls and stalactites are rock too
   const cave = hole.cave ? createCave(hole.cave) : null;
-  function solidAt(x, y, z) { for (const R of rocks) { const n = rockNormal(R, x, y, z); if (n) return n; } return cave ? cave.solidAt(x, y, z) : null; }
+  // an ore cart on rails (hole.cave.cart: { route: [[x, z], ...] }): it sits somewhere along the route and
+  // moves between shots (cart.next()); while a shot flies it is a solid box the ball bounces off
+  const cart = hole.cave?.cart ? makeCart(hole.cave.cart.route) : null;
+  function cartNormal(x, y, z) {
+    if (!cart) return null;
+    const P = cart.pose(), dx = x - P.x, dz = z - P.z; if (dx * dx + dz * dz > 9) return null;
+    const g = groundAt(P.x, P.z) ?? 0, h = y - g; if (h < 0 || h > CART.h) return null;
+    const c = Math.cos(P.yaw), s = Math.sin(P.yaw), u = dx * c + dz * s, v = -dx * s + dz * c; // u along the rails
+    const ou = CART.l / 2 - Math.abs(u), ov = CART.w / 2 - Math.abs(v), oy = CART.h - h; if (ou < 0 || ov < 0) return null;
+    if (oy < ou && oy < ov) return [0, 1, 0];
+    return ou < ov ? [Math.sign(u) * c, 0, Math.sign(u) * s] : [-Math.sign(v) * s, 0, Math.sign(v) * c];
+  }
+  function solidAt(x, y, z) { for (const R of rocks) { const n = rockNormal(R, x, y, z); if (n) return n; } const k = cartNormal(x, y, z); if (k) return k; return cave ? cave.solidAt(x, y, z) : null; }
   // inside a waterfall's sheet (it widens a little as it falls)
   function curtainAt(x, y, z) {
     for (const C of curtains) {
@@ -396,5 +422,5 @@ export function createTerrain(hole) {
     if (a === null || b === null || c === null || d === null) return { x: 0, z: 0 };
     return { x: (a - b) / (2 * e), z: (c - d) / (2 * e) };
   }
-  return { ISL, floor: F, cave, rocks, trees, floats, curtains, curtainAt, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
+  return { ISL, floor: F, cave, cart, rocks, trees, floats, curtains, curtainAt, features: FT, groundAt, baseGroundAt, floorAt, floorShape, inGorge, islandAt, topAt, surfaceAt, solidAt, slopeAt, fairwayD, washD, voidY, native, corridor };
 }

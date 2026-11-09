@@ -2,7 +2,8 @@
 // (the roof and wall mesh), the physics (solidAt in terrain.js) and the tests.
 // hole.cave: {
 //   halls: [{ a:[x,z], b:[x,z], w } | { e:[x,z], rx, rz, rot, p }, ...each with roof (y of the roof) and foot
-//           (y where its walls meet the floor)]: the open caverns; everything outside them is rock
+//           (y where its walls meet the floor), optional wall (m over which it rises: a dome)]: the open
+//           caverns; everything outside them is rock
 //   sky:   [{ x, z, r, upper? }]: openings in the roof (sinkholes, skylights); no roof over them. upper:
 //           { h, r, sky } a second cavern above the opening (drawn only), with its own skylight
 //   wall:  m over which a wall curves up from its foot to the roof (default 34)
@@ -47,8 +48,8 @@ export function createCave(cave) {
     for (const H of halls) {
       low = Math.min(low, H.foot);
       const d = hallDepth(H, x, z) + wobble(H, x, z); if (d <= 0) continue;
-      const t = Math.min(1, d / Math.min(W, halfWidth(H) * 0.8));
-      const vault = 1 - (1 - t) ** 3;                                     // walls rise steeply, then the roof
+      const t = Math.min(1, d / Math.min(H.wall || W, halfWidth(H) * 0.8));
+      const vault = H.wall ? t * (2 - t) : 1 - (1 - t) ** 3;             // walls rise steeply, then the roof (a dome: gently)
       const span = H.roof - H.foot;
       // vaults rise and fall over the hall; ribs and drapes hang down from it
       const vaults = (fbm(x / 95 + 5.2, z / 95 - 9.1) - 0.5) * span * 0.22;

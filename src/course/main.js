@@ -552,7 +552,7 @@ function buildHole(h) {
   if (MESA) {
     if (!CAVE) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
     MW.buildFloor(T, box, islandMat, coarse, holeGroup, true);
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup);
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE });
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
@@ -575,7 +575,7 @@ function buildHole(h) {
     }
     for (const I of deco) buildIsland(I, { seg: rad2seg(I), side: 18 }, holeGroup, trees);
     if (SHAPED) { // the shaped playing surface over the island tops, ponds, and the floating scenery
-      MW.buildPlayfield(T, box, playMat, coarse, holeGroup);
+      MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE });
       MW.buildWater(T, holeGroup);
       skyCtx = { group: holeGroup, trees, island: buildIsland, fall: makeFall, prepIsland, edgeRadius, buildTrees, mat: islandMat, T, anims: [], glow: [] };
       SP.buildSkyProps(h, skyCtx, LANDMARKS || {});
@@ -1120,6 +1120,7 @@ function finishShot() {
 function nextLie() {
   carryCache.clear();
   if (SHAPED && skyCtx?.drifts?.length) SP.moveDrifts(skyCtx);
+  if (CAVE && T.cart) T.cart.next(); // the ore cart rolls on between shots
   if (state.lie === 'green' || (state.lie === 'fringe' && state.ball.distanceTo(HOLE.pinPos) < 22)) { startPutting(); return; }
   state.phase = 'address'; state.aimCustom = null;
   const av = availableTargets();
