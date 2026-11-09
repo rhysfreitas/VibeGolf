@@ -39,7 +39,7 @@ const shrooms = ([x, z], r, n) => ({ x, z, r, n, kind: 'mushroom' });
 const bunker = (p, a, b, rx, rz, o = {}) => ({ x: p[0], z: p[1], rx, rz, rot: yaw(a, b), style: 'flashed', ...o });
 // cave landforms: a crest you can't see over, a rimstone terrace step, a cant toward trouble, rolls
 const crest = (x, z, from, length, width, height) => ({ type: 'mound', x, z, from, length, width, height });
-const terrace = (x, z, from, height, width = 120, run = 400) => ({ type: 'step', x, z, from, length: 9, width, height, run });
+const terrace = (x, z, from, height, width = 120, run = 400, length = 15) => ({ type: 'step', x, z, from, length, width, height, run }); // a rimstone bank, not a cliff
 const cant = (x, z, from, grade, length, width) => ({ type: 'tilt', x, z, from, grade, length, width });
 const roll = (x, z, length, width, height, rot = 0) => ({ type: 'mound', x, z, rot, length, width, height });
 const swale = (x, z, from, length, width, height) => ({ type: 'swale', x, z, from, length, width, height });
@@ -349,10 +349,9 @@ export const HOLES = [
     name: 'The Cenote', par: 4, shape: 'Drivable dogleg right: through the eyelet, up onto the cone', corridor: 46,
     line: L9,
     tees: { eagle: [421, -479], hawk: [404, -452], swift: [436, -426], wren: [372, -401] },
-    floor: { y: -36, relief: 2.5, solid: true, gorges: [...HOLLOW.gorges, { x: 362, z: -248, rx: 6, rz: 28, rot: 0.45, p: 2.4 }] },
+    floor: { y: -30, relief: 2.5, solid: true, gorges: [...HOLLOW.gorges, { x: 362, z: -248, rx: 6, rz: 28, rot: 0.45, p: 2.4 }] },
     islands: [
-      isl(424, -486, 26, 22, -10), cap([420, -466], [398, -372], 100, -10, -35, { kind: 'rough' }),
-      cap([350, -310], [292, -282], 96, -36, -16), isl(250, -252, 64, 64, -16),
+      isl(424, -486, 26, 22, -10), cap([420, -466], [398, -372], 100, -10, -29, { kind: 'rough' }),
       // the fin across the direct line, floor to roof, with the eyelet in it: a short end toward the fairway,
       // a long one into the inside of the dogleg and the wall
       isl(...finAt(-16), 6, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }), isl(...finAt(58), 48, 5, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 3 }),
@@ -361,7 +360,8 @@ export const HOLES = [
     ],
     rocks: [{ type: 'arch', x: FIN.c[0], z: FIN.c[1], rot: FINROT, y: 10, w: 20, h: 22, t: 14, d: 10, crown: 2.0 },
       ...stand([470, -392], 6, 9, 91), ...stand([424, -268], 5, 8, 92), ...stand([206, -318], 4, 6, 93)],
-    landforms: [{ type: 'mound', x: 252, z: -254, rot: 0.8, length: 125, width: 125, height: 11 }, roll(366, -300, 50, 40, 2)],
+    // the collapse cone: a natural hill the hole climbs onto, the green near its top (no cliff round it)
+    landforms: [{ type: 'mound', x: 244, z: -256, from: [385, -321], length: 230, width: 170, height: 22 }, roll(366, -300, 50, 40, 2)],
     fairways: [{ pts: [[410, -410, 22], [403, -380, 30], [393, -345, 30], [378, -318, 28], [348, -304, 28], [310, -290, 24], [276, -275, 22]] }],
     // the pool wrapped round the back of the green, fed by the falls; it drains down the left of the fairway
     // and disappears into a crack in the wall
