@@ -3,7 +3,7 @@
 // lanterns, crystals, a glowworm ceiling, giant mushrooms, waterfalls, ferns and the old mine's timbers,
 // rails and trestle. The play is lit (lanterns, the sun through the roof, a light on every green); the rest
 // stays dark. buildCave() returns { anims, lights } for the course renderer.
-import { rng, fbm } from './noise.js';
+import { rng, fbm, sstep } from './noise.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const rockMat = new THREE.MeshStandardMaterial({ color: 0x6f675c, roughness: 1, metalness: 0, side: THREE.DoubleSide, vertexColors: true });
@@ -119,45 +119,64 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     for (const [x, z] of pts) { if (Math.hypot(x - cx, z - cz) > reach + 500) continue; x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
   }
   x0 -= 20; x1 += 20; z0 -= 20; z1 += 20;
-  const step = coarse ? 7 : 5, nx = Math.ceil((x1 - x0) / step), nz = Math.ceil((z1 - z0) / step);
-  const pos = new Float32Array((nx + 1) * (nz + 1) * 3), col = new Float32Array((nx + 1) * (nz + 1) * 3), Y = new Float32Array((nx + 1) * (nz + 1));
+  // round a vine-hung cenote the rock gets an art pass: a finer sheet of its own, broken into ledges and
+  // crevices, with moss, wet streaks and grey limestone, like the real ones
+  const pat = C.sky.filter(S => S.cenote?.vines && Math.hypot(S.x - cx, S.z - cz) < reach).map(S => ({ S, R: S.r * 3.4 }));
+  const artW = (x, z) => { let w = 0; for (const P of pat) w = Math.max(w, 1 - sstep(P.R - 22, P.R, Math.hypot(x - P.S.x, z - P.S.z))); return w; };
   let low = Infinity; for (const H of C.halls) low = Math.min(low, H.foot);
-  for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
-    const x = x0 + i * step, z = z0 + j * step, k = j * (nx + 1) + i;
-    let y = C.ceilingAt(x, z); if (y === null) y = NaN;
-    else y -= 3.2 * fbm(x / 8 + 5, z / 8 - 3) + 1.4 * fbm(x / 3, z / 3); // knobbly rock, hanging a little below the solid shape
-    Y[k] = y; pos.set([x, Number.isNaN(y) ? 0 : y, z], k * 3);
-    // flowstone streaks and damp, darker rock higher up
-    // a vault high overhead fades into the dark, so its top can't be seen: it reads as endless
-    const n = fbm(x / 26, z / 26 + (Number.isNaN(y) ? 0 : y) / 40), f = fbm(x / 6 + 9, z / 6), hi = Number.isNaN(y) ? 0 : Math.max(0, Math.min(1, (y - 70) / 140));
-    const v = (0.35 + 0.65 * n) * (0.75 + 0.5 * f) * (1 - 0.93 * hi * hi * (3 - 2 * hi));
-    let mo = 0; for (const S of C.sky) if (S.cenote?.vines) mo = Math.max(mo, 1.3 - Math.hypot(x - S.x, z - S.z) / (S.r * 3.2));
-    mo = Math.min(1, Math.max(0, mo)) * (0.5 + 0.5 * f); // moss and ferns round a vine-hung opening
-    col.set([v * (0.95 - 0.5 * mo), v * (0.9 - 0.15 * mo), v * (0.82 - 0.5 * mo)], k * 3);
-  }
-  const idx = [];
-  const ok = k => !Number.isNaN(Y[k]);
-  const buried = k => Y[k] < low - 5;
-  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
-    const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
-    if (!(ok(a) && ok(b) && ok(c) && ok(d))) continue;
-    if (buried(a) && buried(b) && buried(c) && buried(d)) continue;
-    idx.push(a, b, c, b, d, c); // wound to face down, into the cave
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  geo.setIndex(idx); geo.computeVertexNormals();
-  // where the sheet stands up as wall, push it in and out across its face: buttresses, recesses, broken rock
-  { const nr = geo.attributes.normal;
-    for (let k = 0; k < Y.length; k++) {
-      if (Number.isNaN(Y[k])) continue;
-      const nx_ = nr.getX(k), nz_ = nr.getZ(k), hz = Math.hypot(nx_, nz_); if (hz < 0.35) continue;
-      const x = pos[k * 3], y = pos[k * 3 + 1], z = pos[k * 3 + 2];
-      const o = wallPush(x, y, z) * Math.min(1, (hz - 0.35) * 2.5);
-      pos[k * 3] += nx_ / hz * o; pos[k * 3 + 2] += nz_ / hz * o;
+  function sheet(xa, za, xb, zb, step, art, skip) {
+    const nx = Math.ceil((xb - xa) / step), nz = Math.ceil((zb - za) / step);
+    const pos = new Float32Array((nx + 1) * (nz + 1) * 3), col = new Float32Array((nx + 1) * (nz + 1) * 3), Y = new Float32Array((nx + 1) * (nz + 1)), W = new Float32Array((nx + 1) * (nz + 1));
+    for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
+      const x = xa + i * step, z = za + j * step, k = j * (nx + 1) + i, w = art ? artW(x, z) : 0;
+      let y = C.ceilingAt(x, z); if (y === null) y = NaN;
+      else y -= 3.2 * fbm(x / 8 + 5, z / 8 - 3) + 1.4 * fbm(x / 3, z / 3) + w * (2.6 * fbm(x / 2.2 + 3, z / 2.2 - 8) + 1.1 * fbm(x / 0.9, z / 0.9)); // knobbly rock, hanging a little below the solid shape
+      Y[k] = y; W[k] = w; pos.set([x, Number.isNaN(y) ? 0 : y, z], k * 3);
+      // flowstone streaks and damp, darker rock higher up
+      // a vault high overhead fades into the dark, so its top can't be seen: it reads as endless
+      const yy = Number.isNaN(y) ? 0 : y, n = fbm(x / 26, z / 26 + yy / 40), f = fbm(x / 6 + 9, z / 6), hi = Math.max(0, Math.min(1, (yy - 70) / 140));
+      let v = (0.35 + 0.65 * n) * (0.75 + 0.5 * f) * (1 - 0.93 * hi * hi * (3 - 2 * hi)), r = 0.95, g = 0.9, b = 0.82;
+      if (w > 0) {
+        // grey limestone, darker in the cracks, wet streaks running down, moss in patches (thickest near the light)
+        const crack = fbm(x / 1.6 + 4, z / 1.6 + yy / 2.2), streak = fbm(x / 2.6 - 7, z / 2.6 + 2), near = Math.max(0, 1 - Math.min(...pat.map(P => Math.hypot(x - P.S.x, z - P.S.z) / (P.S.r * 2.4))));
+        const moss = Math.min(1, sstep(0.38, 0.56, fbm(x / 7 + 1, z / 7 + yy / 9)) * (0.6 + 0.6 * near) + 0.4 * near);
+        v *= (0.72 + 0.55 * crack) * (1 - 0.35 * sstep(0.62, 0.75, streak));
+        const lr = 0.84, lg = 0.83, lb = 0.8, mr = 0.3, mg = 0.6, mb = 0.18;
+        r = lr + (mr - lr) * moss; g = lg + (mg - lg) * moss; b = lb + (mb - lb) * moss;
+        r = 0.95 + (r - 0.95) * w; g = 0.9 + (g - 0.9) * w; b = 0.82 + (b - 0.82) * w;
+      }
+      col.set([v * r, v * g, v * b], k * 3);
     }
-    geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); }
-  const roof = new THREE.Mesh(geo, rockMat); roof.receiveShadow = true; group.add(roof);
+    const idx = [];
+    const ok = k => !Number.isNaN(Y[k]);
+    const buried = k => Y[k] < low - 5;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+      if (!(ok(a) && ok(b) && ok(c) && ok(d))) continue;
+      if (buried(a) && buried(b) && buried(c) && buried(d)) continue;
+      if (skip && skip(xa + (i + 0.5) * step, za + (j + 0.5) * step)) continue;
+      idx.push(a, b, c, b, d, c); // wound to face down, into the cave
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.setIndex(idx); geo.computeVertexNormals();
+    // where the sheet stands up as wall, push it in and out across its face: buttresses, recesses, broken rock
+    // (with the art pass: harder, and in horizontal ledges, the bedding of the limestone)
+    { const nr = geo.attributes.normal;
+      for (let k = 0; k < Y.length; k++) {
+        if (Number.isNaN(Y[k])) continue;
+        const nx_ = nr.getX(k), nz_ = nr.getZ(k), hz = Math.hypot(nx_, nz_); if (hz < 0.35) continue;
+        const x = pos[k * 3], y = pos[k * 3 + 1], z = pos[k * 3 + 2], w = W[k];
+        const o = (wallPush(x, y, z) * (1 + 0.7 * w) + w * 2.2 * Math.sin(y * 0.85 + 3 * fbm(x / 9, z / 9))) * Math.min(1, (hz - 0.35) * 2.5);
+        pos[k * 3] += nx_ / hz * o; pos[k * 3 + 2] += nz_ / hz * o;
+      }
+      geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); }
+    const m = new THREE.Mesh(geo, rockMat); m.receiveShadow = true; group.add(m);
+    return m;
+  }
+  const step = coarse ? 7 : 5;
+  sheet(x0, z0, x1, z1, step, false, pat.length ? (x, z) => pat.some(P => Math.hypot(x - P.S.x, z - P.S.z) < P.R - 6) : null);
+  for (const P of pat) sheet(P.S.x - P.R, P.S.z - P.R, P.S.x + P.R, P.S.z + P.R, coarse ? 2 : 1.4, true, (x, z) => Math.hypot(x - P.S.x, z - P.S.z) > P.R);
   // mineral glints scattered over a high vault: faint points far overhead give it depth
   { const P = []; for (let t = 0; t < 30000 && P.length < (coarse ? 4500 : 7500); t++) {
       const x = x0 + R() * (x1 - x0), z = z0 + R() * (z1 - z0), y = C.ceilingAt(x, z); if (y === null || y < 110) continue;
