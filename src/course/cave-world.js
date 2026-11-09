@@ -96,7 +96,9 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     else y -= 3.2 * fbm(x / 8 + 5, z / 8 - 3) + 1.4 * fbm(x / 3, z / 3); // knobbly rock, hanging a little below the solid shape
     Y[k] = y; pos.set([x, Number.isNaN(y) ? 0 : y, z], k * 3);
     // flowstone streaks and damp, darker rock higher up
-    const n = fbm(x / 26, z / 26 + (Number.isNaN(y) ? 0 : y) / 40), f = fbm(x / 6 + 9, z / 6), v = (0.35 + 0.65 * n) * (0.75 + 0.5 * f);
+    // a vault high overhead fades into the dark, so its top can't be seen: it reads as endless
+    const n = fbm(x / 26, z / 26 + (Number.isNaN(y) ? 0 : y) / 40), f = fbm(x / 6 + 9, z / 6), hi = Number.isNaN(y) ? 0 : Math.max(0, Math.min(1, (y - 70) / 140));
+    const v = (0.35 + 0.65 * n) * (0.75 + 0.5 * f) * (1 - 0.93 * hi * hi * (3 - 2 * hi));
     col.set([v * 0.95, v * 0.9, v * 0.82], k * 3);
   }
   const idx = [];
@@ -122,6 +124,12 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     }
     geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); }
   const roof = new THREE.Mesh(geo, rockMat); roof.receiveShadow = true; group.add(roof);
+  // mineral glints scattered over a high vault: faint points far overhead give it depth
+  { const P = []; for (let t = 0; t < 30000 && P.length < (coarse ? 4500 : 7500); t++) {
+      const x = x0 + R() * (x1 - x0), z = z0 + R() * (z1 - z0), y = C.ceilingAt(x, z); if (y === null || y < 110) continue;
+      P.push(x, y - 1.5, z); }
+    if (P.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+      group.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xcfe2ff, size: coarse ? 1.8 : 1.4, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.75, depthWrite: false }))); } }
 
   /* ---------- the foot of the walls: rubble, fallen blocks and flowstone, so no wall meets the floor clean ---------- */
   const bx0 = box0.x0 - 160, bx1 = box0.x1 + 160, bz0 = box0.z0 - 160, bz1 = box0.z1 + 160;
@@ -401,15 +409,15 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     else if (M.type === 'gours') {
       // rimstone pools: each a glowing turquoise pool held back by a cream lip of flowstone
       const d0 = V(M.pts[0][0] - M.from[0], 0, M.pts[0][1] - M.from[1]).normalize(), yaw = Math.atan2(d0.x, -d0.z);
-      const water = new THREE.MeshStandardMaterial({ color: 0x2fd8c8, emissive: 0x1fbfb0, emissiveIntensity: 0.9, roughness: 0.1, transparent: true, opacity: 0.88 });
+      const water = new THREE.MeshStandardMaterial({ color: 0x3fe8d8, emissive: 0x2fe0d0, emissiveIntensity: 1.5, roughness: 0.1 });
       const lip = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.6, emissive: 0x2a3a36, emissiveIntensity: 0.5 });
       M.pts.forEach(([x, z], k) => {
         const rx = 15 - k, rz = 3.8, g = Math.min(gy(x, z), gy(x + d0.x * 2, z + d0.z * 2), gy(x - d0.x * 2, z - d0.z * 2));
-        const pool = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), water); pool.scale.set(rx, 1, rz); pool.rotation.y = -yaw; pool.position.set(x, g + 0.3, z); group.add(pool);
+        const pool = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), water); pool.scale.set(rx, 1, rz); pool.rotation.y = -yaw; pool.position.set(x, g + 0.5, z); group.add(pool);
         const rim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.08, 6, 48).rotateX(Math.PI / 2), lip); rim.scale.set(rx + 0.4, 6, rz + 0.4); rim.rotation.y = -yaw; rim.position.set(x, g + 0.25, z); group.add(rim);
         const gl = glow(0x3fe6d6, rx * 1.6, 0.3); gl.position.set(x, g + 2.5, z); group.add(gl);
       });
-      if (!far) { const [x, z] = M.pts[1], P = new THREE.PointLight(0x3fe6d6, 2.6, 90, 1.2); P.position.set(x, gy(x, z) + 6, z); group.add(P); ctx.lights.push(P); }
+      if (!far) for (const k of [0, 2]) { const [x, z] = M.pts[k], P = new THREE.PointLight(0x3fe6d6, 3.2, 70, 1.2); P.position.set(x, gy(x, z) + 3, z); group.add(P); ctx.lights.push(P); }
     }
     else if (M.type === 'stack') {
       // fallen rock stacked up a steep bank: wherever the ground in front of the green rises sharply

@@ -77,7 +77,7 @@ export const HALLS = [
   // the Hollow, its north-west bay and the geode pocket
   { e: C, rx: 405, rz: 335, p: 2.6, roof: 55, foot: -80 },
   // the vault over the Deep: the roof soars away, a vast dome you can't see the top of
-  { e: c(50, -60), rx: 250, rz: 215, rot: 0.15, roof: 250, foot: -80, wall: 170 }, { e: c(-320, -95), rx: 105, rz: 95, roof: 40, foot: -80 }, { e: c(-200, -238), rx: 42, rz: 38, roof: 2, foot: -80 },
+  { e: C, rx: 370, rz: 305, rot: 0.1, roof: 270, foot: -80, wall: 230 }, { e: c(-320, -95), rx: 105, rz: 95, roof: 40, foot: -80 }, { e: c(-200, -238), rx: 42, rz: 38, roof: 2, foot: -80 },
   // the glowworm grotto, the cenote chamber, the climb from the grotto, the cenote
   { a: [440, -915], b: [565, -760], w: 125, roof: 12, foot: -70 }, { a: [565, -760], b: [490, -585], w: 125, roof: 12, foot: -70 },
   { a: [490, -585], b: [432, -470], w: 80, roof: 20, foot: -50 },
