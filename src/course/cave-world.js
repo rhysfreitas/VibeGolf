@@ -73,6 +73,38 @@ function cenotePlants(S, rim, CN, sd) {
   return G;
 }
 
+// a cenote's hole in the roof, like the real ones: vines hanging from its lip almost to the water, more from
+// the roof round it, and a fringe of jungle round the top seen against the sky
+function cenoteVines(S, rim, top, gy, C) {
+  const G = new THREE.Group(), R = rng(Math.round(S.x * 11 + S.z * 5)), vines = [], leaves = [], trunks = [];
+  const water = gy(S.x, S.z);
+  for (let i = 0; i < 520; i++) { // from the lip, the long ones
+    const a = R() * Math.PI * 2, rr = S.r * (0.92 + R() * 0.14), x = S.x + Math.cos(a) * rr, z = S.z + Math.sin(a) * rr;
+    const y0 = Math.min(rim, (C.ceilingAt(x + Math.cos(a) * 2, z + Math.sin(a) * 2) ?? rim)) + 0.5, len = (y0 - water) * (0.25 + R() * R() * 0.7);
+    vines.push({ p: V(x, y0 - len, z), q: new THREE.Quaternion().setFromAxisAngle(UP, -a + Math.PI / 2 + (R() - 0.5) * 0.6), s: V(0.12 + R() * 0.3, len, 1), c: 0.6 + R() * 0.55 });
+  }
+  for (let i = 0; i < 700; i++) { // from the roof and walls round the hole, shorter, all over the dome
+    const a = R() * Math.PI * 2, rr = S.r * (1.05 + R() * 2.2), x = S.x + Math.cos(a) * rr, z = S.z + Math.sin(a) * rr, y0 = C.ceilingAt(x, z);
+    if (y0 === null) continue; const len = 2 + R() * R() * Math.min(30, (y0 - gy(x, z)) * 0.6);
+    vines.push({ p: V(x, y0 - len, z), q: new THREE.Quaternion().setFromAxisAngle(UP, R() * Math.PI), s: V(0.2 + R() * 0.4, len, 1), c: 0.6 + R() * 0.5 });
+  }
+  for (let i = 0; i < 90; i++) { // jungle round the top
+    const a = R() * Math.PI * 2, rr = S.r * 1.32 + 2 + R() * 14, x = S.x + Math.cos(a) * rr, z = S.z + Math.sin(a) * rr, s = 2 + R() * 3.5;
+    leaves.push({ p: V(x, top + 1 + s * 0.4, z), q: new THREE.Quaternion(), s: V(s, s * 0.8, s), c: 0.75 + R() * 0.5 });
+    if (R() < 0.45) { const th = 6 + R() * 9; trunks.push({ p: V(x, top, z), q: new THREE.Quaternion(), s: V(0.5, th, 0.5), c: 1 }); leaves.push({ p: V(x, top + th, z), q: new THREE.Quaternion(), s: V(5, 3.6, 5), c: 0.8 + R() * 0.3 }); }
+  }
+  const vg = withColor(new THREE.PlaneGeometry(1, 1, 1, 4).translate(0, 0.5, 0)), vc = vg.attributes.color, vp = vg.attributes.position;
+  for (let k = 0; k < vc.count; k++) { const t = vp.getY(k); vc.setXYZ(k, 0.35 + 0.65 * t, 0.45 + 0.55 * t, 0.35 + 0.65 * t); } // lit at the lip, darker toward the tip
+  G.add(instances(vg, new THREE.MeshBasicMaterial({ color: 0x4a8a34, vertexColors: true, side: THREE.DoubleSide, fog: false }), vines, true));
+  // ferns and creepers round the pool, under the hole
+  const ferns = [];
+  for (let i = 0; i < 4000 && ferns.length < 160; i++) { const a = R() * Math.PI * 2, rr = S.r * (0.6 + R() * 2.4), x = S.x + Math.cos(a) * rr, z = S.z + Math.sin(a) * rr; if (C.wallDepth(x, z) > 14 || C.wallDepth(x, z) < 0) continue; const g = gy(x, z), s2 = 1 + R() * 2.4; ferns.push({ p: V(x, g + s2 * 0.25, z), q: new THREE.Quaternion(), s: V(s2 * 1.3, s2 * 0.6, s2 * 1.3), c: 0.7 + R() * 0.5 }); }
+  if (ferns.length) G.add(instances(lumpy(1, 3.7, 0.35), new THREE.MeshStandardMaterial({ color: 0x4f8a38, roughness: 0.9, vertexColors: true }), ferns, true));
+  G.add(instances(lumpy(1, 6.6, 0.3), new THREE.MeshBasicMaterial({ color: 0x5b9a42, vertexColors: true, fog: false }), leaves, true));
+  if (trunks.length) G.add(instances(withColor(new THREE.CylinderGeometry(1, 1, 1, 5).translate(0, 0.5, 0)), new THREE.MeshBasicMaterial({ color: 0x5a4632, vertexColors: true, fog: false }), trunks, true));
+  return G;
+}
+
 export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   const C = T.cave, R = rng(h.par * 7919 + (h.yards?.eagle || 1));
   const ctx = { anims: [], lights: [] };
@@ -99,7 +131,9 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     // a vault high overhead fades into the dark, so its top can't be seen: it reads as endless
     const n = fbm(x / 26, z / 26 + (Number.isNaN(y) ? 0 : y) / 40), f = fbm(x / 6 + 9, z / 6), hi = Number.isNaN(y) ? 0 : Math.max(0, Math.min(1, (y - 70) / 140));
     const v = (0.35 + 0.65 * n) * (0.75 + 0.5 * f) * (1 - 0.93 * hi * hi * (3 - 2 * hi));
-    col.set([v * 0.95, v * 0.9, v * 0.82], k * 3);
+    let mo = 0; for (const S of C.sky) if (S.cenote?.vines) mo = Math.max(mo, 1.3 - Math.hypot(x - S.x, z - S.z) / (S.r * 3.2));
+    mo = Math.min(1, Math.max(0, mo)) * (0.5 + 0.5 * f); // moss and ferns round a vine-hung opening
+    col.set([v * (0.95 - 0.5 * mo), v * (0.9 - 0.15 * mo), v * (0.82 - 0.5 * mo)], k * 3);
   }
   const idx = [];
   const ok = k => !Number.isNaN(Y[k]);
@@ -163,9 +197,9 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     if (Math.hypot(S.x - cx, S.z - cz) > reach + 400) continue;
     let rim = -Infinity; for (let a = 0; a < 16; a++) { const y = C.ceilingAt(S.x + Math.cos(a / 16 * 6.283) * (S.r + 4), S.z + Math.sin(a / 16 * 6.283) * (S.r + 4)); if (y !== null) rim = Math.max(rim, y); }
     if (rim === -Infinity) rim = 40;
-    if (S.cenote) rim = gy(S.x, S.z) + 0.5; // a cenote's walls step up from its floor: no cave roof round it
+    if (S.cenote?.terraces) rim = gy(S.x, S.z) + 0.5; // a terraced cenote's walls step up from its floor: no cave roof round it
     S.rim = rim;
-    const U = S.upper, CN = S.cenote, shaftH = U ? U.h : CN ? CN.terraces * CN.step + 6 : S.r > 40 ? 26 : 34, top = rim + shaftH;
+    const U = S.upper, CN = S.cenote?.terraces ? S.cenote : null, VN = S.cenote?.vines, shaftH = U ? U.h : CN ? CN.terraces * CN.step + 6 : VN ? 18 : S.r > 40 ? 26 : 34, top = rim + shaftH;
     let open = U ? U.sky : S.r;
     if (U) {
       // a second cavern above the opening: its floor runs out from the lip, the walls rise and close over
@@ -193,15 +227,17 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         const lit = 0.35 + 0.65 * Math.max(0, -(sn.getX(k) * sd.x + ny * sd.y + sn.getZ(k) * sd.z));  // baked sunlight
         const ledge = CN && ny < -0.6;                                                                    // (normals face in: up-facing ledges point down)
         const v = (CN ? 0.18 + 0.75 * t * t : 0.1 + 0.5 * Math.pow(t, 1.6)) * lit, n = 0.85 + 0.3 * fbm(sp.getX(k) / 9, sp.getZ(k) / 9 + y / 7);
-        if (ledge) sc.setXYZ(k, 0.32 * v * n + 0.05, 0.62 * v * n + 0.08, 0.24 * v * n + 0.03); else sc.setXYZ(k, 0.86 * v * n, 0.8 * v * n, 0.7 * v * n);
+        const moss = VN ? 0.35 + 0.5 * fbm(sp.getX(k) / 5, sp.getZ(k) / 5 + y / 4) : 0; // a vine-hung shaft is green with moss and creepers
+        if (ledge) sc.setXYZ(k, 0.32 * v * n + 0.05, 0.62 * v * n + 0.08, 0.24 * v * n + 0.03); else sc.setXYZ(k, (0.86 - 0.45 * moss) * v * n, (0.8 - 0.1 * moss) * v * n, (0.7 - 0.45 * moss) * v * n);
       }
       const sm = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: false })); sm.position.set(S.x, 0, S.z); group.add(sm);
       if (CN) group.add(cenotePlants(S, rim, CN, sd));
+      if (VN) group.add(cenoteVines(S, rim, top, gy, C));
       // the sky past the rim: a dome, so nothing black shows round the opening
       // (a small shaft just ends in a disc of sky: a dome would show through gaps in the rock round it)
-      const dome = CN ? new THREE.Mesh(new THREE.SphereGeometry(open * 1.6, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xbfd9ef, side: THREE.BackSide, fog: false }))
+      const dome = CN || VN ? new THREE.Mesh(new THREE.SphereGeometry(open * (VN ? 3 : 1.6), 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xbfd9ef, side: THREE.BackSide, fog: false }))
         : new THREE.Mesh(new THREE.CircleGeometry(open * 1.08, 40).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xcfdcea, fog: false }));
-      dome.position.set(S.x, top + (CN ? 2 : 3.5), S.z); group.add(dome);
+      dome.position.set(S.x, top + (CN || VN ? 2 : 3.5), S.z); group.add(dome);
     }
     if (U) { const skyDisc = new THREE.Mesh(new THREE.CircleGeometry(open * 1.2, 40).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe9f3ff, fog: false })); skyDisc.position.set(S.x, top + 9, S.z); group.add(skyDisc); }
     open = U ? U.sky : S.r; // the beam is as wide as the hole it comes through
@@ -212,10 +248,10 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     const beamMat = new THREE.MeshBasicMaterial({ color: 0xfff0cf, transparent: true, opacity: S.r > 40 ? 0.035 : 0.06, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
     const bm = new THREE.Mesh(bg, beamMat); bm.position.set(S.x, top, S.z); bm.renderOrder = 3; group.add(bm);
     // the pool of light where it lands
-    const L = new THREE.SpotLight(0xfff1d4, S.r > 40 ? 2.4 : 3.2, H * 1.8, Math.min(1.1, Math.atan((S.r * 1.25) / H)), 0.45, 1);
+    const L = new THREE.SpotLight(0xfff1d4, VN ? 5 : S.r > 40 ? 2.4 : 3.2, H * 1.8, Math.min(1.1, Math.atan((S.r * 1.25) / H)), 0.45, 1);
     L.position.set(S.x, top, S.z); L.target.position.set(S.x + lean.x, g0, S.z + lean.z); group.add(L, L.target); ctx.lights.push(L);
     // a big opening fills its cavern with soft bounced daylight
-    if (S.r > 30) { const B = new THREE.PointLight(0xe8e2d4, 1.1, 1100, 0.9); B.position.set(S.x + lean.x, g0 + 30, S.z + lean.z); group.add(B); ctx.lights.push(B); }
+    if (S.r > 30 || VN) { const B = new THREE.PointLight(0xe8eadc, VN ? 2.2 : 1.1, VN ? 320 : 1100, 0.9); B.position.set(S.x + lean.x, g0 + (VN ? 22 : 30), S.z + lean.z); group.add(B); ctx.lights.push(B); }
   }
 
   /* ---------- stalactites: the solid ones (cave.js), then a scatter over the roof ---------- */
@@ -303,7 +339,8 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       // a step of a cascade down a cenote's terraces: from ledge k+1 down to ledge k (or the pool)
       const cn = M.cascade !== undefined && C.sky.find(S => S.cenote && S.rim !== undefined && Math.hypot(m0.x - S.x, m0.z - S.z) < S.r + 60);
       if (cn) { M.top = cn.rim + (M.cascade + 1) * cn.cenote.step + 0.6; if (M.cascade) M.bottom = cn.rim + M.cascade * cn.cenote.step + 0.6; }
-      const top = lip ? lip.rim + 1 : M.top ?? 30;
+      const hole = M.through && C.sky.filter(S => S.rim !== undefined).sort((a, b) => Math.hypot(m0.x - a.x, m0.z - a.z) - Math.hypot(m0.x - b.x, m0.z - b.z))[0];
+      const top = lip ? lip.rim + 1 : hole ? hole.rim + 16 : M.top ?? 30; // through: from up in the shaft, in through the hole
       const mid = m0, bot = M.bottom ?? Math.min(gy(mid.x, mid.z), T.floor ? T.floor.y : -60) - (T.inGorge?.(mid.x, mid.z) ? 140 : 0); // bottom: a cascade step
       const Hh = top - bot, W = pts.reduce((s, p, k) => s + (k ? p.distanceTo(pts[k - 1]) : 0), 0) || 12;
       const tex = fallTex.clone(); tex.needsUpdate = true; tex.repeat.set(W / 8, Hh / 30);

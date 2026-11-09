@@ -76,16 +76,19 @@ test('normal drives clear the roof and walls; a skied wedge stays under the roof
   assert.ok(roof === null || top <= roof + 1, `stays under the roof (${top.toFixed(1)} vs ${roof?.toFixed(1)})`);
 });
 
-test('the Cenote is drivable through the eyelet in its fin; the fin stops a drive that misses the window', () => {
+test('the Cenote is drivable through the eyelet in its fin; the fin stops a drive that misses the eyelet', () => {
   const t = T[8], h = HOLES[8], DR = { Speed: 167, VLA: 10.9, TotalSpin: 2686 };
   const W = shoot(t, h.tees.eagle, h.pin, DR);
   assert.ok(!W.some(p => p.hit && p.phase === 'flight'), 'straight at the green: through the window');
   const land = W.find(p => p.phase !== 'flight') || W.at(-1), d = Math.hypot(land.x - h.pin[0], land.z - h.pin[1]);
   assert.ok(d < 45, `lands near the green (${d.toFixed(0)} m away)`);
-  // a low drive meets the sill under the window and never gets past the fin
+  // the eyelet is open from the floor: a low drive runs through too; one aimed into the fin's long side stops there
   const fin = h.rocks.find(r => r.type === 'arch'), reach = Math.hypot(fin.x - h.tees.eagle[0], fin.z - h.tees.eagle[1]);
   const low = shoot(t, h.tees.eagle, h.pin, { Speed: 150, VLA: 4, TotalSpin: 2400 });
-  assert.ok(low.every(p => Math.hypot(p.x - h.tees.eagle[0], p.z - h.tees.eagle[1]) < reach + 4), 'a low drive is stopped by the fin');
+  assert.ok(low.some(p => Math.hypot(p.x - h.tees.eagle[0], p.z - h.tees.eagle[1]) > reach + 10), 'a low drive runs through the eyelet');
+  const wall = h.islands.filter(I => I.kind === 'rock' && !I.scenery).sort((a, b) => b.rx - a.rx)[0];
+  const into = shoot(t, h.tees.eagle, [wall.x, wall.z], DR);
+  assert.ok(into.every(p => Math.hypot(p.x - h.tees.eagle[0], p.z - h.tees.eagle[1]) < reach + 12), 'a drive into the fin is stopped');
 });
 
 test('the hero line on the Falls clips a stalactite; the Deep is open air', () => {

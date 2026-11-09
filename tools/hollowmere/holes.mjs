@@ -81,7 +81,7 @@ export const HALLS = [
   // the glowworm grotto, the cenote chamber, the climb from the grotto, the cenote
   { a: [440, -915], b: [565, -760], w: 125, roof: 12, foot: -70 }, { a: [565, -760], b: [490, -585], w: 125, roof: 12, foot: -70 },
   { a: [490, -585], b: [432, -470], w: 80, roof: 20, foot: -50 },
-  { e: [360, -392], rx: 150, rz: 130, roof: 60, foot: -42 }, { e: [250, -250], rx: 90, rz: 90, roof: 36, foot: -42 },
+  { e: [360, -392], rx: 150, rz: 130, roof: 60, foot: -42 }, { e: [250, -250], rx: 90, rz: 90, roof: 72, foot: -42, wall: 70 }, // the cenote's chamber: a dome closing in over the pool
   { a: [442, -508], b: [386, -340], w: 110, roof: 60, foot: -42 },           // the Cenote's tee ledge, high in the chamber
   // side passages and fissures: offshoots into the dark that make it a cave network (no play in them)
   { a: [-50, -60], b: [-120, -90], w: 26, roof: 30, foot: -50 }, { a: [70, -280], b: [150, -250], w: 22, roof: 40, foot: -50 },
@@ -104,8 +104,8 @@ export const HALLS = [
   { a: c(-356, -116), b: c(-418, -152), w: 56, roof: 34, foot: -80 },
 ];
 // sky over the course: the cenote and the skylights (the rest is roof)
-// the cenote: open to the sky, its walls stepping back in four planted terraces
-export const SKY = [{ x: 250, z: -250, r: 82, name: 'the cenote', cenote: { terraces: 4, step: 11, ledge: 9 } }, { x: 138, z: -532, r: 16, name: 'first light' }, { x: 152, z: -805, r: 11, name: 'a pinhole' }, { ...HOLLOW.skylight, name: 'the Great Shaft' }];
+// the cenote: a ragged hole in its domed roof, over the back of the pool, hung with vines
+export const SKY = [{ x: 224, z: -254, r: 30, name: 'the cenote', cenote: { vines: true } }, { x: 138, z: -532, r: 16, name: 'first light' }, { x: 152, z: -805, r: 11, name: 'a pinhole' }, { ...HOLLOW.skylight, name: 'the Great Shaft' }];
 
 export const LANDMARKS = [
   { id: 'adit', name: 'The mine entrance', short: 'Mine entrance', x: 0, z: 30 },
@@ -398,10 +398,10 @@ export const HOLES = [
       // the fin across the direct line, floor to roof, with the eyelet in it: a short end toward the fairway,
       // a long one into the inside of the dogleg and the wall
       isl(...finAt(-24), 8, 8, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 2.4 }), isl(...finAt(64), 46, 8, 70, { kind: 'rock', depth: 300, rot: FINROT, p: 2.4 }),
-      isl(...finAt(0), 18, 7, 2, { kind: 'rock', depth: 300, rot: FINROT, p: 2.4 }),
       pad(421, -479, -9.4, 91),
     ],
-    rocks: [{ type: 'arch', x: FIN.c[0], z: FIN.c[1], rot: FINROT, y: 2, w: 34, h: 34, t: 14, d: 14, crown: 1.6 },
+    // the eyelet: open from the floor, so you see straight through it to the green
+    rocks: [{ type: 'arch', x: FIN.c[0], z: FIN.c[1], rot: FINROT, y: -25, w: 34, h: 52, t: 14, d: 14, crown: 2.6 },
       ...stand([470, -392], 6, 9, 91), ...stand([424, -268], 5, 8, 92)],
     // the climb into the cenote: one ramp from wall to wall, so nothing beside the fairway or green falls
     // away, up to a level floor round the green and its pool
@@ -409,19 +409,16 @@ export const HOLES = [
     fairways: [{ pts: [[410, -410, 22], [403, -380, 30], [393, -345, 30], [378, -318, 28], [348, -304, 28], [310, -290, 26], [276, -275, 24]] }],
     // one pool round the back and left of the green, level with it, fed by the falls; it spills down the left
     // of the fairway in a cascade and runs off into a side cavern
-    streams: [{ pts: [[280, -243], [298, -248], [318, -254], [338, -259], [356, -260], [370, -246], [382, -226], [394, -204], [404, -180]], w: 7, depth: 1.2 }],
+    streams: [{ pts: [[280, -243], [298, -248], [318, -254], [338, -259], [356, -260], [370, -246], [382, -226], [394, -204], [404, -180]], w: 7, depth: 1.2 },
+      { pts: [[354, -262], [368, -268], [384, -274], [400, -279]], w: 9, depth: 1.2 }], // a reach of water out along the left of the corner
     water: [{ x: 194, z: -251, rx: 14, rz: 15, depth: 1.8 }, { x: 178, z: -250, rx: 11, rz: 17, depth: 1.8 }],
     rivers: [{ pts: [[216, -282], [212, -273], [209, -264], [209, -254], [212, -245], [217, -237], [224, -230], [233, -226], [242, -223], [252, -223], [261, -226], [269, -231], [276, -238], [280, -247]], w: 16, depth: 1.6 }], // the pool: one channel round the back and left of the green, at one level
     green: { x: 246, z: -260, rx: 15, rz: 14, style: 'tilt', tilt: 1.0, raise: 0.6, apron: 6, runoff: true, from: [348, -304], pins: [[246, -260], [240, -266], [252, -254], [241, -254]] },
     bunkers: [bunker([420, -337], L9[0], L9[1], 7, 16), { x: 268, z: -282, rx: 6, rz: 4, style: 'flashed', toward: [246, -260] }],
-    roof: { y: 46, open: { x: 250, z: -250, r: 82 } },
+    roof: { y: 60, open: { x: 224, z: -254, r: 30 } },
     marks: [
-      { type: 'skylight', x: 250, z: -250, r: 82, label: 'the cenote: open to the sky, four planted terraces up its walls' },
-      { type: 'falls', cascade: 0, pts: [[171.9, -230.5], [169.8, -243.5], [169.8, -256.5], [171.9, -269.5]], label: "the falls, down the terraces into the pool behind the green" },
-      { type: 'falls', cascade: 1, pts: [[164.0, -225.3], [160.9, -241.7], [160.9, -258.3], [164.0, -274.7]] },
-      { type: 'falls', cascade: 2, pts: [[156.3, -219.6], [152.0, -239.7], [152.0, -260.3], [156.3, -280.4]] },
-      { type: 'falls', cascade: 3, pts: [[149.0, -213.2], [143.2, -237.5], [143.2, -262.5], [149.0, -286.8]] },
-      { type: 'clubhouse', x: 330, z: -150, label: 'clubhouse on the rim above' },
+      { type: 'skylight', x: 224, z: -254, r: 30, label: 'the cenote: a hole in the domed roof, hung with vines' },
+      { type: 'falls', through: true, pts: [[198.6, -244.8], [197.6, -248.4], [197.1, -252.1], [197.1, -255.9], [197.6, -259.6], [198.6, -263.2]], label: 'the falls, in through the hole into the back of the pool' },
       { type: 'text', x: 316, z: -392, label: 'the fin and its eyelet: the bold line to the green' },
       { type: 'text', x: 400, z: -236, label: 'the stream runs off into a side cavern' },
     ],
