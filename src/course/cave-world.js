@@ -341,12 +341,12 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         const wob = t => 1 + 0.07 * Math.sin(5 * t + 1.3) + 0.04 * Math.sin(11 * t + 0.4) + 0.025 * Math.sin(23 * t);
         const loop = (P, sc, rev) => { for (let k = 0; k <= 72; k++) { const t = (rev ? -1 : 1) * k / 72 * Math.PI * 2, f = wob(t) * sc; k ? P.lineTo(Math.cos(t) * B.w * f, Math.sin(t) * B.h * f) : P.moveTo(Math.cos(t) * B.w * f, Math.sin(t) * B.h * f); } };
         const ring = (s0, s1, color, push = 0) => { const sh = new THREE.Shape(), hole = new THREE.Path(); loop(sh, s1, false); loop(hole, s0, true); sh.holes.push(hole);
-          const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 48), new THREE.MeshStandardMaterial({ color, roughness: 0.6, emissive: color, emissiveIntensity: 0.25, side: THREE.DoubleSide }));
+          const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 48), new THREE.MeshStandardMaterial({ color, roughness: 0.6, emissive: color, emissiveIntensity: 0.25 }));
           m.position.copy(face).addScaledVector(d, push); m.lookAt(m.position.clone().sub(d)); group.add(m); };
         ring(1.0, 1.12, 0x55585e); ring(0.93, 1.0, 0xeae6f2, -0.05); ring(0.86, 0.93, 0xb6a3e2, -0.1); ring(0.82, 0.86, 0x7a6fd6, -0.15); ring(0.79, 0.82, 0xf2eff8, -0.2);
         // the hollow: a dish set back into the slab, dark violet, crystals standing out of it toward the tee
         const dsh = new THREE.Shape(); loop(dsh, 1, false);
-        const dish = new THREE.Mesh(new THREE.ShapeGeometry(dsh, 48), new THREE.MeshStandardMaterial({ color: 0x2b1f55, roughness: 0.5, emissive: 0x24164f, emissiveIntensity: 0.6, side: THREE.DoubleSide }));
+        const dish = new THREE.Mesh(new THREE.ShapeGeometry(dsh, 48), new THREE.MeshStandardMaterial({ color: 0x2b1f55, roughness: 0.5, emissive: 0x24164f, emissiveIntensity: 0.6 }));
         dish.scale.set(0.8, 0.8, 1); dish.position.copy(face).addScaledVector(d, 0.05); dish.lookAt(dish.position.clone().sub(d)); group.add(dish);
         for (let k = 0; k < (coarse ? 260 : 420); k++) {
           const a = R() * Math.PI * 2, rr = Math.sqrt(R()) * 0.78 * wob(a), u = Math.cos(a) * rr * B.w, v = Math.sin(a) * rr * B.h;

@@ -59,7 +59,7 @@ export const HOLLOW = {
   // the Great Shaft: an opening into a second cavern above, lit by its own skylight; the falls pour from it
   skylight: { x: c(118, -150)[0], z: c(118, -150)[1], r: 50, upper: { h: 60, r: 115, sky: 20 } },
   // a curtain of water round the shaft's west lip, from the upper cavern down into the Deep
-  falls: { pts: [c(106, -105), c(97, -108), c(88, -113), c(81, -120), c(76, -129), c(73, -138), c(71, -148), c(72, -157), c(74, -167), c(79, -176), c(85, -183), c(92, -189), c(101, -194)], top: 112 },
+  falls: { pts: [c(91, -121), c(87, -124), c(84, -128), c(82, -132), c(80, -137), c(79, -142), c(78, -147), c(78, -151), c(78, -156), c(80, -161), c(81, -166)], top: 112 }, // over the inlet, so all of it falls into the Deep
 };
 const hollowFloor = { y: HOLLOW.floorY, relief: 3.2, solid: true, gorges: HOLLOW.gorges };
 export const caveFloor = y => ({ y, relief: 2.5, solid: true, gorges: HOLLOW.gorges });
