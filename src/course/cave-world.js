@@ -306,7 +306,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         fp.setXYZ(k, p.x, top - drop * Hh, p.z);
       }
       fg.computeVertexNormals();
-      const sheet = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide, color: 0xdfeef3, fog: !far }));
+      const sheet = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: Hh > 120 ? 0.62 : 0.85, depthWrite: false, side: THREE.DoubleSide, color: 0xcfe4ee, fog: !far })); // a tall curtain reads as falling water, not a wall
       sheet.renderOrder = 2; group.add(sheet);
       const mist = []; for (let k = 0; k < 7; k++) { const s = glow(0xcfe3ea, W * (1.2 + k * 0.3), 0.18); s.position.set(mid.x + (R() - 0.5) * W, Math.max(bot, gy(mid.x, mid.z)) + 4 + k * 3, mid.z + (R() - 0.5) * W); s.material.blending = THREE.NormalBlending; group.add(s); mist.push(s); }
       ctx.anims.push((dt, t) => { tex.offset.y = t * 0.8; mist.forEach((s, i) => { s.material.opacity = 0.14 + 0.06 * Math.sin(t * 1.7 + i); }); });
