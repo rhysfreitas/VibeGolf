@@ -617,6 +617,7 @@ function buildHole(h) {
   if (TIMES[cond.time]?.night) {
     greenLight = new THREE.SpotLight(0xfff1d6, 3.2, 120, 0.55, 0.6, 1.2); greenLight.position.set(pp.x + 14, pp.y + 34, pp.z + 18); greenLight.target.position.copy(pp); scene.add(greenLight, greenLight.target);
   }
+  if (CAVE && mesaCtx) CW.bakeLights(holeGroup, mesaCtx.baked); // the cave's lanterns, beams and glows, baked into the meshes
   const dir = new THREE.Vector2(pp.x - h.tee[0], pp.z - h.tee[1]).normalize(); holeDirU.value.copy(dir);
   // plan view for the corner map
   const shapeOf = I => {

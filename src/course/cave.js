@@ -28,33 +28,56 @@ export function hallDepth(H, x, z) {
 }
 const halfWidth = H => (H.w ? H.w / 2 : Math.min(H.rx, H.rz));
 // the wall line wanders: alcoves and bulges, less in a narrow passage
-function wobble(H, x, z) {
-  const k = Math.min(1, halfWidth(H) / 45);
-  return ((fbm(x / 34 + 3.1, z / 34 - 1.7) - 0.5) * 24 + (fbm(x / 11 + 7.3, z / 11 + 2.9) - 0.5) * 7) * k;
-}
+// (the noise is the same for every hall; each hall scales it by k = min(1, half-width / 45))
+const wobbleN = (x, z) => (fbm(x / 34 + 3.1, z / 34 - 1.7) - 0.5) * 24 + (fbm(x / 11 + 7.3, z / 11 + 2.9) - 0.5) * 7;
+const WOB = 15.5; // |wobbleN| can't exceed 0.5 * 24 + 0.5 * 7
 export const WALL_SOAK = 0.45, STAL_SOAK = 0.2;
 
 export function createCave(cave) {
   const halls = cave.halls || [], sky = cave.sky || [], W = cave.wall || 34;
   const skyAt = (x, z) => sky.some(S => Math.hypot(x - S.x, z - S.z) < S.r);
   // how far inside the open cave a point is, wall wobble and all (negative: in the rock)
-  function wallDepth(x, z) { let best = -Infinity; for (const H of halls) best = Math.max(best, hallDepth(H, x, z) + wobble(H, x, z)); return best; }
+  // Speed: a hole carries every hall of the cave system (dozens), and these run for every texel of the paint
+  // texture and every vertex of the roof. So the noise is worked out once per point, and a hall is skipped
+  // when an upper bound on its depth (a bounding circle) shows it can't change the answer. Exact: same result.
+  const meta = halls.map(H => {
+    const k = Math.min(1, halfWidth(H) / 45);
+    if (H.e) { const p = H.p || 2, lo = Math.min(1, Math.pow(2, 1 / p - 0.5)) / Math.max(H.rx, H.rz); return { H, k, cx: H.e[0], cz: H.e[1], r0: 0, a: lo * Math.min(H.rx, H.rz), top: Math.min(H.rx, H.rz) }; }
+    return { H, k, cx: (H.a[0] + H.b[0]) / 2, cz: (H.a[1] + H.b[1]) / 2, r0: Math.hypot(H.b[0] - H.a[0], H.b[1] - H.a[1]) / 2, a: 1, top: H.w / 2 };
+  });
+  // hallDepth can't exceed this: a capsule is at best w/2 - (r - half its length); a superellipse's rho >= r * lo
+  const bound = (M, x, z) => { const r = Math.hypot(x - M.cx, z - M.cz); return M.H.e ? M.top - r * M.a : M.top - Math.max(0, r - M.r0); };
+  function wallDepth(x, z) {
+    let best = -Infinity, n = null;
+    for (const M of meta) {
+      if (best > -Infinity && bound(M, x, z) + WOB * M.k <= best) continue;
+      const d = hallDepth(M.H, x, z); if (d + WOB * M.k <= best) continue;
+      if (n === null) n = wobbleN(x, z);
+      best = Math.max(best, d + n * M.k);
+    }
+    return best;
+  }
   const inHall = (x, z) => wallDepth(x, z) > 0;
   // the underside of the rock over a point: the roof, curving down into the walls at each hall's edge;
   // null under open sky, and the deepest foot outside every hall (solid rock)
   function ceilingAt(x, z) {
     if (skyAt(x, z)) return null;
-    let best = -Infinity, low = Infinity;
-    for (const H of halls) {
-      low = Math.min(low, H.foot);
-      const d = hallDepth(H, x, z) + wobble(H, x, z); if (d <= 0) continue;
+    let best = -Infinity, low = Infinity, n = null, vn = null;
+    for (const M of meta) {
+      const H = M.H; low = Math.min(low, H.foot);
+      if (bound(M, x, z) + WOB * M.k <= 0) continue;
+      let d = hallDepth(H, x, z); if (d + WOB * M.k <= 0) continue;
+      if (n === null) n = wobbleN(x, z);
+      d += n * M.k; if (d <= 0) continue;
+      // the roof's shape noise is the same under every hall: work it out once
+      if (vn === null) vn = [fbm(x / 95 + 5.2, z / 95 - 9.1) - 0.5, Math.pow(1 - Math.abs(2 * fbm(x / 42 - 3.3, z / 42 + 8.8) - 1), 6), fbm(x / 38 + 11, z / 38 - 7) - 0.5];
       const t = Math.min(1, d / Math.min(H.wall || W, halfWidth(H) * 0.8));
       const vault = H.wall ? t * (2 - t) : 1 - (1 - t) ** 3;             // walls rise steeply, then the roof (a dome: gently)
       const span = H.roof - H.foot;
       // vaults rise and fall over the hall; ribs and drapes hang down from it
-      const vaults = (fbm(x / 95 + 5.2, z / 95 - 9.1) - 0.5) * span * 0.22;
-      const rib = Math.pow(1 - Math.abs(2 * fbm(x / 42 - 3.3, z / 42 + 8.8) - 1), 6) * Math.min(16, span * 0.14);
-      const bumps = (fbm(x / 38 + 11, z / 38 - 7) - 0.5) * 9;
+      const vaults = vn[0] * span * 0.22;
+      const rib = vn[1] * Math.min(16, span * 0.14);
+      const bumps = vn[2] * 9;
       best = Math.max(best, H.foot + (H.roof + vaults + bumps - rib - H.foot) * vault);
     }
     return best === -Infinity ? (low === Infinity ? null : low - 20) : best;

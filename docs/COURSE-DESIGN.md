@@ -132,6 +132,11 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   `wall` this way. After adding a field, check the emitted module.
 - Cave playfield tiles go fine wherever the ground is steep (`steepFine`), or tall cells drop and leave
   jagged holes.
+- **Speed in caves.** Real point and spot lights cost every pixel on screen, every frame: Hollowmere's
+  15–19 per hole made play crawl on phones. Its lanterns, beams and glows are baked into the meshes
+  (`bakeLights` in `cave-world.js`), and only the green's and the fairway's spotlights are real. Add new
+  cave lights to `ctx.baked`. And anything sampled per texel or per vertex (the paint texture, the roof
+  sheet) runs a few hundred thousand times a hole: `wallDepth` and `ceilingAt` cull halls for that reason.
 - The renders are slow (software GL: about 10–15 minutes a hole for three views). The page caches the
   course module: restart a render after changing the data or the renderer.
 - The book: `node sample.mjs`, `python3 plans.py`, `node views.mjs`, `python3 color.py`,

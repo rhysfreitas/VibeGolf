@@ -2,7 +2,11 @@
 // physics hits (cave.js ceilingAt), openings to the sky with their shafts of sunlight, stalactites,
 // lanterns, crystals, a glowworm ceiling, giant mushrooms, waterfalls, ferns and the old mine's timbers,
 // rails and trestle. The play is lit (lanterns, the sun through the roof, a light on every green); the rest
-// stays dark. buildCave() returns { anims, lights } for the course renderer.
+// stays dark. buildCave() returns { anims, lights, baked } for the course renderer.
+// Speed: only the green's and the fairway's spotlights are real lights (the same two on every hole, so the
+// shaders compile once). Every other cave light (lanterns, beams, glows) goes in ctx.baked and bakeLights()
+// adds what it would have lit into the meshes, per vertex, with Three's own falloff and cone. Nothing in
+// the cave moves (bar the ore cart, which isn't baked), so it looks the same at a fraction of the cost.
 import { rng, fbm, sstep } from './noise.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -107,7 +111,7 @@ function cenoteVines(S, rim, top, gy, C) {
 
 export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   const C = T.cave, R = rng(h.par * 7919 + (h.yards?.eagle || 1));
-  const ctx = { anims: [], lights: [] };
+  const ctx = { anims: [], lights: [], baked: [] };
   const gy = (x, z) => T.groundAt(x, z) ?? (T.floor ? T.floor.y : 0);
   const pin = h.pinPos;
 
@@ -230,7 +234,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       ug.computeVertexNormals(); withColor(ug);
       const cc = ug.attributes.color; for (let k = 0; k < cc.count; k++) { const v = 0.45 + 0.4 * fbm(up.getX(k) / 18, up.getZ(k) / 18 + up.getY(k) / 25); cc.setXYZ(k, v * 0.95, v * 0.9, v * 0.82); }
       const um = new THREE.Mesh(ug, rockMat); um.position.set(S.x, 0, S.z); um.receiveShadow = true; group.add(um);
-      const B = new THREE.PointLight(0xe9e0cc, 1.0, U.r * 2.6, 1.1); B.position.set(S.x, rim + U.h * 0.45, S.z); group.add(B); ctx.lights.push(B);
+      const B = new THREE.PointLight(0xe9e0cc, 1.0, U.r * 2.6, 1.1); B.position.set(S.x, rim + U.h * 0.45, S.z); ctx.baked.push(B);
     } else {
       // the shaft up to daylight: a ragged funnel, flaring as it rises (a cenote steps back in terraces
       // with plants on every ledge), lit by the sky: dark rock at the foot, sunlit rock at the top
@@ -268,9 +272,9 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     const bm = new THREE.Mesh(bg, beamMat); bm.position.set(S.x, top, S.z); bm.renderOrder = 3; group.add(bm);
     // the pool of light where it lands
     const L = new THREE.SpotLight(0xfff1d4, VN ? 5 : S.r > 40 ? 2.4 : 3.2, H * 1.8, Math.min(1.1, Math.atan((S.r * 1.25) / H)), 0.45, 1);
-    L.position.set(S.x, top, S.z); L.target.position.set(S.x + lean.x, g0, S.z + lean.z); group.add(L, L.target); ctx.lights.push(L);
+    L.position.set(S.x, top, S.z); L.target.position.set(S.x + lean.x, g0, S.z + lean.z); ctx.baked.push(L);
     // a big opening fills its cavern with soft bounced daylight
-    if (S.r > 30 || VN) { const B = new THREE.PointLight(0xe8eadc, VN ? 2.2 : 1.1, VN ? 320 : 1100, 0.9); B.position.set(S.x + lean.x, g0 + (VN ? 22 : 30), S.z + lean.z); group.add(B); ctx.lights.push(B); }
+    if (S.r > 30 || VN) { const B = new THREE.PointLight(0xe8eadc, VN ? 2.2 : 1.1, VN ? 320 : 1100, 0.9); B.position.set(S.x + lean.x, g0 + (VN ? 22 : 30), S.z + lean.z); ctx.baked.push(B); }
   }
 
   /* ---------- stalactites: the solid ones (cave.js), then a scatter over the roof ---------- */
@@ -320,7 +324,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         cr.position.set(x + (R() - 0.5) * 6, y + L * 0.4, z + (R() - 0.5) * 6); cr.rotation.set((R() - 0.5) * 0.9, R() * 6, (R() - 0.5) * 0.9); group.add(cr);
       }
       const gl = glow(hue, 16, 0.5); gl.position.set(x, y + 3, z); group.add(gl);
-      if (!far && ctx.lights.length < 10 && R() < 0.5) { const P = new THREE.PointLight(hue, 1.4, 45, 1.5); P.position.set(x, y + 4, z); group.add(P); ctx.lights.push(P); }
+      if (!far && ctx.baked.length < 10 && R() < 0.5) { const P = new THREE.PointLight(hue, 1.4, 45, 1.5); P.position.set(x, y + 4, z); ctx.baked.push(P); }
     }
     else if (M.type === 'glowworms') {
       const xs = M.poly.map(p => p[0]), zs = M.poly.map(p => p[1]), inPoly = (x, z) => { let s = false; for (let a = 0, b = M.poly.length - 1; a < M.poly.length; b = a++) { const [ax, az] = M.poly[a], [bx, bz] = M.poly[b]; if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) s = !s; } return s; };
@@ -346,7 +350,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         const cxp = xs.reduce((a, b) => a + b) / xs.length, czp = zs.reduce((a, b) => a + b) / zs.length;
         for (const [ox, oz] of [[0, 0], [-0.3, 0.25], [0.3, -0.25]]) {
           const x = cxp + ox * wx, z = czp + oz * wz, y = C.ceilingAt(x, z); if (y === null) continue;
-          const L = new THREE.PointLight(0x4fe6cf, 0.9, 220, 1.2); L.position.set(x, y - 10, z); group.add(L); ctx.lights.push(L);
+          const L = new THREE.PointLight(0x4fe6cf, 0.9, 220, 1.2); L.position.set(x, y - 10, z); ctx.baked.push(L);
         }
         let tw = 0; ctx.anims.push(dt => { tw += dt; bright.material.opacity = 0.75 + 0.12 * Math.sin(tw * 0.9); });
       }
@@ -418,7 +422,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
           const out = V(-d.x, 0, -d.z).addScaledVector(side, -u / B.w * 0.5).add(V(0, -v / B.h * 0.45 + 0.25, 0)).add(V((R() - 0.5) * 0.5, (R() - 0.5) * 0.5, (R() - 0.5) * 0.5));
           put(rr > 0.6 && R() < 0.4 ? white : pick(), p, out, 1.2 + R() * R() * (5 - rr * 3));
         }
-        if (!far) { const P = new THREE.PointLight(0xa57bff, 2.4, 80, 1.3); P.position.copy(face).addScaledVector(d, -12); group.add(P); ctx.lights.push(P); }
+        if (!far) { const P = new THREE.PointLight(0xa57bff, 2.4, 80, 1.3); P.position.copy(face).addScaledVector(d, -12); ctx.baked.push(P); }
       }
       for (const [L, hue] of [[purple, 0x9b6bff], [blue, 0x5f8dff], [white, 0xe6e2ff]]) if (L.length) {
         const mat = new THREE.MeshStandardMaterial({ color: hue, emissive: hue, emissiveIntensity: 0.7, roughness: 0.15, metalness: 0.1, vertexColors: true });
@@ -432,7 +436,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       for (const s of [-1, 1]) group.add(beam(V(x + s * w / 2, y - 1, z), V(x + s * w / 2, y + hgt, z), 0.7, timberMat));
       group.add(beam(V(x - w / 2 - 1, y + hgt, z), V(x + w / 2 + 1, y + hgt, z), 0.8, timberMat));
       const day = new THREE.Mesh(new THREE.PlaneGeometry(w - 1, hgt), new THREE.MeshBasicMaterial({ color: 0xfff6e0, fog: false })); day.position.set(x, y + hgt / 2 - 0.5, z + 4); group.add(day);
-      const L = new THREE.SpotLight(0xfff0d8, 2.2, 160, 0.7, 0.6, 1); L.position.set(x, y + hgt * 0.6, z + 3); L.target.position.set(x, y - 10, z - 60); group.add(L, L.target); ctx.lights.push(L);
+      const L = new THREE.SpotLight(0xfff0d8, 2.2, 160, 0.7, 0.6, 1); L.position.set(x, y + hgt * 0.6, z + 3); L.target.position.set(x, y - 10, z - 60); ctx.baked.push(L);
       // rock around the mouth
       const rk = new THREE.Mesh(new THREE.TorusGeometry(w * 0.9, 4.5, 6, 18, Math.PI), rockMat); rk.position.set(x, y - 1, z + 1); group.add(rk);
     }
@@ -459,7 +463,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         else L1.push({ p: V(x, top + 0.4, z), q: new THREE.Quaternion().setFromUnitVectors(UP, V((R() - 0.5) * 0.7, -1, (R() - 0.5) * 0.7).normalize()), s: V(len * 0.3, len, len * 0.3), c: 0.85 + R() * 0.3 });
       }
       L.forEach((list, i) => list.length && group.add(instances(crystalGeo, new THREE.MeshStandardMaterial({ color: hues[i], emissive: hues[i], emissiveIntensity: 0.8, roughness: 0.15, vertexColors: true }), list, true)));
-      if (!far) for (let k = 0; k < 3; k++) { const P = new THREE.PointLight(k % 2 ? 0x6fd8ff : 0x9b7bff, 1.6, 70, 1.3), a = k * 2.1; P.position.set(M.x + Math.cos(a) * M.r * 0.4, gy(M.x, M.z) + 6, M.z + Math.sin(a) * M.r * 0.4); group.add(P); ctx.lights.push(P); }
+      if (!far) for (let k = 0; k < 3; k++) { const P = new THREE.PointLight(k % 2 ? 0x6fd8ff : 0x9b7bff, 1.6, 70, 1.3), a = k * 2.1; P.position.set(M.x + Math.cos(a) * M.r * 0.4, gy(M.x, M.z) + 6, M.z + Math.sin(a) * M.r * 0.4); ctx.baked.push(P); }
       for (let k = 0; k < 5; k++) { const gl = glow(k % 2 ? 0x6fd8ff : 0x9b7bff, 26, 0.25), a = R() * 6.28, r = R() * M.r * 0.7; gl.position.set(M.x + Math.cos(a) * r, gy(M.x, M.z) + 3 + R() * 8, M.z + Math.sin(a) * r); group.add(gl); }
     }
     else if (M.type === 'gours') {
@@ -473,7 +477,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         const rim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.08, 6, 48).rotateX(Math.PI / 2), lip); rim.scale.set(rx + 0.4, 6, rz + 0.4); rim.rotation.y = -yaw; rim.position.set(x, g + 0.25, z); group.add(rim);
         const gl = glow(0x3fe6d6, rx * 1.6, 0.3); gl.position.set(x, g + 2.5, z); group.add(gl);
       });
-      if (!far) for (const k of [0, 2]) { const [x, z] = M.pts[k], P = new THREE.PointLight(0x3fe6d6, 3.2, 70, 1.2); P.position.set(x, gy(x, z) + 3, z); group.add(P); ctx.lights.push(P); }
+      if (!far) for (const k of [0, 2]) { const [x, z] = M.pts[k], P = new THREE.PointLight(0x3fe6d6, 3.2, 70, 1.2); P.position.set(x, gy(x, z) + 3, z); ctx.baked.push(P); }
     }
     else if (M.type === 'stack') {
       // fallen rock stacked up a steep bank: wherever the ground in front of the green rises sharply
@@ -513,11 +517,11 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       const st = new THREE.Mesh(new THREE.CylinderGeometry(0.35 * t.s, 0.55 * t.s, H + cs * 0.4, 10), stem); st.position.set(t.x, t.y + (H + cs * 0.4) / 2 - 0.3, t.z); group.add(st);
       const cp = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), capM); cp.scale.set(cs * 1.05, cs * 0.55, cs * 1.05); cp.position.set(t.x, t.y + H + cs * 0.25, t.z); group.add(cp);
     }
-    const P = new THREE.PointLight(0x46e3cc, 1.6, 60, 1.4), m = shrooms[Math.floor(shrooms.length / 2)]; P.position.set(m.x, m.y + 10, m.z); group.add(P); ctx.lights.push(P);
+    const P = new THREE.PointLight(0x46e3cc, 1.6, 60, 1.4), m = shrooms[Math.floor(shrooms.length / 2)]; P.position.set(m.x, m.y + 10, m.z); ctx.baked.push(P);
   }
   // the play is lit: the lanterns nearest the line, and a warm light over the green
   const along = p => { const tx = h.tee[0], tz = h.tee[1]; const dx = pin.x - tx, dz = pin.z - tz, L2 = dx * dx + dz * dz, t = Math.max(0, Math.min(1, ((p.x - tx) * dx + (p.z - tz) * dz) / L2)); return Math.hypot(p.x - tx - dx * t, p.z - tz - dz * t); };
-  lanterns.sort((a, b) => along(a) - along(b)).slice(0, coarse ? 5 : 8).forEach(p => { const L = new THREE.PointLight(0xffb366, 2.1, 85, 1.3); L.position.copy(p).add(V(0, 1, 0)); group.add(L); ctx.lights.push(L); });
+  lanterns.sort((a, b) => along(a) - along(b)).slice(0, coarse ? 5 : 8).forEach(p => { const L = new THREE.PointLight(0xffb366, 2.1, 85, 1.3); L.position.copy(p).add(V(0, 1, 0)); ctx.baked.push(L); });
   const gL = new THREE.SpotLight(0xfff0d6, 2.6, 160, 0.42, 0.7, 1); gL.position.set(pin.x + 18, pin.y + 48, pin.z + 22); gL.target.position.copy(pin); group.add(gL, gL.target); ctx.lights.push(gL);
   // a softer light down the fairway from the tee, so the landing area reads
   const mid = V((h.tee[0] + pin.x) / 2, 0, (h.tee[1] + pin.z) / 2); mid.y = gy(mid.x, mid.z);
@@ -530,11 +534,119 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     const ore = instances(lumpy(1, 4.4, 0.4), rockMat, Array.from({ length: 9 }, () => ({ p: V((R() - 0.5) * 1.6, 1.45 + R() * 0.2, (R() - 0.5) * 0.7), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(R(), R(), R())), s: V(0.35, 0.3, 0.32), c: 0.5 + R() * 0.3 })), true);
     cartG.add(ore);
     const gem = new THREE.Mesh(crystalGeo, new THREE.MeshStandardMaterial({ color: 0x8f6bff, emissive: 0x8f6bff, emissiveIntensity: 0.9 })); gem.scale.set(0.25, 0.8, 0.25); gem.position.set(0.3, 1.5, 0); cartG.add(gem);
-    group.add(cartG);
+    cartG.userData.noBake = true; group.add(cartG); // it rolls: lit by the real lights only
     let shown = T.cart.s;
     const place = () => { const P = T.cart.at(shown); cartG.position.set(P.x, gy(P.x, P.z) + 0.15, P.z); cartG.rotation.y = -P.yaw; };
     place();
     ctx.anims.push(dt => { const d = T.cart.s - shown; if (Math.abs(d) > 0.01) { shown += Math.sign(d) * Math.min(Math.abs(d), dt * 4); place(); } });
   }
   return ctx;
+}
+
+/* ---------- baked light: what ctx.baked's lights would add, per vertex ----------
+   Three r147's legacy light units: a light adds N·L × colour × intensity × falloff (× cone, for a spot) times
+   the surface's diffuse colour, with falloff = (1 − d/distance)^decay. bakeLights() works that out for every
+   vertex of every lit mesh in the group (per instance, facing the light, for instanced meshes) into aBake,
+   and swaps each material for a twin that adds aBake × diffuse to the direct light. The shine (the glare on
+   the grass toward a light) depends on where you stand, so it can't be baked: each vertex also keeps its three
+   strongest lights (aL1..aL3: direction and strength; any others join the one nearest in direction) and the
+   colour of its light (aTint), and the shader works out three highlights instead of one per light. (Three's
+   legacy units scale every light by PI: it cancels against the Lambert 1/PI in the diffuse, not in the shine.) */
+const bakedMats = [new WeakMap(), new WeakMap()], BAKE = [['aBake', 3], ['aTint', 3], ['aL1', 4], ['aL2', 4], ['aL3', 4]];
+// inst: an instanced mesh, baked once per instance, so its matte light comes from the three lights per pixel
+function bakedMat(mat, inst) {
+  let m = bakedMats[+inst].get(mat); if (m) return m;
+  m = mat.clone();
+  const base = mat.onBeforeCompile, key = mat.customProgramCacheKey();
+  m.onBeforeCompile = (sh, r) => {
+    base.call(mat, sh, r);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec3 aBake, aTint; attribute vec4 aL1, aL2, aL3; varying vec3 vBake, vTint; varying vec4 vL1, vL2, vL3;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+vBake = aBake; vTint = aTint;
+vL1 = vec4((viewMatrix * vec4(aL1.xyz, 0.0)).xyz, aL1.w); vL2 = vec4((viewMatrix * vec4(aL2.xyz, 0.0)).xyz, aL2.w); vL3 = vec4((viewMatrix * vec4(aL3.xyz, 0.0)).xyz, aL3.w);`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vBake, vTint; varying vec4 vL1, vL2, vL3;')
+      .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>
+vec3 bakedShine(vec4 L, GeometricContext geometry, PhysicalMaterial material) {
+  if (L.w <= 0.0 || dot(L.xyz, L.xyz) < 1e-8) return vec3(0.0);
+  vec3 l = normalize(L.xyz);
+  return PI * saturate(dot(geometry.normal, l)) * L.w * vTint * BRDF_GGX(l, geometry.viewDir, geometry.normal, material.specularColor, material.specularF90, material.roughness);
+}
+vec3 bakedMatte(vec4 L, GeometricContext geometry) {
+  if (L.w <= 0.0 || dot(L.xyz, L.xyz) < 1e-8) return vec3(0.0);
+  return saturate(dot(geometry.normal, normalize(L.xyz))) * L.w * vTint;
+}`).replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+reflectedLight.directDiffuse += (${inst ? 'bakedMatte(vL1, geometry) + bakedMatte(vL2, geometry) + bakedMatte(vL3, geometry)' : 'vBake'}) * material.diffuseColor;
+reflectedLight.directSpecular += bakedShine(vL1, geometry, material) + bakedShine(vL2, geometry, material) + bakedShine(vL3, geometry, material);`);
+  };
+  m.customProgramCacheKey = () => key + (inst ? '|bake-inst' : '|bake');
+  bakedMats[+inst].set(mat, m); return m;
+}
+export function bakeLights(group, lights) {
+  group.updateMatrixWorld(true);
+  const Ls = lights.filter(L => L.intensity > 0).map(L => {
+    const p = group.localToWorld(L.position.clone()), spot = !!L.isSpotLight, t = spot ? group.localToWorld(L.target.position.clone()) : null;
+    return { x: p.x, y: p.y, z: p.z, d: L.distance, decay: L.decay, r: L.color.r * L.intensity, g: L.color.g * L.intensity, b: L.color.b * L.intensity,
+      dir: spot ? p.clone().sub(t).normalize() : null, cc: spot ? Math.cos(L.angle) : 0, pc: spot ? Math.cos(L.angle * (1 - L.penumbra)) : 0 };
+  });
+  const hit = new Float64Array(Ls.length * 4); // per light reaching the point: strength (r+g+b), direction
+  // the light reaching one point; facing = N·L for a vertex normal, or a fixed share for an instance
+  const reach = (list, A, o, x, y, z, nx, ny, nz, facing) => {
+    let r = 0, g = 0, b = 0, sr = 0, sg = 0, sb = 0, nh = 0;
+    for (const L of list) {
+      let lx = L.x - x, ly = L.y - y, lz = L.z - z; const dist = Math.hypot(lx, ly, lz) || 1e-6;
+      if (L.d > 0 && dist >= L.d) continue;
+      lx /= dist; ly /= dist; lz /= dist;
+      const k = facing ?? nx * lx + ny * ly + nz * lz; if (k <= 0) continue;
+      let f = 1;
+      if (L.dir) {
+        const c = lx * L.dir.x + ly * L.dir.y + lz * L.dir.z; if (c <= L.cc) continue;
+        if (c < L.pc) { const t = (c - L.cc) / (L.pc - L.cc); f = t * t * (3 - 2 * t); }
+      }
+      if (L.d > 0 && L.decay > 0) f *= Math.pow(1 - dist / L.d, L.decay);
+      r += k * f * L.r; g += k * f * L.g; b += k * f * L.b; sr += f * L.r; sg += f * L.g; sb += f * L.b;
+      hit[nh * 4] = f * (L.r + L.g + L.b); hit[nh * 4 + 1] = lx; hit[nh * 4 + 2] = ly; hit[nh * 4 + 3] = lz; nh++;
+    }
+    const [D, Tn, L1, L2, L3] = A, o4 = o / 3 * 4, lobes = [L1, L2, L3];
+    D[o] = r; D[o + 1] = g; D[o + 2] = b;
+    const st = sr + sg + sb; Tn[o] = st > 0 ? sr / st : 0; Tn[o + 1] = st > 0 ? sg / st : 0; Tn[o + 2] = st > 0 ? sb / st : 0;
+    for (const Lb of lobes) Lb[o4] = Lb[o4 + 1] = Lb[o4 + 2] = Lb[o4 + 3] = 0;
+    // the three strongest each get a highlight; the rest join the one nearest in direction
+    const used = [-1, -1, -1];
+    for (let j = 0; j < 3; j++) { let best = -1; for (let q = 0; q < nh; q++) if (!used.includes(q) && (best < 0 || hit[q * 4] > hit[best * 4])) best = q; if (best < 0) break; used[j] = best;
+      const Lb = lobes[j]; Lb[o4] = hit[best * 4 + 1]; Lb[o4 + 1] = hit[best * 4 + 2]; Lb[o4 + 2] = hit[best * 4 + 3]; Lb[o4 + 3] = hit[best * 4]; }
+    for (let q = 0; q < nh; q++) {
+      if (used.includes(q)) continue;
+      let bj = 0, bd = -2; for (let j = 0; j < 3; j++) { if (used[j] < 0) continue; const Lb = lobes[j], d = Lb[o4] * hit[q * 4 + 1] + Lb[o4 + 1] * hit[q * 4 + 2] + Lb[o4 + 2] * hit[q * 4 + 3]; if (d > bd) { bd = d; bj = j; } }
+      lobes[bj][o4 + 3] += hit[q * 4];
+    }
+  };
+  const seen = new Set(), v = new THREE.Vector3(), n = new THREE.Vector3(), nm = new THREE.Matrix3(), m4 = new THREE.Matrix4(), sph = new THREE.Sphere();
+  const arrays = count => BAKE.map(([, w]) => new Float32Array(count * w));
+  const visit = o => {
+    if (o.userData.noBake) return;
+    if (o.isMesh && o.material && !Array.isArray(o.material) && o.material.isMeshStandardMaterial) {
+      if (seen.has(o.geometry)) o.geometry = o.geometry.clone(); // shared shapes each get their own light
+      const geo = o.geometry; seen.add(geo);
+      if (o.isInstancedMesh) {
+        const A = arrays(o.count);
+        for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); m4.premultiply(o.matrixWorld); v.setFromMatrixPosition(m4); reach(Ls, A, i * 3, v.x, v.y, v.z, 0, 0, 0, 0.55); }
+        BAKE.forEach(([k, w], j) => geo.setAttribute(k, new THREE.InstancedBufferAttribute(A[j], w)));
+      } else {
+        if (!geo.boundingSphere) geo.computeBoundingSphere();
+        sph.copy(geo.boundingSphere).applyMatrix4(o.matrixWorld);
+        const near = Ls.filter(L => !(L.d > 0) || Math.hypot(L.x - sph.center.x, L.y - sph.center.y, L.z - sph.center.z) < sph.radius + L.d);
+        const P = geo.attributes.position, N = geo.attributes.normal, A = arrays(P.count);
+        nm.getNormalMatrix(o.matrixWorld);
+        if (near.length) for (let i = 0; i < P.count; i++) {
+          v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+          if (N) { n.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); reach(near, A, i * 3, v.x, v.y, v.z, n.x, n.y, n.z, null); }
+          else reach(near, A, i * 3, v.x, v.y, v.z, 0, 0, 0, 0.55);
+        }
+        BAKE.forEach(([k, w], j) => geo.setAttribute(k, new THREE.BufferAttribute(A[j], w)));
+      }
+      o.material = bakedMat(o.material, !!o.isInstancedMesh);
+    }
+    for (const c of o.children) visit(c);
+  };
+  visit(group);
 }
