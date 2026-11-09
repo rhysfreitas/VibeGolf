@@ -45,10 +45,15 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   plateaus". Use a wide `step` landform (a ramp spanning wall to wall, with `run` to stay up) to climb
   or drop, `mound`s for knolls and blind crests, `tilt` for cants. Keep islands for real ledges (a tee at
   a lip looking down) and for rock.
-- **Keep the sides level with the fairway and green.** A ramp that spans wall to wall climbs without
-  kicking the ball toward water or a wall. A mound under a green falls away on every side: use it only
-  when that's the point (the 5th's blind shot), and give the green a rim or a bowl so a near miss stays
-  at green level.
+- **The ground round fairways and greens can move, but no accidental plateaus.** Gentle banks, rolls
+  and a slope up to a wall are fine. Avoid sharp rises or plateaus along the edges of lots of fairways
+  and greens: a raised shelf beside the short grass, or a green on a table with drops on every side.
+  These usually come from a slab or a ramp that ends short of the wall, not from a decision, and the
+  owner reads them as weird drop-offs. Fix the shape instead of leaving it. A plateau is fine as a
+  thought-out feature on one hole, chosen for how it plays (a raised green with a false front, the
+  5th's blind shot over a mound), with a rim or bowl where a near miss should stay at green level.
+  Ask of each one: did we mean this, and does it make the shot better?
+- A ramp that spans wall to wall climbs without kicking the ball toward water or a wall.
 - Climbs: keep the average grade under about 15% (a smoothstep ramp peaks at 1.5× its average).
 - **One hole's landforms never lift another hole's ground.** Islands from other holes in the same
   cavern come along as scenery; the shaped ground (`sceneryAt` in terrain.js) keeps their height. And
