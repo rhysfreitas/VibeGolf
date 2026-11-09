@@ -31,7 +31,7 @@ function lumpy(detail, seed, amt) { // a faceted boulder
 }
 const lathe = (n, seg, f) => withColor(new THREE.LatheGeometry(Array.from({ length: n + 1 }, (_, i) => new THREE.Vector2(Math.max(0.02, f(i / n)), i / n)), seg));
 const stalGeo = lathe(14, 8, t => Math.pow(t, 1.25) * (1 + 0.12 * Math.sin(t * 23))); // tip at y=0, base (radius 1) at y=1
-const flowGeo = lathe(18, 9, t => 0.4 + 0.8 * Math.pow(1 - t, 3) + 0.55 * Math.pow(t, 5) + 0.07 * Math.sin(t * 31)); // flowstone, floor (y=0) to roof (y=1)
+const flowGeo = lathe(18, 9, t => 0.3 + 0.95 * Math.pow(1 - t, 2.2) + 0.08 * Math.sin(t * 31)); // flowstone draped down a wall, spreading at its foot (y=0)
 const crystalGeo = withColor(new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(0.5, 0.02), new THREE.Vector2(0.5, 0.74), new THREE.Vector2(0, 1)], 6));
 const UP = new THREE.Vector3(0, 1, 0);
 function instances(geo, mat, list, tint) { // list: [{ p, q, s, c }]
@@ -43,6 +43,9 @@ function beam(a, b, w, mat) { // a timber from a to b
   const d = b.clone().sub(a), m = box(w, w, d.length(), mat);
   m.position.copy(a).addScaledVector(d, 0.5); m.lookAt(b); m.castShadow = true; return m;
 }
+
+// how far the wall's face stands in (+) or out from the solid shape at a point (the knobs follow it)
+const wallPush = (x, y, z) => (fbm(x / 13 + 2.2, z / 13 + y / 11) - 0.5) * 8 + (fbm(x / 4.5, z / 4.5 - y / 5) - 0.5) * 3;
 
 export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   const C = T.cave, R = rng(h.par * 7919 + (h.yards?.eagle || 1));
@@ -88,7 +91,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       if (Number.isNaN(Y[k])) continue;
       const nx_ = nr.getX(k), nz_ = nr.getZ(k), hz = Math.hypot(nx_, nz_); if (hz < 0.35) continue;
       const x = pos[k * 3], y = pos[k * 3 + 1], z = pos[k * 3 + 2];
-      const o = ((fbm(x / 13 + 2.2, z / 13 + y / 11) - 0.5) * 11 + (fbm(x / 4.5, z / 4.5 - y / 5) - 0.5) * 4) * Math.min(1, (hz - 0.35) * 2.5);
+      const o = wallPush(x, y, z) * Math.min(1, (hz - 0.35) * 2.5);
       pos[k * 3] += nx_ / hz * o; pos[k * 3 + 2] += nz_ / hz * o;
     }
     geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); }
@@ -98,7 +101,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   const bx0 = box0.x0 - 160, bx1 = box0.x1 + 160, bz0 = box0.z0 - 160, bz1 = box0.z1 + 160;
   const PLAY = new Set(['green', 'fringe', 'fairway', 'tee', 'sand', 'water']);
   const rubble = [], blocks = [], flows = [], q0 = new THREE.Quaternion(), eul = new THREE.Euler();
-  const wantR = coarse ? 900 : 1700, wantB = coarse ? 110 : 180, wantF = coarse ? 80 : 130;
+  const wantR = coarse ? 900 : 1700, wantB = coarse ? 260 : 420, wantF = coarse ? 80 : 130;
   for (let t = 0; t < 40000 && (rubble.length < wantR || blocks.length < wantB || flows.length < wantF); t++) {
     const x = bx0 + R() * (bx1 - bx0), z = bz0 + R() * (bz1 - bz0), d = C.wallDepth(x, z);
     if (d < -5 || d > 10) continue;
@@ -106,26 +109,16 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     const rot = q0.clone().setFromEuler(eul.set((R() - 0.5) * 0.6, R() * 6.3, (R() - 0.5) * 0.6));
     if (d > -1 && rubble.length < wantR && R() < Math.pow(1 - Math.max(0, d) / 10, 1.6)) {
       const k = 0.35 + R() * R() * 1.6; rubble.push({ p: V(x, g - k * 0.25, z), q: rot, s: V(k * (0.8 + R() * 0.6), k, k * (0.8 + R() * 0.6)), c: 0.55 + R() * 0.4 });
-    } else if (d < 3 && blocks.length < wantB && R() < 0.35) {
-      const k = 2 + R() * R() * 6; blocks.push({ p: V(x, g + k * 0.15, z), q: rot, s: V(k * (0.9 + R() * 0.7), k * (0.6 + R() * 0.5), k * (0.9 + R() * 0.5)), c: 0.5 + R() * 0.35 });
-    } else if (d > 0.5 && d < 4 && flows.length < wantF && R() < 0.25) {
+    } else if (d < 4 && blocks.length < wantB && R() < 0.45) {
+      // fallen blocks heaped against the wall foot, some piled two high
+      const k = 2.5 + R() * R() * 8, sy = k * (0.6 + R() * 0.5); blocks.push({ p: V(x, g + sy * 0.3, z), q: rot, s: V(k * (0.9 + R() * 0.7), sy, k * (0.9 + R() * 0.5)), c: 0.5 + R() * 0.35 });
+      if (d < 1.5 && R() < 0.4) { const k2 = k * (0.45 + R() * 0.3); blocks.push({ p: V(x + (R() - 0.5) * k * 0.6, g + sy * 0.85 + k2 * 0.3, z + (R() - 0.5) * k * 0.6), q: q0.clone().setFromEuler(eul.set(R(), R() * 6.3, R())), s: V(k2, k2 * 0.8, k2 * 1.1), c: 0.5 + R() * 0.35 }); }
+    } else if (d > -1 && d < 2 && flows.length < wantF && R() < 0.3) {
       const top = C.ceilingAt(x, z); if (top === null || top - g < 8) continue;
       const w = 2.5 + R() * 5; flows.push({ p: V(x, g - 0.6, z), q: q0.clone().setFromEuler(eul.set(0, R() * 6.3, 0)), s: V(w, top - g + 4, w * (0.55 + R() * 0.3)), c: 0.62 + R() * 0.3 });
     }
   }
-  // knobs and ledges of rock standing out of the wall sheet, from the foot most of the way up
-  const knobs = [], wantK = coarse ? 600 : 950;
-  for (let t = 0; t < 40000 && knobs.length < wantK; t++) {
-    const x = bx0 + R() * (bx1 - bx0), z = bz0 + R() * (bz1 - bz0), d = C.wallDepth(x, z);
-    if (d < 0.2 || d > 10) continue;
-    const y = C.ceilingAt(x, z); if (y === null) continue;
-    const g = gy(x, z); if (y - g < 2.5) continue;
-    const k = 3 + R() * R() * 10, e = 1.5, gx = C.wallDepth(x + e, z) - C.wallDepth(x - e, z), gz = C.wallDepth(x, z + e) - C.wallDepth(x, z - e), gl = Math.hypot(gx, gz) || 1;
-    // set into the wall (away from the hall) so only part of each stands proud
-    knobs.push({ p: V(x - gx / gl * k * 0.55, y - k * 0.1, z - gz / gl * k * 0.55), q: q0.clone().setFromEuler(eul.set((R() - 0.5) * 0.8, R() * 6.3, (R() - 0.5) * 0.8)), s: V(k * (1 + R() * 0.9), k * (0.5 + R() * 0.7), k * (1 + R() * 0.9)), c: 0.5 + R() * 0.4 });
-  }
-  if (knobs.length) group.add(instances(lumpy(1, 5.3, 0.5), rockMat, knobs, true));
-  const flowMat = new THREE.MeshStandardMaterial({ color: 0x9a8b76, roughness: 0.75, metalness: 0, vertexColors: true });
+  const flowMat = new THREE.MeshStandardMaterial({ color: 0x857a6c, roughness: 0.8, metalness: 0, vertexColors: true });
   if (rubble.length) group.add(instances(lumpy(1, 3.1, 0.35), rockMat, rubble, true));
   if (blocks.length) group.add(instances(lumpy(1, 7.7, 0.45), rockMat, blocks, true));
   if (flows.length) group.add(instances(flowGeo, flowMat, flows, true));
