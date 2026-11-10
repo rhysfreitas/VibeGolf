@@ -1,0 +1,313 @@
+// The Reclaim, plan book draft 1: nine holes through a city that nature has taken back, about twenty years
+// after everyone left. Misty overcast morning. Each hole is written in its own frame (metres; tee at the
+// origin, the hole runs toward -z, x is right of the line, y up from the hole's `base`), from `legs`
+// ([length, turn in degrees, + = right]). `place` puts the hole in the city: its back tee's world spot and
+// compass heading. World: x east, -z north; heights are absolute (the riverside street is 0).
+// This is plan data for the book (plans, profiles, sketch views), written to convert to the engine format
+// later: islands/landforms/fairways/green/bunkers/water/rocks/groves/props.
+import { lineOf, lengthOf, at, YD, rnd } from './geo.mjs';
+
+export const COURSE = {
+  id: 'reclaim', name: 'The Reclaim', theme: 'city', altFt: 300,
+  signature: { time: 'morning', wind: 'light', windFrom: 'random', weather: 'overcast', temp: 'cool', mist: true },
+  teeSets: [
+    { id: 'spire', name: 'Spire', color: '#2f5fa8', minDrive: 260 },
+    { id: 'brick', name: 'Brick', color: '#f2efe6', minDrive: 230 },
+    { id: 'ivy', name: 'Ivy', color: '#c94a3a', minDrive: 200 },
+    { id: 'moss', name: 'Moss', color: '#e0b84a', minDrive: 0 },
+  ],
+};
+
+// a tree stand (in play): n trees scattered round a point
+const grove = (p, r, n, seed, h = [9, 16]) => { const R = rnd(seed); return Array.from({ length: n }, () => {
+  const a = R() * 6.283, d = Math.sqrt(R()) * r; return { x: p[0] + Math.cos(a) * d, z: p[1] + Math.sin(a) * d, r: 3 + R() * 3, h: h[0] + R() * (h[1] - h[0]) }; }); };
+const yawOf = (a, b) => Math.atan2(b[0] - a[0], -(b[1] - a[1]));
+
+function hole(def) {
+  const L = lineOf(def.legs), len = lengthOf(L), P = (s, o = 0) => at(L, s, o);
+  const h = def.build(P, L, len);
+  h.line = L; h.len = len; h.pin = L.at(-1);
+  // tee spots: a number is s along the line; [s, off] a pad beside it
+  h.teePts = {};
+  for (const [k, v] of Object.entries(h.tees)) h.teePts[k] = typeof v === 'number' ? P(v) : P(v[0], v[1]);
+  h.yards = {};
+  for (const [k, v] of Object.entries(h.tees)) { const s = typeof v === 'number' ? v : v[0]; h.yards[k] = Math.round((len - s) / YD / 5) * 5; }
+  return { ...def, ...h };
+}
+
+export const HOLES = [
+  // 1. THE EL: off the platform of the elevated line, down to the boulevard, round a collapsed block
+  hole({ n: 1, name: 'The El', par: 4, legs: [[232, 0], [134, 32]], place: { at: [-180, -320], heading: 8 }, base: 0,
+    build: (P) => ({
+      tees: { spire: 0, brick: 28, ivy: [62, 36], moss: [100, 38] },
+      prof: [[0, 0], [110, 0], [170, 1.5], [260, 0.5], [366, 0]],
+      fairway: [[70, 232, 56], [232, 352, 46]],
+      corridor: 20,
+      green: { rx: 15, rz: 18, style: 'tilt, back to front' },
+      bunkers: [{ at: P(250, -34), rx: 12, rz: 7, rot: 0.5 }, { at: P(348, 20), rx: 8, rz: 6 }],
+      rubble: [{ at: P(248, 52), rx: 40, rz: 30, rot: 0.6, h: 5, label: 'collapsed block' }],
+      platform: [{ at: P(14, -4), w: 16, d: 46, y: 12, rot: 0, label: 'El station platform' }],
+      el: [{ pts: [P(-40, -16), P(20, -16), P(80, -40), P(205, -40)], y: 12, w: 9, broken: true, label: 'the El' }],
+      wrecks: [{ type: 'bus', at: P(150, -56), rot: 0.2 }, { type: 'car', at: P(120, 38), rot: 1.2 }, { type: 'car', at: P(300, -40), rot: 2.6 },
+        { type: 'car', at: P(196, 41), rot: 0.1 }],
+      trees: [...grove(P(240, 62), 26, 7, 11), ...grove(P(366 + 0, -36), 12, 3, 12)],
+      buildings: [
+        // left, beyond the El
+        { at: P(60, -88), w: 40, d: 70, h: 46, broken: true }, { at: P(150, -92), w: 44, d: 60, h: 64, broken: true },
+        { at: P(240, -96), w: 40, d: 70, h: 38, broken: true },
+        // right of the first leg
+        { at: P(40, 76), w: 36, d: 60, h: 34, broken: true }, { at: P(130, 78), w: 40, d: 64, h: 52, broken: true, vines: true },
+        // round the green
+        { at: P(395, 10), w: 70, d: 30, h: 28, broken: true }, { at: P(330, 78), w: 40, d: 50, h: 42, broken: true },
+      ],
+      targets: [{ name: 'Past the El', at: P(226, -6) }, { name: 'Over the rubble', at: P(270, 4), bold: true }],
+      words: {
+        plays: 'Tee off the broken platform of the elevated line, 12 m above the boulevard. The track runs on down the left on its girders and ends in mid-air, a carriage hanging off the break. The street bends right round a block that came down in a heap.',
+        safe: 'Drive at the end of the El, 225 m, and come in with a short iron.',
+        bold: 'Carry the corner of the rubble heap (about 240 m from the Spire tee) for a wedge in.',
+        miss: 'Left is under the El, among the columns, cars and a bus. Right is the rubble and its trees.',
+      },
+    }),
+  }),
+
+  // 2. THE ATRIUM: a dogleg left round a gutted office tower whose lower floors are blown out
+  hole({ n: 2, name: 'The Atrium', par: 4, legs: [[200, 0], [148, -62]], place: { at: [-10, -690], heading: 32 }, base: 0,
+    build: (P, L) => {
+      // the bold line: straight from the tee through the atrium to the second leg, 90 m past the corner
+      const land = P(290), dir = Math.atan2(land[0], -land[1]);
+      const along = d => [Math.sin(dir) * d, -Math.cos(dir) * d];
+      const c = along(168);
+      return {
+        tees: { spire: 0, brick: 22, ivy: 48, moss: [78, 34] },
+        prof: [[0, 0], [130, 0], [205, 3], [250, 5], [348, 8]],
+        fairway: [[60, 200, 52, 6], [200, 336, 48]],
+        corridor: 18,
+        green: { rx: 14, rz: 17, style: 'two tiers, old fountain steps as a false front' },
+        bunkers: [{ at: P(330, -22), rx: 9, rz: 6 }, { at: P(205, 40), rx: 13, rz: 7, rot: -0.3 }],
+        rubble: [{ at: P(214, 14), rx: 30, rz: 22, rot: -0.4, h: 2.5, label: 'rubble ramp' }],
+        buildings: [
+          { at: c, w: 46, d: 40, rot: dir, h: 92, broken: true, open: 44, cols: 4, name: 'the Atrium', label: 'the Atrium (open to 44 m)' },
+          // the block it stands on: the courtyard walls left of the second leg and behind the green
+          { at: P(350, 40), w: 60, d: 26, h: 34, broken: true, vines: true }, { at: P(378, -10), w: 30, d: 70, rot: 0.5, h: 48, broken: true },
+          { at: P(260, -70), w: 50, d: 30, h: 26, broken: true },
+          // right of the first leg
+          { at: P(80, 70), w: 40, d: 60, h: 40, broken: true }, { at: P(170, 84), w: 40, d: 56, h: 58, broken: true },
+          { at: P(60, -66), w: 30, d: 50, h: 30, broken: true },
+        ],
+        wrecks: [{ type: 'car', at: P(140, -30), rot: 0.4 }, { type: 'car', at: P(180, 34), rot: 1.9 }, { type: 'car', at: P(286, 34), rot: 0.8 }],
+        trees: [...grove(P(300, 46), 18, 5, 21), ...grove(P(110, 44), 10, 3, 22)],
+        targets: [{ name: 'The corner', at: P(212, 8) }, { name: 'Through the Atrium', at: P(290), bold: true }],
+        boldLine: [[0, 0], land],
+        words: {
+          plays: 'A gutted office tower stands in the inside of the dogleg. Its lower eleven floors are blown out to the columns, a lobby 44 m high you can see the second leg through. The street climbs a rubble ramp to a courtyard green set on old fountain steps.',
+          safe: 'Drive down the right to the corner (210 m) and play a mid iron round the tower.',
+          bold: 'Drive straight through the atrium: about a 250 m carry to the second leg, a wedge left.',
+          miss: 'Pulled, the ball hits the tower\'s columns or facade and drops into the rubble at its foot. Right of the first leg: wrecks and a block of offices.',
+        },
+      };
+    },
+  }),
+
+  // 3. THE STATION: a par 3 into the concourse of a collapsed subway station
+  hole({ n: 3, name: 'The Station', par: 3, legs: [[151, 0]], place: { at: [230, -770], heading: 82 }, base: 8,
+    build: (P) => ({
+      tees: { spire: 0, brick: 12, ivy: 30, moss: 48 },
+      prof: [[0, 0], [151, 0]],
+      pit: { at: P(128), rx: 62, rz: 76, rot: 0, depth: 10, bank: 14, label: 'the cave-in' },
+      ramp: { from: P(40, 46), to: P(110, 40), w: 26, label: 'the station stairs' },  // a way down on the right
+      corridor: 10,
+      green: { rx: 15, rz: 14, style: 'punchbowl on the concourse floor' },
+      fairway: [[95, 140, 34, 22]],
+      bunkers: [{ at: P(146, -21), rx: 7, rz: 9 }],
+      water: [{ at: P(176), rx: 46, rz: 7, y: -10.4, label: 'flooded tracks' }],
+      rubble: [{ at: P(70, -34), rx: 22, rz: 26, h: 2, label: 'fallen street' }],
+      roof: [{ at: P(186), w: 110, d: 22, y: 6, t: 1.2, label: 'concourse roof (what is left)' }],
+      columns: [P(110, -40), P(110, 40), P(150, -44), P(150, 44), P(190, -46), P(190, 30)].map(p => ({ at: p, h: 12, r: 0.6 })),
+      buildings: [{ at: P(20, -70), w: 40, d: 40, h: 44, broken: true }, { at: P(130, -110), w: 60, d: 40, h: 30, broken: true },
+        { at: P(240, 30), w: 80, d: 34, h: 54, broken: true, vines: true }, { at: P(100, 110), w: 70, d: 40, h: 36, broken: true }],
+      wrecks: [{ type: 'car', at: P(18, 26), rot: 1.4 }],
+      trees: [...grove(P(84, 52), 10, 3, 31, [6, 10])],
+      targets: [],
+      words: {
+        plays: 'The street fell into the station below. The green sits 10 m down on the concourse floor, in a bowl of broken paving that feeds a near miss toward it, with the flooded tracks behind and what is left of the roof hanging over them.',
+        safe: 'The bank short-right is the old station stairs: a soft way down for a short shot.',
+        bold: 'None: it is all one shot, about two clubs less than the yardage.',
+        miss: 'Long is in the flooded tracks. Left catches the steep broken bank of the cave-in.',
+      },
+    }),
+  }),
+
+  // 4. BROKEN TOWER: an S-bend par 5 under the top of a skyscraper that snapped and fell across the street
+  hole({ n: 4, name: 'Broken Tower', par: 5, legs: [[180, 0], [160, -34], [158, 42]], place: { at: [430, -860], heading: 112 }, base: 8,
+    build: (P) => {
+      const stump = P(132, 64), prop = P(150, -64);
+      return {
+        sketch: { tee: { up: 26, fov: 68 } },
+        tees: { spire: 0, brick: 30, ivy: 64, moss: [110, 40] },
+        prof: [[0, 0], [300, 0.5], [352, 3.5], [366, 6.5], [380, 5], [430, 7], [498, 10]],
+        fairway: [[50, 180, 56], [180, 340, 52], [345, 488, 46]],
+        corridor: 18,
+        green: { rx: 16, rz: 19, style: 'tilted to the left, in the hill park' },
+        bunkers: [{ at: P(272, 36), rx: 14, rz: 7 }, { at: P(470, 26), rx: 9, rz: 7 }, { at: P(486, -22), rx: 7, rz: 6 }],
+        rubble: [{ at: P(130, 40), rx: 22, rz: 28, h: 4, label: 'debris from the break' }, { at: P(362, 0), rx: 70, rz: 13, rot: 0.08, h: 0, label: 'the rubble crest' }],
+        crest: { at: P(362), length: 26, width: 140, height: 4 },
+        marker: P(366, 0),
+        span: { a: [stump[0], stump[1], 72], b: [prop[0], prop[1], 44], w: 30, t: 12, label: 'the fallen top of the tower' },
+        buildings: [
+          { at: stump, w: 34, d: 34, h: 72, broken: 'snap', name: 'the tower', label: 'the tower (snapped at 72 m)' },
+          { at: prop, w: 44, d: 44, h: 44, broken: true, name: 'the prop', label: 'the block that holds it up' },
+          { at: P(60, 70), w: 40, d: 50, h: 40, broken: true }, { at: P(40, -70), w: 40, d: 60, h: 30, broken: true },
+          { at: P(250, -76), w: 40, d: 70, h: 36, broken: true, vines: true }, { at: P(240, 84), w: 50, d: 60, h: 62, broken: true },
+          { at: P(330, 76), w: 40, d: 40, h: 24, broken: true },
+        ],
+        wrecks: [{ type: 'car', at: P(100, -30), rot: 0.3 }, { type: 'bus', at: P(212, 40), rot: 1.0 }, { type: 'car', at: P(300, -34), rot: 2.0 }],
+        trees: [...grove(P(470, -50), 30, 10, 41, [10, 18]), ...grove(P(500, 50), 26, 8, 42, [10, 18]), ...grove(P(420, 50), 14, 4, 43), ...grove(P(320, -50), 14, 4, 44)],
+        targets: [{ name: 'Under the span', at: P(262) }, { name: 'Short of the crest', at: P(338, 4) }, { name: 'Over the crest', at: P(420), bold: true }],
+        words: {
+          plays: 'A skyscraper snapped at the 18th floor. Its top fell across the street and lies propped on the block opposite, a slanting span 44 to 72 m up that you drive under. Then the street bends left and climbs a crest of rubble to the hill park, where the green sits among wild trees.',
+          safe: 'Drive under the span to the second leg, lay up short of the crest (it\'s blind), and wedge up the hill.',
+          bold: 'A big second carries the crest (a lamppost with a flag marks the line) and leaves a pitch.',
+          miss: 'The tower\'s stump and its debris on the right, wrecks on the left, trees round the green.',
+        },
+      };
+    },
+  }),
+
+  // 5. THE STADIUM: a par 3 from the broken upper deck down to the overgrown pitch
+  hole({ n: 5, name: 'The Stadium', par: 3, legs: [[178, 0]], place: { at: [955, -735], heading: 186 }, base: -10,
+    build: (P) => ({
+      tees: { spire: 0, brick: [14, -6], ivy: [32, 8], moss: [52, -10] },
+      prof: [[0, 28], [178, 0]],
+      stadium: { at: P(122), rx: 42, rz: 62, p: 3, stand: 48, h: 28, open: { s: [0, 60], w: 30 } },
+      corridor: 0,
+      green: { rx: 16, rz: 15, style: 'flat, in the bowl of the north stand' },
+      fairway: [[95, 168, 40]],
+      bunkers: [{ at: P(166, -18), rx: 8, rz: 6 }, { at: P(186, 14), rx: 9, rz: 5 }],
+      poles: [P(60, -62), P(60, 62), P(186, -62), P(186, 62)].map((p, i) => ({ at: p, h: 46, lean: i === 3 ? 14 : 0 })),
+      trees: [...grove(P(110, -30), 8, 3, 51, [6, 10]), ...grove(P(130, 30), 6, 2, 52, [6, 9])],
+      targets: [],
+      words: {
+        plays: 'The stadium sits in a bowl below the street. You tee from the broken upper deck of the south stand, 28 m above the pitch, and play down to a green at the north end of the pitch, where the stand rises behind it like a backstop.',
+        safe: 'The middle of the south stand fell in: the rubble slope below the tee is a soft landing, and short-right on the pitch leaves an easy chip.',
+        bold: 'Two clubs less than the yardage, straight at the flag.',
+        miss: 'Long runs into the seats and back down; wide is in the stands (a tiered lie, seats in the way).',
+      },
+    }),
+  }),
+
+  // 6. THE SQUARE: a drivable par 4 across an overgrown city square, with the El behind it
+  hole({ n: 6, name: 'The Square', par: 4, legs: [[274, 0]], place: { at: [790, -430], heading: 224 }, base: 14,
+    build: (P) => ({
+      tees: { spire: 0, brick: 22, ivy: [50, 30], moss: [88, 32] },
+      prof: [[0, 0], [120, 1], [200, 2], [240, 5], [274, 6]],
+      cant: [[60, 220, -1.5]],
+      fairway: [[64, 200, 50, 12], [200, 236, 30, 30]],
+      extraFw: [{ at: P(215, 34), rx: 22, rz: 26 }],
+      corridor: 22,
+      green: { rx: 14, rz: 16, style: 'raised on the old plaza steps, tilted to the front' },
+      bunkers: [{ at: P(258, 18), rx: 8, rz: 5 }, { at: P(286, -10), rx: 9, rz: 5 }],
+      water: [{ at: P(222, -16), rx: 24, rz: 22, y: 3.5, rim: true, label: 'the fountain' }],
+      trees: [...grove(P(120, -54), 34, 14, 61, [12, 20]), ...grove(P(150, 66), 30, 10, 62, [12, 20]), ...grove(P(250, -50), 14, 5, 63)],
+      buildings: [{ at: P(60, -110), w: 80, d: 40, h: 40, broken: true }, { at: P(170, -118), w: 60, d: 50, h: 70, broken: true, vines: true },
+        { at: P(100, 118), w: 80, d: 40, h: 34, broken: true }, { at: P(220, 120), w: 60, d: 40, h: 52, broken: true }, { at: P(320, 10), w: 90, d: 26, h: 30, broken: true }],
+      el: [{ pts: [P(305, 170), P(305, -55)], y: 14, w: 9, broken: true, label: 'the El behind the green' }],
+      wrecks: [{ type: 'car', at: P(36, -34), rot: 0.5 }],
+      targets: [{ name: 'Lay-up right', at: P(200, 30) }, { name: 'Drive the green', at: P(274), bold: true, pin: true }],
+      words: {
+        plays: 'A city square gone wild: stands of big trees down both sides, the old fountain in front-left of a green raised on the plaza steps, and the El on its girders behind.',
+        safe: 'Lay up right of the fountain, 180 to 200 m, for a straight-in wedge.',
+        bold: 'Drive it: 250 m carry over the fountain\'s front-left corner to reach the green.',
+        miss: 'The trees knock a wide drive down; the fountain catches the bold one that comes up short.',
+      },
+    }),
+  }),
+
+  // 7. THE BRIDGE: off the broken end of the expressway ramp, along the river to the suspension bridge
+  hole({ n: 7, name: 'The Bridge', par: 5, legs: [[262, 0], [250, -30]], place: { at: [690, -160], heading: 262 }, base: 2,
+    build: (P) => ({
+      tees: { spire: 0, brick: 26, ivy: [72, -34], moss: [118, -36] },
+      prof: [[0, 10], [40, 10], [110, 0], [512, 0]],
+      fairway: [[90, 262, 58], [262, 372, 50], [440, 504, 44]],
+      corridor: 18,
+      green: { rx: 16, rz: 17, style: 'long, right to left, by the north tower' },
+      bunkers: [{ at: P(250, 40), rx: 12, rz: 7 }, { at: P(492, 22), rx: 8, rz: 7 }],
+      inlet: { pts: [P(392, -120), P(400, -60), P(408, -10), P(410, 14)], w: 48, y: -1, label: 'where the bank fell in' },
+      ramp: { from: P(-60, 0), to: P(30, 0), w: 22, y: [14, 10], label: 'the expressway ramp' },
+      bridgeDeck: { a: P(415, -60), b: P(440, -170), w: 20, label: 'the fallen span' },
+      bridge: { a: P(478, -98), b: P(470, -262), h: 78, label: 'the bridge' },
+      buildings: [{ at: P(80, 80), w: 60, d: 50, h: 20, broken: true, label: 'warehouses' }, { at: P(180, 86), w: 70, d: 50, h: 16, broken: true },
+        { at: P(300, 86), w: 50, d: 60, h: 26, broken: true, vines: true }, { at: P(430, 90), w: 60, d: 50, h: 18, broken: true }, { at: P(560, 40), w: 40, d: 60, h: 34, broken: true }],
+      wrecks: [{ type: 'car', at: P(150, -40), rot: 0.3 }, { type: 'bus', at: P(330, 40), rot: 2.8 }, { type: 'car', at: P(460, -22), rot: 1.0 }],
+      trees: [...grove(P(220, -50), 14, 4, 71), ...grove(P(380, 50), 16, 5, 72)],
+      targets: [{ name: 'Riverside', at: P(250, -6) }, { name: 'Short of the inlet', at: P(362, 6) }, { name: 'Over the inlet', at: P(452), bold: true }],
+      words: {
+        plays: 'Tee off the broken end of the riverside expressway ramp, 10 m up, and play along the river toward the suspension bridge. Its middle span fell into the water, and where it hit, the bank broke away into an inlet that cuts across the second leg. The green sits under the north tower.',
+        safe: 'Lay up short of the inlet (360 m) and pitch over it, or go round its end on the right on the strip of rubble.',
+        bold: 'Carry the inlet with the second, about 190 m from a good drive, to the green by the north tower.',
+        miss: 'Left is the river (a stroke and a drop). Right is the warehouses and their loading yards.',
+      },
+    }),
+  }),
+
+  // 8. RIVERSIDE: from the waterline, round a dock basin, up to a green on the old wharf
+  hole({ n: 8, name: 'Riverside', par: 4, legs: [[228, 0], [120, 40]], place: { at: [220, 40], heading: 286 }, base: 0,
+    build: (P) => ({
+      tees: { spire: 0, brick: 24, ivy: [58, -34], moss: [96, -34] },
+      prof: [[0, 0], [150, 0.5], [228, 3], [300, 6], [348, 8]],
+      fairway: [[60, 228, 54, -6], [228, 336, 44]],
+      corridor: 18,
+      green: { rx: 15, rz: 16, style: 'on the wharf, the drop to the water on its right' },
+      bunkers: [{ at: P(336, -20), rx: 8, rz: 6 }, { at: P(226, -42), rx: 12, rz: 7 }],
+      water: [{ at: P(200, 92), rx: 68, rz: 46, rot: 0.5, p: 3, y: -1, label: 'the dock basin' }],
+      wharf: { from: P(240, 30), to: P(360, 30), y: 8, label: 'the wharf wall' },
+      cranes: [P(320, 60), P(380, 30)].map(p => ({ at: p, h: 38 })),
+      buildings: [{ at: P(90, -76), w: 60, d: 40, h: 22, broken: true }, { at: P(190, -82), w: 60, d: 50, h: 34, broken: true, vines: true },
+        { at: P(300, -70), w: 50, d: 40, h: 18, broken: true }, { at: P(390, -10), w: 30, d: 60, h: 22, broken: true, label: 'wharf sheds' }],
+      wrecks: [{ type: 'car', at: P(120, -40), rot: 0.2 }, { type: 'boat', at: P(170, 80), rot: 0.9 }],
+      trees: [...grove(P(260, -46), 16, 5, 81)],
+      targets: [{ name: 'Round the basin', at: P(222, -8) }, { name: 'Across the basin', at: P(270, 4), bold: true }],
+      words: {
+        plays: 'You start down at the waterline on an old quay. The dock basin sits inside the bend on the right, and the hole climbs round it to a green on the wharf, 8 m up, with the wall dropping to the water on its right.',
+        safe: 'Drive left of the basin to the bend (220 m) and play a short iron up to the wharf.',
+        bold: 'Carry the corner of the basin (about 230 m) for a wedge.',
+        miss: 'Right is the basin all the way; left are the sheds and warehouses.',
+      },
+    }),
+  }),
+
+  // 9. THE RIFT: up a heaved street beside a chasm to the leaning clubhouse
+  hole({ n: 9, name: 'The Rift', par: 4, legs: [[250, 0], [143, 12]], place: { at: [-60, 40], heading: 318 }, base: 2,
+    build: (P) => ({
+      tees: { spire: 0, brick: 22, ivy: [56, 36], moss: [96, 38] },
+      prof: [[0, 0], [130, 5], [150, 10], [262, 16], [282, 21], [393, 28]],
+      cant: [[60, 330, 3]],               // the slab falls to the right, away from the rift
+      fairway: [[70, 250, 52, 6], [250, 383, 46]],
+      corridor: 16,
+      green: { rx: 15, rz: 17, style: 'level shelf at the top, false front' },
+      bunkers: [{ at: P(240, 40), rx: 12, rz: 7 }, { at: P(378, 22), rx: 8, rz: 6 }],
+      rift: { pts: [P(50, -64), P(140, -58), P(240, -56), P(330, -64), P(380, -84)], w: 26, label: 'THE RIFT' },
+      terraces: [{ s: 140, label: 'broken pavement step' }, { s: 272, label: 'second step' }],
+      rubble: [{ at: P(180, 62), rx: 16, rz: 44, h: 3 }, { at: P(320, 56), rx: 14, rz: 34, h: 3 }],
+      buildings: [
+        { at: P(432, -6), w: 60, d: 34, h: 30, broken: false, lean: { dir: 'back', deg: 9 }, tower: { h: 30, w: 10 }, name: 'the clubhouse', label: 'the clubhouse (leaning)' },
+        { at: P(120, 84), w: 40, d: 60, h: 36, broken: true }, { at: P(230, 92), w: 40, d: 70, h: 48, broken: true, vines: true },
+        { at: P(340, 84), w: 40, d: 50, h: 26, broken: true }, { at: P(100, -120), w: 50, d: 60, h: 44, broken: true }, { at: P(290, -126), w: 60, d: 60, h: 60, broken: true },
+      ],
+      wrecks: [{ type: 'car', at: P(110, 40), rot: 0.6 }, { type: 'car', at: P(214, 34), rot: 1.8 }],
+      trees: [...grove(P(400, 46), 12, 4, 91), ...grove(P(300, -36), 8, 2, 92, [7, 11])],
+      targets: [{ name: 'First terrace', at: P(232, 8) }, { name: 'Top terrace', at: P(300, 4), bold: true }],
+      words: {
+        plays: 'The street tore open over the collapsed tunnel below and one side heaved up. You climb the tilted slab with the rift on your left, over two broken steps of pavement, to a green at the foot of the clubhouse, an old civic building that leans back on its foundations under its clock tower.',
+        safe: 'Drive down the right half; the slab falls away from the rift, toward the buildings, so it never kicks you in. Second shot plays a club or two up the hill.',
+        bold: 'A long drive up the left side reaches the top terrace and a level lie for a short iron.',
+        miss: 'Left is the rift: open air, a drop beside where it went in. Right is rubble at the foot of the buildings.',
+      },
+    }),
+  }),
+];
+
+// the city's landmarks (world), seen from other holes
+export const LANDMARKS = [
+  { id: 'el', name: 'The El', hole: 1 }, { id: 'tower', name: 'Broken Tower', hole: 4 }, { id: 'stadium', name: 'The Stadium', hole: 5 },
+  { id: 'bridge', name: 'The bridge', hole: 7 }, { id: 'clock', name: 'The clock tower', hole: 9 },
+];

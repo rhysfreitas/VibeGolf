@@ -13,6 +13,9 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
    the green), the plan with the elevation profile under it, a short "what you're seeing", and ruled
    lines for notes. A "new this round" page of feature views goes after the cover. Lift the shadows for
    print, and keep the pages white.
+   For a first round, projected sketches are quicker than a blockout: simple shapes from the plan data
+   through a real camera, inked as SVG (`tools/reclaim/sketch.mjs`, seconds a view), with the cameras a
+   few metres up so the ground reads. Build the engine blockout once the layout settles.
 3. **Iterate in rounds from the owner's markups.** Every markup gets done or answered, and the reply
    lists what changed hole by hole. When the owner asks for suggestions, offer three or four concrete
    options and let them pick. Reference photos are gold: match them closely (the cenote and the geode
