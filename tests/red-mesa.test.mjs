@@ -207,3 +207,15 @@ test('Dry Wash: a river from the falls crosses the hole twice and leaves the can
   const wet = shoot(t, h.tees.canyon, [50, -190], { Speed: 132, VLA: 12, TotalSpin: 2900 }); // off the 12 m ledge
   assert.equal(t.surfaceAt(wet.end.x, wet.end.z), 'water');
 });
+
+test('no slots to the floor where islands meet: Rimrock\'s promontory, The Climb\'s gullies and tiers', () => {
+  // walk across each join: the ground never drops more than a few metres below both sides
+  const across = (h, a, b) => { const T = createTerrain(HOLES[h]); let lo = Infinity;
+    for (let t = 0; t <= 1; t += 0.02) lo = Math.min(lo, T.groundAt(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t));
+    return Math.min(T.groundAt(...a), T.groundAt(...b)) - lo; };
+  assert.ok(across(0, [12, -340], [48, -340]) < 3, 'Rimrock: the safe way round reaches the green on land');
+  assert.ok(across(8, [-6, -282], [-30, -282]) < 4, 'The Climb: no slot between the gully and its left wall');
+  assert.ok(across(8, [30, -290], [60, -290]) < 4, 'The Climb: none at the top right of the first gully');
+  assert.ok(across(8, [-6, -440], [-6, -462]) < 4, 'The Climb: the second gully runs onto the top tier');
+  assert.ok(across(8, [20, -440], [20, -466]) < 4, 'The Climb: across the junction on the right too');
+});

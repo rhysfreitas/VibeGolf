@@ -89,6 +89,10 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   slabs whose front edges stood as 14 m walls across the fairway: drives stopped dead at the foot and no
   club could climb out. Now the walls stay and the fairway climbs a gully eroded through each one (a
   sloped island between two wall pieces, with rockfall at the foot of the gully walls).
+- **Islands that meet must overlap.** Two superellipses laid edge to edge leave a slot down to the floor between them
+  (rounded corners make it worse where three meet): The Climb had them along both gullies and between its tiers, and
+  Rimrock's promontory was cut off by one. Tuck a ramp or a lower piece a few metres under its neighbours (the higher
+  top wins), add a small filler where three corners meet, and run `tools/review/slots.mjs`.
 - **Play every hole headless before calling it done**: tee to holed with the simulated tool and auto-aim
   on, logging each lie. A hole that never finishes, or a run of the same lie, is a layout bug, not bad
   luck.
