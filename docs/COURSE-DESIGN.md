@@ -23,6 +23,9 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
 4. **Check from the player's eye.** Renders of the three views catch what the plan can't: floating
    geometry, cliffs beside a green, a view that hides the shot. The plan catches the rest: a dogleg that
    goes the wrong way, water that doesn't join up, a tee on a fairway.
+5. **Then the art pass**, once the layout is agreed: references (the owner's photos, or an art brief
+   researched and written when there are none), the direction agreed in four picker questions, a build,
+   and a check of every hole. The steps, techniques and tools are in `docs/ART-PASS.md`.
 
 ## Shape
 

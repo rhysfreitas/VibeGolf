@@ -1,5 +1,5 @@
 // Shared helper for the review tools: open a course page headlessly, served straight from the repo
-// (no web server needed), with the test hooks on. Used by views.mjs and playthrough.mjs.
+// (no web server needed), with the test hooks on, and the standard review poses.
 import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
@@ -54,3 +54,31 @@ export const along = (L, s) => {
   const a = L.at(-2), c = L.at(-1), l = Math.hypot(c[0] - a[0], c[1] - a[1]); return [c[0], c[1], (c[0] - a[0]) / l, (c[1] - a[1]) / l];
 };
 export const lineLen = L => L.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - L[i][0], p[1] - L[i][1]), 0);
+
+// The three standard review views of a hole, as __pose objects in the hole's frame:
+//   tee   = behind the back tee, looking down the line to the first bend
+//   land  = on the fairway where a drive finishes (par 3: the forward tee), looking at the pin
+//   green = 45 m short of the green, a little above it
+export function viewPoses(h, T, COURSE) {
+  const back = COURSE.teeSets[0].id, fwd = COURSE.teeSets.at(-1).id;
+  const gy = (x, z) => T.groundAt(x, z) ?? (T.floor?.y ?? -30), pin = h.green.pins?.[0] || h.pin, L = h.line || [h.tees[back], pin];
+  const P = {};
+  { const [tx, tz] = h.tees[back], [ax, az] = L[1], dx = ax - tx, dz = az - tz, l = Math.hypot(dx, dz);
+    const ty = gy(tx, tz), far = Math.min(l, 240), lx = tx + dx / l * far, lz = tz + dz / l * far;
+    P.tee = { pos: [tx - dx / l * 4, ty + 2.4, tz - dz / l * 4], look: [lx, Math.min(ty, gy(lx, lz)) + 2, lz], fov: 62 }; }
+  { let x, z;
+    if (h.par === 3) [x, z] = h.tees[fwd]; else {
+      const [ax, az] = along(L, 215); let best = null;
+      for (let dz = -60; dz <= 60; dz += 3) for (let dx = -60; dx <= 60; dx += 3) { const px = ax + dx, pz = az + dz; if (T.surfaceAt(px, pz) !== 'fairway') continue; const c = Math.hypot(dx, dz); if (!best || c < best.c) best = { x: px, z: pz, c }; }
+      [x, z] = best ? [best.x, best.z] : [ax, az];
+    }
+    P.land = { pos: [x, gy(x, z) + 1.8, z], look: [pin[0], gy(pin[0], pin[1]) + 3, pin[1]], fov: 58 }; }
+  { const a = L.at(-2), dx = pin[0] - a[0], dz = pin[1] - a[1], l = Math.hypot(dx, dz), G = h.green;
+    const gx = G.x - dx / l * 45, gz = G.z - dz / l * 45, gyy = gy(G.x, G.z);
+    P.green = { pos: [gx, Math.max(gy(gx, gz) + 2, gyy + 7), gz], look: [G.x + dx / l * 12, gyy + 2, G.z + dz / l * 12], fov: 60 }; }
+  return P;
+}
+
+// go to hole n (1-based) and settle; then set a fixed camera with the markers hidden
+export async function goHole(pg, n) { await pg.evaluate(i => { __startHole(i); document.getElementById('skip')?.click(); window.__pose = null; }, n - 1); await pg.evaluate(() => __advance(0.8)); }
+export async function setPose(pg, p) { await pg.evaluate(q => { window.__pose = q; __advance(0.3); }, p); await hideMarkers(pg); }
