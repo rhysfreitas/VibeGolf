@@ -12,7 +12,7 @@ YD = 0.9144
 COL = {'snow': (0.95, 0.96, 0.98), 'rough': (0.86, 0.90, 0.95), 'fairway': (0.74, 0.83, 0.92), 'fringe': (0.62, 0.80, 0.50),
        'green': (0.66, 0.87, 0.52), 'tee': (0.70, 0.80, 0.90), 'sand': (0.42, 0.41, 0.43), 'water': (0.55, 0.78, 0.86),
        'ice': (0.70, 0.86, 0.94), 'rock': (0.56, 0.57, 0.62), 'rubble': (0.74, 0.76, 0.80), 'travertine': (0.93, 0.89, 0.80),
-       'hall': (0.55, 0.42, 0.30), 'void': (0.16, 0.22, 0.34)}
+       'hall': (0.55, 0.42, 0.30), 'void': (0.16, 0.22, 0.34), 'powder': (0.88, 0.93, 1.0)}
 INK = '#2b2b2b'
 plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 7})
 pal = np.array([COL[s] for s in SURF])
@@ -71,6 +71,13 @@ for h in D['holes']:
     else: d = (hh / asp - w) / 2; cx0 -= d; cx1 += d
     fig = plt.figure(figsize=(5.2, 7.3), dpi=220); fig.patch.set_facecolor('white')
     ax = fig.add_axes([0.005, 0.005, 0.99, 0.99]); ax.imshow(rgb, extent=ext, interpolation='bilinear', zorder=1)
+    # stipple the bunkers so they read as sand (black sand: pale grains) and powder (blue specks)
+    rng = np.random.default_rng(n)
+    for code, col, ms in ((SURF.index('sand'), '#c9c9cf', 0.9), (SURF.index('powder'), '#6f8fc0', 0.8)):
+        rr, cc = np.nonzero(srf == code)
+        if len(rr):
+            k = rng.random(len(rr)) < 0.07
+            ax.plot(x0 + cc[k] + 0.5, z0 + rr[k] + 0.5, 'o', ms=ms, mew=0, color=col, zorder=3)
     xs = x0 + np.arange(W) + 0.5; zs = z0 + np.arange(H) + 0.5
     hm = np.where(void, np.nan, hgt) + h['base']
     lo, hi = np.floor(np.nanmin(hm)), np.ceil(np.nanmax(hm))

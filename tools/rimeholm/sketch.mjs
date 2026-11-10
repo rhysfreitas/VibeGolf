@@ -19,7 +19,7 @@ const VW = 1600, VH = 900;
 let HFOV = 60 * Math.PI / 180, FPX = (VW / 2) / Math.tan(HFOV / 2);
 const FOG = [232, 237, 245], MIST = 520;
 const SC = { snow: [246, 248, 252], rough: [230, 236, 245], fairway: [200, 216, 234], fringe: [150, 196, 118], green: [160, 212, 124], tee: [204, 218, 236],
-  sand: [78, 76, 82], water: [118, 182, 204], ice: [172, 212, 232], rock: [104, 106, 116], rubble: [176, 182, 194], travertine: [236, 226, 204], hall: [140, 108, 80], void: [34, 46, 72] };
+  sand: [78, 76, 82], powder: [232, 240, 252], water: [118, 182, 204], ice: [172, 212, 232], rock: [104, 106, 116], rubble: [176, 182, 194], travertine: [236, 226, 204], hall: [140, 108, 80], void: [34, 46, 72] };
 const LOC = HOLES.map(toLocal), WOR = HOLES.map(toWorld);
 
 const mix = (c, f) => c.map((v, i) => Math.round(v + (FOG[i] - v) * f));
@@ -113,6 +113,13 @@ function renderView(hi, view) {
     const fc = hex(mix(col, fogAt(q.d) * (c.y === null ? 0.4 : 1)));
     // open air (a crevasse's floor in the dark) goes down first, under its walls and everything else
     add(c.y === null ? q.d + 5000 : q.d, `<polygon points="${fmt(P)}" fill="${fc}" stroke="${fc}" stroke-width="0.7"/>`);
+    // grains on the black sand, specks in the powder
+    if ((c.s === 'sand' || c.s === 'powder') && q.d < 300 && s <= 4) {
+      const f = fogAt(q.d), y0 = ys.reduce((a, v) => a + v, 0) / 4 + 0.05, col = hex(mix(c.s === 'sand' ? [190, 190, 198] : [130, 160, 205], f));
+      let dots = '';
+      for (let i = 0; i < 3; i++) { const v = cam.view([x + hash(x + i, z) * s, y0, z + hash(z + i, x) * s]); if (v[2] < 1) continue; const p = cam.scr(v); dots += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${Math.max(0.6, 1.4 * (1.1 - f)).toFixed(2)}" fill="${col}"/>`; }
+      if (dots) add(q.d - 0.03, dots);
+    }
     // cracks in the ice
     if (c.s === 'ice' && q.d < 320 && s <= 8 && hash(Math.floor(x * 1.9), Math.floor(z * 2.1)) > 0.5) {
       const f = fogAt(q.d), y0 = ys.reduce((a, v) => a + v, 0) / 4 + 0.08, a0 = hash(z, x) * 6.283, pts = [];
@@ -147,7 +154,7 @@ function renderView(hi, view) {
   for (const t of B.teePads) { const c = Math.cos(headingAt(h.line, 1)), sn = Math.sin(headingAt(h.line, 1)); drape([[-6, -5], [6, -5], [6, 5], [-6, 5]].map(([u, v]) => [t.x + u * c - v * sn, t.z + u * sn + v * c]), true, [120, 146, 180], 0.9); }
   const segDrape = (segs, colr, wd, lift = 0.15) => { for (const [p, q] of segs) drape([p, q], false, colr, wd, () => true, lift); };
   { const [px, pz] = h.pin; segDrape(edgeSegs((x, z) => B.gm(x, z) < 0, px - 45, pz - 45, px + 45, pz + 45, 1), [60, 96, 40], 1.4); }
-  for (const b of B.bunkers) segDrape(edgeSegs(B.inBunker(b), b.x - b.rx * 1.4, b.z - b.rx * 1.4 - b.rz, b.x + b.rx * 1.4, b.z + b.rz * 1.4 + b.rx, 0.8), [40, 40, 44], 1.2);
+  for (const b of B.bunkers) segDrape(edgeSegs(B.inBunker(b), b.x - b.rx * 1.4, b.z - b.rx * 1.4 - b.rz, b.x + b.rx * 1.4, b.z + b.rz * 1.4 + b.rx, 0.8), b.kind === 'sand' ? [40, 40, 44] : [96, 130, 180], 1.2);
   for (const w of h.water || []) drape(seOutline({ x: w.at[0], z: w.at[1], rx: w.rx, rz: w.rz, rot: w.rot || 0 }, 40), true, [60, 110, 130], 1.2);
   if (h.lake) drape(seOutline({ x: h.lake.at[0], z: h.lake.at[1], rx: h.lake.rx, rz: h.lake.rz, rot: h.lake.rot || 0 }, 64), true, [70, 120, 150], 1.3);
   { const xs = h.line.map(p => p[0]), zs = h.line.map(p => p[1]);

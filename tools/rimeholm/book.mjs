@@ -68,7 +68,7 @@ table.sc td.l b { white-space: nowrap; }
 .legend { display: flex; flex-wrap: wrap; gap: 4pt 12pt; font-size: 7.4pt; margin-top: 4pt; }
 .legend span i { display: inline-block; width: 12pt; height: 8pt; border: 0.5pt solid #777; margin-right: 3pt; vertical-align: -1pt; }
 `;
-const SW = { fairway: '#bdd4eb', rough: '#dbe6f2', snow: '#f3f5fa', green: '#a8de85', fringe: '#9ecc80', sand: '#6b696e', water: '#8cc7db', ice: '#b3dbf0', rock: '#8f919e', rubble: '#bdc2cc', travertine: '#ede3cc', void: '#29384f' };
+const SW = { fairway: '#bdd4eb', rough: '#dbe6f2', snow: '#f3f5fa', green: '#a8de85', fringe: '#9ecc80', sand: '#6b696e', powder: '#e0eaff', water: '#8cc7db', ice: '#b3dbf0', rock: '#8f919e', rubble: '#bdc2cc', travertine: '#ede3cc', void: '#29384f' };
 
 const pages = [];
 pages.push(`<div class="page">
@@ -100,14 +100,14 @@ pages.push(`<div class="page">
     </div>
     <div>
       <h3 style="margin-top:0">Reading the plans</h3>
-      <div class="legend">${Object.entries({ fairway: 'Fairway (packed snow)', green: 'Green', fringe: 'Short grass (warm moss)', rough: 'Rough (powder)', snow: 'Deep snow (native)', ice: 'Ice', water: 'Hot pool, open water', sand: 'Bunker (black sand)', rock: 'Rock', rubble: 'Broken ice', travertine: 'Travertine terrace', void: 'Open air: crevasse, moulin' }).map(([k, v]) => `<span><i style="background:${SW[k]}"></i>${v}</span>`).join('')}</div>
+      <div class="legend">${Object.entries({ fairway: 'Fairway (packed snow)', green: 'Green', fringe: 'Short grass (warm moss)', rough: 'Rough (powder)', snow: 'Deep snow (native)', ice: 'Ice', water: 'Hot pool, open water', sand: 'Black-sand bunker', powder: 'Powder bunker (buries the ball)', rock: 'Rock', rubble: 'Broken ice', travertine: 'Travertine terrace', void: 'Open air: crevasse, moulin' }).map(([k, v]) => `<span><i style="background:${SW[k]}"></i>${v}</span>`).join('')}</div>
       <p class="small" style="margin-top:6pt">Tee at the bottom. Dots: the four tees. Blue dots: course-management targets (red: the bold one), with their yardage from the Mammoth tee. Numbers along the line: yards to the green. Contours every 2 m, labelled every 10. Grey circles: boulders; pale blue circles: seracs, with their height; pale hexagons: blocks of ice on a pressure ridge; orange dots: braziers. Dashed outlines: things overhead or under the ice. Crevasses are dark; a heavy edge with ticks is the raised lip (the ticks point down its face). A zigzag line with ticks is a scarp, the ticks on the low side.</p>
       <h3>Reading the profiles</h3>
       <p class="small">The ground along the playing line, coloured by surface, from the back tee. Grey bars: anything solid over the line. Red: a tour drive (167 mph); dotted red: a high drive; blue: a 150 mph drive. All flown with the game's physics over this ground.</p>
       <h3>Reading the sketches</h3>
       <p class="small">Plain shapes from the plan data, drawn through a real camera: from the back tee, from the landing area (on a par 3, the forward tee) and from just short of the green. The cameras stand 5 m up (9 m short of the green) so the shape of the ground reads. They are drawn light so the book prints: in the game it is night, lit by the moon, the aurora, the braziers and the light on each green. These are for judging the layout, not the look.</p>
       <h3>Decided so far</h3>
-      <p>Tees Mammoth, Raven, Lynx, Hare. The lake ice plays fast (a ball skates on). The finds are the longship and the mammoth, nothing more fantastical. A clear night with the aurora. The clubhouse is a longhouse. The 8th's green is a true punchbowl, set down into level ground. No line markers on blind shots: the corner map shows the line. Round 2: a bold mix of green shapes; fairways with two edges that swell, pinch and scallop; crevasses with jagged edges and a raised lip on one side; a shelf on 4, a scarp on 5, a split fairway on 8 and crevasses biting in at the edges of 1, 7 and 9; plenty of layered ice scenery between the holes. Varied green and fairway shapes are now a rule for every course.</p>
+      <p>Tees Mammoth, Raven, Lynx, Hare. The lake ice plays fast (a ball skates on). The finds are the longship and the mammoth, nothing more fantastical. A clear night with the aurora. The clubhouse is a longhouse. The 8th's green is a true punchbowl, set down into level ground. No line markers on blind shots: the corner map shows the line. Round 2: a bold mix of green shapes; fairways with two edges that swell, pinch and scallop; crevasses with jagged edges and a raised lip on one side; a shelf on 4, a scarp on 5, a split fairway on 8 and crevasses biting in at the edges of 1, 7 and 9; plenty of layered ice scenery between the holes. Varied green and fairway shapes are now a rule for every course. Bunkers: black volcanic sand by the greens (warm ground), hollows of soft powder out in the fairways; greenside bunkers sit just off the green, never in it.</p>
       <div class="notes" style="margin-top:6pt; flex:none"><div class="t">Notes</div>${lines(4)}</div>
     </div>
   </div>

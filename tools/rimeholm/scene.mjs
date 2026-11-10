@@ -1,12 +1,12 @@
 // Rimeholm: each hole's ground, surfaces and solid things from its plan data (holes.mjs), in the hole's own
 // frame, plus the world transform and the glacier between the holes (world.mjs scenery layered on). Shared by
 // the plans, the profiles and the sketch views, so they all show the same ground. Pure.
-import { project, seDist, rectPts, inPoly, profileFn, smooth, clamp, at, rnd, distLine, headingAt, lerp } from './geo.mjs';
+import { project, seDist, seOutline, rectPts, inPoly, profileFn, smooth, clamp, at, rnd, distLine, headingAt, lerp } from './geo.mjs';
 import { makeGreen, makeFairway, makeCrack, makeShaft, noise2 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
 import { WORLD, layerLift, onPeak } from './world.mjs';
 
-export const SURF = ['snow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'water', 'ice', 'rock', 'rubble', 'travertine', 'hall', 'void'];
+export const SURF = ['snow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'water', 'ice', 'rock', 'rubble', 'travertine', 'hall', 'void', 'powder'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
 const span = (s, a, b, r = 30) => smooth((s - a) / r) * (1 - smooth((s - b) / r));
 
@@ -45,8 +45,21 @@ export function buildHole(h) {
   const endHead = headingAt(h.line, h.len - 1), ec = Math.cos(endHead), es = Math.sin(endHead);
   const GR = makeGreen(h.pin, endHead, { seed: 70 + h.n, ...h.green }), gm = GR.gm, gUV = GR.uv;
   const fwD = makeFairway(h.line, h.fw || []);
-  const bunkers = (h.bunkers || []).map((b, i) => ({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9 }));
-  const inBunker = b => (x, z) => seDist(b, x, z) + 0.13 * noise2(x / 4, z / 4, b.seed) < 1;
+  // black volcanic sand by the greens (warm ground), hollows of soft powder out in the fairways
+  const bunkers = (h.bunkers || []).map((b, i) => { const kind = b.kind || (Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45 ? 'sand' : 'powder');
+    return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, kind, depth: kind === 'sand' ? 0.8 : 1.3 }; });
+  const bunkerE = (b, x, z) => seDist(b, x, z) + 0.13 * noise2(x / 4, z / 4, b.seed);
+  // a greenside bunker sits just off the green, never in it: slide it straight away from the pin until
+  // every part of it is at least 2.5 m outside the green's edge (room for a collar between)
+  for (const b of bunkers) {
+    if (b.kind !== 'sand') continue;
+    const clear = () => Math.min(gm(b.x, b.z), ...seOutline({ ...b, rx: b.rx * 1.15, rz: b.rz * 1.15 }, 32).map(p => gm(...p)));
+    let dx = b.x - h.pin[0], dz = b.z - h.pin[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    b.was = [b.x, b.z];
+    for (let i = 0; i < 120 && clear() < 2.5; i++) { b.x += dx * 0.5; b.z += dz * 0.5; }
+    b.edge = clear(); b.moved = Math.hypot(b.x - b.was[0], b.z - b.was[1]);
+  }
+  const inBunker = b => (x, z) => bunkerE(b, x, z) < 1;
   const extra = (h.extraFw || []).map((e, i) => ({ x: e.at[0], z: e.at[1], rx: e.rx, rz: e.rz, rot: e.rot || 0, seed: 60 + i }));
   const rubble = (h.rubble || []).map(r => ({ x: r.at[0], z: r.at[1], rx: r.rx, rz: r.rz, rot: r.rot || 0 }));
   const forms = (h.forms || []).map(f => ({ ...f, x: f.at[0], z: f.at[1], rot: f.rot || 0 }));
@@ -102,6 +115,7 @@ export function buildHole(h) {
       if (Gd.crown) g += Gd.crown * (1 - clamp(1 + go / 9, 0, 1) ** 2);
       y += g * fade;
     }
+    for (const b of bunkers) { const e = bunkerE(b, x, z); if (e < 1.3) y -= b.depth * (1 - smooth((e - 0.7) / 0.35)) * smooth((go - 0.5) / 1.5); }
     const [X, Z] = W(x, z);
     let m = smooth((go - 4) / 8);
     for (const t of teePads) m *= smooth((Math.hypot(x - t.x, z - t.z) - 7) / 8);
@@ -134,7 +148,7 @@ export function buildHole(h) {
     const go = gm(x, z);
     if (go < 0) return 'green';
     if (go < (h.green.apron || 3) || (h.green.punch && go < h.green.punch.floor + h.green.punch.bank)) return 'fringe';
-    for (const b of bunkers) if (inBunker(b)(x, z)) return 'sand';
+    for (const b of bunkers) if (inBunker(b)(x, z)) return b.kind;
     for (const t of teePads) if (onPad(t, x, z)) return 'tee';
     if (vd < 3.5) return 'ice';
     const pr = along(x, z);

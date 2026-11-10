@@ -12,7 +12,7 @@ import { simulate } from '../../src/physics.js';
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out/grid');
 fs.mkdirSync(OUT, { recursive: true });
 const DRIVES = { tour: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, mid: { Speed: 150, VLA: 12, TotalSpin: 3000 }, high: { Speed: 160, VLA: 14.5, TotalSpin: 3200 } };
-const PHYS = { fringe: 'fairway', tee: 'fairway', ice: 'desert', rock: 'desert', travertine: 'desert', rubble: 'waste', snow: 'rough', hall: 'rough', void: 'rough' };
+const PHYS = { powder: 'sand', fringe: 'fairway', tee: 'fairway', ice: 'desert', rock: 'desert', travertine: 'desert', rubble: 'waste', snow: 'rough', hall: 'rough', void: 'rough' };
 
 // a drive from p along direction dir (radians from -z, + right) over the hole's ground: the flight, and where
 // it first meets anything solid above the ground

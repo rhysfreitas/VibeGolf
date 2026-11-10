@@ -89,7 +89,7 @@ export const HOLES = [
       words: {
         plays: 'The hole climbs a hillside of white travertine, the mineral terraces a hot spring builds, in four steps of about 3.5 m. Warm blue pools steam on the shelves down the right, and the fairway leans 1.5% toward them. Where the ball stops sets the lie: on a shelf it is flat, short of a step it is uphill. The green sits on the top terrace in two tiers.',
         safe: 'Drive to the second terrace (200 m), at the bend, and play up to the green.',
-        bold: 'Drive over the bend on the left to the third terrace: a wedge in, but the black-sand bunker sits in the corner.',
+        bold: 'Drive over the bend on the left to the third terrace: a wedge in, but a powder bunker sits in the corner.',
         miss: 'Right is the pools: a stroke and a drop. Left is powder and spruce on the slope.',
       },
     }),
