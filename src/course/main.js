@@ -392,6 +392,8 @@ const groundAt2 = (I, x, z) => islandH(I, x, z, Math.min(1, islandF(I, x, z)));
 // ledges where the strata step and a talus skirt at the foot
 // the hole's playing surface (a finer grid, see mesa-world.js) covers island tops inside this box
 let playBox = null;
+const LEVELS = MESA && !CAVE && !CITY; // Red Mesa: the playfield draws each cliff's levels to the island's outline
+const inBox = (x, z) => playBox && x > playBox.x0 && x < playBox.x1 && z > playBox.z0 && z < playBox.z1;
 const playMat = islandMat.clone(); playMat.onBeforeCompile = islandMat.onBeforeCompile; playMat.polygonOffset = true; playMat.polygonOffsetFactor = -1; playMat.polygonOffsetUnits = -2;
 function buildMesa(I, N, rings, group, trees) {
   const K = coarse ? 9 : 12, rows = rings.length + K;
@@ -405,6 +407,9 @@ function buildMesa(I, N, rings, group, trees) {
       const sc = rr * 0.999, x = I.x + (e.x - I.x) * sc, z = I.z + (e.z - I.z) * sc;
       let y = islandH(I, x, z, Math.min(islandF(I, x, z), 1));
       if (CAVE) { const g = T.groundAt(x, z); if (g !== null && y > g) y = g; } // terraces lower the ground: the rim comes down with it
+      // Red Mesa: inside the play box the playfield draws the top and ends on this outline at the shaped
+      // ground's height (ramps, greens, tilts), so the wall's top edge takes that height too
+      else if (LEVELS && rr === 1 && inBox(x, z) && T.topAt(x, z)?.I === I) { const g = T.groundAt(x, z); if (g !== null) y = g; }
       pos.set([x, y, z], vi * 3); aW.set([0, 0, 0, 0], vi * 4); aD[vi] = 0; vi++; ry = y;
     }
     const ox = e.x - I.x, oz = e.z - I.z, ol = Math.hypot(ox, oz) || 1, nx = ox / ol, nz = oz / ol;
@@ -573,7 +578,7 @@ function buildHole(h) {
   if (MESA) {
     if (!CAVE && !CITY) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
     if (!CITY) MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || CITY, snapEdges: CAVE || CITY });
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || CITY, snapEdges: CAVE || CITY, levels: LEVELS });
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });

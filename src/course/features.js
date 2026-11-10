@@ -203,6 +203,10 @@ export function prepRockfall(P, baseAt) {
   framed(P); P.height = P.height ?? 0; P.seed = P.seed ?? (P.x * 0.7 + P.z * 1.3);
   const fx = P.x - P.s * P.rz, fz = P.z + P.c * P.rz; // the front (downhill) edge, middle
   P.y0 = Math.min(baseAt(P.x, P.z), baseAt(fx, fz)); P.bound = Math.max(P.rx, P.rz) * 1.1 + 2;
+  // the pile's foot follows the ground along its length (a heap along a ramp steps up with it, rather than
+  // standing level and leaving its low end a few metres up in the air): the ground at the front edge and the
+  // middle at the same place along it
+  P.footAt = u => Math.min(baseAt(P.x + u * P.c, P.z + u * P.s), baseAt(P.x + u * P.c - P.rz * P.s, P.z + u * P.s + P.rz * P.c));
   return P;
 }
 export function rockfallRho(P, x, z) { const { u, b } = loc(P, x, z); return Math.hypot(u / P.rx, b / P.rz); }
@@ -211,7 +215,8 @@ function rockfallGround(P, x, z) {
   const { u, b } = loc(P, x, z), rho = Math.hypot(u / P.rx, b / P.rz); if (rho >= 1) return null;
   const t = Math.min(1, Math.max(0, (b / P.rz + 1) / 2)); // 0 at the front, 1 at the back
   const edge = 1 - sstep(0.7, 1, Math.hypot(u / P.rx, Math.min(0, b) / P.rz));
-  return P.y0 + P.height * Math.pow(t, 1.6) * edge + Math.min(0.9, P.height * 0.06) * (fbm(x / 3 + P.seed, z / 3) - 0.5) * edge;
+  const y0 = P.footAt(u) ?? P.y0;
+  return y0 + P.height * Math.pow(t, 1.6) * edge + Math.min(0.9, P.height * 0.06) * (fbm(x / 3 + P.seed, z / 3) - 0.5) * edge;
 }
 
 /* ---------- rivers ---------- */
