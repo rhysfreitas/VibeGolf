@@ -409,7 +409,8 @@ function buildMesa(I, N, rings, group, trees) {
       if (CAVE) { const g = T.groundAt(x, z); if (g !== null && y > g) y = g; } // terraces lower the ground: the rim comes down with it
       // Red Mesa: inside the play box the playfield draws the top and ends on this outline at the shaped
       // ground's height (ramps, greens, tilts), so the wall's top edge takes that height too
-      else if (LEVELS && rr === 1 && inBox(x, z) && T.topAt(x, z)?.I === I) { const g = T.groundAt(x, z); if (g !== null) y = g; }
+      // (where another island's ground lies over this rim, the wall stays under it: a neck joining two mesas)
+      else if (LEVELS && rr === 1 && inBox(x, z)) { const g = T.groundAt(x, z); if (g !== null) y = T.topAt(x, z)?.I === I ? g : Math.min(y, g - 0.3); }
       pos.set([x, y, z], vi * 3); aW.set([0, 0, 0, 0], vi * 4); aD[vi] = 0; vi++; ry = y;
     }
     const ox = e.x - I.x, oz = e.z - I.z, ol = Math.hypot(ox, oz) || 1, nx = ox / ol, nz = oz / ol;
