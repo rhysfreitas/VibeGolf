@@ -578,8 +578,8 @@ function levelAt(T, x, z) {
   return fl !== null ? 'F' : null;
 }
 // A tile with a cliff in it (two levels side by side, more than 2.5 m apart): the cliff cells used to be
-// dropped, leaving a saw-toothed gap along the rim. Instead each level gets its own copy of the tile: points on
-// another level move onto this level's outline (the nearest edge point along the grid's eight directions, found
+// dropped, leaving a saw-toothed gap along the rim. Instead each piece of ground (split only by cliffs) gets its
+// own copy of the tile: points off the piece move onto its outline (the nearest edge point along the grid's eight directions, found
 // by bisection), take this level's ground there, and the cells are drawn up to that edge.
 function splitLevels(T, tx, tz, n, step, H, pos, nrm, idx) {
   const N1 = n + 1, LV = H.map((y, k) => (y === null ? null : levelAt(T, tx + (k % N1) * step, tz + Math.floor(k / N1) * step)));
@@ -592,17 +592,32 @@ function splitLevels(T, tx, tz, n, step, H, pos, nrm, idx) {
     }
   }
   if (!split) return false;
+  // pieces: points joined without a cliff between them (the same island, or two islands meeting at about the
+  // same height, like a ramp running onto a tier), so only real cliffs split the tile
+  const up = H.map((_, k) => k), find = k => { while (up[k] !== k) k = up[k] = up[up[k]]; return k; };
+  for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+    const k = j * N1 + i; if (LV[k] === null) continue;
+    for (const [di, dj] of [[1, 0], [0, 1], [1, 1], [-1, 1]]) {
+      const ii = i + di, jj = j + dj; if (ii < 0 || ii > n || jj > n) continue;
+      const q = jj * N1 + ii; if (LV[q] === null) continue;
+      if (LV[q] === LV[k] || Math.abs(H[q] - H[k]) <= 2.5) up[find(q)] = find(k);
+    }
+  }
+  const CP = LV.map((v, k) => (v === null ? null : find(k))), pieces = new Map();
+  CP.forEach((c, k) => { if (c !== null) { if (!pieces.has(c)) pieces.set(c, new Set()); pieces.get(c).add(LV[k]); } });
+  if (pieces.size < 2) return false;
   pos.length -= H.length * 3; // the caller already pushed the tile's grid points: take them back out
-  for (const L of new Set(LV.filter(v => v !== null))) {
-    const on = (x, z) => levelAt(T, x, z) === L && T.groundAt(x, z) !== null;
-    const HL = H.map((y, k) => (LV[k] === L ? y : null)), P = [], In = new Uint8Array(H.length);
+  for (const [C, labels] of pieces) {
+    const on = (x, z) => labels.has(levelAt(T, x, z)) && T.groundAt(x, z) !== null;
+    const inC = k => CP[k] === C;
+    const HL = H.map((y, k) => (inC(k) ? y : null)), P = [], In = new Uint8Array(H.length);
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
       const k = j * N1 + i, x = tx + i * step, z = tz + j * step; P.push(x, HL[k] ?? 0, z);
-      if (LV[k] === L) continue;
+      if (inC(k)) continue;
       let best = null;
       for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
         const ii = i + di, jj = j + dj, nx2 = tx + ii * step, nz2 = tz + jj * step;
-        const inL = ii >= 0 && ii <= n && jj >= 0 && jj <= n ? LV[jj * N1 + ii] === L : on(nx2, nz2); if (!inL) continue;
+        const inL = ii >= 0 && ii <= n && jj >= 0 && jj <= n ? inC(jj * N1 + ii) : on(nx2, nz2); if (!inL) continue;
         let lo = 0, hi = 1; // lo: off this level (this point), hi: on it (the neighbour)
         for (let s = 0; s < 10; s++) { const m = (lo + hi) / 2; if (on(x + (nx2 - x) * m, z + (nz2 - z) * m)) hi = m; else lo = m; }
         if (!best || hi < best.t) best = { t: hi, x: x + (nx2 - x) * hi, z: z + (nz2 - z) * hi };
