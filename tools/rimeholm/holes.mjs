@@ -167,7 +167,7 @@ export const HOLES = [
         corridor: 22, steep: 'ice',
         seracs: S.map(([s, o, r, hh], i) => ({ at: P(s, o), r, h: hh, seed: 500 + i })),
         green: { lobes: [[0, 0, 7, 19, 28], [6, 12, 7, 6, 0]], tier: { s: 268, h: 0.9 }, style: 'Long and thin, set diagonally from front left to back right, with a knob at the back; two tiers, the lower at the front' },
-        bunkers: [{ at: P(256, -21), rx: 8, rz: 6 }, { at: P(284, 17), rx: 7, rz: 5 }, { at: P(224, -10), rx: 4.5, rz: 4 },
+        bunkers: [{ at: P(256, -21), rx: 8, rz: 6 }, { at: P(284, 17), rx: 7, rz: 5 }, { at: P(220, -4), rx: 12, rz: 9, rot: 0.15 },
           { at: P(213, 75), rx: 11, rz: 13, rot: 0.2 }, { at: P(179, 84), rx: 7.5, rz: 8 }],
         boulders: [...erratics(P(120, -60), 18, 6, 51)],
         targets: [{ name: 'Right of the seracs', at: P(195, 36) }],
@@ -176,7 +176,7 @@ export const HOLES = [
           plays: 'The tee stands on the lip of the icefall, looking straight down on the hole 35 m below. The landing area is two benches split by a jagged ice scarp, 3.5 m high, that zigzags right across the hole: a drive that runs over it drops to the lower bench. A stand of seracs, tall pillars of ice, guards the straight line to the green, with a gap about 15 m wide on the line itself, and a few shorter ones stand on either side of the approach, closer to the green. Right of the green a pod of short grass gives the long bench a way in.',
           safe: 'Drive right of the seracs onto the wide bench (195 m) and pitch in. Powder bunkers bite into the bench\'s right edge.',
           bold: 'Drive through the gap: from this height a good drive can run up onto the green.',
-          miss: 'Into the seracs, the ball hits the ice and drops dead at their feet in broken ice. A drive that is through the gap but short can still clip the lower seracs by the approach. Left of them is powder and boulders.',
+          miss: 'Into the seracs, the ball hits the ice and drops dead at their feet in broken ice. A drive that is through the gap but short can still clip the lower seracs by the approach, or finish in the powder bunker on the line short of the green. Left of them is powder and boulders.',
         },
       };
     },
@@ -187,8 +187,8 @@ export const HOLES = [
     build: (P) => ({
       tees: { mammoth: 0, raven: 12, lynx: 28, hare: [50, -34] },
       prof: [[0, 0], [20, 0], [96, 1.5], [108, 2.5], [165, 3]],
-      // the shelf: a craggy ice scarp 15 m high wandering right across the view, a raised, broken crest along its lip
-      cracks: [cv(P, [[118, -150], [112, -80], [121, -40], [113, -10], [120, 20], [111, 60], [119, 140]], 0, { h: 15, toward: [150, 0], run: 90, fall: 40, face: 9, crest: 3 }, { open: false, jag: 9, crag: true, rubble: 10, bulge: { c: P(116, 0), half: 13, out: 7 } })],
+      // the shelf: a craggy cliff of dark rock 15 m high wandering right across the view, a raised, broken crest along its lip
+      cracks: [cv(P, [[118, -150], [112, -80], [121, -40], [113, -10], [120, 20], [111, 60], [119, 140]], 0, { h: 15, toward: [150, 0], run: 90, fall: 40, face: 9, crest: 4.5 }, { open: false, jag: 9, crag: true, rockFace: true, rubble: 10, bulge: { c: P(116, 0), half: 13, out: 7 } })],
       corridor: 12, steep: 'rock',
       falls: { s: 116, off: [-16, 16], label: 'the frozen falls' },
       forms: [{ at: P(101, 0), rx: 22, rz: 10, h: 1.8, surf: 'ice' }],
@@ -198,10 +198,10 @@ export const HOLES = [
       boulders: [...erratics(P(60, 46), 16, 5, 61), ...erratics(P(70, -50), 14, 4, 62)],
       targets: [],
       words: {
-        plays: 'The green sits on a shelf 18 m up, the edge of an ice sheet: a craggy, broken face that wanders right across the view, seracs leaning off its lip. In the middle of it a waterfall froze as it fell, a curtain of icicles and frozen columns down the face, fanning out in a skirt of ice at its foot. You can\'t see the putting surface from the tee, only the lip and the steam rising off the green behind it. A long black-sand bunker wraps the green from its front left round the back; short grass in front and on the right keeps a near miss up.',
+        plays: 'The green sits on a shelf 18 m up, on top of a cliff of dark rock: a craggy, broken face that wanders in bays and buttresses right across the view, with rock tors along its lip. In the middle of it a waterfall froze as it fell, pale columns of ice down the black rock, with icicles at its edges and a skirt of ice at its foot. You can\'t see the putting surface from the tee, only the lip and the steam rising off the green behind it. A long black-sand bunker wraps the green from its front left round the back; short grass in front and on the right keeps a near miss up.',
         safe: 'Take one more club than the yardage and aim at the steam.',
         bold: 'There is no bold line: the shelf is the only target.',
-        miss: 'Short, the ball hits the ice face and drops 15 m back to its foot into broken ice. Left and long is the wrap bunker, and the snow behind.',
+        miss: 'Short, the ball hits the rock face (or the frozen falls) and drops 15 m back to its foot among fallen rock. Left and long is the wrap bunker, and the snow behind.',
       },
     }),
   }),

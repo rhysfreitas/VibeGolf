@@ -196,7 +196,7 @@ function renderView(hi, view) {
     if (o.spec && o.open) { const E = o.outline(1.5), L = E.L.map(tr), Rr = E.R.map(tr); wallRun(L, 1, o.depth, E.lipEdge === 'L', ci * 7); wallRun(Rr, -1, o.depth, E.lipEdge === 'R', ci * 7 + 3); }
     else if (o.spec) {   // a scarp: ink its top edge, just on the high side
       const P = o.scarpLine(2), side = o.lip.side, Q = [];
-      for (let i = 0; i < P.length - 1; i++) { const dx = P[i + 1][0] - P[i][0], dz = P[i + 1][1] - P[i][1], l = Math.hypot(dx, dz) || 1; Q.push(tr([P[i][0] - dz / l * side * 1.2, P[i][1] + dx / l * side * 1.2])); }
+      for (let i = 0; i < P.length - 1; i++) { const dx = P[i + 1][0] - P[i][0], dz = P[i + 1][1] - P[i][1], l = Math.hypot(dx, dz) || 1; const k = o.faceAt(i * 2) + 1.2; Q.push(tr([P[i][0] - dz / l * side * k, P[i][1] + dx / l * side * k])); }
       drape(Q, false, [40, 80, 120], 1.8, () => true, 0.3); drape(Q, false, [250, 252, 255], 1.0, () => true, 0.45);
     } else { const E = o.outline(120).map(tr); wallRun(E, -1, 40, false, ci); }
   }

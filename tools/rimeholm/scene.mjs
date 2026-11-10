@@ -174,7 +174,14 @@ export function buildHole(h) {
     const pr = along(x, z);
     for (const c of cliffs) if (seDist(c, x, z) < 1.02 && slopeAt(x, z) > 0.3) return c.surf || 'rock';
     const sl = slopeAt(x, z);
-    if (sl > 0.42) { const [X, Z] = W(x, z); return crackLift(x, z) > 0.2 ? 'ice' : onPeak(X, Z) ? 'rock' : (h.steep || 'rock'); }
+    if (sl > 0.42) {
+      // a scarp with rockFace is a dark rock cliff (its crags too), but where the frozen falls run down it, ice
+      for (const c of here) if (c.obj.spec && !c.obj.open && c.obj.spec.rockFace) {
+        const e = c.obj.signedE(...c.f(x, z)); if (e < -3 || e > c.obj.lip.face * 2.5 + 6) continue;
+        return h.falls && pr.off > h.falls.off[0] - 2 && pr.off < h.falls.off[1] + 2 && e < c.obj.lip.face * 2 ? 'ice' : 'rock';
+      }
+      const [X, Z] = W(x, z); return crackLift(x, z) > 0.2 ? 'ice' : onPeak(X, Z) ? 'rock' : (h.steep || 'rock');
+    }
     const fd = fairwayD(x, z);
     if (fd < 0 && vd > 6) return 'fairway';
     for (const f of forms) if (f.surf && seDist(f, x, z) < 0.75) return f.surf;
@@ -231,7 +238,8 @@ export function buildHole(h) {
       const off = project(h.line, ...P[i]).off; if (Math.abs(off) < 26 || R() < 0.45) continue;
       const a = P[i], b = P[Math.min(i + 1, P.length - 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / l * side, nz = (b[0] - a[0]) / l * side, F = sc.faceAt(i * st);
       const d = F + 1.5 + R() * 5, p = [a[0] + nx * d + (R() - 0.5) * 3, a[1] + nz * d + (R() - 0.5) * 3];
-      objs.push({ kind: 'serac', x: p[0], z: p[1], r: 2 + R() * 2.5, h: 4 + R() * 7, base: ground(...p, true) - 1, seed: 700 + i });
+      if (sc.spec.rockFace) { const r = 2.5 + R() * 3; objs.push({ kind: 'boulder', x: p[0], z: p[1], r, h: r * (0.9 + R() * 0.9), base: ground(...p, true) - 1 }); }
+      else objs.push({ kind: 'serac', x: p[0], z: p[1], r: 2 + R() * 2.5, h: 4 + R() * 7, base: ground(...p, true) - 1, seed: 700 + i });
     }
   }
   if (h.moulin) objs.push({ kind: 'moulin', x: h.moulin.at[0], z: h.moulin.at[1], r: h.moulin.r });
