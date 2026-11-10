@@ -1,7 +1,7 @@
 // The Reclaim: each hole's ground, surfaces and solid things from its plan data (holes.mjs), in the hole's
 // own frame, plus the world transform and the city between the holes. Shared by the plans, the profiles and
 // the sketch views, so they all show the same ground. Pure.
-import { project, seDist, rectPts, inPoly, profileFn, smooth, clamp, at, lineOf, rnd, distLine } from './geo.mjs';
+import { project, seDist, rectPts, inPoly, profileFn, smooth, clamp, at, lineOf, rnd, distLine, headingAt } from './geo.mjs';
 import { HOLES } from './holes.mjs';
 
 export const SURF = ['street', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'water', 'rubble', 'stands', 'deck', 'building', 'void'];
@@ -10,7 +10,7 @@ export const SURF = ['street', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sa
 const byN = n => HOLES.find(h => h.n === n);
 const W_ = (n, s, off) => { const h = byN(n), p = at(h.line, s, off); return toWorld(h)(...p); };
 export const RIVER = { y: -1, w: 150, pts: [[1300, -1150], [1230, -620], W_(7, -260, -175), W_(7, 0, -175), W_(7, 262, -175), W_(7, 420, -165), W_(7, 540, -150),
-  W_(8, 60, -110), W_(8, 200, -150), W_(9, 40, -215), W_(9, 220, -270), [-900, 250]] };
+  W_(8, 60, -128), W_(8, 200, -155), W_(9, 40, -215), W_(9, 220, -270), [-900, 250]] };
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
 
 function fwLines(h) {
@@ -139,12 +139,15 @@ export function buildHole(h) {
     if (h.trench) { const T = h.trench, pr = project(h.line, x, z); if (pr.s > T.s0 - 4 && pr.s < T.s1 + 4 && Math.abs(Math.abs(pr.off) - T.w / 2 - T.bank / 2) < T.bank / 2 + 1) return 'rubble'; }
     if (h.slabEdge) { const E = h.slabEdge, pr = project(h.line, x, z); if (pr.s > E.s0 && pr.s < E.s1 && Math.abs(pr.off - E.off) < 2.5) return 'rubble'; }
     if (gd < 1 + 14 / Math.min(G.rx, G.rz)) return 'rough';
-    if (fd < (h.corridor ?? 18)) return 'rough';
+    // buckled streets: the asphalt shows through the rough in broken slabs
+    const patch = () => { const [X, Z] = W(x, z); return Math.sin(X * 0.13 + Math.sin(Z * 0.07) * 2) * Math.cos(Z * 0.11 - X * 0.03) + 0.35 * Math.sin(X * 0.41 + Z * 0.37) > 0.68; };
+    if (fd < (h.corridor ?? 18)) return fd > 4 && gd > 1.8 && !st && patch() ? 'street' : 'rough';
     for (const t of teePads) if (Math.hypot(x - t.x, z - t.z) < 14) return 'rough';
     if (st) return 'rough';
     return 'street';
   }
 
+  const fwDist = (x, z) => { let fd = Infinity; for (const f of F) fd = Math.min(fd, distLine(f.pts, x, z) - f.w / 2); for (const e of extra) fd = Math.min(fd, (seDist(e, x, z) - 1) * Math.min(e.rx, e.rz)); return fd; };
   // the solid and built things, in the hole's frame (y up from the hole's base)
   const objs = [];
   const gAt = (x, z) => ground(x, z) ?? 0;
@@ -156,7 +159,7 @@ export function buildHole(h) {
   for (const t of h.trees || []) objs.push({ kind: 'tree', x: t.x, z: t.z, r: t.r, h: t.h, base: gAt(t.x, t.z) });
   for (const w of h.wrecks || []) {
     const S = { car: [1.9, 4.6, 1.5], bus: [2.6, 12, 3.2], boat: [4, 11, 2.5] }[w.type];
-    objs.push({ kind: 'box', pts: rectPts(w.at[0], w.at[1], S[0], S[1], w.rot), base: gAt(w.at[0], w.at[1]) - (w.type === 'boat' ? 1.2 : 0.1), h: S[2], color: w.type === 'boat' ? 'boat' : 'rust', label: w.type });
+    objs.push({ kind: 'box', pts: rectPts(w.at[0], w.at[1], S[0], S[1], w.rot), base: gAt(w.at[0], w.at[1]) - (w.type === 'boat' ? 1.2 : 0.1), h: S[2], color: w.type === 'boat' ? 'boat' : w.color || 'rust', car: w.type === 'car', moss: w.moss, label: w.type });
   }
   for (const e of h.el || []) objs.push({ kind: 'el', pts: e.pts, y: e.y, w: e.w, broken: e.broken, label: e.label });
   for (const p of h.platform || []) objs.push({ kind: 'slab', pts: rectPts(p.at[0], p.at[1], p.w, p.d, p.rot || 0), y: p.y, t: 1.2, legs: true, label: p.label });
@@ -167,12 +170,66 @@ export function buildHole(h) {
   if (h.bridge) objs.push({ kind: 'bridge', a: h.bridge.a, b: h.bridge.b, base: -1 - h.base, h: h.bridge.h, label: h.bridge.label });
   if (h.span) objs.push({ kind: 'span', a: h.span.a, b: h.span.b, w: h.span.w, t: h.span.t, label: h.span.label });
   if (h.bridgeDeck) { const d = h.bridgeDeck; objs.push({ kind: 'span', a: [d.a[0], d.a[1], 1 - h.base], b: [d.b[0], d.b[1], 22 - h.base], w: d.w, t: 2, label: d.label, deck: true }); }
-  if (h.fallen) { const f = h.fallen, ya = gAt(...f.a), yb = gAt(...f.b), y0 = Math.min(ya, yb) - 2;
-    objs.push({ kind: 'span', a: [f.a[0], f.a[1], y0 + f.h / 2], b: [f.b[0], f.b[1], y0 + f.h / 2], w: f.w, t: f.h, label: f.label, fallen: true }); }
+  if (h.fallen) {
+    const f = h.fallen, R = rnd(70 + h.n), [ax, az] = f.a, [bx, bz] = f.b, L = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / L, uz = (bz - az) / L, nx = -uz, nz = ux;
+    const y0 = Math.min(gAt(ax, az), gAt(bx, bz)) - 2, end = 34;     // the last 34 m is the broken top end
+    const ex = bx - ux * end, ez = bz - uz * end;
+    objs.push({ kind: 'span', a: [ax, az, y0 + f.h / 2], b: [ex, ez, y0 + f.h / 2], w: f.w, t: f.h, label: f.label, fallen: true });
+    // the torn end: each floor a slice of what is left, ragged, smaller and lower toward the break
+    for (let k = 0; k < 8; k++) {
+      const t0 = 4 * k + R() * 1.2, t1 = t0 + 3.2 + R() * 1.5, fade = 1 - k / 9;
+      const wk = f.w * (0.35 + 0.55 * R()) * fade, hk = f.h * (0.25 + 0.6 * R()) * fade, o = (R() - 0.5) * (f.w - wk);
+      const yk = gAt(ex + ux * t0, ez + uz * t0) - 1 + hk / 2;
+      objs.push({ kind: 'span', a: [ex + ux * t0 + nx * o, ez + uz * t0 + nz * o, yk + (R() - 0.5) * 2], b: [ex + ux * t1 + nx * o, ez + uz * t1 + nz * o, yk + (R() - 0.5) * 3], w: wk, t: hk, deck: true, label: '', torn: true });
+    }
+    // chunks of the building sticking out of the grass that is taking the ridge back, and twisted girders
+    const rg = h.ridge;
+    for (let k = 0; k < 130; k++) {
+      // half heaped round the broken end, half strewn along the ridge across the hole
+      let cx, cz;
+      if (k % 2 === 0) { const a = R() * Math.PI * 2, d = 4 + Math.pow(R(), 0.8) * 40; cx = bx - ux * 8 + Math.cos(a) * d; cz = bz - uz * 8 + Math.sin(a) * d * 0.7; }
+      else { const p = at(h.line, rg.s + (R() - 0.5) * rg.len * 0.9, rg.lowOff + R() * (90 - rg.lowOff)); cx = p[0]; cz = p[1]; }
+      if (fwDist(cx, cz) < -6 && R() < 0.6) continue;
+      const sz = 1.5 + Math.pow(R(), 1.8) * 7, th = 0.8 + R() * 2.4, yaw = R() * Math.PI, c2 = Math.cos(yaw) * sz / 2, s2 = Math.sin(yaw) * sz / 2;
+      const g0 = gAt(cx, cz), tilt = (R() - 0.3) * sz * 0.9;
+      if (R() < 0.18) objs.push({ kind: 'span', a: [cx, cz, g0 - 1], b: [cx + c2 * 0.4, cz + s2 * 0.4, g0 + 4 + R() * 6], w: 0.5, t: 0.5, deck: true, label: '', girder: true });
+      else objs.push({ kind: 'span', a: [cx - c2, cz - s2, g0 - th * 0.3], b: [cx + c2, cz + s2, g0 - th * 0.3 + tilt], w: sz * (0.4 + R() * 0.5), t: th, deck: true, label: '', rubble: true });
+    }
+  }
   for (const c of h.chunks || []) objs.push({ kind: 'span', a: [c.a[0], c.a[1], gAt(c.a[0], c.a[1]) + c.a[2] - 6], b: [c.b[0], c.b[1], gAt(c.b[0], c.b[1]) + c.b[2] - 6], w: c.w, t: c.t, deck: true, label: '' });
   if (h.podium) for (const c of h.columns || []) if (c.rel) {
     const [u, v] = c.rel, cs = Math.cos(endHead), sn = Math.sin(endHead), x = h.pin[0] + u * cs + v * sn, z = h.pin[1] + u * sn - v * cs;
     objs.push({ kind: 'col', x, z, r: c.r, base: gAt(x, z), h: c.h });
+  }
+  {   // reclamation: street trees and great trees through the rough and the streets, rows of stopped cars and cabs
+    const R = rnd(500 + h.n), xs = h.line.map(p => p[0]), zs = h.line.map(p => p[1]);
+    const bx0 = Math.min(...xs) - 110, bx1 = Math.max(...xs) + 110, bz0 = Math.min(...zs) - 110, bz1 = Math.max(...zs) + 110;
+    const trees = objs.filter(o => o.kind === 'tree'), cars = objs.filter(o => o.kind === 'box');
+    const far = (x, z, L, d) => L.every(o => Math.hypot((o.x ?? o.pts[0][0]) - x, (o.z ?? o.pts[0][1]) - z) > d);
+    const offTee = (x, z) => teePads.every(t => Math.hypot(x - t.x, z - t.z) > 16) && greenD(x, z) > 1 + 14 / Math.min(G.rx, G.rz);
+    let nT = h.scatter?.trees ?? 34, nC = h.scatter?.cars ?? 9;
+    const playLine = [h.teePts.spire, ...(h.targets || []).filter(t => !t.pin).map(t => t.at), h.pin];
+    for (let i = 0; i < 6000 && (nT > 0 || nC > 0); i++) {
+      const x = bx0 + R() * (bx1 - bx0), z = bz0 + R() * (bz1 - bz0), sf = surface(x, z), fd = fwDist(x, z);
+      if (!['rough', 'street', 'rubble'].includes(sf) || ground(x, z) === null || !offTee(x, z) || fd > 75) continue;
+      // trees keep off the lines of play: tee to each target to the green, as the game's scattered trees do
+      if (nT > 0 && fd > 7 && far(x, z, trees, 9) && distLine(h.line, x, z) > 30 && distLine(playLine, x, z) > 24) {
+        const big = R() < 0.12;
+        const t = { kind: 'tree', x, z, r: big ? 8 + R() * 5 : 3 + R() * 3.5, h: big ? 22 + R() * 10 : 8 + R() * 9, base: gAt(x, z), wild: true };
+        objs.push(t); trees.push(t); nT--; continue;
+      }
+      if (nC > 0 && sf !== 'rubble' && fd > 5 && far(x, z, cars, 25)) {
+        const pr = project(h.line, x, z), yaw = headingAt(h.line, pr.s) + (R() - 0.5) * 0.5, n = 1 + Math.floor(R() * 3);
+        for (let k = 0; k < n; k++) {
+          const cx = x + Math.sin(yaw) * k * 6.5 + (R() - 0.5) * 1.5, cz = z - Math.cos(yaw) * k * 6.5 + (R() - 0.5) * 1.5;
+          if (fwDist(cx, cz) < 4 || ground(cx, cz) === null || !['rough', 'street'].includes(surface(cx, cz))) continue;
+          const col = ['cab', 'cab', 'cab', 'rust', 'green', 'white'][Math.floor(R() * 6)], yw = yaw + (R() - 0.5) * 0.6;
+          const c = { kind: 'box', pts: rectPts(cx, cz, 1.9, 4.6, yw), base: gAt(cx, cz) - 0.15, h: 1.5, color: col, car: true, moss: R() < 0.55, label: 'car' };
+          objs.push(c); cars.push(c);
+        }
+        nC--;
+      }
+    }
   }
   if (h.marker) objs.push({ kind: 'marker', x: h.marker[0], z: h.marker[1], base: gAt(h.marker[0], h.marker[1]) });
   if (h.ramp && h.ramp.y) objs.push({ kind: 'ramp', from: h.ramp.from, to: h.ramp.to, w: h.ramp.w, y: h.ramp.y });
@@ -212,6 +269,7 @@ export const BUILT = HOLES.map(buildHole);
     const W = toWorld(HOLES[i]);
     const keep = B.objs.filter(o => {
       if (o.kind !== 'bldg' || o.name) return true;
+      if ([...o.pts, o.at].some(p => B.surface(...p) === 'water')) return false;
       const pts = [...o.pts, o.at].map(p => W(...p));
       return !WL.some((L, k) => k !== i && pts.some(p => distLine(L, p[0], p[1]) < 40));
     });
@@ -243,6 +301,7 @@ export function cityFill() {
     // it stands on the nearest hole's ground
     let bi = 0, bd = Infinity; play.forEach((p, k) => { const d = distLine(p.line, x, z); if (d < bd) { bd = d; bi = k; } });
     const Lc = toLocal(HOLES[bi])(x, z), gy = BUILT[bi].ground(...Lc);
+    if ([[x, z], ...pts].some(p => BUILT[bi].surface(...toLocal(HOLES[bi])(...p)) === 'water')) continue;
     const base = HOLES[bi].base + (gy ?? 0) - 1;
     keep.push({ kind: collapsed ? 'heap' : 'bldg', pts, base, h: collapsed ? 6 + R() * 6 : hgt, broken: R() < 0.75, vines: R() < 0.4, seed: Math.round(R() * 1e6), x, z, w, d });
   }

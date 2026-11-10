@@ -8,7 +8,7 @@ from matplotlib.patches import Polygon, Circle
 HERE = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(HERE, 'out'); G = os.path.join(OUT, 'grid')
 D = json.load(open(f'{G}/holes.json')); SURF = D['SURF']; TEES = D['teeSets']
 YD = 0.9144
-COL = {'street': (0.87, 0.86, 0.83), 'rough': (0.70, 0.79, 0.58), 'fairway': (0.60, 0.79, 0.46), 'fringe': (0.66, 0.84, 0.50),
+COL = {'street': (0.80, 0.79, 0.76), 'rough': (0.70, 0.79, 0.58), 'fairway': (0.60, 0.79, 0.46), 'fringe': (0.66, 0.84, 0.50),
        'green': (0.70, 0.89, 0.55), 'tee': (0.68, 0.85, 0.52), 'sand': (0.95, 0.90, 0.72), 'water': (0.72, 0.82, 0.89),
        'rubble': (0.78, 0.74, 0.68), 'stands': (0.80, 0.78, 0.74), 'deck': (0.74, 0.74, 0.74), 'building': (0.72, 0.71, 0.70), 'void': (0.25, 0.25, 0.26)}
 INK = '#2b2b2b'
@@ -32,7 +32,7 @@ def draw_objs(ax, objs, plan=True):
         elif k == 'tree':
             ax.add_patch(Circle((o['x'], o['z']), o['r'], fc=(0.33, 0.50, 0.30), ec=(0.2, 0.32, 0.18), lw=0.3, alpha=0.9, zorder=7))
         elif k == 'box':
-            ax.add_patch(Polygon(np.array(o['pts']), fc=(0.62, 0.40, 0.28) if o['color'] == 'rust' else (0.4, 0.45, 0.5), ec=INK, lw=0.3, zorder=7))
+            ax.add_patch(Polygon(np.array(o['pts']), fc={'cab': (0.88, 0.70, 0.2), 'rust': (0.62, 0.40, 0.28), 'green': (0.45, 0.55, 0.42), 'white': (0.85, 0.85, 0.82)}.get(o['color'], (0.4, 0.45, 0.5)), ec=INK, lw=0.3, zorder=7))
         elif k == 'el':
             P = np.array(o['pts']); ax.plot(P[:, 0], P[:, 1], color='#4a3f35', lw=4.0, solid_capstyle='butt', zorder=10)
             ax.plot(P[:, 0], P[:, 1], color='#b9a58f', lw=1.4, ls=(0, (2, 2)), zorder=11)

@@ -15,7 +15,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const VW = 1600, VH = 900;
 let HFOV = 60 * Math.PI / 180, FPX = (VW / 2) / Math.tan(HFOV / 2);
 const FOG = [243, 244, 242], MIST = 330;
-const SC = { street: [196, 192, 184], rough: [136, 156, 106], fairway: [136, 184, 96], fringe: [160, 204, 112], green: [196, 228, 142], tee: [142, 188, 100],
+const SC = { street: [170, 167, 160], rough: [136, 156, 106], fairway: [136, 184, 96], fringe: [160, 204, 112], green: [196, 228, 142], tee: [142, 188, 100],
   sand: [236, 224, 186], water: [158, 182, 196], rubble: [176, 166, 152], stands: [182, 176, 166], deck: [170, 170, 168], building: [170, 168, 164], void: [40, 40, 42] };
 const CITY = cityFill();
 const WL = HOLES.map(h => h.line.map(p => toWorld(h)(...p)));
@@ -129,8 +129,15 @@ function renderView(hi, view) {
     if (!P) continue;
     const fc = hex(mix(col, fogAt(q.d) * (c.y === null ? 0.45 : 1)));
     add(q.d, `<polygon points="${fmt(P)}" fill="${fc}" stroke="${fc}" stroke-width="0.7"/>`);
-    // chasm walls: a dark face from the rim down where a void cell meets ground
-    if (c.y === null) continue;
+    // cracked asphalt: a crack or two across each near cell of street, grass growing up the cracks
+    if (c.s === 'street' && q.d < 260 && s <= 8 && hash(Math.floor(x * 3.1), Math.floor(z * 2.7)) > 0.25) {
+      const f = fogAt(q.d), y0 = ys.reduce((a, v) => a + v, 0) / 4 + base + 0.05, pts = [];
+      const a0 = hash(x, z) * 6.283, n = 4;
+      for (let i = 0; i <= n; i++) { const t = i / n - 0.5, j = (hash(x + i, z - i) - 0.5) * s * 0.4; pts.push([x + s / 2 + Math.cos(a0) * t * s * 1.3 - Math.sin(a0) * j, y0, z + s / 2 + Math.sin(a0) * t * s * 1.3 + Math.cos(a0) * j]); }
+      const p = projLine(pts);
+      if (p) add(q.d - 0.03, `<polyline points="${fmt(p)}" fill="none" stroke="${hex(mix([108, 142, 78], f))}" stroke-width="${(3.2 * (1.1 - f) * Math.min(1.5, 120 / q.d + 0.3)).toFixed(2)}" stroke-linecap="round" stroke-opacity="0.8"/>` +
+        `<polyline points="${fmt(p)}" fill="none" stroke="${hex(mix([66, 64, 60], f))}" stroke-width="${(0.9 * (1.15 - f)).toFixed(2)}"/>`);
+    }
   }
 
   // ---- ink outlines of the short grass, the green, bunkers, water and the rift, draped on the ground
@@ -235,8 +242,19 @@ function renderView(hi, view) {
           if (p) gaps.push(p);
         }
         if (gaps.length) extra += `<path d="${gaps.map(p => 'M' + fmt(p).replace(/ /g, ' L') + 'Z').join(' ')}" fill="${hex(mix([92, 90, 88], f))}"/>`;
+        // ivy hanging from the broken top: masses of green down the wall
+        { const ivy = [], nm = Math.ceil(len / 14 * (o.vines ? 1.4 : 0.6));
+          for (let m = 0; m < nm; m++) {
+            const t = R(), w = (3 + R() * 7) / len, k = Math.min(e.length - 1, Math.round(t * (e.length - 1))), ytop = e[k][1] - 0.5, hang = 5 + R() * Math.min(26, (ytop - lo) * 0.6), P = [];
+            const pt = (tt, y) => V(a[0] + (b[0] - a[0]) * tt, y, a[1] + (b[1] - a[1]) * tt);
+            P.push(pt(t - w / 2, ytop), pt(t + w / 2, ytop));
+            for (let j = 0; j <= 5; j++) { const tt = t + w / 2 - j / 5 * w; P.push(pt(tt, ytop - hang * (0.45 + 0.55 * R()))); }
+            const p = proj(P); if (p) ivy.push(p);
+          }
+          if (ivy.length) extra += `<path d="${ivy.map(p => 'M' + fmt(p).replace(/ /g, ' L') + 'Z').join(' ')}" fill="${hex(mix([88, 120, 66], f))}" fill-opacity="0.92"/>`;
+        }
         // vines up the wall
-        if (o.vines || R() < 0.3) {
+        if (o.vines || R() < 0.75) {
           const vs = [];
           for (let v = 0; v < Math.ceil(len / 6); v++) {
             const t = R(), hgt = lo + (0.15 + R() * 0.55) * (o.h - (o.open || 0)), seg = [];
@@ -247,7 +265,14 @@ function renderView(hi, view) {
         }
       }
       const s = face(wall, tone.map(v => v * lit), dd, extra, o.seed + i); if (s) add(dd, s);
+      // shrubs grown up against the wall's foot
+      if (dd < 500) { const len = Math.hypot(b[0] - a[0], b[1] - a[1]); for (let k = 0; k < len / 9; k++) { const t = R(); const ox = (b[1] - a[1]) / len, oz = -(b[0] - a[0]) / len, sg = ((a[0] + b[0]) / 2 - ctr[0]) * ox + ((a[1] + b[1]) / 2 - ctr[1]) * oz > 0 ? 1 : -1;
+        const px = a[0] + (b[0] - a[0]) * t + ox * sg * 2, pz = a[1] + (b[1] - a[1]) * t + oz * sg * 2; tree(px, pz, absBase + 0.6, 1.6 + R() * 2, 3 + R() * 3, o.seed + 70 + k, true); } }
     }
+    // trees growing out of the broken top
+    if (o.broken && d0 < 1000 && !o.tower) { const n = Math.floor(R() * 3.2);
+      for (let k = 0; k < n; k++) { const u = 0.2 + R() * 0.6, v = 0.2 + R() * 0.6, px = pts[0][0] + (pts[1][0] - pts[0][0]) * u + (pts[3][0] - pts[0][0]) * v, pz = pts[0][1] + (pts[1][1] - pts[0][1]) * u + (pts[3][1] - pts[0][1]) * v;
+        const r = 2.5 + R() * 4; tree(px, pz, top - 6, r, r * 2 + 4, o.seed + 90 + k, false, -0.3); } }
     // the open lower floors: columns
     if (o.open) {
       const n = o.cols || 4;
@@ -302,16 +327,26 @@ function renderView(hi, view) {
       const s = face(F, colr.map(v => v * (0.82 + 0.06 * i)), dd, extra, seed + i); if (s) add(dd - 0.5, s);
     }
   }
-  function tree(x, z, y0, r, hh, seed) {
+  function tree(x, z, y0, r, hh, seed, shrub = false, kb = 0) {
     const d = cam.hd([x, 0, z]); if (d > 1100 || !inView(x, z, 0.3)) return;
     const cy = y0 + hh - r * 1.05, cv = cam.view([x, cy, z]); if (cv[2] < 1) return;
-    const c = cam.scr(cv), pr = r / cv[2] * FPX, f = fogAt(d), pts = [];
-    for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283, k = 0.82 + 0.3 * hash(seed, i); pts.push([c[0] + Math.cos(a) * pr * k, c[1] + Math.sin(a) * pr * 1.08 * k]); }
-    const tb = cam.view([x, y0, z]), tt = cam.view([x, cy, z]); const t0 = cam.scr(tb), t1 = cam.scr(tt);
-    const g = [[86, 118, 70], [74, 104, 62], [98, 126, 74]][Math.floor(hash(seed, 3) * 3)];
-    add(d - 0.2, `<line x1="${t0[0].toFixed(1)}" y1="${t0[1].toFixed(1)}" x2="${t1[0].toFixed(1)}" y2="${t1[1].toFixed(1)}" ${ink(d)} stroke-width="${Math.max(0.6, 0.5 / cv[2] * FPX).toFixed(1)}"/>` +
-      `<polygon points="${fmt(pts)}" fill="${hex(mix(g, f))}" stroke="none"/><polyline points="${fmt(wob(pts, true, seed, 0.6))}" fill="none" ${ink(d, 0.8)} stroke-width="${(1.0 * (1.2 - f)).toFixed(2)}"/>`);
+    const c = cam.scr(cv), pr = r / cv[2] * FPX, f = fogAt(d);
+    const g = [[86, 118, 70], [74, 104, 62], [98, 126, 74], [110, 128, 70]][Math.floor(hash(seed, 3) * 4)];
+    // a lumpy canopy: a few overlapping blobs on bigger trees, a lighter lobe where the sky lights it
+    const nb = pr < 6 ? 1 : r > 6 ? 5 : 3, blobs = [];
+    for (let b = 0; b < nb; b++) {
+      const ox = nb === 1 ? 0 : (hash(seed + b, 1) - 0.5) * pr * 1.1, oy = nb === 1 ? 0 : (hash(seed - b, 2) - 0.6) * pr * 0.7, rr = pr * (nb === 1 ? 1 : 0.62 + 0.25 * hash(seed, b)), pts = [];
+      for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283, k = 0.8 + 0.32 * hash(seed + b * 13, i); pts.push([c[0] + ox + Math.cos(a) * rr * k, c[1] + oy + Math.sin(a) * rr * 1.05 * k]); }
+      blobs.push(pts);
+    }
+    let svg = '';
+    if (!shrub) { const t0 = cam.scr(cam.view([x, y0, z])), t1 = cam.scr(cv);
+      svg += `<line x1="${t0[0].toFixed(1)}" y1="${t0[1].toFixed(1)}" x2="${t1[0].toFixed(1)}" y2="${t1[1].toFixed(1)}" ${ink(d)} stroke-width="${Math.max(0.6, 0.6 * (r / 4) / cv[2] * FPX).toFixed(1)}"/>`; }
+    for (const pts of blobs) svg += `<polygon points="${fmt(pts)}" fill="${hex(mix(g, f))}" stroke="none"/><polyline points="${fmt(wob(pts, true, seed, 0.6))}" fill="none" ${ink(d, 0.7)} stroke-width="${(0.9 * (1.2 - f)).toFixed(2)}"/>`;
+    if (pr > 5) { const hl = blobs[0].map(([px, py]) => [c[0] + (px - c[0]) * 0.45 - pr * 0.22, c[1] + (py - c[1]) * 0.4 - pr * 0.25]); svg += `<polygon points="${fmt(hl)}" fill="${hex(mix(g.map(v => v * 1.18), f))}" stroke="none"/>`; }
+    add(d - 0.2 + kb, svg);
   }
+
   function line3(P, d, colr, wdt = 1) { const p = projLine(P); if (!p) return; add(d, `<polyline points="${fmt(p)}" fill="none" stroke="${hex(mix(colr, fogAt(d)))}" stroke-width="${wdt}"/>`); }
 
   // the hole's own things, then the other holes' buildings and the city round them (into this frame)
@@ -325,7 +360,16 @@ function renderView(hi, view) {
         building({ ...o, pts: o.pts.map(tr), leanDir: ld }, o.base + yoff);
       }
       else if (o.kind === 'tree') { const p = tr([o.x, o.z]); tree(p[0], p[1], o.base + yoff, o.r, o.h, Math.round(o.x * 7 + o.z)); }
-      else if (o.kind === 'box') box(o.pts.map(tr), o.base + yoff, o.base + yoff + o.h, o.color === 'rust' ? [150, 104, 78] : [104, 118, 128], 7);
+      else if (o.kind === 'box') {
+        const CC = { cab: [214, 168, 44], rust: [150, 104, 78], green: [108, 130, 100], white: [196, 196, 188], boat: [104, 118, 128] }, colr = CC[o.color] || CC.rust, pts = o.pts.map(tr), y0 = o.base + yoff;
+        if (!o.car) box(pts, y0, y0 + o.h, colr, 7);
+        else {
+          box(pts, y0, y0 + 0.95, colr, 7);
+          const cx = pts.reduce((a, p) => a + p[0], 0) / 4, cz = pts.reduce((a, p) => a + p[1], 0) / 4, cab = pts.map(p => [cx + (p[0] - cx) * 0.8, cz + (p[1] - cz) * 0.55]);
+          box(cab, y0 + 0.95, y0 + 1.5, colr.map(v => v * 0.85), 8, -0.05);
+          if (o.moss) tree(cx, cz, y0 + 0.9, 1.1 + hash(cx, cz) * 0.8, 1.6, Math.round(cx * 13 + cz), true, -0.1);
+        }
+      }
       else if (o.kind === 'col') { const p = tr([o.x, o.z]); column(p[0], p[1], o.base + yoff, o.base + yoff + o.h, o.r, [170, 166, 160]); }
       else if (o.kind === 'slab') {
         const pts = o.pts.map(tr); box(pts, o.y + yoff - o.t, o.y + yoff - (o.legs ? 0.15 : 0), [178, 175, 170], 3, -0.3, o.legs);
@@ -347,7 +391,7 @@ function renderView(hi, view) {
       }
       else if (o.kind === 'span') {
         const a = tr(o.a), b = tr(o.b);
-        prism([a[0], a[1], o.a[2] + yoff], [b[0], b[1], o.b[2] + yoff], o.w, o.t, o.deck ? [150, 146, 140] : [196, 193, 186], 41, !o.deck);
+        prism([a[0], a[1], o.a[2] + yoff], [b[0], b[1], o.b[2] + yoff], o.w, o.t, o.girder ? [110, 70, 50] : o.torn ? [168, 166, 162] : o.rubble ? [150 + 40 * hash(a[0], a[1]), 146 + 38 * hash(a[0], a[1]), 140 + 34 * hash(a[0], a[1])].map(Math.round) : o.deck ? [150, 146, 140] : [196, 193, 186], 41, !o.deck);
       }
       else if (o.kind === 'pole') {
         const p = tr([o.x, o.z]), y0 = o.base + yoff, top = y0 + o.h, lean = (o.lean || 0) * Math.PI / 180;

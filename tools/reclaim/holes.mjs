@@ -48,9 +48,8 @@ export const HOLES = [
       // a skyscraper fell across the second leg: its body lies on its side off the right, its broken top
       // end buried in a grassed rubble ridge 11 m high across the fairway, low (3 m) at the left by the El
       ridge: { s: 290, len: 36, h: 11, low: 3, lowOff: -34, fullOff: -6, label: 'the fallen tower' },
-      fallen: { a: P(280, 175), b: P(292, 30), w: 30, h: 30, label: 'the fallen tower (on its side)' },
+      fallen: { a: P(278, 190), b: P(292, 28), w: 30, h: 30, label: 'the fallen tower (on its side)' },
       chunks: [{ a: [...P(286, 18), 7], b: [...P(296, 8), 13], w: 12, t: 3 }, { a: [...P(284, -6), 6], b: [...P(292, -14), 10], w: 10, t: 2.5 }],
-      marker: P(292, 2),
       sketch: { land: { up: 4 }, extra: [{ title: 'Hole 1: the fallen tower across the second leg, from the left of the landing area', from: [250, -24, 6], to: [292, 40, 12], fov: 62 }] },
       platform: [{ at: P(14, -4), w: 16, d: 46, y: 12, rot: 0, label: 'El station platform' }],
       el: [{ pts: [P(-40, -16), P(20, -16), P(80, -40), P(205, -40)], y: 12, w: 9, broken: true, label: 'the El' }],
@@ -69,7 +68,7 @@ export const HOLES = [
       targets: [{ name: 'Past the El', at: P(226, -6) }, { name: 'Round the low end', at: P(262, -14), bold: true }],
       words: {
         plays: 'Tee off the broken platform of the elevated line, 12 m above the boulevard. The track runs on down the left on its girders and ends in mid-air, a carriage hanging off the break. Round the bend a skyscraper lies on its side across the street: its body off to the right, its broken top end buried in a ridge of grassed rubble 11 m high. The green is out of sight behind it.',
-        safe: 'Drive at the end of the El, 225 m, and play the second blind over the ridge at the marker on its crest.',
+        safe: 'Drive at the end of the El, 225 m, and play the second blind over the ridge (the corner map shows the line).',
         bold: 'Drive long and left toward the ridge\'s low end by the El (260 m): from there you can see the flag.',
         miss: 'Left is under the El, among the columns, cars and a bus. Right runs into the fallen tower\'s body and its rubble.',
       },
@@ -163,7 +162,6 @@ export const HOLES = [
         bunkers: [{ at: P(272, 36), rx: 14, rz: 7 }, { at: P(470, 26), rx: 9, rz: 7 }, { at: P(486, -22), rx: 7, rz: 6 }],
         rubble: [{ at: P(130, 40), rx: 22, rz: 28, h: 4, label: 'debris from the break' }, { at: P(362, 0), rx: 70, rz: 13, rot: 0.08, h: 0, label: 'the rubble crest' }],
         crest: { at: P(362), length: 26, width: 140, height: 4 },
-        marker: P(366, 0),
         span: { a: [stump[0], stump[1], 72], b: [prop[0], prop[1], 44], w: 30, t: 12, label: 'the fallen top of the tower' },
         buildings: [
           { at: stump, w: 34, d: 34, h: 72, broken: 'snap', name: 'the tower', label: 'the tower (snapped at 72 m)' },
@@ -178,7 +176,7 @@ export const HOLES = [
         words: {
           plays: 'A skyscraper snapped at the 18th floor. Its top fell across the street and lies propped on the block opposite, a slanting span 44 to 72 m up that you drive under. Then the street bends left and climbs a crest of rubble to the hill park, where the green sits on the floor slab of a gutted pavilion among wild trees, a few columns still standing round it.',
           safe: 'Drive under the span to the second leg, lay up short of the crest (it\'s blind), and wedge up the hill.',
-          bold: 'A big second carries the crest (a lamppost with a flag marks the line) and leaves a pitch.',
+          bold: 'A big second carries the blind crest and leaves a pitch.',
           miss: 'The tower\'s stump and its debris on the right, wrecks on the left, trees round the green.',
         },
       };
@@ -196,7 +194,7 @@ export const HOLES = [
       rolls: 0.4,
       sketch: { green: { back: 85 }, extra: [{ title: 'Hole 5: the rubbled north stand, the two-tier green and the sinkhole', from: [96, 26, 12], to: [176, -4, -1], fov: 60 }] },
       greenTier: { s: 184, h: 1.1, roll: 0.2 },
-      sinkhole: { at: P(130), rx: 17, rz: 12, label: 'the sinkhole' },
+      sinkhole: { at: P(124), rx: 26, rz: 18, label: 'the sinkhole' },
       corridor: 0,
       green: { rx: 18, rz: 19, style: 'two tiers: the back tier is the north stand\'s rubble, rolling' },
       fairway: [[95, 168, 40]],
@@ -205,8 +203,8 @@ export const HOLES = [
       trees: [...grove(P(110, -30), 8, 3, 51, [6, 10]), ...grove(P(130, 30), 6, 2, 52, [6, 9])],
       targets: [],
       words: {
-        plays: 'The stadium sits in a bowl below the street, and an earthquake brought most of it down. You tee from what is left of the south stand\'s upper deck, 28 m above the pitch. Only the east side still has its tiers; the north stand slumped into the bowl as rubble, and the back of the green rolls up onto it as a second tier. A sinkhole has opened in the pitch short of the green, with 17 m of short grass between it and the front edge.',
-        safe: 'Play to the front tier: anything past the sinkhole stays on the pitch, and the sides of the sinkhole are wide open for a short shot.',
+        plays: 'The stadium sits in a bowl below the street, and an earthquake brought most of it down. You tee from what is left of the south stand\'s upper deck, 28 m above the pitch. Only the east side still has its tiers; the north stand slumped into the bowl as rubble, and the back of the green rolls up onto it as a second tier. A sinkhole 50 m across has opened in the pitch short of the green, with 17 m of short grass between it and the front edge.',
+        safe: 'Play to the front tier: anything past the sinkhole stays on the pitch. A short shot can go round either side of it.',
         bold: 'Two clubs less than the yardage at a back pin, up on the rubble tier.',
         miss: 'Short is the sinkhole (a drop beside it); long climbs the rubble and runs back; wide right sits in the tiers.',
       },
@@ -284,8 +282,7 @@ export const HOLES = [
       water: [{ at: P(200, 92), rx: 68, rz: 46, rot: 0.5, p: 3, y: -1, label: 'the dock basin' }],
       wharf: { from: P(240, 30), to: P(360, 30), y: 8, label: 'the wharf wall' },
       cranes: [P(320, 60), P(380, 30)].map(p => ({ at: p, h: 38 })),
-      buildings: [{ at: P(90, -76), w: 60, d: 40, h: 22, broken: true }, { at: P(190, -82), w: 60, d: 50, h: 34, broken: true, vines: true },
-        { at: P(300, -70), w: 50, d: 40, h: 18, broken: true }, { at: P(390, -10), w: 30, d: 60, h: 22, broken: true, label: 'wharf sheds' }],
+      buildings: [{ at: P(300, -70), w: 50, d: 40, h: 18, broken: true }, { at: P(390, -10), w: 30, d: 60, h: 22, broken: true, label: 'wharf sheds' }],
       wrecks: [{ type: 'car', at: P(120, -40), rot: 0.2 }, { type: 'boat', at: P(170, 80), rot: 0.9 }],
       trees: [...grove(P(260, -46), 16, 5, 81)],
       targets: [{ name: 'Round the basin', at: P(222, -8) }, { name: 'Across the basin', at: P(270, 4), bold: true }],
@@ -293,7 +290,7 @@ export const HOLES = [
         plays: 'You start down at the waterline on an old quay. The dock basin sits inside the bend on the right, and the hole climbs round it to a green on the wharf, 8 m up, with the wall dropping to the water on its right.',
         safe: 'Drive left of the basin to the bend (220 m) and play a short iron up to the wharf.',
         bold: 'Carry the corner of the basin (about 230 m) for a wedge.',
-        miss: 'Right is the basin all the way; left are the sheds and warehouses.',
+        miss: 'Right is the basin all the way; left is the old quay, then the river.',
       },
     }),
   }),
