@@ -36,9 +36,14 @@ for (const a of ALL) {   // a world-space centre and reach, to cull
   a.c = [P.reduce((s, p) => s + p[0], 0) / P.length, P.reduce((s, p) => s + p[1], 0) / P.length];
   a.reach = Math.max(...P.map(p => Math.hypot(p[0] - a.c[0], p[1] - a.c[1]))) + (a.obj.lip ? a.obj.lip.run + a.obj.lip.fall + a.obj.lip.end : 0) + 60 + (a.obj.spec ? 0 : HOLES[a.owner].moulin.r);
 }
+// a hole's own scarps (no open crack) are its elevation: their lift belongs to that hole's ground in the blend
+// below, not to the whole glacier, or a shelf runs on under the next hole's tee (6's did, 14 m high behind
+// its green)
+for (const a of ALL) a.local = a.owner >= 0 && a.obj.spec && !a.obj.open && !!a.obj.lift;
+const localLift = (k, X, Z) => { let y = 0; for (const a of ALL) if (a.local && a.owner === k) { const [x, z] = a.from(X, Z); y += a.obj.lift(x, z); } return y; };
 export const CRACKS = ALL;
 const worldVoid = (X, Z) => { let d = Infinity; for (const a of ALL) { if (Math.hypot(X - a.c[0], Z - a.c[1]) > a.reach) continue; d = Math.min(d, a.obj.voidD(...a.from(X, Z))); } return d; };
-const worldLift = (X, Z) => { let y = 0; for (const a of ALL) { if (!a.obj.lift || Math.hypot(X - a.c[0], Z - a.c[1]) > a.reach) continue; y += a.obj.lift(...a.from(X, Z)); } return y; };
+const worldLift = (X, Z) => { let y = 0; for (const a of ALL) { if (!a.obj.lift || a.local || Math.hypot(X - a.c[0], Z - a.c[1]) > a.reach) continue; y += a.obj.lift(...a.from(X, Z)); } return y; };
 
 export function buildHole(h) {
   const k = h.n - 1, prof = profileFn(h.prof), W = WOR[k];
@@ -92,6 +97,7 @@ export function buildHole(h) {
   const here = [];
   for (const a of ALL) {
     if (a.owner === k) { here.push({ obj: a.obj, f: (x, z) => [x, z] }); continue; }
+    if (a.local) continue;   // another hole's scarp is that hole's elevation, not this one's
     const [cx, cz] = LOC[k](...a.c);
     if (cx < box[0] - a.reach || cx > box[2] + a.reach || cz < box[1] - a.reach || cz > box[3] + a.reach) continue;
     here.push({ obj: a.obj, f: (x, z) => a.from(...W(x, z)) });
@@ -293,11 +299,11 @@ export function worldAt(X, Z) {
   for (let k = 0; k < HOLES.length; k++) {
     if (near[k] > bd + 160) continue;
     const w = 1 / Math.pow(Math.max(near[k], 30) - 28, 4);
-    const [x, z] = LOC[k](X, Z), y = BUILT[k].ground(x, z, true, true) + HOLES[k].base;
+    const [x, z] = LOC[k](X, Z), y = BUILT[k].ground(x, z, true, true) + HOLES[k].base + localLift(k, X, Z);
     ws += w; ys += w * y;
   }
   // within 45 m of a hole's line it is that hole's ground exactly
-  const blend = ys / ws, own0 = BUILT[best].ground(lx, lz, true, true) + HOLES[best].base;
+  const blend = ys / ws, own0 = BUILT[best].ground(lx, lz, true, true) + HOLES[best].base + localLift(best, X, Z);
   // the layered ground (peaks, ridges) stays off greens, tees and water, as in each hole's own ground
   const own = BUILT[best], gmo = bd < 150 ? own.gm(lx, lz) : 99;
   const y = lerp(own0, blend, smooth((bd - 45) / 70)) + worldLift(X, Z) + layerLift(X, Z) * smooth((gmo - 4) / 8);
@@ -315,7 +321,7 @@ export function worldAt(X, Z) {
 function worldY(X, Z) {
   let ws = 0, ys = 0, bd = Infinity; const near = [];
   for (let k = 0; k < HOLES.length; k++) { const d = distLine(WL[k], X, Z); near.push(d); bd = Math.min(bd, d); }
-  for (let k = 0; k < HOLES.length; k++) { if (near[k] > bd + 160) continue; const w = 1 / Math.pow(Math.max(near[k], 30) - 28, 4); const [x, z] = LOC[k](X, Z); ws += w; ys += w * (BUILT[k].ground(x, z, true, true) + HOLES[k].base); }
+  for (let k = 0; k < HOLES.length; k++) { if (near[k] > bd + 160) continue; const w = 1 / Math.pow(Math.max(near[k], 30) - 28, 4); const [x, z] = LOC[k](X, Z); ws += w; ys += w * (BUILT[k].ground(x, z, true, true) + HOLES[k].base + localLift(k, X, Z)); }
   return ys / ws + worldLift(X, Z) + layerLift(X, Z);
 }
 export { WL, LOC, WOR };
