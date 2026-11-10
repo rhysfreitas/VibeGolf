@@ -47,6 +47,14 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   let bunkers, crevasses and rocks bite in. Splitting a fairway now and then is good. Keep the 45–65 m
   width where drives land and pins at 3% or less. Rimeholm's `tools/rimeholm/shapes.mjs` (`makeGreen`
   from lobes, `makeFairway` from edges along the line) is one way to build them.
+- **Fairway bunkers on the larger side (agreed with the owner, Rimeholm round 3).** Out where drives land,
+  a bunker 25–40 m across, or a long one that follows a fairway's edge for 100 m or more, reads as a real
+  hazard; a 10 m dot reads as a placeholder. Let them bite into the fairway's edge without taking the landing
+  area under 45 m. Greenside bunkers can stay small, and sit at least 2.5 m off the green.
+- **Cliff and shelf edges wander.** A ridge, shelf or scarp seen across the hole should never be a straight
+  line or a regular zigzag: give its edge bays and prows tens of metres long with smaller crags inside them,
+  vary the height of its face and break its crest. Rimeholm's `crag` scarps (`tools/rimeholm/shapes.mjs`) do
+  this with noise at three scales.
 - **Make chasms and crevasses read from the tee.** A plain dark slit is easy to miss. Give them a jagged
   outline, a raised lip on one side (a broken face a few metres high), walls you can see down into, and
   more of them as scenery between the holes, layered into the distance.

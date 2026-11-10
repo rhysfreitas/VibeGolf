@@ -64,11 +64,11 @@ for (const [i, B] of BUILT.entries()) {
   for (const r of h.rubble || []) if (r.label) L_(r.at, r.label);
   for (const [p, t] of h.voidLabels || []) L_(at(h.line, ...p), t);
   if (h.lake) L_(at(h.line, 70, 40), h.lake.label);
-  if (h.lead) L_(h.lead.pts[2], h.lead.label);
+  if (h.openWater) L_([h.openWater.at[0] + h.openWater.rx + 10, h.openWater.at[1]], h.openWater.label);
   if (h.moulin) L_(h.moulin.at, h.moulin.label);
   if (h.esker) L_(at(h.line, 140, 54), h.esker.label + ` (${h.esker.h} m up)`);
   for (const w of h.walls || []) if (w.label) L_(at(h.line, (w.s0 + Math.min(w.s1, h.len)) / 2, w.side * (w.off + 26)), w.label);
-  if (h.falls) L_(at(h.line, (h.falls.s0 + h.falls.s1) / 2, h.falls.off[1] + 14), h.falls.label);
+  if (h.falls) L_(at(h.line, h.falls.s, h.falls.off[1] + 14), h.falls.label);
   // cracks and scarps in this hole's frame (for the plan): each as its two edges, the lip edge marked
   const toHere = LOC[i], cr = [];
   const box = [x0, z0, x0 + W, z0 + H], inB = p => p[0] > box[0] && p[0] < box[2] && p[1] > box[1] && p[1] < box[3];
@@ -87,7 +87,7 @@ for (const [i, B] of BUILT.entries()) {
       if (B.surface(...t.at) === 'fairway') { let a = pr.off, b = pr.off; while (B.surface(...at(h.line, pr.s, a - 0.5)) === 'fairway' && a > pr.off - 120) a -= 0.5; while (B.surface(...at(h.line, pr.s, b + 0.5)) === 'fairway' && b < pr.off + 120) b += 0.5; w = b - a; }
       return { name: t.name, p: t.at, bold: !!t.bold, d: Math.round(Math.hypot(t.at[0] - back[0], t.at[1] - back[1]) / YD), surf: B.surface(...t.at), width: Math.round(w), toPin: Math.round(Math.hypot(t.at[0] - h.pin[0], t.at[1] - h.pin[1]) / YD) };
     }),
-    objs: B.objs, prof, drives, bold, words: h.words, green: h.green, base: h.base, place: h.place, labels, voids: h.voids || [], lead: h.lead || null });
+    objs: B.objs, prof, drives, bold, words: h.words, green: h.green, base: h.base, place: h.place, labels, voids: h.voids || [], openWater: h.openWater || null });
 }
 fs.writeFileSync(`${OUT}/holes.json`, JSON.stringify({ SURF, holes: meta, teeSets: COURSE.teeSets }));
 

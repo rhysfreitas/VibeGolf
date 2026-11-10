@@ -154,7 +154,7 @@ function renderView(hi, view) {
   for (const t of B.teePads) { const c = Math.cos(headingAt(h.line, 1)), sn = Math.sin(headingAt(h.line, 1)); drape([[-6, -5], [6, -5], [6, 5], [-6, 5]].map(([u, v]) => [t.x + u * c - v * sn, t.z + u * sn + v * c]), true, [120, 146, 180], 0.9); }
   const segDrape = (segs, colr, wd, lift = 0.15) => { for (const [p, q] of segs) drape([p, q], false, colr, wd, () => true, lift); };
   { const [px, pz] = h.pin; segDrape(edgeSegs((x, z) => B.gm(x, z) < 0, px - 45, pz - 45, px + 45, pz + 45, 1), [60, 96, 40], 1.4); }
-  for (const b of B.bunkers) segDrape(edgeSegs(B.inBunker(b), b.x - b.rx * 1.4, b.z - b.rx * 1.4 - b.rz, b.x + b.rx * 1.4, b.z + b.rz * 1.4 + b.rx, 0.8), b.kind === 'sand' ? [40, 40, 44] : [96, 130, 180], 1.2);
+  for (const b of B.bunkers) segDrape(edgeSegs(B.inBunker(b), ...b.box, b.strip || b.wrap ? 1.2 : 0.8), b.kind === 'sand' ? [40, 40, 44] : [96, 130, 180], 1.2);
   for (const w of h.water || []) drape(seOutline({ x: w.at[0], z: w.at[1], rx: w.rx, rz: w.rz, rot: w.rot || 0 }, 40), true, [60, 110, 130], 1.2);
   if (h.lake) drape(seOutline({ x: h.lake.at[0], z: h.lake.at[1], rx: h.lake.rx, rz: h.lake.rz, rot: h.lake.rot || 0 }, 64), true, [70, 120, 150], 1.3);
   { const xs = h.line.map(p => p[0]), zs = h.line.map(p => p[1]);
@@ -279,9 +279,26 @@ function renderView(hi, view) {
         const [x, z] = tr([o.x, o.z]), R_ = rnd(o.seed), n = 6, pts = ngon(x, z, o.r, n, R_() * 6, 0.75 + R_() * 0.4);
         const tops = pts.map(() => o.base + yoff + o.h * (0.72 + 0.28 * R_()));
         prismUp(pts, o.base + yoff, tops, [178, 214, 232], o.seed, 0, 0.62);
+      } else if (o.kind === 'icicle') {
+        // a hanging column of ice: wide at the lip, tapering to a drip; pale, with a darker blue edge
+        const [x, z] = tr([o.x, o.z]), d = cam.hd([x, 0, z]); if (d > 900 || !inView(x, z, 0.3)) continue;
+        const y1 = o.top + yoff, y0 = y1 - o.len, lean = (hash(o.seed, 1) - 0.5) * 0.6, r = o.r;
+        const p = proj([[x - r * cam.r[0], y1, z - r * cam.r[2]], [x + r * cam.r[0], y1, z + r * cam.r[2]], [x + r * 0.45 * cam.r[0] + lean, y1 - o.len * 0.55, z + r * 0.45 * cam.r[2]], [x + lean * 1.5, y0, z], [x - r * 0.5 * cam.r[0] + lean, y1 - o.len * 0.5, z - r * 0.5 * cam.r[2]]]);
+        if (p) { const f = fogAt(d); add(d - 0.6 - hash(o.seed, 2) * 0.3, `<polygon points="${fmt(p)}" fill="${hex(mix([222, 240, 250].map(v => v * (0.93 + 0.07 * hash(o.seed, 3))), f))}" stroke="${hex(mix([92, 146, 182], f))}" stroke-width="${(0.8 * (1.2 - f)).toFixed(2)}" stroke-linejoin="round"/>`); }
+      } else if (o.kind === 'icefall') {
+        // a column of a frozen waterfall: lumpy sides, a waist, a skirt where it lands; a pale glint down it
+        const [x, z] = tr([o.x, o.z]), d = cam.hd([x, 0, z]); if (d > 900 || !inView(x, z, 0.3)) continue;
+        const y1 = o.top + yoff, r = o.r, ph = hash(o.seed, 4) * 6, N = 9, Lp = [], Rp = [];
+        for (let i = 0; i <= N; i++) {
+          const t = i / N, w = r * (1 - 0.28 * Math.sin(Math.PI * t) + 0.14 * Math.sin(t * 11 + ph)) + r * 0.9 * Math.max(0, (t - 0.78) / 0.22) ** 2, y = y1 - o.len * t;
+          Lp.push([x - w * cam.r[0], y, z - w * cam.r[2]]); Rp.push([x + w * cam.r[0], y, z + w * cam.r[2]]);
+        }
+        const p = proj([...Lp, ...Rp.reverse()]), g = projLine([[x + r * 0.25 * cam.r[0], y1 - o.len * 0.05, z + r * 0.25 * cam.r[2]], [x + r * 0.15 * cam.r[0], y1 - o.len * 0.8, z + r * 0.15 * cam.r[2]]]);
+        if (p) { const f = fogAt(d), sh = 0.9 + 0.1 * hash(o.seed, 3);
+          add(d - 0.6 - hash(o.seed, 2) * 0.3, `<polygon points="${fmt(p)}" fill="${hex(mix([214 * sh, 236 * sh, 248], f))}" stroke="${hex(mix([104, 152, 188], f))}" stroke-width="${(0.7 * (1.2 - f)).toFixed(2)}" stroke-linejoin="round"/>` + (g ? `<polyline points="${fmt(g)}" fill="none" stroke="${hex(mix([250, 253, 255], f))}" stroke-width="1.4" stroke-linecap="round"/>` : '')); }
       } else if (o.kind === 'iceblock') {
         const [x, z] = tr([o.x, o.z]), R_ = rnd(o.seed), pts = ngon(x, z, o.r, 5, R_() * 6, 0.6 + R_() * 0.5);
-        const b0 = o.base ?? (o.base = (worldAt(o.x, o.z).y ?? 0) - 0.8);
+        const b0 = o.base !== undefined ? o.base + yoff : (o.base = (worldAt(o.x, o.z).y ?? 0) - 0.8);
         prismUp(pts, b0, pts.map((p, i) => b0 + o.h * (0.55 + 0.45 * R_()) + (p[0] - x) * o.tilt * 0.5), [200, 226, 242], o.seed, 0, 0.7);
       } else if (o.kind === 'boulder') {
         const [x, z] = tr([o.x, o.z]), pts = ngon(x, z, o.r * 0.8, 6, hash(x, z) * 6, 0.8);
@@ -421,11 +438,11 @@ export function viewsFor(hi) {
   for (const t of h.targets || []) labelSet.push(L3(t.at, t.name, -46));
   labelSet.push(L3(pin, 'green', -60));
   if (h.lake) labelSet.push(L3(at(h.line, 70, 40), 'the frozen lake', -34));
-  if (h.lead) labelSet.push(L3(h.lead.pts[1], 'open water', -30));
+  if (h.openWater) labelSet.push(L3(h.openWater.at, 'open water', -30));
   if (h.longship) labelSet.push(L3(h.longship.at, 'the longship', -70));
   if (h.moulin) labelSet.push(L3(h.moulin.at, 'the moulin', -40));
   if (h.mammoth) labelSet.push(L3(h.mammoth.at, 'the mammoth', -50, 6));
-  if (h.falls) labelSet.push(L3(at(h.line, (h.falls.s0 + h.falls.s1) / 2, 18), 'the frozen falls', -40, 0));
+  if (h.falls) labelSet.push(L3(at(h.line, h.falls.s, 12), 'the frozen falls', -40, 0));
   if (h.seracs) labelSet.push(L3(at(h.line, 186, -30), 'the seracs', -110, 20));
   if (h.arch) labelSet.push(L3(at(h.line, 418, -45), 'ice bridge', -40, 9));
   if (h.hall) labelSet.push(L3(h.hall.at, 'the hall', -60, 14));

@@ -2,7 +2,7 @@
 // frame, plus the world transform and the glacier between the holes (world.mjs scenery layered on). Shared by
 // the plans, the profiles and the sketch views, so they all show the same ground. Pure.
 import { project, seDist, seOutline, rectPts, inPoly, profileFn, smooth, clamp, at, rnd, distLine, headingAt, lerp } from './geo.mjs';
-import { makeGreen, makeFairway, makeCrack, makeShaft, noise2 } from './shapes.mjs';
+import { makeGreen, makeFairway, makeCrack, makeShaft, noise1, noise2 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
 import { WORLD, layerLift, onPeak } from './world.mjs';
 
@@ -46,25 +46,45 @@ export function buildHole(h) {
   const GR = makeGreen(h.pin, endHead, { seed: 70 + h.n, ...h.green }), gm = GR.gm, gUV = GR.uv;
   const fwD = makeFairway(h.line, h.fw || []);
   // black volcanic sand by the greens (warm ground), hollows of soft powder out in the fairways
-  const bunkers = (h.bunkers || []).map((b, i) => { const kind = b.kind || (Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45 ? 'sand' : 'powder');
+  // three shapes: an ellipse ({ at, rx, rz }), a strip along the line ({ strip: [[s, L, R], ...] }, edges like a
+  // fairway's) or a band wrapping the green ({ wrap: { from, to, d, w } }: degrees round the green, 0 = past the
+  // pin, + to the right; d metres off its edge, w wide)
+  const bunkers = (h.bunkers || []).map((b, i) => {
+    if (b.strip) { const fd = makeFairway(h.line, [{ e: b.strip, wob: b.wob ?? 3, seed: 90 + i }]), sx = b.strip.map(([s, L, R]) => at(h.line, s, (R - L) / 2));
+      return { strip: true, kind: b.kind || 'powder', depth: 1.3, edgeM: fd, x: sx[0][0], z: sx[0][1], box: [Math.min(...sx.map(p => p[0])) - 70, Math.min(...sx.map(p => p[1])) - 70, Math.max(...sx.map(p => p[0])) + 70, Math.max(...sx.map(p => p[1])) + 70] }; }
+    if (b.wrap) return { wrap: b.wrap, kind: b.kind || 'sand', depth: 0.9, seed: 95 + i, x: h.pin[0], z: h.pin[1] };
+    const kind = b.kind || (Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45 ? 'sand' : 'powder');
     return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, kind, depth: kind === 'sand' ? 0.8 : 1.3 }; });
   const bunkerE = (b, x, z) => seDist(b, x, z) + 0.13 * noise2(x / 4, z / 4, b.seed);
   // a greenside bunker sits just off the green, never in it: slide it straight away from the pin until
   // every part of it is at least 2.5 m outside the green's edge (room for a collar between)
   for (const b of bunkers) {
-    if (b.kind !== 'sand') continue;
+    if (b.kind !== 'sand' || b.wrap || b.strip) continue;
     const clear = () => Math.min(gm(b.x, b.z), ...seOutline({ ...b, rx: b.rx * 1.15, rz: b.rz * 1.15 }, 32).map(p => gm(...p)));
     let dx = b.x - h.pin[0], dz = b.z - h.pin[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     b.was = [b.x, b.z];
     for (let i = 0; i < 120 && clear() < 2.5; i++) { b.x += dx * 0.5; b.z += dz * 0.5; }
     b.edge = clear(); b.moved = Math.hypot(b.x - b.was[0], b.z - b.was[1]);
   }
-  const inBunker = b => (x, z) => bunkerE(b, x, z) < 1;
+  // metres outside a bunker (negative inside)
+  const wrapM = (b, x, z) => {
+    const W = b.wrap, [u, v] = gUV(x, z), a = Math.atan2(u, v) * 180 / Math.PI, span = W.to - W.from;
+    let t = (((a - W.from) % 360) + 360) % 360 / span, r = Math.hypot(u, v);
+    if (t > 1) { const over = Math.min((t - 1) * span, 360 - t * span) * Math.PI / 180 * r; return Math.max(over, 1); }
+    const w = W.w * Math.pow(Math.sin(Math.PI * t), 0.35) * (1 + 0.22 * noise1(t * 6, b.seed)), c = W.d + w / 2;
+    return Math.abs(gm(x, z) - c) - w / 2 + 0.6 * noise2(x / 4, z / 4, b.seed);
+  };
+  const edgeM = (b, x, z) => b.strip ? b.edgeM(x, z) : b.wrap ? wrapM(b, x, z) : (bunkerE(b, x, z) - 1) * Math.min(b.rx, b.rz);
+  for (const b of bunkers) if (!b.box) b.box = b.wrap ? [h.pin[0] - 70, h.pin[1] - 70, h.pin[0] + 70, h.pin[1] + 70] : [b.x - b.rx * 1.5 - b.rz, b.z - b.rz * 1.5 - b.rx, b.x + b.rx * 1.5 + b.rz, b.z + b.rz * 1.5 + b.rx];
+  const inBunker = b => (x, z) => x > b.box[0] && x < b.box[2] && z > b.box[1] && z < b.box[3] && edgeM(b, x, z) < 0;
   const extra = (h.extraFw || []).map((e, i) => ({ x: e.at[0], z: e.at[1], rx: e.rx, rz: e.rz, rot: e.rot || 0, seed: 60 + i }));
   const rubble = (h.rubble || []).map(r => ({ x: r.at[0], z: r.at[1], rx: r.rx, rz: r.rz, rot: r.rot || 0 }));
   const forms = (h.forms || []).map(f => ({ ...f, x: f.at[0], z: f.at[1], rot: f.rot || 0 }));
   const cliffs = (h.cliffs || []).map(c => ({ ...c, x: c.at[0], z: c.at[1], rot: c.rot || 0 }));
   const lake = h.lake && { ...h.lake, x: h.lake.at[0], z: h.lake.at[1], rot: h.lake.rot || 0 };
+  // a hole of open water in the lake's ice, with a ragged edge
+  const open = h.openWater && { x: h.openWater.at[0], z: h.openWater.at[1], rx: h.openWater.rx, rz: h.openWater.rz, rot: h.openWater.rot || 0 };
+  const inOpen = (x, z) => !!open && seDist(open, x, z) + 0.16 * noise2(x / 3.5, z / 3.5, 17) < 1;
   const cantAt = s => { let g = 0; for (const [a, b, gr] of h.cant || []) g += gr * span(s, a, b); return g; };
   // the cracks that touch this hole: its own, in its frame, and everyone else's through world space
   const xs = h.line.map(p => p[0]), zs = h.line.map(p => p[1]);
@@ -115,7 +135,7 @@ export function buildHole(h) {
       if (Gd.crown) g += Gd.crown * (1 - clamp(1 + go / 9, 0, 1) ** 2);
       y += g * fade;
     }
-    for (const b of bunkers) { const e = bunkerE(b, x, z); if (e < 1.3) y -= b.depth * (1 - smooth((e - 0.7) / 0.35)) * smooth((go - 0.5) / 1.5); }
+    for (const b of bunkers) { if (x < b.box[0] || x > b.box[2] || z < b.box[1] || z > b.box[3]) continue; const e = edgeM(b, x, z); if (e < 0.5) y -= b.depth * (1 - smooth((e + 2) / 2.3)) * smooth((go - 0.5) / 1.5); }
     const [X, Z] = W(x, z);
     let m = smooth((go - 4) / 8);
     for (const t of teePads) m *= smooth((Math.hypot(x - t.x, z - t.z) - 7) / 8);
@@ -132,7 +152,7 @@ export function buildHole(h) {
     let y = base(x, z, bare);
     for (const t of teePads) { const d = Math.hypot(x - t.x, z - t.z); if (d < 12) y = lerp(t.y - (bare ? crackLift(x, z) : 0), y, smooth((d - 6) / 6)); }
     const drop = bare ? crackLift(x, z) : 0;
-    if (lake) { const e = seDist(lake, x, z); if (e < 1) return (h.lead && distLine(h.lead.pts, x, z) < h.lead.w / 2 ? lake.y - 0.35 : lake.y) - drop; if (e < 1.14) y = lerp(lake.y + 0.1 - drop, y, smooth((e - 1) / 0.14)); }
+    if (lake) { const e = seDist(lake, x, z); if (e < 1) return (inOpen(x, z) ? lake.y - 0.35 : lake.y) - drop; if (e < 1.14) y = lerp(lake.y + 0.1 - drop, y, smooth((e - 1) / 0.14)); }
     for (const w of waters) { const e = seDist(w, x, z); if (e < 1) return w.y - drop; if (e < 1.3) y = lerp(w.y + 0.25 - drop, y, smooth((e - 1) / 0.3)); }
     return y;
   }
@@ -142,17 +162,16 @@ export function buildHole(h) {
   function surface(x, z) {
     const vd = voidD(x, z);
     if (vd < 0) return 'void';
-    if (lake && seDist(lake, x, z) < 1) return h.lead && distLine(h.lead.pts, x, z) < h.lead.w / 2 ? 'water' : 'ice';
+    if (lake && seDist(lake, x, z) < 1) return inOpen(x, z) ? 'water' : 'ice';
     for (const w of waters) if (seDist(w, x, z) < 1) return 'water';
     if (hallPts && inPoly(hallPts, x, z)) return 'hall';
     const go = gm(x, z);
     if (go < 0) return 'green';
-    if (go < (h.green.apron || 3) || (h.green.punch && go < h.green.punch.floor + h.green.punch.bank)) return 'fringe';
     for (const b of bunkers) if (inBunker(b)(x, z)) return b.kind;
+    if (go < (h.green.apron || 3) || (h.green.punch && go < h.green.punch.floor + h.green.punch.bank)) return 'fringe';
     for (const t of teePads) if (onPad(t, x, z)) return 'tee';
     if (vd < 3.5) return 'ice';
     const pr = along(x, z);
-    if (h.falls && pr.s > h.falls.s0 && pr.s < h.falls.s1 && pr.off > h.falls.off[0] && pr.off < h.falls.off[1]) return 'ice';
     for (const c of cliffs) if (seDist(c, x, z) < 1.02 && slopeAt(x, z) > 0.3) return c.surf || 'rock';
     const sl = slopeAt(x, z);
     if (sl > 0.42) { const [X, Z] = W(x, z); return crackLift(x, z) > 0.2 ? 'ice' : onPeak(X, Z) ? 'rock' : (h.steep || 'rock'); }
@@ -160,6 +179,7 @@ export function buildHole(h) {
     if (fd < 0 && vd > 6) return 'fairway';
     for (const f of forms) if (f.surf && seDist(f, x, z) < 0.75) return f.surf;
     for (const r of rubble) if (seDist(r, x, z) < 1) return 'rubble';
+    for (const c of here) if (c.obj.spec && !c.obj.open && c.obj.spec.rubble) { const e = c.obj.signedE(...c.f(x, z)); if (e < 0 && e > -c.obj.spec.rubble * (0.7 + 0.3 * noise2(x / 6, z / 6, 3))) return 'rubble'; }
     if (h.rims && sl > 0.1 && Math.abs(pr.off) < 90 && pr.s > 80 && pr.s < h.len - 30) return 'travertine';
     if (go < 14) return 'rough';
     if (fd < (h.corridor ?? 18) && vd > 4) return 'rough';
@@ -174,7 +194,7 @@ export function buildHole(h) {
   for (const b of h.boulders || []) {
     if (surfaceOk(b.at)) objs.push({ kind: 'boulder', x: b.at[0], z: b.at[1], r: b.r, h: b.h, base: gAt(...b.at) - b.h * 0.25 });
   }
-  function surfaceOk(p) { const s = surface(...p); return !['fairway', 'green', 'fringe', 'tee', 'water', 'ice', 'void', 'sand'].includes(s); }
+  function surfaceOk(p) { const s = surface(...p); return !['fairway', 'green', 'fringe', 'tee', 'water', 'ice', 'void', 'sand', 'powder'].includes(s); }
   for (const t of h.trees || []) if (surfaceOk([t.x, t.z])) objs.push({ kind: 'tree', x: t.x, z: t.z, r: t.r, h: t.h, base: gAt(t.x, t.z) });
   if (h.cave) {   // the cliff and its cave mouth are ground (base above); the roof is a slab over the back tees
     const C = h.cave;
@@ -184,6 +204,36 @@ export function buildHole(h) {
   if (h.hall) objs.push({ kind: 'hall', pts: hallPts, base: Math.min(...hallPts.map(p => gAt(...p))) - 0.5, h: h.hall.h, roof: h.hall.roof, at: h.hall.at, rot: endHead, label: h.hall.label });
   if (h.longship) objs.push({ kind: 'longship', ...h.longship, x: h.longship.at[0], z: h.longship.at[1], y: lake.y - 0.6 });
   if (h.mammoth) { const M = h.mammoth, pr = project(h.line, ...M.at); objs.push({ kind: 'mammoth', x: M.at[0], z: M.at[1], base: gAt(...M.at), dir: headingAt(h.line, pr.s), label: M.label }); }
+  if (h.falls) {
+    // the frozen falls: columns of ice standing the full height of the face in front, flows hanging from the lip
+    // behind them over the bulge, and a few icicles along the rest of the lip; seracs lean off the shelf's crest
+    const sc = OWN[k].cracks.find(c => !c.open), side = sc.lip.side, st = 1.1, P = sc.scarpLine(st), R = rnd(600 + h.n);
+    for (let i = 0; i < P.length - 1; i++) {
+      const a = P[i], b = P[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1, nx = -dz / l * side, nz = dx / l * side;  // toward the high side
+      const F = sc.faceAt(i * st), off = project(h.line, ...a).off, inFalls = off > h.falls.off[0] && off < h.falls.off[1];
+      if (!inFalls && R() > 0.22) continue;
+      const lipP = [a[0] + nx * (F + 1.5), a[1] + nz * (F + 1.5)], top = ground(...lipP, true), foot = ground(a[0] - nx * 2, a[1] - nz * 2, true);
+      const edge = inFalls ? Math.min(1, (Math.min(off - h.falls.off[0], h.falls.off[1] - off)) / 5) : 0;
+      const rows = inFalls ? 4 : 1;
+      for (let row = 0; row < rows; row++) {
+        const t = inFalls ? 0.04 + row * 0.24 + R() * 0.1 : 0.88 + R() * 0.08, p = [a[0] + nx * F * t, a[1] + nz * F * t], gp = ground(...p, true);
+        // in the falls, ropey columns that pour over the lip and run down to the ice, flaring where they land;
+        // toward its edges and along the rest of the lip, icicles that hang free and taper to a drip
+        if (inFalls && R() < 0.4 + 0.6 * edge) {
+          objs.push({ kind: 'icefall', x: p[0], z: p[1], top: top - 0.2 - R() * 0.6, len: Math.max(1, top - (row === 0 ? foot : gp) + 0.3), r: (row === 0 ? 1.4 : 1.1) + R() * 1.8, seed: Math.floor(R() * 1e4) });
+          continue;
+        }
+        const tip = gp + 0.2 + R() * (top - gp) * (inFalls ? 0.5 : 0.75);
+        objs.push({ kind: 'icicle', x: p[0], z: p[1], top: top + 0.2, len: Math.max(1, top - tip), r: inFalls ? 0.7 + R() * 1 : 0.4 + R() * 0.7, seed: Math.floor(R() * 1e4) });
+      }
+    }
+    for (let i = 0; i < P.length; i += 5) {
+      const off = project(h.line, ...P[i]).off; if (Math.abs(off) < 26 || R() < 0.45) continue;
+      const a = P[i], b = P[Math.min(i + 1, P.length - 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / l * side, nz = (b[0] - a[0]) / l * side, F = sc.faceAt(i * st);
+      const d = F + 1.5 + R() * 5, p = [a[0] + nx * d + (R() - 0.5) * 3, a[1] + nz * d + (R() - 0.5) * 3];
+      objs.push({ kind: 'serac', x: p[0], z: p[1], r: 2 + R() * 2.5, h: 4 + R() * 7, base: ground(...p, true) - 1, seed: 700 + i });
+    }
+  }
   if (h.moulin) objs.push({ kind: 'moulin', x: h.moulin.at[0], z: h.moulin.at[1], r: h.moulin.r });
   // braziers down both sides of the play, lit at night; steam off the green and the warm pools
   {

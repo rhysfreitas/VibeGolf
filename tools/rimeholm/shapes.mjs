@@ -85,8 +85,15 @@ export function makeCrack(spec) {
   const lens = s => Math.pow(Math.max(0, Math.sin(Math.PI * clamp(s / len, 0, 1))), 0.45);
   const per = [6 + 6 * hash(seed, 1), 6 + 6 * hash(seed, 2)], ph = [hash(seed, 3) * 12, hash(seed, 4) * 12];
   const zig = (s, k) => { const t = ((s + ph[k]) / per[k]) % 1, tri = Math.abs(t * 2 - 1) * 2 - 1; return 0.55 * tri + 0.45 * noise1(s / 8, seed * 5 + k); };
+  // a scarp's foot line, metres toward the high side: a regular zigzag, or with crag, bays and prows at three
+  // scales (tens of metres, a dozen, a few) so it reads as a broken ice shelf; a bulge pushes the foot out
+  // toward the low side round one point (a frozen waterfall building out from the face) and widens the face there
+  const bul = spec.bulge && { s: project(pts, ...spec.bulge.c).s, half: spec.bulge.half, out: spec.bulge.out };
+  const bell = s => bul ? Math.exp(-(((s - bul.s) / bul.half) ** 2)) : 0;
+  const shift = s => (spec.crag ? jag * (0.6 * noise1(s / 34, seed + 21) + 0.3 * noise1(s / 12, seed + 22) + 0.22 * zig(s, 0)) : jag * zig(s, 0)) * Math.min(1, lens(s) * 3) - (bul ? bul.out * bell(s) : 0);
+  const faceAt = s => !lip ? 0 : (spec.crag ? lip.face * (0.75 + 0.35 * (noise1(s / 17, seed + 23) + 1) / 2) : lip.face) + (bul ? bul.out * 0.8 * bell(s) : 0);
   const hw = (s, k) => Math.max(0, lens(s) * (w / 2 + jag * zig(s, k) * 0.9));   // k 0: left, 1: right
-  const pad = w + jag + (lip ? lip.run + lip.fall + lip.end : 4) + 4;
+  const pad = w + jag + (spec.bulge ? spec.bulge.out : 0) + (lip ? lip.run + lip.fall + lip.end : 4) + 4;
   const xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
   const box = [Math.min(...xs) - pad, Math.min(...zs) - pad, Math.max(...xs) + pad, Math.max(...zs) + pad];
   const inBox = (x, z) => x > box[0] && x < box[2] && z > box[1] && z < box[3];
@@ -113,15 +120,17 @@ export function makeCrack(spec) {
     const E = edge(x, z);
     let side, e;
     if (open) { side = Math.sign(E.off) === lip.side; e = Math.max(0, E.d); }
-    else { const sh = jag * zig(E.s, 0) * Math.min(1, lens(E.s) * 3); e = lip.side * E.off - sh; side = e > 0; }
+    else { e = lip.side * E.off - shift(E.s); side = e > 0; }
     if (E.ends) { // past an end the step carries on, softening and dying away over lip.end
       const soft = smooth((lip.side * E.off) / (1 + E.ab * 0.6) + 0.5), rise = 1;
       return lip.h * soft * rise * (1 - smooth(E.ab / lip.end)) * (1 - smooth((Math.abs(E.off) - lip.run) / lip.fall));
     }
     if (!side) return 0;
     const endF = 1;
-    const rise = open ? 1 : smooth(e / lip.face);
-    return lip.h * rise * (1 - smooth((e - lip.run) / lip.fall)) * endF;
+    const F = open ? lip.face : faceAt(E.s), rise = open ? 1 : smooth(e / F);
+    // a craggy crest along the lip: a few metres more, rising and falling along it
+    const crest = lip.crest ? lip.crest * (0.55 + 0.45 * noise1(E.s / 11, seed + 9)) * smooth(e / (F * 0.6)) * (1 - smooth((e - F - 2) / 7)) : 0;
+    return (lip.h * rise + crest) * (1 - smooth((e - lip.run) / lip.fall)) * endF;
   }
   // the two edges as points (for drawing walls), and which edge is the lip
   function outline(step = 1.5) {
@@ -129,8 +138,10 @@ export function makeCrack(spec) {
     for (let s = 0; s <= len + 0.01; s += step) { L.push(at(pts, Math.min(s, len), -hw(s, 0))); R.push(at(pts, Math.min(s, len), hw(s, 1))); }
     return { L, R, lipEdge: lip ? (lip.side < 0 ? 'L' : 'R') : null };
   }
-  function scarpLine(step = 2) { const P = []; for (let s = 0; s <= len + 0.01; s += step) { const sh = jag * zig(s, 0) * Math.min(1, lens(s) * 3); P.push(at(pts, Math.min(s, len), lip.side * sh)); } return P; }
-  return { spec, open, len, voidD, lift, outline, scarpLine, box, depth: spec.depth ?? 28, lip };
+  function scarpLine(step = 2) { const P = []; for (let s = 0; s <= len + 0.01; s += step) P.push(at(pts, Math.min(s, len), lip.side * shift(s))); return P; }
+  // for a scarp: metres from its jagged line, + on the high side
+  const signedE = (x, z) => { if (!inBox(x, z)) return Infinity; const E = edge(x, z); return lip.side * E.off - (E.ends ? 0 : shift(E.s)); };
+  return { spec, open, len, voidD, lift, outline, scarpLine, signedE, faceAt, box, depth: spec.depth ?? 28, lip };
 }
 
 // An irregular round shaft (the moulin): r varies round the rim
