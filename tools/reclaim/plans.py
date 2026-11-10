@@ -44,8 +44,8 @@ def draw_objs(ax, objs, plan=True):
         elif k == 'span':
             a, b = np.array(o['a'][:2]), np.array(o['b'][:2]); d = b - a; n = np.array([-d[1], d[0]]) / np.linalg.norm(d) * o['w'] / 2
             Q = np.array([a + n, b + n, b - n, a - n])
-            ax.add_patch(Polygon(Q, fc=(0.55, 0.55, 0.58, 0.35), ec=INK, lw=0.8, ls='--', zorder=11))
-            label(ax, (a + b) / 2, f"{o['label']}\n{o['b'][2]:.0f}–{o['a'][2]:.0f} m up" if not o.get('deck') else o['label'])
+            ax.add_patch(Polygon(Q, fc=(0.62, 0.61, 0.60) if o.get('fallen') else (0.55, 0.55, 0.58, 0.35), ec=INK, lw=0.8, ls='-' if o.get('fallen') else '--', zorder=11))
+            if o.get('label'): label(ax, (a + b) / 2, o['label'] if o.get('deck') or o.get('fallen') else f"{o['label']}\n{o['b'][2]:.0f}–{o['a'][2]:.0f} m up")
         elif k == 'col':
             ax.add_patch(Circle((o['x'], o['z']), 1.6, fc=INK, zorder=9))
         elif k == 'pole':

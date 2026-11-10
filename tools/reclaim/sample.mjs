@@ -61,7 +61,10 @@ for (const [i, B] of BUILT.entries()) {
     objs: B.objs, prof: along(h.line), drives, bold, words: h.words, green: h.green, base: h.base, place: h.place,
     labels: [...(h.rubble || []).filter(r => r.label).map(r => [r.at, r.label]), ...(h.water || []).filter(w => w.label).map(w => [w.at, w.label]),
       ...(h.rift ? [[h.rift.pts[2], h.rift.label]] : []), ...(h.inlet ? [[h.inlet.pts[1], h.inlet.label]] : []), ...(h.pit ? [[h.pit.at, h.pit.label]] : []),
-      ...(h.ramp && h.ramp.label ? [[h.ramp.from, h.ramp.label]] : [])] });
+      ...(h.ramp && h.ramp.label ? [[h.ramp.from, h.ramp.label]] : []),
+      ...(h.ridge ? [[at(h.line, h.ridge.s, -20), h.ridge.label + ' (ridge 11 m)']] : []), ...(h.trench ? [[at(h.line, (h.trench.s0 + h.trench.s1) / 2, -24), h.trench.label + ' (7 m down)']] : []),
+      ...(h.slabEdge ? [[at(h.line, 230, h.slabEdge.off - 6), h.slabEdge.label]] : []), ...(h.sinkhole ? [[h.sinkhole.at, h.sinkhole.label]] : []),
+      ...(h.podium ? [[at(h.line, h.len - 26, 30), h.podium.label + ' (2.2 m up)']] : [])] });
 }
 fs.writeFileSync(`${OUT}/holes.json`, JSON.stringify({ SURF, holes: meta, teeSets: COURSE.teeSets }));
 
@@ -101,4 +104,9 @@ console.log('total', meta.reduce((a, m) => a + m.yards.spire, 0), 'yd; par', met
     for (const p of pts) for (const f of foot) if (inP(f.pts, ...p)) bad.add(`hole ${f.n}'s building`);
     if (bad.size) console.log('CLASH', h.n, h.name, [...bad].join(', '));
   }
+}
+// pins: slope under each pin (the rule is 3% or less)
+for (const [i, B] of BUILT.entries()) {
+  const [x, z] = HOLES[i].pin, d = 1, gx = (B.ground(x + d, z) - B.ground(x - d, z)) / (2 * d), gz = (B.ground(x, z + d) - B.ground(x, z - d)) / (2 * d);
+  const sl = Math.hypot(gx, gz) * 100; if (sl > 3) console.log('PIN', HOLES[i].n, sl.toFixed(1) + '%');
 }

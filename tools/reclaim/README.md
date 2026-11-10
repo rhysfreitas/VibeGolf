@@ -11,7 +11,7 @@ from one set of hole data, so the plans, profiles and sketch views always agree.
 | `node sample.mjs` | Grids for the plans, profiles along the line (and the bold line), drives flown with the game's physics (`src/physics.js`), the world map, and checks (drive hits, holes running into each other's buildings). |
 | `python3 plans.py` | Plan and profile per hole, and the course map (white pages). |
 | `node sketch.mjs [holes]` | The projected sketch views: plain shapes through a real camera, ink and washes, misted with distance. Seconds per view, no WebGL. `hole.sketch` tweaks a view (`up`, `fov`, `eye`). |
-| `node book.mjs` | The PDF (`out/the-reclaim-plan-book-r<ROUND>.pdf`), printed with Chrome. `ROUND=2 DATE='…' node book.mjs` for the next round. |
+| `node book.mjs` | The PDF (`out/the-reclaim-plan-book-r<ROUND>.pdf`), printed with Chrome. `ROUND=2 NEW=rounds-r2.json node book.mjs` adds a "new in this round" page: each hole's `sketch.extra` feature views and the change list from the JSON. |
 
 Run them in that order. Output goes to `out/` (ignored by git). When the layout is agreed, an `emit.mjs`
 should turn this data into the engine's hole format, as `tools/hollowmere/` does.

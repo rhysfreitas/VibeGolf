@@ -118,7 +118,7 @@ function renderView(hi, view) {
     if (c.s === 'building') continue;
     let col, ys;
     if (c.y === null) { // the chasm: dark, flush with the ground it broke out of, with its rim inked
-      ys = k.map(v => v.raw - 30); col = [52, 52, 54];
+      ys = k.map(v => v.raw - 0.05); col = [46, 46, 48];
     } else { ys = k.map(v => v.y ?? c.y); col = SC[c.s] || SC.street; if (c.s === 'water' && Math.max(...ys) - c.y > 1.2) col = SC.rubble; }
     // shade by the slope
     const dx = ((ys[1] + ys[2]) - (ys[0] + ys[3])) / (2 * s), dz = ((ys[2] + ys[3]) - (ys[0] + ys[1])) / (2 * s);
@@ -459,9 +459,15 @@ export function viewsFor(hi) {
   }
   // short of the green: 45 m back down the line
   const sg = at(h.line, h.len - 45);
-  const sg2 = at(h.line, h.len - 55), past = at(h.line, h.len + 25);
+  const gback = ((h.sketch || {}).green || {}).back || 55;
+  const sg2 = at(h.line, h.len - gback), past = at(h.line, h.len + 25);
   v.push({ id: 'green', title: 'Short of the green', fov: 50, pos: eye(sg2, pin, 0, 9), look: [past[0], g(...h.pin) - 2, past[1]] });
   for (const x of v) { x.labels = labelSet; const o = (h.sketch || {})[x.id]; if (o) { if (o.up) x.look[1] += o.up; if (o.fov) x.fov = o.fov; if (o.eye) x.pos[1] += o.eye; } }
+  // extra feature views for the "new this round" page: from [s, off, up] to [s, off, dy]
+  for (const [k, e] of ((h.sketch || {}).extra || []).entries()) {
+    const p = at(h.line, e.from[0], e.from[1]), q = at(h.line, e.to[0], e.to[1]);
+    v.push({ id: 'x' + k, extra: true, title: e.title, fov: e.fov || 56, pos: [p[0], g(...p) + e.from[2], p[1]], look: [q[0], g(...q) + e.to[2], q[1]], labels: labelSet });
+  }
   return v;
 }
 

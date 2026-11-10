@@ -76,6 +76,17 @@ pages.push(`<div class="page">
   <div class="foot"><span>The Reclaim · VibeGolf</span><span>The holes in the city. Dashed: the playing lines. Darker blocks are taller buildings.</span></div>
 </div>`);
 
+// 1b. new this round: the feature views and what changed
+const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : null;
+if (NEW) {
+  const ex = D.holes.flatMap(h => viewsFor(h.n - 1).filter(v => v.extra).map(v => ({ h, v })));
+  pages.push(`<div class="page"><h2>New in round ${ROUND}</h2>
+    <div class="views" style="grid-template-columns: 1fr 1fr 1fr; gap: 0.12in 0.16in; margin-top: 4pt">
+    ${ex.map(({ h, v }) => `<div class="view"><img src="${img('views/h' + h.n + '_' + v.id + '.png')}"><div class="cap">${esc(v.title)}</div></div>`).join('')}
+    <div class="notes" style="font-size:7.8pt; line-height:1.35"><div class="t">What changed</div>${NEW.map(t => `<div style="margin-top:3pt">${t}</div>`).join('')}</div>
+    </div><div class="foot"><span>The Reclaim · plan book round ${ROUND}</span><span>2</span></div></div>`);
+}
+
 // 2. the course at a glance
 const rows = D.holes.map(h => {
   const dh = h.pinY - h.teeY, d = h.drives.tour;
@@ -94,7 +105,7 @@ pages.push(`<div class="page glance">
       <h3>Landmarks seen from other holes</h3>
       <p>The El (1, and behind the 6th green) · the Broken Tower's fallen span (4, from 3 and 5) · the stadium bowl (5, from 4) · the suspension bridge and its slack cables (7, from 8) · the leaning clubhouse and its clock tower (9, from 1 and 8).</p>
       <h3>Height, hole by hole</h3>
-      <p>Drops and climbs alternate: a ledge tee (1), a rubble ramp up (2), a cave-in (3), a climb to the hill park (4), the big drop into the stadium (5), a rise (6), a drop off the expressway ramp (7), up to the wharf (8) and the big climb up the Rift (9).</p>
+      <p>Drops and climbs alternate: a ledge tee and a blind ridge over a fallen tower (1), down into a tunnel cave-in and up a rubble ramp (2), a cave-in (3), a climb to a green on a pavilion floor (4), the big drop into the rubbled stadium (5), a rise (6), a drop off the expressway ramp onto a tipped slab (7), up to the wharf (8) and the big climb up the Rift (9). Every street is buckled: quake rolls of a metre or so under the fairways.</p>
     </div>
     <div>
       <h3 style="margin-top:0">Reading the plans</h3>
@@ -107,10 +118,10 @@ pages.push(`<div class="page glance">
       <div class="notes" style="margin-top:8pt"><div class="t">Notes</div>${lines(6)}</div>
     </div>
   </div>
-  <div class="foot"><span>The Reclaim · plan book round ${ROUND}</span><span>2</span></div>
+  <div class="foot"><span>The Reclaim · plan book round ${ROUND}</span><span>${NEW ? 3 : 2}</span></div>
 </div>`);
 
-let pg = 3;
+let pg = NEW ? 4 : 3;
 for (const h of D.holes) {
   const w = h.words, dh = h.pinY - h.teeY, dr = h.drives || {};
   const driveLine = h.par === 3 ? '' : `<p class="small">Drives from the Spire tee down the line: tour ${Math.round(dr.tour.carry / YD)} yd carry (apex ${dr.tour.apex.toFixed(0)} m)${dr.tour.hit ? ', hits ' + dr.tour.hit.what : ''}; 150 mph ${Math.round(dr.mid.carry / YD)} yd.${h.bold ? ` Along the bold line: ${Object.entries(h.bold.drives).map(([k, v]) => `${k === 'mid' ? '150 mph' : k} ${v.hit ? 'hits ' + v.hit.what : 'clear'}`).join(', ')}.` : ''}</p>`;
@@ -131,8 +142,8 @@ for (const h of D.holes) {
       <img class="prof" src="${img('prof' + h.n + '.png')}">
     </div></div>
     <div class="foot"><span>The Reclaim · hole ${h.n} · plan and profile</span><span>${pg++}</span></div></div>`);
-  const vs = viewsFor(h.n - 1);
-  const cap = v => ({ tee: `<b>From the back tee</b>, toward ${esc((h.targets.find(t => !t.pin) || { name: 'the green' }).name)}`, land: h.par === 3 ? `<b>From the forward tee</b> (${h.yards.moss} yd)` : `<b>From the landing area</b> (${esc((h.targets.find(t => !t.pin) || {}).name || '')}), toward the green`, green: '<b>Short of the green</b>, 55 m out' })[v.id];
+  const vs = viewsFor(h.n - 1).filter(v => !v.extra);
+  const cap = v => ({ tee: `<b>From the back tee</b>, toward ${esc((h.targets.find(t => !t.pin) || { name: 'the green' }).name)}`, land: h.par === 3 ? `<b>From the forward tee</b> (${h.yards.moss} yd)` : `<b>From the landing area</b> (${esc((h.targets.find(t => !t.pin) || {}).name || '')}), toward the green`, green: `<b>Short of the green</b>, ${Math.round(Math.hypot(v.pos[0] - h.pin[0], v.pos[2] - h.pin[1]) / 5) * 5} m out` })[v.id];
   pages.push(`<div class="page"><div class="views">
     ${vs.map(v => `<div class="view"><img src="${img('views/h' + h.n + '_' + v.id + '.png')}"><div class="cap">${cap(v)}</div></div>`).join('')}
     <div class="notes"><div class="t">Hole ${h.n} · ${esc(h.name)} · notes</div>${lines(10)}</div>

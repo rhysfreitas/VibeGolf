@@ -45,12 +45,18 @@ export const HOLES = [
       corridor: 20,
       green: { rx: 15, rz: 18, style: 'tilt, back to front' },
       bunkers: [{ at: P(250, -34), rx: 12, rz: 7, rot: 0.5 }, { at: P(348, 20), rx: 8, rz: 6 }],
-      rubble: [{ at: P(248, 52), rx: 40, rz: 30, rot: 0.6, h: 5, label: 'collapsed block' }],
+      // a skyscraper fell across the second leg: its body lies on its side off the right, its broken top
+      // end buried in a grassed rubble ridge 11 m high across the fairway, low (3 m) at the left by the El
+      ridge: { s: 290, len: 36, h: 11, low: 3, lowOff: -34, fullOff: -6, label: 'the fallen tower' },
+      fallen: { a: P(280, 175), b: P(292, 30), w: 30, h: 30, label: 'the fallen tower (on its side)' },
+      chunks: [{ a: [...P(286, 18), 7], b: [...P(296, 8), 13], w: 12, t: 3 }, { a: [...P(284, -6), 6], b: [...P(292, -14), 10], w: 10, t: 2.5 }],
+      marker: P(292, 2),
+      sketch: { land: { up: 4 }, extra: [{ title: 'Hole 1: the fallen tower across the second leg, from the left of the landing area', from: [250, -24, 6], to: [292, 40, 12], fov: 62 }] },
       platform: [{ at: P(14, -4), w: 16, d: 46, y: 12, rot: 0, label: 'El station platform' }],
       el: [{ pts: [P(-40, -16), P(20, -16), P(80, -40), P(205, -40)], y: 12, w: 9, broken: true, label: 'the El' }],
       wrecks: [{ type: 'bus', at: P(150, -56), rot: 0.2 }, { type: 'car', at: P(120, 38), rot: 1.2 }, { type: 'car', at: P(300, -40), rot: 2.6 },
         { type: 'car', at: P(196, 41), rot: 0.1 }],
-      trees: [...grove(P(240, 62), 26, 7, 11), ...grove(P(366 + 0, -36), 12, 3, 12)],
+      trees: [...grove(P(232, 64), 18, 5, 11), ...grove(P(366 + 0, -36), 12, 3, 12)],
       buildings: [
         // left, beyond the El
         { at: P(60, -88), w: 40, d: 70, h: 46, broken: true }, { at: P(150, -92), w: 44, d: 60, h: 64, broken: true },
@@ -60,12 +66,12 @@ export const HOLES = [
         // round the green
         { at: P(395, 10), w: 70, d: 30, h: 28, broken: true }, { at: P(330, 78), w: 40, d: 50, h: 42, broken: true },
       ],
-      targets: [{ name: 'Past the El', at: P(226, -6) }, { name: 'Over the rubble', at: P(270, 4), bold: true }],
+      targets: [{ name: 'Past the El', at: P(226, -6) }, { name: 'Round the low end', at: P(262, -14), bold: true }],
       words: {
-        plays: 'Tee off the broken platform of the elevated line, 12 m above the boulevard. The track runs on down the left on its girders and ends in mid-air, a carriage hanging off the break. The street bends right round a block that came down in a heap.',
-        safe: 'Drive at the end of the El, 225 m, and come in with a short iron.',
-        bold: 'Carry the corner of the rubble heap (about 240 m from the Spire tee) for a wedge in.',
-        miss: 'Left is under the El, among the columns, cars and a bus. Right is the rubble and its trees.',
+        plays: 'Tee off the broken platform of the elevated line, 12 m above the boulevard. The track runs on down the left on its girders and ends in mid-air, a carriage hanging off the break. Round the bend a skyscraper lies on its side across the street: its body off to the right, its broken top end buried in a ridge of grassed rubble 11 m high. The green is out of sight behind it.',
+        safe: 'Drive at the end of the El, 225 m, and play the second blind over the ridge at the marker on its crest.',
+        bold: 'Drive long and left toward the ridge\'s low end by the El (260 m): from there you can see the flag.',
+        miss: 'Left is under the El, among the columns, cars and a bus. Right runs into the fallen tower\'s body and its rubble.',
       },
     }),
   }),
@@ -80,6 +86,9 @@ export const HOLES = [
       return {
         tees: { spire: 0, brick: 22, ivy: 48, moss: [78, 34] },
         prof: [[0, 0], [130, 0], [205, 3], [250, 5], [348, 8]],
+        // the subway under the avenue caved in: a trench 7 m deep down the first leg's landing area
+        sketch: { extra: [{ title: 'Hole 2: the tunnel cave-in under the first leg, from its lip', from: [126, 14, 3], to: [200, 0, -5] }] },
+        trench: { s0: 140, s1: 236, depth: 7, w: 62, ramp: 26, bank: 9, label: 'the tunnel cave-in' },
         fairway: [[60, 200, 52, 6], [200, 336, 48]],
         corridor: 18,
         green: { rx: 14, rz: 17, style: 'two tiers, old fountain steps as a false front' },
@@ -99,8 +108,8 @@ export const HOLES = [
         targets: [{ name: 'The corner', at: P(212, 8) }, { name: 'Through the Atrium', at: P(290), bold: true }],
         boldLine: [[0, 0], land],
         words: {
-          plays: 'A gutted office tower stands in the inside of the dogleg. Its lower eleven floors are blown out to the columns, a lobby 44 m high you can see the second leg through. The street climbs a rubble ramp to a courtyard green set on old fountain steps.',
-          safe: 'Drive down the right to the corner (210 m) and play a mid iron round the tower.',
+          plays: 'A gutted office tower stands in the inside of the dogleg. Its lower eleven floors are blown out to the columns, a lobby 44 m high you can see the second leg through. Under the first leg the subway tunnel caved in, leaving a trench 7 m deep where the drives land; the street climbs out of it up a rubble ramp to a courtyard green set on old fountain steps.',
+          safe: 'Drive down the right into the trench (210 m) and play a mid iron up and out, round the tower.',
           bold: 'Drive straight through the atrium: about a 250 m carry to the second leg, a wedge left.',
           miss: 'Pulled, the ball hits the tower\'s columns or facade and drops into the rubble at its foot. Right of the first leg: wrecks and a block of offices.',
         },
@@ -142,12 +151,15 @@ export const HOLES = [
     build: (P) => {
       const stump = P(132, 64), prop = P(150, -64);
       return {
-        sketch: { tee: { up: 26, fov: 68 } },
         tees: { spire: 0, brick: 30, ivy: 64, moss: [110, 40] },
         prof: [[0, 0], [300, 0.5], [352, 3.5], [366, 6.5], [380, 5], [430, 7], [498, 10]],
         fairway: [[50, 180, 56], [180, 340, 52], [345, 488, 46]],
         corridor: 18,
-        green: { rx: 16, rz: 19, style: 'tilted to the left, in the hill park' },
+        green: { rx: 16, rz: 19, style: 'on the floor slab of a gutted pavilion, 2.2 m up; broken steps make a false front' },
+        // the pavilion's ground floor: a raised slab in the hill park, broken steps up its front, a few columns left
+        sketch: { tee: { up: 26, fov: 68 }, extra: [{ title: 'Hole 4: the green on the pavilion floor, from the third-shot landing', from: [430, -8, 4], to: [498, 0, 1], fov: 50 }] },
+        podium: { w: 50, d: 54, h: 2.2, front: 10, label: 'the pavilion floor' },
+        columns: [[-22, -24], [22, -24], [-22, -2], [22, 6], [-10, -26], [12, -26]].map(([u, v], i) => ({ rel: [u, v], h: [14, 9, 6, 11, 4, 13][i], r: 0.8 })),
         bunkers: [{ at: P(272, 36), rx: 14, rz: 7 }, { at: P(470, 26), rx: 9, rz: 7 }, { at: P(486, -22), rx: 7, rz: 6 }],
         rubble: [{ at: P(130, 40), rx: 22, rz: 28, h: 4, label: 'debris from the break' }, { at: P(362, 0), rx: 70, rz: 13, rot: 0.08, h: 0, label: 'the rubble crest' }],
         crest: { at: P(362), length: 26, width: 140, height: 4 },
@@ -164,7 +176,7 @@ export const HOLES = [
         trees: [...grove(P(470, -50), 30, 10, 41, [10, 18]), ...grove(P(500, 50), 26, 8, 42, [10, 18]), ...grove(P(420, 50), 14, 4, 43), ...grove(P(320, -50), 14, 4, 44)],
         targets: [{ name: 'Under the span', at: P(262) }, { name: 'Short of the crest', at: P(338, 4) }, { name: 'Over the crest', at: P(420), bold: true }],
         words: {
-          plays: 'A skyscraper snapped at the 18th floor. Its top fell across the street and lies propped on the block opposite, a slanting span 44 to 72 m up that you drive under. Then the street bends left and climbs a crest of rubble to the hill park, where the green sits among wild trees.',
+          plays: 'A skyscraper snapped at the 18th floor. Its top fell across the street and lies propped on the block opposite, a slanting span 44 to 72 m up that you drive under. Then the street bends left and climbs a crest of rubble to the hill park, where the green sits on the floor slab of a gutted pavilion among wild trees, a few columns still standing round it.',
           safe: 'Drive under the span to the second leg, lay up short of the crest (it\'s blind), and wedge up the hill.',
           bold: 'A big second carries the crest (a lamppost with a flag marks the line) and leaves a pitch.',
           miss: 'The tower\'s stump and its debris on the right, wrecks on the left, trees round the green.',
@@ -178,19 +190,25 @@ export const HOLES = [
     build: (P) => ({
       tees: { spire: 0, brick: [14, -6], ivy: [32, 8], moss: [52, -10] },
       prof: [[0, 28], [178, 0]],
-      stadium: { at: P(122), rx: 42, rz: 62, p: 3, stand: 48, h: 28, open: { s: [0, 60], w: 30 } },
+      // an earthquake brought down most of the stands: only the east side keeps its tiers; behind the green the
+      // north stand slumped into the bowl as rubble, which rolls on into the back of the green as a second tier
+      stadium: { at: P(122), rx: 42, rz: 62, p: 3, stand: 48, h: 28, open: { s: [0, 60], w: 30 }, damage: [[-150, 70]] },
+      rolls: 0.4,
+      sketch: { green: { back: 85 }, extra: [{ title: 'Hole 5: the rubbled north stand, the two-tier green and the sinkhole', from: [96, 26, 12], to: [176, -4, -1], fov: 60 }] },
+      greenTier: { s: 184, h: 1.1, roll: 0.2 },
+      sinkhole: { at: P(130), rx: 17, rz: 12, label: 'the sinkhole' },
       corridor: 0,
-      green: { rx: 16, rz: 15, style: 'flat, in the bowl of the north stand' },
+      green: { rx: 18, rz: 19, style: 'two tiers: the back tier is the north stand\'s rubble, rolling' },
       fairway: [[95, 168, 40]],
       bunkers: [{ at: P(166, -18), rx: 8, rz: 6 }, { at: P(186, 14), rx: 9, rz: 5 }],
       poles: [P(60, -62), P(60, 62), P(186, -62), P(186, 62)].map((p, i) => ({ at: p, h: 46, lean: i === 3 ? 14 : 0 })),
       trees: [...grove(P(110, -30), 8, 3, 51, [6, 10]), ...grove(P(130, 30), 6, 2, 52, [6, 9])],
       targets: [],
       words: {
-        plays: 'The stadium sits in a bowl below the street. You tee from the broken upper deck of the south stand, 28 m above the pitch, and play down to a green at the north end of the pitch, where the stand rises behind it like a backstop.',
-        safe: 'The middle of the south stand fell in: the rubble slope below the tee is a soft landing, and short-right on the pitch leaves an easy chip.',
-        bold: 'Two clubs less than the yardage, straight at the flag.',
-        miss: 'Long runs into the seats and back down; wide is in the stands (a tiered lie, seats in the way).',
+        plays: 'The stadium sits in a bowl below the street, and an earthquake brought most of it down. You tee from what is left of the south stand\'s upper deck, 28 m above the pitch. Only the east side still has its tiers; the north stand slumped into the bowl as rubble, and the back of the green rolls up onto it as a second tier. A sinkhole has opened in the pitch short of the green, with 17 m of short grass between it and the front edge.',
+        safe: 'Play to the front tier: anything past the sinkhole stays on the pitch, and the sides of the sinkhole are wide open for a short shot.',
+        bold: 'Two clubs less than the yardage at a back pin, up on the rubble tier.',
+        miss: 'Short is the sinkhole (a drop beside it); long climbs the rubble and runs back; wide right sits in the tiers.',
       },
     }),
   }),
@@ -227,6 +245,11 @@ export const HOLES = [
     build: (P) => ({
       tees: { spire: 0, brick: 26, ivy: [72, -34], moss: [118, -36] },
       prof: [[0, 10], [40, 10], [110, 0], [512, 0]],
+      // the quake cracked the riverside street and tipped its slab: raised on the river side, falling 3% to the
+      // right, its broken river-side edge a 5 m drop just past the rough
+      cant: [[90, 390, 3]],
+      sketch: { extra: [{ title: 'Hole 7: the tipped slab and its broken edge, from the raised side', from: [175, -38, 3.5], to: [300, -72, -5], fov: 60 }] },
+      slabEdge: { s0: 80, s1: 385, off: -54, drop: 5, label: 'the slab\'s broken edge (5 m)' },
       fairway: [[90, 262, 58], [262, 372, 50], [440, 504, 44]],
       corridor: 18,
       green: { rx: 16, rz: 17, style: 'long, right to left, by the north tower' },
@@ -238,13 +261,13 @@ export const HOLES = [
       buildings: [{ at: P(80, 80), w: 60, d: 50, h: 20, broken: true, label: 'warehouses' }, { at: P(180, 86), w: 70, d: 50, h: 16, broken: true },
         { at: P(300, 86), w: 50, d: 60, h: 26, broken: true, vines: true }, { at: P(430, 90), w: 60, d: 50, h: 18, broken: true }, { at: P(560, 40), w: 40, d: 60, h: 34, broken: true }],
       wrecks: [{ type: 'car', at: P(150, -40), rot: 0.3 }, { type: 'bus', at: P(330, 40), rot: 2.8 }, { type: 'car', at: P(460, -22), rot: 1.0 }],
-      trees: [...grove(P(220, -50), 14, 4, 71), ...grove(P(380, 50), 16, 5, 72)],
+      trees: [...grove(P(220, 56), 14, 4, 71), ...grove(P(380, 50), 16, 5, 72)],
       targets: [{ name: 'Riverside', at: P(250, -6) }, { name: 'Short of the inlet', at: P(362, 6) }, { name: 'Over the inlet', at: P(452), bold: true }],
       words: {
-        plays: 'Tee off the broken end of the riverside expressway ramp, 10 m up, and play along the river toward the suspension bridge. Its middle span fell into the water, and where it hit, the bank broke away into an inlet that cuts across the second leg. The green sits under the north tower.',
+        plays: 'Tee off the broken end of the riverside expressway ramp, 10 m up, and play along the river toward the suspension bridge. The quake tipped the street\'s slab: it falls 3% to the right, away from the water, and its raised river-side edge breaks off in a 5 m drop just past the rough. The bridge\'s middle span fell into the river, and where it hit, the bank broke away into an inlet that cuts across the second leg. The green sits under the north tower.',
         safe: 'Lay up short of the inlet (360 m) and pitch over it, or go round its end on the right on the strip of rubble.',
         bold: 'Carry the inlet with the second, about 190 m from a good drive, to the green by the north tower.',
-        miss: 'Left is the river (a stroke and a drop). Right is the warehouses and their loading yards.',
+        miss: 'Left goes over the slab\'s broken edge to a lie 5 m down, then the river (a stroke and a drop). Right is the warehouses and their loading yards; the sidehill feeds a fade that way.',
       },
     }),
   }),

@@ -35,6 +35,16 @@ export function buildHole(h) {
   const plat = (h.platform || []).map(p => ({ pts: rectPts(p.at[0], p.at[1], p.w, p.d, p.rot || 0), y: p.y }));
   const cantAt = s => { let g = 0; for (const [a, b, gr] of h.cant || []) g += gr * smooth((s - a) / 30) * (1 - smooth((s - b) / 30)); return g; };
   const st = h.stadium && { ...h.stadium, x: h.stadium.at[0], z: h.stadium.at[1] };
+  const sink = h.sinkhole && { x: h.sinkhole.at[0], z: h.sinkhole.at[1], rx: h.sinkhole.rx, rz: h.sinkhole.rz, rot: 0 };
+  const inVoid = (x, z) => (rift && distLine(rift.pts, x, z) < rift.w / 2) || (sink && seDist(sink, x, z) < 1);
+  const endHead = (() => { const n = h.line.length, a = h.line[n - 2], b = h.line[n - 1]; return Math.atan2(b[0] - a[0], -(b[1] - a[1])); })();
+  // the pavilion floor under hole 4's green: a slab in the green's frame (v + toward the back)
+  const pod = h.podium && { ...h.podium, c: Math.cos(endHead), s: Math.sin(endHead) };
+  // buckled streets: quake rolls of a metre or so under everything, in world space so neighbours agree
+  const rollAmp = h.rolls ?? 1;
+  const rolls = (X, Z) => 0.55 * Math.sin(0.071 * X + 0.6) * Math.cos(0.052 * Z - 0.3) + 0.4 * Math.sin(0.043 * X - 0.061 * Z + 1.3) + 0.25 * Math.sin(0.12 * Z + 0.03 * X);
+  const damaged = (x, z) => { if (!st || !st.damage) return false; const a = Math.atan2(x - st.x, -(z - st.z)) * 180 / Math.PI; return st.damage.some(([a0, a1]) => a >= a0 && a <= a1); };
+  const lumps = (x, z) => 1.6 * Math.sin(x * 0.21 + Math.cos(z * 0.17) * 2) * Math.cos(z * 0.19 - x * 0.05) + 0.9 * Math.sin((x + z) * 0.37);
 
   function stadiumY(x, z) {   // pitch 0, stands rising in 3 m tiers to h, the street round the rim at h
     const e = seDist(st, x, z), out = (e - 1) * Math.min(st.rx, st.rz) * 1.25;
@@ -46,16 +56,48 @@ export function buildHole(h) {
     const wo = pr.s < st.open.s[1] + 10 ? 1 - smooth((Math.abs(pr.off) - st.open.w) / 14) : 0;
     if (wo > 0.5) return { y: tier * (1 - wo) + raw * wo, surf: t < 1 ? 'rubble' : null };
     if (t >= 1) return { y: st.h, surf: null };
+    // the stands the quake brought down: slumped into the bowl as lumpy rubble
+    if (damaged(x, z)) { const sl = st.h * Math.pow(t, 1.35) + lumps(x, z) * smooth(t * 3) * (1 - t * 0.6); return { y: Math.max(0, sl), surf: 'rubble' }; }
     return { y: tier * (1 - wo) + raw * wo, surf: 'stands' };
   }
 
   function ground(x, z, raw = false) {
-    if (!raw && rift && distLine(rift.pts, x, z) < rift.w / 2) return null;
+    if (!raw && inVoid(x, z)) return null;
     for (const p of plat) if (inPoly(p.pts, x, z)) return p.y;
     for (const t of teePads) if (t.y !== undefined && Math.abs(x - t.x) < 6 && Math.abs(z - t.z) < 5) return t.y;
     const pr = project(h.line, x, z);
     let y = prof(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -80, 80);
     if (st) y = stadiumY(x, z).y;
+    // the hole's own big landforms
+    if (h.trench) {   // the subway caved in under the avenue: a trench with rubble banks
+      const T = h.trench, along = smooth((pr.s - T.s0) / T.ramp) * (1 - smooth((pr.s - T.s1 + T.ramp) / T.ramp)), across = 1 - smooth((Math.abs(pr.off) - T.w / 2) / T.bank);
+      y -= T.depth * along * across;
+    }
+    if (h.ridge) {    // the fallen tower's grassed rubble ridge across the line, low at one end
+      const R = h.ridge, hh = R.low + (R.h - R.low) * smooth((pr.off - R.lowOff) / (R.fullOff - R.lowOff));
+      y += hh * bump(Math.abs(pr.s - R.s) / (R.len / 2)) * (1 - smooth((Math.abs(pr.off) - 110) / 20));
+    }
+    if (h.slabEdge) { // the tipped slab's broken edge: a 5 m drop past the rough
+      const E = h.slabEdge, on = smooth((pr.s - E.s0) / 8) * (1 - smooth((pr.s - E.s1) / 8));
+      y -= E.drop * smooth((E.off - pr.off) / 2.5) * on;
+    }
+    if (pod) {        // the pavilion floor: a raised slab, broken steps up its front
+      const dx = x - h.pin[0], dz = z - h.pin[1], u = dx * pod.c + dz * pod.s, v = dx * pod.s - dz * pod.c; // v + is past the pin
+      // the slab runs from 30 m short of the pin (broken steps up its first 10 m: a false front) to 24 m past it
+      const inSide = 1 - smooth((Math.abs(u) - pod.w / 2) / 1.2), back = 1 - smooth((v - 24) / 1.2), front = smooth((v + 30) / pod.front);
+      y += pod.h * inSide * back * front;
+    }
+    if (h.greenTier) { // two tiers and rolls on the green, from the rubble behind it
+      const g = h.greenTier, gd0 = greenD(x, z);
+      if (gd0 < 1.5) { const w = 1 - smooth((gd0 - 1) / 0.5); y += (g.h * smooth((pr.s - g.s) / 5) + g.roll * Math.sin(x * 0.14 + 0.5) * Math.cos(z * 0.13)) * w; }
+    }
+    {   // buckled streets everywhere but greens, tees, decks and water
+      const [X, Z] = W(x, z), gd0 = greenD(x, z);
+      let m = rollAmp * smooth((gd0 - 1.2) / 0.6);
+      for (const t of teePads) m *= smooth((Math.hypot(x - t.x, z - t.z) - 7) / 8);
+      if (pod) { const dx = x - h.pin[0], dz = z - h.pin[1], u = dx * pod.c + dz * pod.s, v = dx * pod.s - dz * pod.c; if (Math.abs(u) < pod.w / 2 + 3 && v > -33 && v < 27) m = 0; }
+      y += m * rolls(X, Z);
+    }
     if (h.crest) { const c = h.crest, e = Math.max(Math.abs(pr.s - project(h.line, c.at[0], c.at[1]).s) / (c.length / 2), Math.abs(pr.off) / (c.width / 2)); y += c.height * bump(e); }
     for (const r of rubble) if (r.h) y += r.h * bump(seDist(r, x, z));
     if (h.pit) {
@@ -76,7 +118,7 @@ export function buildHole(h) {
   }
 
   function surface(x, z) {
-    if (rift && distLine(rift.pts, x, z) < rift.w / 2) return 'void';
+    if (inVoid(x, z)) return 'void';
     if (inlet && distLine(inlet.pts, x, z) < inlet.w / 2) return 'water';
     { const [X, Z] = W(x, z); if (distLine(RIVER.pts, X, Z) < RIVER.w / 2) return 'water'; }
     for (const w of waters) if (seDist(w, x, z) < 1) return 'water';
@@ -91,8 +133,11 @@ export function buildHole(h) {
     let fd = Infinity;
     for (const f of F) fd = Math.min(fd, distLine(f.pts, x, z) - f.w / 2);
     for (const e of extra) fd = Math.min(fd, (seDist(e, x, z) - 1) * Math.min(e.rx, e.rz));
+    if (h.ridge) { const R = h.ridge, pr = project(h.line, x, z); if (Math.abs(pr.s - R.s) < R.len * 0.32 && pr.off > R.lowOff + 12) return Math.abs(pr.off) < 45 ? 'rough' : 'rubble'; }
     if (fd < 0) return 'fairway';
     for (const r of rubble) if (seDist(r, x, z) < 1) return 'rubble';
+    if (h.trench) { const T = h.trench, pr = project(h.line, x, z); if (pr.s > T.s0 - 4 && pr.s < T.s1 + 4 && Math.abs(Math.abs(pr.off) - T.w / 2 - T.bank / 2) < T.bank / 2 + 1) return 'rubble'; }
+    if (h.slabEdge) { const E = h.slabEdge, pr = project(h.line, x, z); if (pr.s > E.s0 && pr.s < E.s1 && Math.abs(pr.off - E.off) < 2.5) return 'rubble'; }
     if (gd < 1 + 14 / Math.min(G.rx, G.rz)) return 'rough';
     if (fd < (h.corridor ?? 18)) return 'rough';
     for (const t of teePads) if (Math.hypot(x - t.x, z - t.z) < 14) return 'rough';
@@ -116,12 +161,19 @@ export function buildHole(h) {
   for (const e of h.el || []) objs.push({ kind: 'el', pts: e.pts, y: e.y, w: e.w, broken: e.broken, label: e.label });
   for (const p of h.platform || []) objs.push({ kind: 'slab', pts: rectPts(p.at[0], p.at[1], p.w, p.d, p.rot || 0), y: p.y, t: 1.2, legs: true, label: p.label });
   for (const r of h.roof || []) objs.push({ kind: 'slab', pts: rectPts(r.at[0], r.at[1], r.w, r.d, 0), y: r.y, t: r.t, label: r.label, ragged: true });
-  for (const c of h.columns || []) objs.push({ kind: 'col', x: c.at[0], z: c.at[1], r: c.r, base: gAt(c.at[0], c.at[1]), h: c.h + (gAt(c.at[0], c.at[1]) < -5 ? 0 : 0) });
+  for (const c of (h.columns || []).filter(c => c.at)) objs.push({ kind: 'col', x: c.at[0], z: c.at[1], r: c.r, base: gAt(c.at[0], c.at[1]), h: c.h + (gAt(c.at[0], c.at[1]) < -5 ? 0 : 0) });
   for (const p of h.poles || []) objs.push({ kind: 'pole', x: p.at[0], z: p.at[1], base: gAt(p.at[0], p.at[1]), h: p.h, lean: p.lean });
   for (const c of h.cranes || []) objs.push({ kind: 'crane', x: c.at[0], z: c.at[1], base: gAt(c.at[0], c.at[1]), h: c.h });
   if (h.bridge) objs.push({ kind: 'bridge', a: h.bridge.a, b: h.bridge.b, base: -1 - h.base, h: h.bridge.h, label: h.bridge.label });
   if (h.span) objs.push({ kind: 'span', a: h.span.a, b: h.span.b, w: h.span.w, t: h.span.t, label: h.span.label });
   if (h.bridgeDeck) { const d = h.bridgeDeck; objs.push({ kind: 'span', a: [d.a[0], d.a[1], 1 - h.base], b: [d.b[0], d.b[1], 22 - h.base], w: d.w, t: 2, label: d.label, deck: true }); }
+  if (h.fallen) { const f = h.fallen, ya = gAt(...f.a), yb = gAt(...f.b), y0 = Math.min(ya, yb) - 2;
+    objs.push({ kind: 'span', a: [f.a[0], f.a[1], y0 + f.h / 2], b: [f.b[0], f.b[1], y0 + f.h / 2], w: f.w, t: f.h, label: f.label, fallen: true }); }
+  for (const c of h.chunks || []) objs.push({ kind: 'span', a: [c.a[0], c.a[1], gAt(c.a[0], c.a[1]) + c.a[2] - 6], b: [c.b[0], c.b[1], gAt(c.b[0], c.b[1]) + c.b[2] - 6], w: c.w, t: c.t, deck: true, label: '' });
+  if (h.podium) for (const c of h.columns || []) if (c.rel) {
+    const [u, v] = c.rel, cs = Math.cos(endHead), sn = Math.sin(endHead), x = h.pin[0] + u * cs + v * sn, z = h.pin[1] + u * sn - v * cs;
+    objs.push({ kind: 'col', x, z, r: c.r, base: gAt(x, z), h: c.h });
+  }
   if (h.marker) objs.push({ kind: 'marker', x: h.marker[0], z: h.marker[1], base: gAt(h.marker[0], h.marker[1]) });
   if (h.ramp && h.ramp.y) objs.push({ kind: 'ramp', from: h.ramp.from, to: h.ramp.to, w: h.ramp.w, y: h.ramp.y });
 
