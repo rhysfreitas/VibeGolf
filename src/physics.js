@@ -19,6 +19,8 @@ const SURFACES = {
   firstcut: { mu: 0.55, eScale: 0.80, tScale: 0.58, crr: 0.26 }, // the step between fairway and rough
   waste:   { mu: 0.80, eScale: 0.40, tScale: 0.34, crr: 0.80 },  // desert waste area: firm sand and grit
   water:   { mu: 4.00, eScale: 0.02, tScale: 0.02, crr: 6.00 },  // it stops where it goes in
+  ice:     { mu: 0.10, eScale: 0.85, tScale: 0.92, crr: 0.025 }, // lake ice (Rimeholm): a ball skates on
+  powder:  { mu: 1.00, eScale: 0.08, tScale: 0.10, crr: 2.20 },  // soft powder snow: it buries the ball
 };
 
 const DEFAULT_COEF = { cd0: 0.2043, cdS: 0.1414, cdLow: 0.2999, cdV: 51.1, clMax: 0.447, s0: 0.1736, clScale: 1.0, spinTau: 19.9 }; // fit to TrackMan PGA Tour averages

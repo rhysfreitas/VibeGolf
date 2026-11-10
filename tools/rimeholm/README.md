@@ -15,4 +15,13 @@ book from one set of hole data, so the plans, profiles and sketch views always a
 | `node sketch.mjs [holes]` | The projected sketch views: plain shapes through a real camera, inked and washed in SVG, hazed with distance, under a pale aurora sky so it prints. Seconds per view, no WebGL. `hole.sketch` tweaks a view (`tee.back`, `green.back`, `fov`, `up`, `eye`). |
 | `node book.mjs` | The PDF (`out/rimeholm-plan-book-r<ROUND>.pdf`), printed with Chrome: a cover with the map, the course at a glance, then one page a hole (three views across the top; the plan, how it plays, the profile and notes under them). `ROUND=2 NEW=rounds-r2.json node book.mjs` adds a "new in this round" page from the JSON list. |
 
-Run them in that order. Output goes to `out/` (ignored by git). There is no emitter to the engine format yet.
+Run them in that order. Output goes to `out/` (ignored by git).
+
+`node emit.mjs` writes the playable course, `src/course/rimeholm.js`, from the same data (about 4 minutes): each
+hole's ground sampled every 2 m from `worldAt` (so it meets its neighbours as the book draws them; open air for the
+crevasses and the moulin) with the engine's surface codes and a paint byte (bare rock, travertine, rubble), the
+green and bunkers as outlines over it (`features.js` `outline` + `keepGround`; bunkers play as `sand` by the greens
+and `powder` in the fairways), seracs, ice blocks, boulders, the hall, the ice cave's roof and the ice bridge as
+rocks the ball hits, the spruce as plants, and `COURSE.ice`: the glacier once in world space (a 10 m height map out
+past the peaks, and everything drawn) for `src/course/ice-world.js`. Rerun it after any change here, then
+`node --test tests/rimeholm.test.mjs` and `node tools/review/playthrough.mjs rimeholm --render=120`.

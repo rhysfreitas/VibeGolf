@@ -15,19 +15,23 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js' };
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js', rimeholm: './rimeholm.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
 const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
 const CAVE = COURSE.theme === 'cave'; // underground: built like Red Mesa (floor, playfield, rocks), under a roof
 // a ruined city (The Reclaim): ground from a sampled field, built like Red Mesa's playfield, the city drawn by city-world.js
 const CITY = COURSE.theme === 'city';
-const MESA = COURSE.theme === 'mesa' || CAVE || CITY;
-const DESERT = MESA && !CITY; // the red-rock colours (fog, the ground shader's native earth)
+// a glacier at night (Rimeholm): a sampled field like The Reclaim's, snow and ice, the aurora; ice-world.js draws it
+const ICE = COURSE.theme === 'ice';
+const FIELD = CITY || ICE;   // ground from a sampled field
+const MESA = COURSE.theme === 'mesa' || CAVE || FIELD;
+const DESERT = MESA && !FIELD; // the red-rock colours (fog, the ground shader's native earth)
 // a sky course drawn from shaped ground (features, a painted surface), like Red Mesa's playfield
 const SHAPED = !MESA && !!COURSE.shaped;
 const MW = MESA || SHAPED ? await import('./mesa-world.js') : null;
 const CW = CAVE ? await import('./cave-world.js') : null;
 const CTW = CITY ? await import('./city-world.js') : null;
+const IW = ICE ? await import('./ice-world.js') : null;
 const SP = SHAPED ? await import('./sky-props.js') : null;
 const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
 document.title = COURSE.name;
@@ -55,8 +59,8 @@ const islandAt = (x, z) => T.islandAt(x, z);
 const surfaceAt = (x, z) => T.surfaceAt(x, z);
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' ? 'fairway' : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
-const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: 'Waste area', water: 'Water', green: 'Green' };
-const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' ? 'var(--sand)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
+const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: 'Waste area', water: 'Water', green: 'Green', ice: 'Ice', powder: 'Powder' };
+const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' || l === 'powder' ? 'var(--sand)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
 
 /* ---------- conditions and tees (set on the round setup screen) ---------- */
 const TEE_SETS = COURSE.teeSets || [{ id: 'tee', name: 'Tees', color: '#f5c542', minDrive: 0 }];
@@ -114,6 +118,9 @@ function lightPreset() {
   }[t] || {};
   const P = { ...L, near: MESA ? 420 : 320, far: MESA ? 5200 : 4200 };
   // in the caverns: no sky, a dim cool fill, dark air; the light comes from lanterns and the sun through the roof
+  // the glacier by night: moonlight off the snow, a teal-green cast from the aurora, clear dark air
+  if (ICE && t === 'night') return { ...P, sun: 0xa9bcff, si: 0.75, hs: 0x48699a, hg: 0x1c2640, hi: 0.6, exp: 0.88, fog: w === 'overcast' ? 0x1a2230 : 0x0d1828, near: w === 'overcast' ? 200 : 600, far: w === 'overcast' ? 2200 : 6000 };
+  if (ICE) { P.fog = w === 'overcast' ? 0xb8c2cc : 0xc8d6e4; }
   if (CAVE) return { ...P, si: 0, hs: 0x5c6880, hg: 0x221f1b, hi: 0.5, exp: 1.05, fog: 0x080a0d, near: 120, far: 1700 };
   if (w === 'haze') { P.turb += 5; P.si *= 0.82; P.hi *= 1.15; P.near *= 0.55; P.far *= 0.6; }
   if (CITY && w === 'haze' && t !== 'night') { P.fog = 0xd2cdbf; P.near = 70; P.far = 1500; P.turb = 7; P.ray = 1.2; P.si = 2.6; P.hi = 0.5; }
@@ -132,6 +139,9 @@ function applySky(heading = 0) {
   hemi.color.set(P.hs); hemi.groundColor.set(P.hg); hemi.intensity = P.hi;
   renderer.toneMappingExposure = P.exp;
   FOG_COLOR.set(P.fog); scene.fog.near = P.near; scene.fog.far = P.far;
+  // (THREE.Fog copies its colour, so FOG_COLOR alone never reaches it; Rimeholm sets it. The other courses were
+  // reviewed with the fog they have, so they're left as they are.)
+  if (ICE) { scene.fog.color.copy(FOG_COLOR); sky.visible = !T0.night; scene.background = T0.night ? FOG_COLOR : null; }
   if (CAVE) { sky.visible = false; scene.background = FOG_COLOR; sun.castShadow = false; stars.visible = false; scene.environment = null; ball.material.emissive.set(0xa8c4d0); ball.material.emissiveIntensity = 0.35; return; }
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
@@ -220,11 +230,13 @@ const cityClouds = CITY ? (() => {
 /* ---------- materials ---------- */
 const islandMat = new THREE.MeshStandardMaterial({ roughness: 0.93, metalness: 0, envMapIntensity: 0.6 });
 const holeDirU = { value: new THREE.Vector2(0, -1) };
+const surf2U = { value: null };
 const surfU = { uSurf: { value: null }, uSurfMin: { value: new THREE.Vector2() }, uSurfSize: { value: new THREE.Vector2(1, 1) }, uFloorY: { value: -1e4 } };
 islandMat.onBeforeCompile = sh => {
   sh.uniforms.uDir = holeDirU; Object.assign(sh.uniforms, surfU);
   if (MESA) sh.defines = { ...(sh.defines || {}), MESA: '' };
   if (CITY) sh.defines = { ...(sh.defines || {}), CITY: '' };
+  if (ICE) { sh.defines = { ...(sh.defines || {}), ICE: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -234,6 +246,9 @@ islandMat.onBeforeCompile = sh => {
     .replace('#include <common>', `#include <common>
 varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN; uniform vec2 uDir;
 uniform sampler2D uSurf; uniform vec2 uSurfMin, uSurfSize; uniform float uFloorY;
+#ifdef ICE
+uniform sampler2D uSurf2;
+#endif
 float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
 float fb(vec2 p){ return vn(p)*0.5 + vn(p*2.07+3.1)*0.25 + vn(p*4.13+7.7)*0.125 + vn(p*8.4+1.3)*0.0625; }
@@ -274,6 +289,45 @@ scrub = mix(scrub, lin(vec3(0.28,0.37,0.18)), max(crack, crack2) * 0.85);
 scrub = mix(scrub, lin(vec3(0.3,0.4,0.2)), smoothstep(0.5, 0.78, fb(p.xz*0.05)) * 0.7);
 dirt = scrub;
 #endif
+#ifdef ICE
+// Rimeholm: snow and ice. uSurf: R packed snow (fairways, tees), G grass (green 1, its collar 0.5), B black sand,
+// A rough (powder, 0.55); uSurf2: R lake ice, G bare rock, B powder bunker, A travertine
+vec4 s2 = mix(vec4(0.0), texture2D(uSurf2, clamp(st, 0.0, 1.0)), inTex);
+float drift = fb(p.xz*0.045 + 3.0), sast = vn(vec2(dot(p.xz, vec2(0.8,0.6))*0.9, dot(p.xz, vec2(-0.6,0.8))*0.08));
+vec3 snow = mix(lin(vec3(0.84,0.88,0.95)), lin(vec3(0.93,0.95,0.99)), drift) * (0.9 + 0.1*sast) * (0.95 + 0.07*fine);
+snow = mix(snow, lin(vec3(0.72,0.8,0.9)), smoothstep(0.55, 0.85, fb(p.xz*0.012)) * 0.35);              // wind-scoured blue patches
+vec3 powderR = mix(lin(vec3(0.9,0.93,0.98)), lin(vec3(0.97,0.98,1.0)), mid) * (0.9 + 0.12*fine);         // soft rough: brighter, lumpier
+vec3 packed = mix(lin(vec3(0.78,0.84,0.92)), lin(vec3(0.84,0.89,0.96)), stripe) * (0.95 + 0.06*mid);    // groomed fairway, mown in stripes
+packed *= 0.96 + 0.05*step(0.5, fract(dot(p.xz, vec2(-uDir.y, uDir.x))*1.4));                            // the groomer's corduroy
+vec3 col = snow;
+col = mix(col, powderR, smoothstep(0.12, 0.5, sf.a) * (1.0 - smoothstep(0.75, 1.0, sf.a)));
+col = mix(col, packed, sf.r);
+vec3 collar = mix(lin(vec3(0.3,0.5,0.22)), lin(vec3(0.34,0.55,0.25)), mid) * (0.9 + 0.12*fine);
+vec3 putt = lin(vec3(0.33,0.6,0.27)) * (0.95 + 0.1*vn(p.xz*0.8)) * (0.97 + 0.06*fine);
+col = mix(col, collar, smoothstep(0.2, 0.55, sf.g)); col = mix(col, putt, smoothstep(0.6, 0.95, sf.g));
+vec3 blacks = lin(vec3(0.13,0.12,0.12)) * (0.85 + 0.25*fine) * (0.95 + 0.05*sin(p.x*3.0 + p.z*1.7));
+col = mix(col, blacks, smoothstep(0.35, 0.75, sf.b));
+vec3 pwd = lin(vec3(0.97,0.98,1.0)) * (0.92 + 0.1*fine) * (0.96 + 0.04*sin(p.x*2.1 - p.z*2.7));
+col = mix(col, pwd, smoothstep(0.35, 0.75, s2.b));
+vec3 lakeI = mix(lin(vec3(0.16,0.26,0.36)), lin(vec3(0.3,0.44,0.56)), fb(p.xz*0.08)) ;
+lakeI = mix(lakeI, lin(vec3(0.75,0.85,0.92)), (1.0 - smoothstep(0.0, 0.03, abs(fb(p.xz*0.07) - 0.5))) * 0.8);  // cracks in the ice
+lakeI = mix(lakeI, snow, smoothstep(0.55, 0.8, fb(p.xz*0.05 + 7.0)) * 0.5);                             // snow drifted over it
+col = mix(col, lakeI, s2.r);
+vec3 trav = mix(lin(vec3(0.82,0.75,0.6)), lin(vec3(0.9,0.84,0.7)), mid) * (0.85 + 0.2*fine);
+col = mix(col, trav, s2.a);
+vec3 bare = mix(lin(vec3(0.2,0.2,0.22)), lin(vec3(0.3,0.3,0.32)), mid) * (0.8 + 0.3*fine);
+col = mix(col, bare, s2.g);
+// steep faces: blue glacial ice (or dark rock where the paint says rock), banded, snow on the ledges
+float band = fb(vec2(p.y*0.22, (p.x+p.z)*0.004));
+vec3 rock = mix(lin(vec3(0.42,0.6,0.74)), lin(vec3(0.62,0.78,0.88)), band);
+rock = mix(rock, lin(vec3(0.16,0.3,0.46)), smoothstep(0.5, 0.8, fb(vec2((p.x+p.z)*0.2, p.y*0.05))) * 0.6);
+vec3 dark = mix(lin(vec3(0.12,0.12,0.13)), lin(vec3(0.24,0.24,0.26)), band) * (0.8 + 0.3*fine);
+rock = mix(rock, dark, smoothstep(0.25, 0.6, s2.g));
+rock *= (0.85 + 0.2*fine);
+float rw = max(vW4.w, 1.0 - smoothstep(0.5, 0.68, vWN.y));
+col = mix(col, rock, rw);
+diffuseColor.rgb = col;
+#else
 vec3 col = mix(scrub, dirt, 1.0 - step(uFloorY + 4.0, p.y));
 // grass by length: rough (dry, tufted), first cut, then the mown surfaces
 vec3 mrough = mix(lin(vec3(0.42,0.44,0.22)), lin(vec3(0.5,0.5,0.26)), mid) * (0.72 + 0.5*fine);
@@ -304,6 +358,7 @@ rock = mix(rock, lin(vec3(0.27,0.34,0.18)), smoothstep(0.45, 0.72, fb(p.xz*0.3 +
 float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
 col = mix(col, rock, rw);
 diffuseColor.rgb = col;
+#endif
 #else
 vec3 col = rough;
 #ifdef PAINT
@@ -427,7 +482,7 @@ const groundAt2 = (I, x, z) => islandH(I, x, z, Math.min(1, islandF(I, x, z)));
 // ledges where the strata step and a talus skirt at the foot
 // the hole's playing surface (a finer grid, see mesa-world.js) covers island tops inside this box
 let playBox = null;
-const LEVELS = MESA && !CAVE && !CITY; // Red Mesa: the playfield draws each cliff's levels to the island's outline
+const LEVELS = MESA && !CAVE && !FIELD; // Red Mesa: the playfield draws each cliff's levels to the island's outline
 const inBox = (x, z) => playBox && x > playBox.x0 && x < playBox.x1 && z > playBox.z0 && z < playBox.z1;
 const playMat = islandMat.clone(); playMat.onBeforeCompile = islandMat.onBeforeCompile; playMat.polygonOffset = true; playMat.polygonOffsetFactor = -1; playMat.polygonOffsetUnits = -2;
 function buildMesa(I, N, rings, group, trees) {
@@ -603,8 +658,9 @@ function buildHole(h) {
   applySky(h.heading ?? 0);
   const trees = [];
   const box = holeBox(h); playBox = MESA ? box : null;
+  if (surf2U.value) { surf2U.value.dispose(); surf2U.value = null; }
   if (MESA || SHAPED) { // paint texture first: the island shader reads it
-    const tex = MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
+    const tex = ICE ? (() => { const [a, b] = IW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
     surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
   }
   for (const I of ISL) buildIsland(I, { seg: MESA ? Math.min(coarse ? 200 : 280, Math.max(96, Math.round(Math.max(I.rx, I.rz) * 1.6))) : coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
@@ -612,12 +668,13 @@ function buildHole(h) {
   const a = new THREE.Vector2(h.tee[0], h.tee[1]), b = new THREE.Vector2(h.pinPos.x, h.pinPos.z);
   const segDist = (x, z) => { const ab = b.clone().sub(a), t = THREE.MathUtils.clamp(new THREE.Vector2(x, z).sub(a).dot(ab) / ab.lengthSq(), 0, 1); return new THREE.Vector2(x, z).distanceTo(a.clone().addScaledVector(ab, t)); };
   if (MESA) {
-    if (!CAVE && !CITY) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
-    if (!CITY) MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || CITY, snapEdges: CAVE || CITY, levels: LEVELS, keepSteep: CITY });
+    if (!CAVE && !FIELD) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
+    if (!FIELD) MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || FIELD, snapEdges: CAVE || FIELD, levels: LEVELS, keepSteep: FIELD });
     MW.buildWater(T, holeGroup);
-    MW.buildRocks(T, h, islandMat, holeGroup);
+    if (!ICE) MW.buildRocks(T, h, islandMat, holeGroup);   // ice-world.js draws Rimeholm's seracs and boulders
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
+    else if (ICE) { mesaCtx = IW.buildIce(h, T, box, COURSE.ice, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir, night: !!TIMES[cond.time]?.night }); trees.push(...mesaCtx.trees); }
     else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
     else {
       MW.scatterShrubs(T, box, coarse, holeGroup);
@@ -696,7 +753,7 @@ function buildHole(h) {
     rocks: T.rocks.map(r => ({ type: r.type, x: r.x, z: r.z, r: r.type === 'arch' ? r.ao : r.capR, rot: r.rot || 0, d: r.d || 0, ai: r.ai || 0 })),
     fit: h.line ? [...Object.values(h.tees).map(t => (Array.isArray(t) ? t : [t.x, t.z])), [pp.x, pp.z]] : null,
     // a city course: the map is painted from the ground's surfaces, with the buildings in dark grey
-    paint: CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
+    paint: ICE ? IW.mapPaint(T, h) : CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
       return (x, z) => { for (const r of blds) { const dx = x - r.x, dz = z - r.z; if (Math.abs(dx * r.c + dz * r.s) < r.w / 2 && Math.abs(-dx * r.s + dz * r.c) < r.d / 2) return '#3b3a37'; } return C[T.surfaceAt(x, z)] || '#77746d'; }; })() : null,
     feat: { greens: T.features.greens.map(G => featureOutline(G, 'green')), bunkers: T.features.bunkers.map(B => featureOutline(B, 'bunker', 24)), tees: T.features.tees.map(t => featureOutline(t, 'tee')), water: T.features.water.map(W => featureOutline(W, 'water')) },
   });
@@ -815,6 +872,7 @@ function lieAdjust(shot, lie) {
   else if (lie === 'sand') { s.Speed *= 0.86; s.TotalSpin *= 0.65; s.VLA += 2; }
   else if (lie === 'waste') { s.Speed *= 0.94; s.TotalSpin *= 0.78; s.VLA += 0.6; }
   else if (lie === 'desert') { s.Speed *= 0.9; s.TotalSpin *= 0.62; s.VLA += 1; }
+  else if (lie === 'powder') { s.Speed *= 0.78; s.TotalSpin *= 0.55; s.VLA += 3; }   // soft snow: the ball sits down in it
   return s;
 }
 // the slope under the ball, as the golfer stands: along the aim (+ = uphill) and across it (+ = rising to

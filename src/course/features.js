@@ -21,6 +21,27 @@ function framed(F, fallbackFrom) {
   F.rot = F.rot || 0; F.c = Math.cos(F.rot); F.s = Math.sin(F.rot);
   return F;
 }
+// an outline (a course drawn from plan data, like Rimeholm: greens and bunkers of any shape) instead of an
+// ellipse: { outline: [[x, z]...], keepGround: true } leaves the ground as the field has it and only says
+// where the surface is. Signed distance to it, metres (negative inside).
+function prepPoly(F) {
+  const P = F.outline, xs = P.map(p => p[0]), zs = P.map(p => p[1]);
+  F.pbox = [Math.min(...xs), Math.min(...zs), Math.max(...xs), Math.max(...zs)];
+  F.rx = F.rx || (F.pbox[2] - F.pbox[0]) / 2; F.rz = F.rz || (F.pbox[3] - F.pbox[1]) / 2;
+  F.preach = Math.max(...P.map(p => Math.hypot(p[0] - F.x, p[1] - F.z)));
+  return F;
+}
+export function polyDist(P, box, x, z, far = 1e9) {
+  if (x < box[0] - far || x > box[2] + far || z < box[1] - far || z > box[3] + far) return far;
+  let inside = false, d2 = Infinity;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [ax, az] = P[j], [bx, bz] = P[i];
+    if ((bz > z) !== (az > z) && x < (ax - bx) * (z - bz) / (az - bz) + bx) inside = !inside;
+    const dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    const ex = ax + dx * t - x, ez = az + dz * t - z; d2 = Math.min(d2, ex * ex + ez * ez);
+  }
+  return inside ? -Math.sqrt(d2) : Math.sqrt(d2);
+}
 const loc = (F, x, z) => { const dx = x - F.x, dz = z - F.z; return { u: dx * F.c + dz * F.s, b: dx * F.s - dz * F.c }; };
 const near = (F, x, z) => Math.abs(x - F.x) < F.bound && Math.abs(z - F.z) < F.bound;
 
@@ -86,12 +107,15 @@ export function prepGreen(G, baseAt, from) {
     let k = Math.abs(Math.sin(G.seed * 12.9898) * 43758.5453) % 1; const r = () => (k = (k * 9301 + 0.4927) % 1);
     G.contours = Array.from({ length: 3 }, (_, i) => ({ u: (r() - 0.5) * G.rx * 1.2, b: (r() - 0.5) * G.rz * 1.2, r: 4.5 + r() * 3.5, h: (i % 2 ? -1 : 1) * (0.2 + r() * 0.18) * (G.roll ?? 1) }));
   }
+  if (G.outline) { prepPoly(G); G.bound = G.preach + G.apron + 14; }
   G.cups = (G.pins || []).map(([px, pz]) => { const l = loc(G, px, pz); return { u: l.u, b: l.b, c: rolls(G, l.u, l.b) }; });
   return G;
 }
 function rolls(G, u, b) { let h = 0; for (const c of G.contours) h += c.h * Math.exp(-((u - c.u) ** 2 + (b - c.b) ** 2) / (c.r * c.r)); return h; }
 function greenWob(G, th) { return 1 + 0.05 * Math.sin(3 * th + G.seed) + 0.03 * Math.sin(5 * th + 2 * G.seed); }
-export function greenRho(G, u, b) { return Math.hypot(u / G.rx, b / G.rz) / greenWob(G, Math.atan2(b / G.rz, u / G.rx)); }
+export function greenRho(G, u, b) {
+  if (G.outline) { const d = polyDist(G.outline, G.pbox, G.x + u * G.c + b * G.s, G.z + u * G.s - b * G.c); return Math.max(0, 1 + d / Math.max(4, Math.sqrt(G.rx * G.rz))); }
+  return Math.hypot(u / G.rx, b / G.rz) / greenWob(G, Math.atan2(b / G.rz, u / G.rx)); }
 // height of the putting surface above y0 at local (u, b); defined past the edge too (it's sampled at the edge)
 function greenH(G, u, b, rho) {
   let h = G.tilt / 100 * b + G.side / 100 * u;
@@ -108,7 +132,7 @@ function greenH(G, u, b, rho) {
 }
 // the complex's ground: { h, w } (w = how much of it replaces the ground), or null when out of reach
 function greenGround(G, x, z, base) {
-  if (!near(G, x, z)) return null;
+  if (G.keepGround || !near(G, x, z)) return null;
   const { u, b } = loc(G, x, z), rho = greenRho(G, u, b);
   if (rho <= 1) return G.y0 + greenH(G, u, b, rho);
   const rDir = Math.hypot(u, b) / rho, e = (rho - 1) * rDir; // metres past the edge
@@ -121,6 +145,7 @@ function greenGround(G, x, z, base) {
 }
 function greenSurface(G, x, z) {
   if (!near(G, x, z)) return null;
+  if (G.outline && G.keepGround) return polyDist(G.outline, G.pbox, x, z, 0.01) < 0 ? 'green' : null;   // the field has the rest
   const { u, b } = loc(G, x, z), rho = greenRho(G, u, b);
   if (rho <= 1) return 'green';
   const e = (rho - 1) * Math.hypot(u, b) / rho;
@@ -147,6 +172,7 @@ export function prepBunker(B, toward) {
   const t = B.toward || toward;
   if (t) { const dx = t[0] - B.x, dz = t[1] - B.z, L = Math.hypot(dx, dz) || 1; B.fx = dx / L; B.fz = dz / L; } else { B.fx = 0; B.fz = -1; }
   B.bound = Math.max(B.rx, B.rz) * 1.9;
+  if (B.outline) { prepPoly(B); B.bound = B.preach + 4; }
   return B;
 }
 function bunkerRho(B, x, z) {
@@ -156,7 +182,7 @@ function bunkerRho(B, x, z) {
 }
 function faceOf(B, x, z) { const dx = x - B.x, dz = z - B.z, L = Math.hypot(dx, dz) || 1; return Math.max(0, (dx * B.fx + dz * B.fz) / L); }
 function bunkerDelta(B, x, z) {
-  if (!near(B, x, z)) return 0;
+  if (B.keepGround || !near(B, x, z)) return 0;
   const rho = bunkerRho(B, x, z);
   if (rho < 1) {
     const floorish = 1 - Math.pow(rho, B.k);
@@ -168,6 +194,7 @@ function bunkerDelta(B, x, z) {
 }
 function bunkerSurface(B, x, z) {
   if (!near(B, x, z)) return null;
+  if (B.outline) return polyDist(B.outline, B.pbox, x, z, 0.01) < 0 ? (B.lie || 'sand') : null;   // 'powder': soft snow
   const rho = bunkerRho(B, x, z);
   if (B.style === 'waste') return rho < 1 ? 'waste' : null;
   if (B.style === 'grass') return rho < 0.78 ? 'sand' : rho < 1.2 ? 'rough' : null;
@@ -322,7 +349,7 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims, sceneryAt = null) 
     for (const W of water) if (near(W, x, z) && waterRho(W, x, z) < 1.4) { const g = groundOf(); if (g !== null && g < W.level) return 'water'; }
     for (const V of rivers) { const d = riverDist(V, x, z); if (d < V.hw) return 'water'; if (d < V.hw + 2) return 'waste'; }
     let rim = null; // sand beats the green; the green beats a bunker's grassy rim
-    for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s === 'sand' || s === 'waste') return s; if (s) rim = s; }
+    for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s === 'sand' || s === 'waste' || s === 'powder') return s; if (s) rim = s; }
     for (const G of greens) { const s = greenSurface(G, x, z); if (s === 'green' || s === 'fringe') return s; if (s && !rim) rim = s; }
     for (const P of rockfalls) if (near(P, x, z) && rockfallRho(P, x, z) < 0.92) return 'desert';
     if (rim) return rim;
@@ -336,6 +363,7 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims, sceneryAt = null) 
 /* ---------- outlines, for maps and markers ---------- */
 // world-space points around a green, bunker, pond or tee pad
 export function featureOutline(F, kind, n = 40) {
+  if (F.outline && (kind === 'green' || kind === 'bunker')) return F.outline;
   const pts = [];
   const at = (u, b) => [F.x + u * F.c + b * F.s, F.z + u * F.s - b * F.c];
   if (kind === 'tee') {
