@@ -6,7 +6,7 @@ from one set of hole data, so the plans, profiles and sketch views always agree.
 
 | Step | What it does |
 |---|---|
-| `holes.mjs` | The hole data: legs, profile, cant, fairways, green, bunkers, water, rubble, the rift, buildings (broken tops, the Atrium's open floors, the leaning clubhouse), the El, the fallen span, the stadium, the bridge, targets and the words for the book. Each hole in its own frame, placed in the city by `place`. |
+| `holes.mjs` | The hole data (a fairway piece is `[s0, s1, w, off]` or `{ e: [[s, L, R], ...] }`, its edges' distances from the line at knots; a green has `lobes`, an `engine` style and extra `pins` in its own frame): legs, profile, cant, fairways, green, bunkers, water, rubble, the rift, buildings (broken tops, the Atrium's open floors, the leaning clubhouse), the El, the fallen span, the stadium, the bridge, targets and the words for the book. Each hole in its own frame, placed in the city by `place`. |
 | `scene.mjs` | Ground, surfaces and solid things per hole (pure), the river, the world transform and the city blocks between the holes. |
 | `node sample.mjs` | Grids for the plans, profiles along the line (and the bold line), drives flown with the game's physics (`src/physics.js`), the world map, and checks (drive hits, holes running into each other's buildings). |
 | `python3 plans.py` | Plan and profile per hole, and the course map (white pages). |

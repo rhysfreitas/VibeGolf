@@ -331,6 +331,11 @@ export function createTerrain(hole) {
   const groundAt = FT.groundAt;
   // the corridor: rough along the playing line, native desert outside it and across the carry
   const corridor = hole.corridor ?? 32, roughW = hole.roughW ?? 12;
+  // the rough line wanders: in to a few metres off the fairway in places, out to half again as far in others, in
+  // stretches of 40-50 m (no constant collar). hole.roughVary: 0 keeps it even
+  const rv = hole.roughVary ?? 1;
+  const roughAt = (x, z) => roughW * (1 + rv * (1.1 * vnoise(x / 38 + 9.3, z / 38 - 4.1) - 0.55));
+  const corridorAt = (x, z) => corridor * (1 + rv * (0.6 * vnoise(x / 52 - 2.7, z / 52 + 7.9) - 0.3));
   let native = null;
   if (hole.line) {
     const g0 = FT.greens[0], fwS = fairways.length ? lineProj(hole.line, fairways[0].pts[0][0], fairways[0].pts[0][1]).s : g0 ? lineProj(hole.line, g0.x, g0.z).s - g0.rz - 28 : 0;
@@ -375,12 +380,12 @@ export function createTerrain(hole) {
     if (I && I.kind === 'green') { const d = Math.hypot(x - I.green.x, z - I.green.z); return d < I.green.r ? 'green' : d < I.green.r + 2 ? 'fairway' : 'rough'; }
     if (I && I.green) { const d = Math.hypot(x - I.green.x, z - I.green.z); if (d < I.green.r) return 'green'; if (d < I.green.r + 2.5) return 'fairway'; }
     if (onFloor && washD(x, z) < 0) return 'waste'; // a dry wash: desert waste
-    if (fairways.length) { const d = fairwayD(x, z); if (d < 0) return 'fairway'; if (hole.line && d < 2.2) return 'firstcut'; if (hole.line && d < roughW) return 'rough'; }
+    if (fairways.length) { const d = fairwayD(x, z); if (d < 0) return 'fairway'; if (hole.line && d < 2.2) return 'firstcut'; if (hole.line && d < roughAt(x, z)) return 'rough'; }
     if (cave && cave.wallDepth(x, z) < 9) return 'desert';  // broken rock at a cave wall's foot: a bad lie
     if (onFloor && !floorPlays) return 'desert';
     if (hole.line) { // rough down the corridor, except across the carry; native beyond
       const p = lineProj(hole.line, x, z);
-      if (p.d < corridor && !(native && p.s > native[0] && p.s < native[1])) return 'rough';
+      if (p.d < corridorAt(x, z) && !(native && p.s > native[0] && p.s < native[1])) return 'rough';
       return 'desert';
     }
     if (onFloor) return 'desert';

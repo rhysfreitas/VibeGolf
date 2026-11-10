@@ -4,6 +4,7 @@
 import { createTerrain } from '../../src/course/terrain.js';
 import { loadCourse, OUT, along, lineLen } from './page.mjs';
 import fs from 'fs';
+import { holeOutlines, courseOutlines } from './outlines.mjs';
 const which = process.argv[2] || 'aerie';
 const M = await loadCourse(which);
 const { HOLES, COURSE } = M, back = COURSE.teeSets[0].id, fwd = COURSE.teeSets.at(-1).id;
@@ -57,13 +58,23 @@ HOLES.forEach((h, i) => {
   const byS = {}; for (const [s, k] of where) { byS[s] = byS[s] || [0, 0]; byS[s][k > 0 ? 0 : 1]++; }
   out.push({ n: i + 1, name: h.name, par: h.par, yards: h.yards[back], fwdYards: h.yards[fwd], elev: Math.round(py - ty), hi: Math.round(hi - ty), lo: Math.round(lo - ty), turns, gaps: gaps.map(([a, b]) => [a, b - a]), land, rings, green: { style: G.style, raise: G.raise, falseFront: G.falseFront, size: `${G.rx}x${G.rz}` },
     fairwayEdges: { cells: fwN, stepUp: Math.round(stepUp / fwN * 100), stepDown: Math.round(stepDown / fwN * 100), void: Math.round(edgeVoid / fwN * 100), along: byS },
+    outlines: holeOutlines(h, T, COURSE, L),
     targets: (h.targets || []).filter(t => !t.pin).map(t => `${t.name}:${sf(t.x, t.z)}`), bunkers: (h.bunkers || []).length, landforms: (h.landforms || []).map(l => l.type).join(' '), rocks: (h.rocks || []).length, groves: (h.groves || []).length, water: (h.water || []).length + (h.rivers || []).length });
 });
-fs.writeFileSync(`${OUT}/${which}.json`, JSON.stringify(out, null, 1));
+const courseO = courseOutlines(HOLES, out.map(o => o.outlines), COURSE);
+fs.writeFileSync(`${OUT}/${which}.json`, JSON.stringify({ holes: out, course: courseO }, null, 1));
 for (const o of out) {
   console.log(`\n${o.n} ${o.name} par ${o.par} ${o.yards} yd (fwd ${o.fwdYards})  elev ${o.elev > 0 ? '+' : ''}${o.elev} m (line hi ${o.hi}, lo ${o.lo})  turns ${o.turns.join(',') || 'straight'}  carries ${o.gaps.map(g => g[1] + 'm@' + g[0]).join(' ') || 'none'}`);
   if (o.land) console.log(`  landing @${o.land.s}m on ${o.land.surf}: fairway ${o.land.fairway} m, playable ${o.land.playable} m`);
   console.log(`  green ${o.green.style} ${o.green.size}${o.green.raise ? ' raise ' + o.green.raise : ''}${o.green.falseFront ? ' ff ' + o.green.falseFront : ''}  ring6 ${JSON.stringify(o.rings[6])} ring14 ${JSON.stringify(o.rings[14])}`);
   console.log(`  fairway edges: ${o.fairwayEdges.stepUp}% near a rise, ${o.fairwayEdges.stepDown}% near a drop, ${o.fairwayEdges.void}% near void; along ${JSON.stringify(o.fairwayEdges.along)}`);
   console.log(`  targets ${o.targets.join(' | ') || 'none'}; bunkers ${o.bunkers}, landforms ${o.landforms || '-'}, rocks ${o.rocks}, groves ${o.groves}, water ${o.water}`);
+  const O = o.outlines, g = O.green;
+  console.log(`  outline: green ${g.area} m² ${g.width}w × ${g.depth}d, oval fit ${g.oval}, long axis ${g.angle}° off the approach (${g.turn === '-' ? 'not angled' : 'angled ' + g.turn})` +
+    (O.fairway ? `; fairway ${O.fairway.min}–${O.fairway.max} m (×${O.fairway.change})` : '') +
+    (Object.keys(O.land).length ? `; drives land on ${Object.entries(O.land).map(([k, v]) => `${k} ${v.w ?? '-'}`).join(', ')} m` : '') +
+    `; bunkers ${O.bunkers.map(b => `${b.job}${b.job === 'greenside' ? '' : '@' + b.s}:${b.span}m${b.touches || b.job === 'greenside' ? '' : '(off)'}`).join(' ') || 'none'}`);
+  for (const f of O.flags) console.log(`  ! ${f}`);
 }
+console.log(`\ncourse: green styles ${JSON.stringify(courseO.styles)}, plain ovals ${courseO.ovals} of ${out.length}, angled greens ${courseO.angled.L} left / ${courseO.angled.R} right, par 3s ${courseO.p3.map(p => `${p.n}: ${p.yd} yd, plays ~${p.plays}`).join('; ')}`);
+for (const f of courseO.flags) console.log(`! ${f}`);

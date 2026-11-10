@@ -85,7 +85,10 @@ function landformDelta(L, x, z) {
 // green: { x, z, rx (half width), rz (half depth), rot|from, style, tilt (% higher at the back), side (% higher
 //   right), raise (m above the ground around it), apron (m of falloff), falseFront (m), tiers: [{ b, step, axis }],
 //   swale: { b, depth, width }, crown (m), dish (m), mound (m), runoff (short-grass falloffs), pins: [[x, z]...],
-//   contours: [{ u, b, r, h }] (rolls in the surface; default: a few, seeded), roll (their scale, default 1) }
+//   contours: [{ u, b, r, h }] (rolls in the surface; default: a few, seeded), roll (their scale, default 1),
+//   lobes: [[u, b, rx, rz, rotDeg]...] (optional: the outline is the smooth union of these ellipses, centred
+//   at (u, b) from x, z in the green's frame, instead of one rx × rz ellipse; join = how softly they merge, m;
+//   wob = edge wander, m) }
 // Around each pin the rolls flatten into a cupping area, so a pin sits on the green's tilt alone.
 const GREEN_STYLES = {
   tilt: {},
@@ -102,7 +105,9 @@ export function prepGreen(G, baseAt, from) {
   G.rx = G.rx || 15; G.rz = G.rz || 13; G.tilt = G.tilt ?? 2; G.side = G.side ?? 0; G.raise = G.raise ?? 0.35; G.apron = G.apron ?? 9;
   G.seed = G.seed ?? (G.x * 0.37 + G.z * 0.11);
   G.y0 = baseAt(G.x, G.z) + G.raise;
-  G.bound = Math.max(G.rx, G.rz) * 1.15 + G.apron + 14;
+  if (G.lobes) lobeEdge(G);
+  G.reach = G.R ? Math.max(...G.R) : Math.max(G.rx, G.rz) * 1.08;
+  G.bound = G.reach * 1.07 + G.apron + 14;
   if (!G.contours) { // a few rolls across the surface: humps and hollows 4-8 m across
     let k = Math.abs(Math.sin(G.seed * 12.9898) * 43758.5453) % 1; const r = () => (k = (k * 9301 + 0.4927) % 1);
     G.contours = Array.from({ length: 3 }, (_, i) => ({ u: (r() - 0.5) * G.rx * 1.2, b: (r() - 0.5) * G.rz * 1.2, r: 4.5 + r() * 3.5, h: (i % 2 ? -1 : 1) * (0.2 + r() * 0.18) * (G.roll ?? 1) }));
@@ -113,9 +118,31 @@ export function prepGreen(G, baseAt, from) {
 }
 function rolls(G, u, b) { let h = 0; for (const c of G.contours) h += c.h * Math.exp(-((u - c.u) ** 2 + (b - c.b) ** 2) / (c.r * c.r)); return h; }
 function greenWob(G, th) { return 1 + 0.05 * Math.sin(3 * th + G.seed) + 0.03 * Math.sin(5 * th + 2 * G.seed); }
+// A lobed green: the edge distance from the centre in NR directions, found once from the lobes' smooth union
+// (the outermost crossing, so the shape stays star-shaped about x, z), wandered and smoothed a little.
+const NR = 180;
+function lobeEdge(G) {
+  const k = G.join ?? 5, wob = G.wob ?? 1.2;
+  const L = G.lobes.map(([u, b, rx, rz, rot = 0]) => ({ u, b, rx, rz, c: Math.cos(rot * Math.PI / 180), s: Math.sin(rot * Math.PI / 180), m: Math.min(rx, rz) }));
+  const smin = (a, c) => { const t = Math.min(1, Math.max(0, 0.5 + 0.5 * (c - a) / k)); return c + (a - c) * t - k * t * (1 - t); };
+  const sd = (u, b) => { let d = Infinity; for (const o of L) { const du = u - o.u, db = b - o.b, a = du * o.c - db * o.s, e = du * o.s + db * o.c; const di = (Math.hypot(a / o.rx, e / o.rz) - 1) * o.m; d = d === Infinity ? di : smin(d, di); } return d; };
+  const far = Math.max(...L.map(o => Math.hypot(o.u, o.b) + Math.max(o.rx, o.rz))) + k + 4;
+  let R = [];
+  for (let i = 0; i < NR; i++) {
+    const th = i / NR * Math.PI * 2, cu = Math.cos(th), sb = Math.sin(th);
+    let m = far; while (m > 1 && sd(cu * m, sb * m) > 0) m -= 0.5;
+    let lo = m, hi = m + 0.5; for (let j = 0; j < 12; j++) { const t = (lo + hi) / 2; if (sd(cu * t, sb * t) > 0) hi = t; else lo = t; }
+    R.push(Math.max(2, lo + wob * (fbm(cu * lo / 7 + G.seed, sb * lo / 7) - 0.47) * 2));
+  }
+  for (let pass = 0; pass < 2; pass++) R = R.map((r, i) => (R[(i + NR - 1) % NR] + 2 * r + R[(i + 1) % NR]) / 4);
+  G.R = R;
+}
+function edgeR(G, u, b) { const t = (Math.atan2(b, u) / (Math.PI * 2) + 1) % 1 * NR, i = Math.floor(t), f = t - i; return G.R[i % NR] * (1 - f) + G.R[(i + 1) % NR] * f; }
 export function greenRho(G, u, b) {
   if (G.outline) { const d = polyDist(G.outline, G.pbox, G.x + u * G.c + b * G.s, G.z + u * G.s - b * G.c); return Math.max(0, 1 + d / Math.max(4, Math.sqrt(G.rx * G.rz))); }
-  return Math.hypot(u / G.rx, b / G.rz) / greenWob(G, Math.atan2(b / G.rz, u / G.rx)); }
+  if (G.R) return Math.hypot(u, b) / edgeR(G, u, b);
+  return Math.hypot(u / G.rx, b / G.rz) / greenWob(G, Math.atan2(b / G.rz, u / G.rx));
+}
 // height of the putting surface above y0 at local (u, b); defined past the edge too (it's sampled at the edge)
 function greenH(G, u, b, rho) {
   let h = G.tilt / 100 * b + G.side / 100 * u;
@@ -124,7 +151,13 @@ function greenH(G, u, b, rho) {
   const r2 = Math.min(1, rho) ** 2;
   if (G.crown) h -= G.crown * r2;
   if (G.dish) h += G.dish * r2;
-  if (G.falseFront) h -= G.falseFront * (1 - sstep(-G.rz * 0.97, -G.rz * 0.97 + (G.ffLen ?? 4.5), b));
+  if (G.falseFront) {
+    if (!G.R) h -= G.falseFront * (1 - sstep(-G.rz * 0.97, -G.rz * 0.97 + (G.ffLen ?? 4.5), b));
+    else { // a lobed green: within ffLen of the edge, where the edge faces the shot
+      const r = Math.hypot(u, b), er = edgeR(G, u, b), inside = er * (1 - Math.min(1, rho)) - 0.03 * er, front = r > 0.01 ? sstep(0.25, 0.7, -b / r) : 0;
+      h -= G.falseFront * front * (1 - sstep(0, G.ffLen ?? 4.5, inside));
+    }
+  }
   // rolls, flattened into a cupping area around each pin (within about 2.2 m, easing out by 4.5 m)
   let c = rolls(G, u, b);
   for (const p of G.cups) { const d = Math.hypot(u - p.u, b - p.b); if (d < 4.5) c += (p.c - c) * (1 - sstep(2.2, 4.5, d)); }
@@ -161,7 +194,7 @@ function greenSurface(G, x, z) {
 //   on that side; defaults to the green) }
 const BUNKER_STYLES = {
   flashed: { depth: 0.9, lip: 0.6, k: 2.6, jag: 0.14 },
-  pot: { depth: 1.5, lip: 0.45, k: 7, jag: 0.025 },
+  pot: { depth: 1.4, lip: 0, k: 7, jag: 0.025 },
   grass: { depth: 1.0, lip: 0.4, k: 3, jag: 0.1 },
   waste: { depth: 0.28, lip: 0, k: 1.6, jag: 0.2 },
 };
@@ -184,6 +217,12 @@ function faceOf(B, x, z) { const dx = x - B.x, dz = z - B.z, L = Math.hypot(dx, 
 function bunkerDelta(B, x, z) {
   if (B.keepGround || !near(B, x, z)) return 0;
   const rho = bunkerRho(B, x, z);
+  if (B.style === 'pot') { // sunk into the ground: a steep, revetted face toward the green, the back easing in from grade
+    const f = faceOf(B, x, z), k = 2.4 + 9 * f;
+    if (rho < 1) return -B.depth * (1 - Math.pow(rho, k)) + 0.04 * (vnoise(x * 1.7, z * 1.7) - 0.5);
+    if (rho < 1.35) return -0.18 * (1 - f) * (1 - sstep(1, 1.35, rho)); // the grass at the back dips toward it
+    return 0;
+  }
   if (rho < 1) {
     const floorish = 1 - Math.pow(rho, B.k);
     return -B.depth * floorish + 0.05 * (vnoise(x * 1.7, z * 1.7) - 0.5);
@@ -198,7 +237,7 @@ function bunkerSurface(B, x, z) {
   const rho = bunkerRho(B, x, z);
   if (B.style === 'waste') return rho < 1 ? 'waste' : null;
   if (B.style === 'grass') return rho < 0.78 ? 'sand' : rho < 1.2 ? 'rough' : null;
-  if (B.style === 'pot') return rho < 1 ? 'sand' : rho < 1.25 ? 'rough' : null;
+  if (B.style === 'pot') return rho < 1 - 0.2 * faceOf(B, x, z) ? 'sand' : rho < 1.25 ? 'rough' : null; // the face is sod
   if (rho < 1 + 0.24 * faceOf(B, x, z)) return 'sand'; // flashed up the face
   return rho < 1.35 ? 'rough' : null;
 }
@@ -373,7 +412,7 @@ export function featureOutline(F, kind, n = 40) {
   for (let i = 0; i < n; i++) {
     const th = i / n * Math.PI * 2, cu = Math.cos(th), sb = Math.sin(th);
     const rx = F.rx, rz = F.rz;
-    let lo = 0, hi = 3 * Math.max(rx, rz);
+    let lo = 0, hi = 3 * (F.reach || Math.max(rx, rz));
     for (let k = 0; k < 24; k++) { // find the edge along this direction (rho = 1)
       const m = (lo + hi) / 2, u = cu * m, b = sb * m;
       const rho = kind === 'green' ? greenRho(F, u, b) : kind === 'water' ? waterRhoLocal(F, u, b) : bunkerRhoLocal(F, u, b);

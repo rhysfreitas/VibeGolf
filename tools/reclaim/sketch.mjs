@@ -7,7 +7,8 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES } from './holes.mjs';
-import { BUILT, toWorld, toLocal, cityFill, RIVER } from './scene.mjs';
+import { BUILT, toWorld, toLocal, cityFill, RIVER, fwPieces, greenFeature } from './scene.mjs';
+import { featureOutline } from '../../src/course/features.js';
 import { at, project, headingAt, rnd, clamp, distLine, inPoly, lengthOf, seOutline } from './geo.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out/views');
@@ -155,12 +156,13 @@ function renderView(hi, view) {
       }
     }
   };
-  { const G = h.green; drape(seOutline({ x: h.pin[0], z: h.pin[1], rx: G.rx, rz: G.rz, rot: G.rot || 0 }, 48), true, [60, 90, 40], 1.4); }
+  drape(featureOutline(greenFeature(h), 'green', 64), true, [60, 90, 40], 1.4);
   for (const b of h.bunkers || []) drape(seOutline({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0 }, 28), true, [150, 120, 70], 1.2);
   for (const w of h.water || []) drape(seOutline({ x: w.at[0], z: w.at[1], rx: w.rx, rz: w.rz, rot: w.rot || 0, p: w.p }, 48), true, [60, 80, 96], 1.2);
-  for (const [s0, s1, w, off = 0] of h.fairway || []) for (const side of [1, -1]) {
-    const P = [], S = []; for (let s = s0; s <= s1; s += 3) { P.push(at(h.line, s, off + side * w / 2)); S.push(s); }
-    let k = 0; const ok = S.map(s => { const a = at(h.line, s, off + side * (w / 2 - 1.5)), b = at(h.line, s, off + side * (w / 2 + 1.5)); return B.surface(...a) === 'fairway' && B.surface(...b) !== 'fairway'; });
+  for (const q of fwPieces(h)) for (const side of [1, -1]) {
+    const edge = s => side > 0 ? q.R(s) : -q.L(s);
+    const P = [], S = []; for (let s = q.s0; s <= q.s1; s += 3) { P.push(at(h.line, s, edge(s))); S.push(s); }
+    const ok = S.map(s => { const a = at(h.line, s, edge(s) - side * 1.5), b = at(h.line, s, edge(s) + side * 1.5); return B.surface(...a) === 'fairway' && B.surface(...b) !== 'fairway'; });
     // draw the runs that really are the edge
     let run = [];
     for (let i = 0; i < P.length; i++) { if (ok[i]) run.push(P[i]); else { if (run.length > 1) drape(run, false, [70, 104, 50], 1.1); run = []; } }

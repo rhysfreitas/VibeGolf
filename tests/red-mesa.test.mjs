@@ -24,12 +24,12 @@ function shoot(t, from, to, shot, extra = {}) {
   const e = r.pts.at(-1).p, land = r.pts.find(p => p.phase !== 'flight')?.p || e;
   return { r, end: { x: wx(e[0], e[2]), y: o.y + e[1], z: wz(e[0], e[2]) }, land: { x: wx(land[0], land[2]), z: wz(land[0], land[2]) } };
 }
-const TOUR = { DR: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, '7i': { Speed: 120, VLA: 16.3, TotalSpin: 7097 }, PW: { Speed: 102, VLA: 24.2, TotalSpin: 9304 }, '9i': { Speed: 109, VLA: 20.4, TotalSpin: 8647 } };
+const TOUR = { DR: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, '8i': { Speed: 115, VLA: 18.1, TotalSpin: 7998 }, '7i': { Speed: 120, VLA: 16.3, TotalSpin: 7097 }, PW: { Speed: 102, VLA: 24.2, TotalSpin: 9304 }, '9i': { Speed: 109, VLA: 20.4, TotalSpin: 8647 } };
 
 test('nine holes, par 36, four tee sets with the designed totals', () => {
   assert.equal(HOLES.length, 9);
   assert.equal(HOLES.reduce((a, h) => a + h.par, 0), 36);
-  const want = { canyon: 3395, mesa: 3040, sage: 2640, lizard: 2040 };
+  const want = { canyon: 3435, mesa: 3040, sage: 2665, lizard: 2070 };
   for (const s of COURSE.teeSets) assert.equal(teeYards(HOLES, s.id), want[s.id], s.id);
 });
 
@@ -65,8 +65,8 @@ test('Kestrel drops 70 m from the back tee; each forward set has its own ledge',
   const t = T[2], h = HOLES[2], pin = pinOf(h, t);
   const drops = COURSE.teeSets.map(s => t.groundAt(...h.tees[s.id]) - pin.y);
   [70, 55, 35, 20].forEach((d, i) => assert.ok(Math.abs(drops[i] - d) < 1.5, `${drops[i]} vs ${d}`));
-  // it plays about 50 yards short: a tour wedge or 9 iron finds the green from 225
-  const best = ['PW', '9i'].map(c => shoot(t, h.tees.canyon, h.pin, TOUR[c])).map(s => Math.hypot(s.land.x - pin.x, s.land.z - pin.z));
+  // it plays about 90 yards short: a tour 8 or 7 iron finds the green from 265
+  const best = ['8i', '7i'].map(c => shoot(t, h.tees.canyon, h.pin, TOUR[c])).map(s => Math.hypot(s.land.x - pin.x, s.land.z - pin.z));
   assert.ok(Math.min(...best) < 18, `closest landing ${best.map(v => v.toFixed(0))} m from the pin`);
 });
 

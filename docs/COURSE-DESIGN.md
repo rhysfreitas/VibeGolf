@@ -46,7 +46,8 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   own along the hole: swell where drives land, pinch between landing areas, scallop along the edges, and
   let bunkers, crevasses and rocks bite in. Splitting a fairway now and then is good. Keep the 45–65 m
   width where drives land and pins at 3% or less. Rimeholm's `tools/rimeholm/shapes.mjs` (`makeGreen`
-  from lobes, `makeFairway` from edges along the line) is one way to build them.
+  from lobes, `makeFairway` from edges along the line) is one way to build them; in the engine a green takes
+  `lobes` (the same format) and a painted fairway a half-width per point.
 - **Fairway bunkers on the larger side (agreed with the owner, Rimeholm round 3).** Out where drives land,
   a bunker 25–40 m across, or a long one that follows a fairway's edge for 100 m or more, reads as a real
   hazard; a 10 m dot reads as a placeholder. Let them bite into the fairway's edge without taking the landing
@@ -58,6 +59,47 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
 - **Make chasms and crevasses read from the tee.** A plain dark slit is easy to miss. Give them a jagged
   outline, a raised lip on one side (a broken face a few metres high), walls you can see down into, and
   more of them as scenery between the holes, layered into the distance.
+
+## Greens, fairways and bunkers (the shape review, 10 November 2026)
+
+From measuring all four courses (31 of 36 greens were plain ovals, most fairways capsules of one width) and
+from how real architects size, angle and guard greens. `tools/review/analyse.mjs` measures each of these.
+
+- **Angle the greens, and balance them across the nine.** Most greens a little deeper than wide (about
+  1.2:1 along the approach; bogey players need about 20% more depth than width). Across nine: two or three
+  angled left, two or three right, one or two straight on, one near 45° for a short approach, and one shallow,
+  wide green on the longest par 3 or 4. Long approaches stay near the line; short ones can turn more (about
+  1–3° per club). An angled green is what makes one side of the fairway better than the other.
+- **Design each hole from the green back.** Pick the green's angle and the side its main bunker or hazard
+  guards first. The green's open side decides the better side of the fairway: put the fairway hazard on that
+  side, biting into the edge, so the good angle costs a risk and the safe side leaves a harder approach. Not
+  on every hole: keep only a few real bold-or-safe choices.
+- **Flowing lines, not squiggles.** Vary a fairway's width at the scale of the hole: swell where drives land,
+  pinch between landing areas or where a hazard bites in, over stretches of 40–80 m, the edge following the
+  ground. Small jags only on natural edges (rock, a crevasse, rubble). Along a par 4 or 5 the width under the
+  line should change by at least 30%. The rough line varies too, coming in where the hole wants to be hard and
+  backing off where it doesn't; no constant collar of rough round the fairway.
+- **Shape the fairway's ground, not just its outline.** Landing areas a little flatter where drives come to
+  rest, rolls between. Give each par 4 and 5 one contour that matters: a spine down the fairway (a hog's back)
+  that kicks a missed line away, a cant against the shot you want to play (reverse camber), a speed slot, a
+  crest, a swale, or a slope that feeds the brave line toward the green's open side. Keep contours broad
+  (15–40 m from crest to crest, under about 4% where drives land) so they move the ball rather than bounce it
+  at random.
+- **Bunkers each have a job.** Every fairway bunker is a carry bunker (short of the landing area, on the side
+  with the better angle in), a target bunker (beyond it, so long hitters play up to or past it), an approach
+  bunker (40–90 m short of the green on par 5s and long par 4s) or a catch bunker (between short grass and real
+  trouble). Each one touches or bites into the fairway; a bunker out in the rough does nothing. No two holes on
+  a course use the same bunker pattern. Greenside bunkers are the linchpin: their side decides the rest. Don't
+  put a carry bunker close to the tee (it punishes the weakest players twice).
+- **Pot bunkers are sunk, not rimmed.** A pot is a small (3–5 m), deep hole cut into the ground: a steep,
+  revetted sod face toward the green, a flat sand floor, the back easing in from grade so you can walk in.
+  No raised lip round it; only flashed bunkers build a lip up their face.
+- **Check the landing area for every tee set.** For each tee set, the drive (its `minDrive`, or about 150 yd
+  for the forward set) lands on fairway at least 40 m wide. On long holes a staggered landing area for the
+  forward tees is fine.
+- **Variety across the nine.** No more than three greens of one style on a course. Par 3s at least 25 yd apart
+  (plays-like) and facing different ways. Where it fits, one classic fairway idea per course: a hog's back, a
+  reverse camber, a split fairway, a speed slot.
 
 ## Elevation and slope
 
@@ -116,7 +158,8 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   Rimrock's promontory was cut off by one. Tuck a ramp or a lower piece a few metres under its neighbours (the higher
   top wins), add a small filler where three corners meet, and run `tools/review/slots.mjs`.
 - **Play every hole headless before calling it done**: tee to holed with the simulated tool and auto-aim
-  on, logging each lie. A hole that never finishes, or a run of the same lie, is a layout bug, not bad
+  on, logging each lie (`tools/review/quickplay.mjs` in minutes for a whole course, `playthrough.mjs` in the
+  game itself for the holes that changed). A hole that never finishes, or a run of the same lie, is a layout bug, not bad
   luck.
 
 ## Water

@@ -229,7 +229,7 @@ export function scatterShrubs(T, box, coarse, group) {
   for (let i = 0; i < n * 4 && list.length < n; i++) {
     const x = box.x0 + R() * (box.x1 - box.x0), z = box.z0 + R() * (box.z1 - box.z0), s = T.surfaceAt(x, z);
     if (s !== 'desert' && !(s === 'rough' && T.fairwayD(x, z) > 14)) continue;
-    if (T.features.greens.some(G => Math.hypot(x - G.x, z - G.z) < Math.max(G.rx, G.rz) + G.apron + 10)) continue;
+    if (T.features.greens.some(G => Math.hypot(x - G.x, z - G.z) < (G.reach || Math.max(G.rx, G.rz)) + G.apron + 10)) continue;
     if (vnoise(x / 30, z / 30) < 0.35) continue;
     const g = T.groundAt(x, z); if (g === null) continue;
     list.push([x, g, z, 0.35 + R() * R() * 1.1, R()]);
@@ -260,7 +260,7 @@ function inPlay(T, hole, x, z) {
     if (Math.hypot(x - ax - dx * k, z - az - dz * k) < 20) return true;
   }
   if (T.fairwayD(x, z) < 9) return true;
-  return T.features.greens.some(G => Math.hypot(x - G.x, z - G.z) < Math.max(G.rx, G.rz) + G.apron + 10);
+  return T.features.greens.some(G => Math.hypot(x - G.x, z - G.z) < (G.reach || Math.max(G.rx, G.rz)) + G.apron + 10);
 }
 export function cottonwoodSpots(T, hole) {
   const out = [], R = rng(91);

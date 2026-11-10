@@ -3,6 +3,7 @@
 // the sketch views, so they all show the same ground. Pure.
 import { project, seDist, rectPts, inPoly, profileFn, smooth, clamp, at, lineOf, rnd, distLine, headingAt } from './geo.mjs';
 import { HOLES } from './holes.mjs';
+import { prepGreen, greenRho } from '../../src/course/features.js';
 
 export const SURF = ['street', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'water', 'rubble', 'stands', 'deck', 'building', 'void'];
 // the river (world): one channel at one level, along the left of the Bridge, past Riverside's quay and the
@@ -13,17 +14,41 @@ export const RIVER = { y: -1, w: 150, pts: [[1300, -1150], [1230, -620], W_(7, -
   W_(8, 60, -128), W_(8, 200, -155), W_(9, 40, -215), W_(9, 220, -270), [-900, 250]] };
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
 
-function fwLines(h) {
-  return (h.fairway || []).map(([s0, s1, w, off = 0]) => {
-    const pts = []; for (let s = s0; s <= s1 + 0.01; s += 4) pts.push(at(h.line, Math.min(s, s1), off));
-    return { pts, w };
+// a fairway piece: [s0, s1, w, off] (one width, its middle off the line) or { e: [[s, L, R], ...], wob } (how far
+// the left and right edges sit from the line at each knot, eased between, with a gentle scallop of about wob m)
+export function fwPieces(h) {
+  return (h.fairway || []).map((f, i) => {
+    const e = Array.isArray(f) ? [[f[0], f[2] / 2 - (f[3] || 0), f[2] / 2 + (f[3] || 0)], [f[1], f[2] / 2 - (f[3] || 0), f[2] / 2 + (f[3] || 0)]] : f.e;
+    const wob = Array.isArray(f) ? 0 : f.wob ?? 1.6, seed = h.n * 3.7 + i * 1.3;
+    const knot = (s, k) => { if (s <= e[0][0]) return e[0][k]; for (let j = 0; j < e.length - 1; j++) if (s <= e[j + 1][0]) return e[j][k] + (e[j + 1][k] - e[j][k]) * smooth((s - e[j][0]) / (e[j + 1][0] - e[j][0])); return e.at(-1)[k]; };
+    const scal = (s, sd) => wob * (Math.sin(s / 9 + sd) * 0.6 + Math.sin(s / 4.3 + 2.1 * sd) * 0.4);
+    return { s0: e[0][0], s1: e.at(-1)[0], L: s => knot(s, 1) + scal(s, seed), R: s => knot(s, 2) + scal(s, seed + 5) };
   });
+}
+// signed distance outside the nearest fairway piece (negative inside)
+function fwDistance(h, P, x, z) {
+  if (!P.length) return Infinity;
+  const pr = project(h.line, x, z); let best = Infinity;
+  for (const q of P) {
+    const ss = clamp(pr.s, q.s0, q.s1), lat = Math.max(-pr.off - q.L(ss), pr.off - q.R(ss)), end = Math.max(q.s0 - pr.s, pr.s - q.s1);
+    const d = end > 0 && lat > 0 ? Math.hypot(end, lat) : Math.max(end, lat);
+    if (d < best) best = d;
+  }
+  return best;
+}
+// the green as the engine builds it (features.js): one ellipse, or lobes, framed from the line before the pin
+export function greenFeature(h) {
+  const g = h.green, from = h.line[h.line.length - 2];
+  return prepGreen({ x: h.pin[0], z: h.pin[1], rx: g.rx, rz: g.rz, lobes: g.lobes, join: g.join, wob: g.wob, from }, () => 0, from);
 }
 
 export function buildHole(h) {
-  const prof = profileFn(h.prof), F = fwLines(h), W = toWorld(h);
+  const prof = profileFn(h.prof), F = fwPieces(h), W = toWorld(h);
   const G = { x: h.pin[0], z: h.pin[1], rx: h.green.rx, rz: h.green.rz, rot: h.green.rot || 0 };
-  const greenD = (x, z) => seDist(G, x, z);
+  const GF = greenFeature(h);
+  const greenD = (x, z) => { const dx = x - GF.x, dz = z - GF.z; return greenRho(GF, dx * GF.c + dz * GF.s, dx * GF.s - dz * GF.c); };
+  // the rough line wanders along the hole: in close in places, well out in others (no constant collar)
+  const corridorAt = (x, z) => { const c = h.corridor ?? 18, [X, Z] = W(x, z); return c * (1 + 0.45 * (Math.sin(X / 23 + Math.sin(Z / 31) * 1.7) * 0.6 + Math.sin(Z / 17 - X / 41) * 0.4)); };
   const bunkers = (h.bunkers || []).map(b => ({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0 }));
   const waters = (h.water || []).map(w => ({ x: w.at[0], z: w.at[1], rx: w.rx, rz: w.rz, rot: w.rot || 0, p: w.p, y: w.y, rim: w.rim }));
   const rubble = (h.rubble || []).map(r => ({ x: r.at[0], z: r.at[1], rx: r.rx, rz: r.rz, rot: r.rot || 0, h: r.h || 0 }));
@@ -130,8 +155,7 @@ export function buildHole(h) {
     for (const t of teePads) if (Math.abs(x - t.x) < 5 && Math.abs(z - t.z) < 4) return 'tee';
     for (const p of plat) if (inPoly(p.pts, x, z)) return 'deck';
     if (st) { const s = stadiumY(x, z); if (s.surf) return s.surf; }
-    let fd = Infinity;
-    for (const f of F) fd = Math.min(fd, distLine(f.pts, x, z) - f.w / 2);
+    let fd = fwDistance(h, F, x, z);
     for (const e of extra) fd = Math.min(fd, (seDist(e, x, z) - 1) * Math.min(e.rx, e.rz));
     if (h.ridge) { const R = h.ridge, pr = project(h.line, x, z); if (Math.abs(pr.s - R.s) < R.len * 0.32 && pr.off > R.lowOff + 12) return Math.abs(pr.off) < 45 ? 'rough' : 'rubble'; }
     if (fd < 0) return 'fairway';
@@ -141,13 +165,13 @@ export function buildHole(h) {
     if (gd < 1 + 14 / Math.min(G.rx, G.rz)) return 'rough';
     // buckled streets: the asphalt shows through the rough in broken slabs
     const patch = () => { const [X, Z] = W(x, z); return Math.sin(X * 0.13 + Math.sin(Z * 0.07) * 2) * Math.cos(Z * 0.11 - X * 0.03) + 0.35 * Math.sin(X * 0.41 + Z * 0.37) > 0.68; };
-    if (fd < (h.corridor ?? 18)) return fd > 4 && gd > 1.8 && !st && patch() ? 'street' : 'rough';
+    if (fd < corridorAt(x, z)) return fd > 4 && gd > 1.8 && !st && patch() ? 'street' : 'rough';
     for (const t of teePads) if (Math.hypot(x - t.x, z - t.z) < 14) return 'rough';
     if (st) return 'rough';
     return 'street';
   }
 
-  const fwDist = (x, z) => { let fd = Infinity; for (const f of F) fd = Math.min(fd, distLine(f.pts, x, z) - f.w / 2); for (const e of extra) fd = Math.min(fd, (seDist(e, x, z) - 1) * Math.min(e.rx, e.rz)); return fd; };
+  const fwDist = (x, z) => { let fd = fwDistance(h, F, x, z); for (const e of extra) fd = Math.min(fd, (seDist(e, x, z) - 1) * Math.min(e.rx, e.rz)); return fd; };
   // the solid and built things, in the hole's frame (y up from the hole's base)
   const objs = [];
   const gAt = (x, z) => ground(x, z) ?? 0;
