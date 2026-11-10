@@ -552,7 +552,7 @@ function buildHole(h) {
   if (MESA) {
     if (!CAVE) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
     MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: true, snapEdges: CAVE }); // fine tiles on steep ground: no saw-toothed cliff edges
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE, snapEdges: CAVE });
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });

@@ -275,7 +275,7 @@ export const HOLES = [
     islands: [
       { x: -12, z: -165, rx: 104, rz: 232, p: 3, top: 0, depth: 25, kind: 'mesa', seed: 71, trees: 40 },
       // the forward tees' ramp: climbs from the mesa top up to the fairway plateau, so the plateau is easy to reach
-      { x: -34, z: -88, rx: 13, rz: 52, p: 3.2, top: 0, depth: 31, kind: 'mesa', seed: 72, relief: 0.2, trees: 0, slope: { from: [-34, -38, 0.3], to: [-34, -138, 5.8] } },
+      { x: -34, z: -88, rx: 13, rz: 52, p: 3.2, top: 0, depth: 31, kind: 'mesa', seed: 72, relief: 0.2, trees: 0, slope: { from: [-34, -30, -1.6], to: [-34, -138, 5.8] } }, // starts under the mesa top and rises out of it
       // the raised fairway plateau: rock faces all round, its top tilting gently (2.5%) toward the hole on its right
       { x: -50, z: -212, rx: 26, rz: 77, p: 3.2, top: 5.5, depth: 31, kind: 'mesa', seed: 73, relief: 0.4, trees: 0, slope: { from: [-76, -212, 6.9], to: [-24, -212, 5.6] } },
     ],
