@@ -68,17 +68,24 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   in play. Walls soak up some balls (they drop dead into a rubble lie at the foot) and bounce the rest.
   Put stalagmite stands, mushroom groves, water and big fairway-lining bunkers where wild shots land,
   the way trees work on a parkland course.
-- But **not overly hard**: landing areas 50–65 m wide, short grass round greens, a safe way round every
+- But **not overly hard**: fairways 45–65 m wide where drives land (the fairway itself, measured
+  straight across; the rough beyond is extra), short grass round greens, a safe way round every
   forced carry, and only a few real bold-or-safe choices. If a hole already plays hard (the Cenote), keep
   its ground from kicking toward trouble.
 - When the owner circles a feature as "in the way", move it out of the line enough to leave a real shot
   (the grotto's mushrooms at the bend).
 - Test that normal drives clear the roof and walls, and that the bold lines work.
 - **Give every hole course-management targets** (`targets`, on fairway, tested), with the green last:
-  a safe one and, where there is one, a bold one. Auto-aim plays the pin when it's in reach and
-  otherwise the first target it can reach, so a dogleg with only the pin aims straight through the rock
-  at the corner (the Rim's 4th hit the nose nine times running). Put a target on each leg of a long
-  hole, and check its surface: a lay-up that lands in a bunker isn't a lay-up.
+  a safe one and, where there is one, a bold one. Auto-aim plays the pin when it's in reach and the
+  line to it is clear of rock and rising ground, otherwise the first target in order that it can reach
+  and see, skipping one that would only be a short shot when a further one is in reach. Without targets a
+  dogleg aims straight through the rock at the corner (the Rim's 4th hit the nose nine times running).
+  Put a target on each leg of a long hole, safe first, and check its surface: a lay-up that lands in a
+  bunker isn't a lay-up.
+- **Tiers, ledges and walls can stay, but the fairway gets through them on a ramp.** The Climb's tiers were
+  slabs whose front edges stood as 14 m walls across the fairway: drives stopped dead at the foot and no
+  club could climb out. Now the walls stay and the fairway climbs a gully eroded through each one (a
+  sloped island between two wall pieces, with rockfall at the foot of the gully walls).
 - **Play every hole headless before calling it done**: tee to holed with the simulated tool and auto-aim
   on, logging each lie. A hole that never finishes, or a run of the same lie, is a layout bug, not bad
   luck.
