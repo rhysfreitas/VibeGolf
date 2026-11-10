@@ -1,8 +1,10 @@
 // node tools/review/seethrough.mjs <course> [holes...] [--only=tee,land,green]
 // Holes in the world: renders each review view with the sky, the clouds and the fog off and a magenta
 // background, then counts the magenta pixels whose ray points below the horizon (you are looking down
-// and see past the ground: a gap in the playfield, a missing wall, a chasm with no floor). Views with
-// any get a mask, tools/review/out/<course>_v<n>_<view>_gaps.png: the gaps in red over the view.
+// and see past the ground: a gap in the playfield, a missing wall, a chasm with no floor). Pixels within
+// 3 degrees of the horizon are counted apart as the far edge (where the world's ground ends; the fog
+// normally hides it). Views with any get a mask, tools/review/out/<course>_v<n>_<view>_gaps.png: gaps
+// in red, the far edge in orange, over the view.
 // pick.mjs tells you what's around a gap. Not for the Aerie: open sky below the islands is the design.
 // About a minute a view.
 import fs from 'fs';
@@ -35,26 +37,27 @@ for (const n of holes) {
       // rays through each pixel, from the same pose
       const cam = new THREE.PerspectiveCamera(P.fov, W / H, 0.05, 20000); cam.position.set(...P.pos); cam.lookAt(...P.look); cam.updateMatrixWorld();
       const dir = new THREE.Vector3(), out = document.createElement('canvas'); out.width = w; out.height = hgt;
-      const g2 = out.getContext('2d'), img = g2.createImageData(w, hgt); let gaps = 0;
+      const g2 = out.getContext('2d'), img = g2.createImageData(w, hgt); let gaps = 0, edge = 0;
       for (let y = 0; y < hgt; y++) for (let x = 0; x < w; x++) {
         const i = ((hgt - 1 - y) * w + x) * 4, o = (y * w + x) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
         const mag = r > 230 && g < 30 && b > 230;
-        let down = false;
-        if (mag) { dir.set((x + 0.5) / w * 2 - 1, 1 - (y + 0.5) / hgt * 2, 0.5).unproject(cam).sub(cam.position).normalize(); down = dir.y < -0.01; }
+        let down = false, far = false;
+        if (mag) { dir.set((x + 0.5) / w * 2 - 1, 1 - (y + 0.5) / hgt * 2, 0.5).unproject(cam).sub(cam.position).normalize(); down = dir.y < -0.052; far = !down && dir.y < -0.01; }
         const L = (r * 0.3 + g * 0.59 + b * 0.11) * 0.55 + 100;
         if (mag && down) { gaps++; img.data[o] = 230; img.data[o + 1] = 20; img.data[o + 2] = 20; }
+        else if (mag && far) { edge++; img.data[o] = 245; img.data[o + 1] = 150; img.data[o + 2] = 30; }
         else if (mag) { img.data[o] = img.data[o + 1] = img.data[o + 2] = 245; }
         else { img.data[o] = img.data[o + 1] = img.data[o + 2] = L; }
         img.data[o + 3] = 255;
       }
       g2.putImageData(img, 0, 0);
       __advance(1 / 60, 1);
-      return { gaps, share: gaps / (w * hgt), png: gaps ? out.toDataURL('image/png').split(',')[1] : null };
+      return { gaps, edge, share: gaps / (w * hgt), png: gaps + edge ? out.toDataURL('image/png').split(',')[1] : null };
     }, { P: P[v], W, H });
     total += r.gaps;
     const f = `${OUT}/${course}_v${n}_${v}_gaps.png`;
     if (r.png) fs.writeFileSync(f, Buffer.from(r.png, 'base64')); else if (fs.existsSync(f)) fs.unlinkSync(f);
-    console.log(`hole ${n} ${h.name} ${v}: ${r.gaps ? `${r.gaps} px (${(r.share * 100).toFixed(2)}%) see through below the horizon -> ${f}` : 'nothing to see through'}`);
+    console.log(`hole ${n} ${h.name} ${v}: ${r.gaps ? `${r.gaps} px (${(r.share * 100).toFixed(2)}%) see through below the horizon` : 'nothing to see through'}${r.edge ? `, far edge ${r.edge} px` : ''}${r.png ? ' -> ' + f : ''}`);
   }
 }
 console.log(total ? `gaps found: ${total} px in all` : 'no gaps', errs.length ? 'errors ' + JSON.stringify(errs.slice(0, 5)) : '');
