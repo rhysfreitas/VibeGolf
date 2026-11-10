@@ -1,6 +1,6 @@
 # The Reclaim: plan book tools
 
-The Reclaim is a planned course (not built yet): nine holes through a ruined city that nature has taken
+The Reclaim is a course in blockout (`course.html?c=reclaim`): nine holes through a ruined city that nature has taken
 back, about twenty years after everyone left. Misty overcast morning. These tools make its plan book
 from one set of hole data, so the plans, profiles and sketch views always agree.
 
@@ -13,5 +13,10 @@ from one set of hole data, so the plans, profiles and sketch views always agree.
 | `node sketch.mjs [holes]` | The projected sketch views: plain shapes through a real camera, ink and washes, misted with distance. Seconds per view, no WebGL. `hole.sketch` tweaks a view (`up`, `fov`, `eye`). |
 | `node book.mjs` | The PDF (`out/the-reclaim-plan-book-r<ROUND>.pdf`), printed with Chrome. `ROUND=2 NEW=rounds-r2.json node book.mjs` adds a "new in this round" page: each hole's `sketch.extra` feature views and the change list from the JSON. |
 
-Run them in that order. Output goes to `out/` (ignored by git). When the layout is agreed, an `emit.mjs`
-should turn this data into the engine's hole format, as `tools/hollowmere/` does.
+Run them in that order. Output goes to `out/` (ignored by git).
+
+`node emit.mjs` writes the playable course, `src/course/reclaim.js`, from the same data: each hole's ground
+sampled every 2 m into a field, the green and bunkers as shaped features, the buildings, the El, the fallen
+towers, chunks and cars as rocks the ball hits, the trees as plants, and the city once in world space for
+`src/course/city-world.js` to draw. Rerun it after any change here, then `npm test` and
+`node tools/review/playthrough.mjs reclaim`.

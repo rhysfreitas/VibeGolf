@@ -213,9 +213,10 @@ export function buildHole(h) {
       const x = bx0 + R() * (bx1 - bx0), z = bz0 + R() * (bz1 - bz0), sf = surface(x, z), fd = fwDist(x, z);
       if (!['rough', 'street', 'rubble'].includes(sf) || ground(x, z) === null || !offTee(x, z) || fd > 75) continue;
       // trees keep off the lines of play: tee to each target to the green, as the game's scattered trees do
-      if (nT > 0 && fd > 7 && far(x, z, trees, 9) && distLine(h.line, x, z) > 30 && distLine(playLine, x, z) > 24) {
+      if (nT > 0 && fd > 7 && far(x, z, trees, 9) && distLine(h.line, x, z) > 30 && distLine(playLine, x, z) > 24 && teePads.every(t => Math.hypot(x - t.x, z - t.z) > 45)) {
         const big = R() < 0.12;
         const t = { kind: 'tree', x, z, r: big ? 8 + R() * 5 : 3 + R() * 3.5, h: big ? 22 + R() * 10 : 8 + R() * 9, base: gAt(x, z), wild: true };
+        if (distLine(playLine, x, z) < 24 + t.r * 1.5) continue;   // a great tree's canopy keeps off the line too
         objs.push(t); trees.push(t); nT--; continue;
       }
       if (nC > 0 && sf !== 'rubble' && fd > 5 && far(x, z, cars, 25)) {

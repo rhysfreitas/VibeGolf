@@ -62,6 +62,7 @@ export function createMinimap(canvas) {
     g.lineJoin = 'round'; g.lineCap = 'round';
     const band = (pts, hw, color) => { g.strokeStyle = color; for (let i = 0; i < pts.length - 1; i++) { const [ax, az, ah = hw] = pts[i], [bx, bz, bh = hw] = pts[i + 1]; const [a1, b1] = view.map(ax, az), [a2, b2] = view.map(bx, bz); g.lineWidth = Math.max(2, (ah + bh) * view.k); g.beginPath(); g.moveTo(a1, b1); g.lineTo(a2, b2); g.stroke(); } };
     if (hole.floor) { g.fillStyle = hole.floor === 'void' ? COL.void : COL.floor; g.fillRect(0, 0, W, H); }
+    if (hole.paint) { const S = 3; for (let b = 0; b < H; b += S) for (let a = 0; a < W; a += S) { const [x, z] = view.unmap(a + S / 2, b + S / 2); g.fillStyle = hole.paint(x, z); g.fillRect(a, b, S, S); } }
     if (hole.floor === 'floor') for (const w of hole.washes || []) band(w.pts, w.w / 2, COL.sand);
     for (const v of hole.rivers || []) band(v.pts, v.w / 2, COL.water);
     for (const sh of hole.shapes) {

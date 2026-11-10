@@ -15,15 +15,19 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js' };
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
 const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
 const CAVE = COURSE.theme === 'cave'; // underground: built like Red Mesa (floor, playfield, rocks), under a roof
-const MESA = COURSE.theme === 'mesa' || CAVE;
+// a ruined city (The Reclaim): ground from a sampled field, built like Red Mesa's playfield, the city drawn by city-world.js
+const CITY = COURSE.theme === 'city';
+const MESA = COURSE.theme === 'mesa' || CAVE || CITY;
+const DESERT = MESA && !CITY; // the red-rock colours (fog, the ground shader's native earth)
 // a sky course drawn from shaped ground (features, a painted surface), like Red Mesa's playfield
 const SHAPED = !MESA && !!COURSE.shaped;
 const MW = MESA || SHAPED ? await import('./mesa-world.js') : null;
 const CW = CAVE ? await import('./cave-world.js') : null;
+const CTW = CITY ? await import('./city-world.js') : null;
 const SP = SHAPED ? await import('./sky-props.js') : null;
 const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
 document.title = COURSE.name;
@@ -51,7 +55,7 @@ const islandAt = (x, z) => T.islandAt(x, z);
 const surfaceAt = (x, z) => T.surfaceAt(x, z);
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' ? 'fairway' : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
-const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: 'Waste area', water: 'Water', green: 'Green' };
+const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: 'Waste area', water: 'Water', green: 'Green' };
 const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' ? 'var(--sand)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
 
 /* ---------- conditions and tees (set on the round setup screen) ---------- */
@@ -103,16 +107,16 @@ const stars = (() => {
 function lightPreset() {
   const t = cond.time, w = cond.weather;
   const L = {
-    morning: { sun: 0xffd9b0, si: 2.4, hs: 0xd6e8ff, hg: 0x6a7a68, hi: 0.45, exp: 0.6, turb: 4, ray: 1.6, mie: 0.005, fog: MESA ? 0xd8c2ae : 0xbfd0dc },
-    midday: { sun: 0xfff3e2, si: 2.7, hs: 0xd8e8ff, hg: 0x7a6a58, hi: 0.55, exp: 0.5, turb: 3, ray: 1.1, mie: 0.004, fog: MESA ? 0xd6cbbf : 0xc4d4e0 },
-    golden: { sun: 0xffa45c, si: 2.8, hs: 0xe8c8b0, hg: 0x7a5442, hi: 0.42, exp: 0.62, turb: 6.5, ray: 2.6, mie: 0.009, fog: MESA ? 0xdcab84 : 0xe2c0a0 },
+    morning: { sun: 0xffd9b0, si: 2.4, hs: 0xd6e8ff, hg: 0x6a7a68, hi: 0.45, exp: 0.6, turb: 4, ray: 1.6, mie: 0.005, fog: DESERT ? 0xd8c2ae : 0xbfd0dc },
+    midday: { sun: 0xfff3e2, si: 2.7, hs: 0xd8e8ff, hg: 0x7a6a58, hi: 0.55, exp: 0.5, turb: 3, ray: 1.1, mie: 0.004, fog: DESERT ? 0xd6cbbf : 0xc4d4e0 },
+    golden: { sun: 0xffa45c, si: 2.8, hs: 0xe8c8b0, hg: 0x7a5442, hi: 0.42, exp: 0.62, turb: 6.5, ray: 2.6, mie: 0.009, fog: DESERT ? 0xdcab84 : 0xe2c0a0 },
     night: { sun: 0x9fb4ff, si: 0.55, hs: 0x31436a, hg: 0x1a1612, hi: 0.4, exp: 0.9, turb: 1.5, ray: 0.4, mie: 0.003, fog: 0x0e1626 },
   }[t] || {};
   const P = { ...L, near: MESA ? 420 : 320, far: MESA ? 5200 : 4200 };
   // in the caverns: no sky, a dim cool fill, dark air; the light comes from lanterns and the sun through the roof
   if (CAVE) return { ...P, si: 0, hs: 0x5c6880, hg: 0x221f1b, hi: 0.5, exp: 1.05, fog: 0x080a0d, near: 120, far: 1700 };
   if (w === 'haze') { P.turb += 5; P.si *= 0.82; P.hi *= 1.15; P.near *= 0.55; P.far *= 0.6; }
-  if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : MESA ? 0xa89c92 : 0xa9b0b6; P.exp *= 1.05; }
+  if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : DESERT ? 0xa89c92 : CITY ? 0xb4b8b6 : 0xa9b0b6; P.exp *= 1.05; }
   return P;
 }
 function applySky(heading = 0) {
@@ -129,6 +133,9 @@ function applySky(heading = 0) {
   if (CAVE) { sky.visible = false; scene.background = FOG_COLOR; sun.castShadow = false; stars.visible = false; scene.environment = null; ball.material.emissive.set(0xa8c4d0); ball.material.emissiveIntensity = 0.35; return; }
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
+  // the city in mist: under an overcast the sky is the fog itself, so the towers fade into it
+  if (CITY) { const misty = cond.weather !== 'clear' && !T0.night; sky.visible = !misty; scene.background = misty ? FOG_COLOR : null; }
+  if (CITY && cond.weather === 'overcast' && !T0.night) { scene.fog.near = 60; scene.fog.far = 900; }
   ball.material.emissive.set(T0.night ? 0xbfe8ff : 0x000000); ball.material.emissiveIntensity = T0.night ? 1.4 : 0;
   // image-based light from the same sky
   const es = new THREE.Scene(), s2 = new THREE.Sky(); s2.scale.setScalar(1000); es.add(s2);
@@ -183,6 +190,7 @@ const surfU = { uSurf: { value: null }, uSurfMin: { value: new THREE.Vector2() }
 islandMat.onBeforeCompile = sh => {
   sh.uniforms.uDir = holeDirU; Object.assign(sh.uniforms, surfU);
   if (MESA) sh.defines = { ...(sh.defines || {}), MESA: '' };
+  if (CITY) sh.defines = { ...(sh.defines || {}), CITY: '' };
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -222,6 +230,15 @@ vec3 dirt = mix(lin(vec3(0.66,0.4,0.25)), lin(vec3(0.76,0.52,0.33)), mid) * (0.8
 scrub = mix(lin(vec3(0.34,0.3,0.26)), lin(vec3(0.42,0.37,0.31)), mid) * (0.75 + 0.45*fine);
 dirt = mix(lin(vec3(0.22,0.2,0.18)), lin(vec3(0.3,0.27,0.23)), mid) * (0.8 + 0.35*fine);
 #endif
+#ifdef CITY
+// a city gone to grass: cracked asphalt, grass and weeds up the cracks, broken concrete on the steep banks
+float crack = 1.0 - smoothstep(0.0, 0.045, abs(fb(p.xz*0.21) - 0.5));
+float crack2 = 1.0 - smoothstep(0.0, 0.035, abs(vn(p.xz*0.37 + 3.0) - 0.5));
+scrub = mix(lin(vec3(0.33,0.33,0.32)), lin(vec3(0.42,0.41,0.39)), mid) * (0.82 + 0.3*fine);
+scrub = mix(scrub, lin(vec3(0.28,0.37,0.18)), max(crack, crack2) * 0.85);
+scrub = mix(scrub, lin(vec3(0.3,0.4,0.2)), smoothstep(0.55, 0.8, fb(p.xz*0.05)) * 0.6);
+dirt = scrub;
+#endif
 vec3 col = mix(scrub, dirt, 1.0 - step(uFloorY + 4.0, p.y));
 // grass by length: rough (dry, tufted), first cut, then the mown surfaces
 vec3 mrough = mix(lin(vec3(0.42,0.44,0.22)), lin(vec3(0.5,0.5,0.26)), mid) * (0.72 + 0.5*fine);
@@ -244,6 +261,10 @@ rock *= (0.8 + 0.2*fine) * (0.9 + 0.1*strataLine(p.y));
 rock = mix(lin(vec3(0.42,0.4,0.37)), lin(vec3(0.58,0.55,0.5)), band);
 rock = mix(rock, lin(vec3(0.78,0.72,0.6)), smoothstep(0.55, 0.8, fb(vec2((p.x+p.z)*0.25, p.y*0.02))) * steep * 0.6);
 rock *= (0.8 + 0.2*fine) * (0.9 + 0.1*strataLine(p.y));
+#endif
+#ifdef CITY
+rock = mix(lin(vec3(0.44,0.43,0.41)), lin(vec3(0.56,0.55,0.52)), band) * (0.8 + 0.25*fine);
+rock = mix(rock, lin(vec3(0.3,0.38,0.2)), smoothstep(0.5, 0.75, fb(p.xz*0.3 + p.y*0.2)) * 0.5);
 #endif
 float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
 col = mix(col, rock, rw);
@@ -550,12 +571,13 @@ function buildHole(h) {
   const a = new THREE.Vector2(h.tee[0], h.tee[1]), b = new THREE.Vector2(h.pinPos.x, h.pinPos.z);
   const segDist = (x, z) => { const ab = b.clone().sub(a), t = THREE.MathUtils.clamp(new THREE.Vector2(x, z).sub(a).dot(ab) / ab.lengthSq(), 0, 1); return new THREE.Vector2(x, z).distanceTo(a.clone().addScaledVector(ab, t)); };
   if (MESA) {
-    if (!CAVE) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
-    MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE, snapEdges: CAVE });
+    if (!CAVE && !CITY) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
+    if (!CITY) MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || CITY, snapEdges: CAVE || CITY });
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
+    else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat }); trees.push(...mesaCtx.trees); }
     else {
       MW.scatterShrubs(T, box, coarse, holeGroup);
       trees.push(...MW.cottonwoodSpots(T, h));
@@ -632,6 +654,9 @@ function buildHole(h) {
     fairways: h.fairways || [], sand: h.sand || [], washes: T.floor ? T.floor.washes : [], rivers: T.features.rivers.map(V => ({ pts: V.line, w: V.w })),
     rocks: T.rocks.map(r => ({ type: r.type, x: r.x, z: r.z, r: r.type === 'arch' ? r.ao : r.capR, rot: r.rot || 0, d: r.d || 0, ai: r.ai || 0 })),
     fit: h.line ? [...Object.values(h.tees).map(t => (Array.isArray(t) ? t : [t.x, t.z])), [pp.x, pp.z]] : null,
+    // a city course: the map is painted from the ground's surfaces, with the buildings in dark grey
+    paint: CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
+      return (x, z) => { for (const r of blds) { const dx = x - r.x, dz = z - r.z; if (Math.abs(dx * r.c + dz * r.s) < r.w / 2 && Math.abs(-dx * r.s + dz * r.c) < r.d / 2) return '#3b3a37'; } return C[T.surfaceAt(x, z)] || '#77746d'; }; })() : null,
     feat: { greens: T.features.greens.map(G => featureOutline(G, 'green')), bunkers: T.features.bunkers.map(B => featureOutline(B, 'bunker', 24)), tees: T.features.tees.map(t => featureOutline(t, 'tee')), water: T.features.water.map(W => featureOutline(W, 'water')) },
   });
 }

@@ -117,6 +117,8 @@ export function prepRock(R, groundAt) {
   } else if (R.type === 'float') { // a floating island: a top at I.top, the underside tapering down depth
     R.x = R.I.x; R.z = R.I.z; R.y = 0; R.bound = R.I.bound + 2;
     return R;
+  } else if (R.type === 'box') { // a block (a building, a car): w across, d deep, h tall from its base y
+    R.bound = Math.hypot(R.w, R.d) / 2 + 0.5;
   } else if (R.type === 'boulder') {
     R.seed = R.seed ?? (R.x * 3.1 + R.z * 1.7);
     R.a = R.r; R.b = R.r * (R.ratio ?? 0.85); R.hc = R.h / 2; R.cy = R.h * 0.42; R.pe = R.pe ?? 2; // centre above the base
@@ -212,6 +214,15 @@ export function rockNormal(R, x, y, z) {
     const ex = dx / I.rx, ez = dz / I.rz, L = Math.hypot(ex, ez, 0.6) || 1;
     return [ex / L, -0.6 / L, ez / L]; // the underside: out and down
   }
+  if (R.type === 'box') {
+    if (v < 0 || v > R.h) return null;
+    const u = dx * R.c + dz * R.s, w = -dx * R.s + dz * R.c, ou = R.w / 2 - Math.abs(u), ow = R.d / 2 - Math.abs(w), ot = R.h - v;
+    if (ou < 0 || ow < 0) return null;
+    // the nearest face pushes it out; facades can soak a ball up (it drops at the foot), as cave walls do
+    const n = ot < ou && ot < ow ? [0, 1, 0] : ou < ow ? [Math.sign(u) * R.c, 0, Math.sign(u) * R.s] : [-Math.sign(w) * R.s, 0, Math.sign(w) * R.c];
+    if (R.soak && n[1] === 0) n.soak = R.soak;
+    return n;
+  }
   if (R.type === 'boulder') {
     const u = dx * R.c + dz * R.s, w = -dx * R.s + dz * R.c, h = v - R.cy;
     const qu = Math.abs(u / R.a), qw = Math.abs(w / R.b), qh = Math.abs(h / R.hc), e = R.pe;
@@ -245,8 +256,32 @@ export function lineProj(L, x, z) {
   }
   return best;
 }
+// hole.field: ground sampled on a grid (a course generated from plan data, like The Reclaim): { x0, z0, cell,
+// nx, nz, h (heights, NaN = open air), s (surface codes), codes (names) }. Outside the grid the edge carries on.
+export function prepField(F) {
+  if (F.ready) return F;
+  const dec = (b64, T) => { const bin = typeof atob === 'function' ? atob(b64) : Buffer.from(b64, 'base64').toString('binary'); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
+  if (typeof F.h === 'string') { const q = dec(F.h, Int16Array); F.h = Float32Array.from(q, v => (v === -32768 ? NaN : v / 50 + F.y0)); }
+  if (typeof F.s === 'string') F.s = dec(F.s, Uint8Array);
+  F.ready = true;
+  return F;
+}
+function fieldAt(F, x, z) {
+  const fx = Math.min(F.nx - 1.001, Math.max(0, (x - F.x0) / F.cell)), fz = Math.min(F.nz - 1.001, Math.max(0, (z - F.z0) / F.cell));
+  const i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, k = j * F.nx + i;
+  const a = F.h[k], b = F.h[k + 1], c = F.h[k + F.nx], d = F.h[k + F.nx + 1];
+  const near = u < 0.5 ? (v < 0.5 ? a : c) : (v < 0.5 ? b : d);
+  if (Number.isNaN(near)) return null;                       // open air (a rift, a sinkhole)
+  if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(c) || Number.isNaN(d)) return near;
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+}
+function fieldSurf(F, x, z) {
+  const i = Math.round((x - F.x0) / F.cell), j = Math.round((z - F.z0) / F.cell);
+  return F.codes[F.s[Math.min(F.nz - 1, Math.max(0, j)) * F.nx + Math.min(F.nx - 1, Math.max(0, i))]];
+}
 export function createTerrain(hole) {
-  const ISL = hole.islands.map(I => prepIsland({ ...I, playable: true }));
+  const FLD = hole.field ? prepField(hole.field) : null;
+  const ISL = (hole.islands || []).map(I => prepIsland({ ...I, playable: true }));
   const F = hole.floor ? { relief: 1.6, solid: true, washes: [], gorges: [], ...hole.floor } : null;
   if (F) F.gorges = F.gorges.map((g, i) => prepIsland({ seed: 50 + i, ...g, top: F.y, kind: 'gorge' }));
   const fairways = hole.fairways || [];
@@ -280,6 +315,7 @@ export function createTerrain(hole) {
     return best;
   }
   function baseGroundAt(x, z) {
+    if (FLD) return fieldAt(FLD, x, z);
     const t = topAt(x, z), fl = floorAt(x, z);
     if (t && (fl === null || t.h >= fl)) return t.h;
     return fl;
@@ -315,6 +351,12 @@ export function createTerrain(hole) {
     return one ? { I: one, h: null } : null;
   }
   function surfaceAt(x, z) {
+    if (FLD) { // features first; a fairway mown up to a green or bunker keeps its fairway (their outer rough gives way)
+      if (groundAt(x, z) === null) return 'void';
+      const fs = FT.surfaceAt(x, z, () => groundAt(x, z)), own = fieldSurf(FLD, x, z);
+      if (fs && !((fs === 'rough' || fs === 'firstcut') && (own === 'fairway' || own === 'fringe' || own === 'tee'))) return fs;
+      return own;
+    }
     const t = surfaceTop(x, z);
     let onFloor;
     if (!t) { onFloor = true; if (!F || !F.solid || inGorge(x, z)) return 'void'; }
@@ -411,10 +453,11 @@ export function createTerrain(hole) {
     return null;
   }
   // groves: trees placed with the hole (the renderer adds its own scatter; all of them play)
-  const trees = (hole.groves || []).flatMap(G => groveTrees(G, groundAt));
+  const trees = [...(hole.groves || []).flatMap(G => groveTrees(G, groundAt)), ...(hole.plants || []).map(t => ({ ...t, y: groundAt(t.x, t.z) ?? 0 }))];
   // the lowest height a ball can fall to before it's gone (below every top and the floor)
   const lows = ISL.map(I => (I.slope ? Math.min(I.slope.from[2], I.slope.to[2]) : I.top));
   if (F && F.solid) lows.push(F.y - 3);
+  if (FLD) { let lo = Infinity; for (const v of FLD.h) if (v < lo) lo = v; lows.push(lo); }
   const voidY = Math.min(...lows) - 70;
   // slope of the ground (rise per metre along x and z), for lies and green reading
   function slopeAt(x, z, e = 0.5) {
