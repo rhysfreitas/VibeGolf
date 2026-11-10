@@ -68,6 +68,8 @@ export const HOLES = [
     islands: [
       { x: -45, z: -175, rx: 86, rz: 232, p: 3.2, top: 0, depth: 40, kind: 'mesa', seed: 1, relief: 1.1, trees: 70 },
       { x: 60, z: -354, rx: 34, rz: 31, p: 2.6, top: 0, depth: 40, kind: 'mesa', seed: 2, relief: 0.6, trees: 6 },
+      { x: 23, z: -346, rx: 12, rz: 28, p: 2.6, top: 0, depth: 40, kind: 'mesa', seed: 6, relief: 0.4, trees: 0 }, // the promontory's neck: joins the green's mesa to the main one, so the safe way round stays on land
+      { x: 36, z: -333, rx: 7, rz: 11, p: 2.6, top: 0, depth: 40, kind: 'mesa', seed: 7, relief: 0.4, trees: 0 },  // (and closes the notch's tip, which ran on into the fairway as a crack)
       // more to look at: outcrops on the mesa top to the left, near and far
       { x: -112, z: -128, rx: 16, rz: 26, rot: 0.3, p: 2.6, top: 9, depth: 49, kind: 'rock', seed: 3 },
       { x: -100, z: -292, rx: 13, rz: 15, p: 2.4, top: 16, depth: 56, kind: 'rock', seed: 4 },
@@ -275,7 +277,7 @@ export const HOLES = [
     islands: [
       { x: -12, z: -165, rx: 104, rz: 232, p: 3, top: 0, depth: 25, kind: 'mesa', seed: 71, trees: 40 },
       // the forward tees' ramp: climbs from the mesa top up to the fairway plateau, so the plateau is easy to reach
-      { x: -34, z: -88, rx: 13, rz: 52, p: 3.2, top: 0, depth: 31, kind: 'mesa', seed: 72, relief: 0.2, trees: 0, slope: { from: [-34, -30, -1.6], to: [-34, -138, 5.8] } }, // starts under the mesa top and rises out of it
+      { x: -34, z: -94, rx: 13, rz: 58, p: 4, top: 0, depth: 31, kind: 'mesa', seed: 72, relief: 0.2, trees: 0, slope: { from: [-34, -30, -1.6], to: [-34, -138, 5.8] } }, // its end runs on under the plateau // starts under the mesa top and rises out of it
       // the raised fairway plateau: rock faces all round, its top tilting gently (2.5%) toward the hole on its right
       { x: -50, z: -212, rx: 26, rz: 77, p: 3.2, top: 5.5, depth: 31, kind: 'mesa', seed: 73, relief: 0.4, trees: 0, slope: { from: [-76, -212, 6.9], to: [-24, -212, 5.6] } },
     ],
@@ -337,17 +339,20 @@ export const HOLES = [
     floor: { y: 0, relief: 1.5 },
     islands: [
       // the middle tier, 14 m up; its front wall is cut by an eroded gully the fairway climbs
-      { x: 0, z: -374, rx: 84, rz: 78, p: 3.2, top: 14, depth: 14, kind: 'mesa', seed: 91, trees: 24 },
+      { x: 0, z: -377, rx: 84, rz: 81, p: 3.2, top: 14, depth: 14, kind: 'mesa', seed: 91, trees: 24 }, // runs on under the top tier: no slot between them
       { x: -50.5, z: -265, rx: 30, rz: 56, rot: 0.224, p: 3.6, top: 14, depth: 14, kind: 'mesa', seed: 911, trees: 6 },  // the wall left of the gully
       { x: 66.5, z: -239, rx: 30, rz: 56, rot: 0.224, p: 3.6, top: 14, depth: 14, kind: 'mesa', seed: 912, trees: 6 },   // and right of it
-      { x: 8, z: -251, rx: 31, rz: 54, rot: 0.224, p: 3, top: 0, depth: 14, kind: 'mesa', seed: 92, relief: 0.4, slope: { from: [-3, -203, 0], to: [18, -298, 14] }, trees: 0 },
+      { x: 8, z: -251, rx: 36, rz: 61, rot: 0.224, p: 3, top: 0, depth: 14, kind: 'mesa', seed: 92, relief: 0.4, slope: { from: [-3, -203, 0], to: [18, -298, 14] }, trees: 0 }, // tucked under the walls each side and the tier above (no slots to the floor)
+      // fillers where three pieces meet and their rounded corners left a hole to the floor
+      { x: 53, z: -292, rx: 12, rz: 10, p: 2.6, top: 14, depth: 14, kind: 'mesa', seed: 914, relief: 0.2, trees: 0 },
+      { x: -38, z: -451, rx: 9, rz: 5, p: 2.6, top: 14, depth: 14, kind: 'mesa', seed: 915, relief: 0.2, trees: 0 },
       // the junior tee's ledge, a metre below the middle tier
       { x: -37, z: -191, rx: 13, rz: 12, p: 3, top: 13, depth: 13, kind: 'mesa', seed: 913, relief: 0.2, trees: 0 },
       // the top tier, 28 m up, and its gully: from the middle tier straight up to the green's false front
       { x: -8, z: -506, rx: 78, rz: 54, p: 3, top: 28, depth: 28, kind: 'mesa', seed: 93, trees: 18 },
       { x: -48, z: -400, rx: 28, rz: 44, rot: -0.287, p: 3.6, top: 28, depth: 14, kind: 'mesa', seed: 931, trees: 4 },
       { x: 63, z: -432, rx: 28, rz: 44, rot: -0.287, p: 3.6, top: 28, depth: 14, kind: 'mesa', seed: 932, trees: 4 },
-      { x: 7.5, z: -416, rx: 30, rz: 40, rot: -0.287, p: 3, top: 14, depth: 14, kind: 'mesa', seed: 94, relief: 0.4, slope: { from: [17, -382, 14], to: [-2.6, -452, 28] }, trees: 0 },
+      { x: 7.5, z: -416, rx: 35, rz: 48, rot: -0.287, p: 3, top: 14, depth: 14, kind: 'mesa', seed: 94, relief: 0.4, slope: { from: [17, -382, 14], to: [-2.6, -452, 28] }, trees: 0 },
       { x: 150, z: -260, rx: 60, rz: 230, p: 3, top: 44, depth: 44, kind: 'rock', seed: 95 },
       { x: -150, z: -240, rx: 60, rz: 230, p: 3, top: 40, depth: 40, kind: 'rock', seed: 96 },
     ],
