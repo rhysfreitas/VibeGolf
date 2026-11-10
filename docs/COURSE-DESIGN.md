@@ -136,7 +136,8 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   leaves a staircase you can see through (and coarse far-floor cells laid fairway paint down into the
   Deep). The roof is pulled onto each opening's rim and the shafts sealed to it; chasms get rock walls from
   their own outline. Check with a magenta background and the fog off: anything magenta that isn't sky is a
-  hole. (The inlet on the Falls is its own pit, 6–29 m of ground from the Deep, not a bite of it.)
+  hole. Check a chasm drawn as a bite of another really joins it: the inlet on the Falls stood 6–29 m of
+  ground apart from the Deep until three neck gorges (`HOLLOW.gorges`) opened it in.
 - **Speed in caves.** Real point and spot lights cost every pixel on screen, every frame: Hollowmere's
   15–19 per hole made play crawl on phones. Its lanterns, beams and glows are baked into the meshes
   (`bakeLights` in `cave-world.js`), and only the green's and the fairway's spotlights are real. Add new

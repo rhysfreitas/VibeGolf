@@ -55,6 +55,8 @@ export const HOLLOW = {
     { x: c(70, -140)[0], z: c(70, -140)[1], rx: 48, rz: 44, rot: 0.3 }, // the inlet under the falls
     { x: c(205, 40)[0], z: c(205, 40)[1], rx: 92, rz: 13, rot: -0.04, p: 2.6 }, // the fissure the trestle spans
     { x: 72, z: -1062, rx: 8, rz: 62, rot: -0.38, p: 2.4 },            // the stream gorge from hole 3's falls to the Deep
+    // the inlet opens into the Deep: three necks over the crescent of ground that stood between them (6-29 m wide)
+    { x: 267.2, z: -1286, rx: 38, rz: 17.3, rot: 0.356, p: 2 }, { x: 231.5, z: -1292.2, rx: 23.1, rz: 13.4, rot: 0.221, p: 2 }, { x: 205.1, z: -1302.4, rx: 40.5, rz: 18.5, rot: 0.096, p: 2 },
   ],
   // the Great Shaft: an opening into a second cavern above, lit by its own skylight; the falls pour from it
   skylight: { x: c(118, -150)[0], z: c(118, -150)[1], r: 50, upper: { h: 60, r: 115, sky: 20 } },
