@@ -45,7 +45,7 @@ const roll = (x, z, length, width, height, rot = 0) => ({ type: 'mound', x, z, r
 const swale = (x, z, from, length, width, height) => ({ type: 'swale', x, z, from, length, width, height });
 
 // the Hollow: one great cavern, the chasm in its middle, an inlet under the falls, a fissure to the east
-// and a gorge carrying the stream off hole 3's ledge into the Deep
+// and a dry gorge from below hole 3's ledge into the Deep
 export const C = [175, -1200];
 const c = (dx, dz) => [C[0] + dx, C[1] + dz];
 export const HOLLOW = {
@@ -54,7 +54,7 @@ export const HOLLOW = {
     { x: C[0], z: C[1], rx: 140, rz: 100, rot: 0.1 },                 // the chasm: the Deep
     { x: c(70, -140)[0], z: c(70, -140)[1], rx: 48, rz: 44, rot: 0.3 }, // the inlet under the falls
     { x: c(205, 40)[0], z: c(205, 40)[1], rx: 92, rz: 13, rot: -0.04, p: 2.6 }, // the fissure the trestle spans
-    { x: 72, z: -1062, rx: 8, rz: 62, rot: -0.38, p: 2.4 },            // the stream gorge from hole 3's falls to the Deep
+    { x: 72, z: -1062, rx: 8, rz: 62, rot: -0.38, p: 2.4 },            // a dry gorge from below hole 3's ledge to the Deep
     // the inlet opens into the Deep: three necks over the crescent of ground that stood between them (6-29 m wide)
     { x: 267.2, z: -1286, rx: 38, rz: 17.3, rot: 0.356, p: 2 }, { x: 231.5, z: -1292.2, rx: 23.1, rz: 13.4, rot: 0.221, p: 2 }, { x: 205.1, z: -1302.4, rx: 40.5, rz: 18.5, rot: 0.096, p: 2 },
   ],
@@ -243,15 +243,14 @@ export const HOLES = [
       { type: 'hang', pts: [[-52, -950, 12, 2.4], [-80, -966, 15, 2.8], [-108, -956, 13, 2.4], [-134, -972, 9, 2], [-70, -944, 8, 1.8]], label: 'the stalagmite cave: stalactites to meet them' },
       { type: 'skylight', x: 152, z: -805, r: 11, label: 'a pinhole of light over the stalagmites' },
       { type: 'lanterns', pts: [[214, -590], [210, -680], [214, -780], [170, -880], [80, -960]], label: 'lanterns on the safe side' },
-      { type: 'falls', pts: [[16, -996], [22, -999], [28, -1002]], top: -33, label: 'the stream falls off the ledge, down its gorge into the Deep' },
       { type: 'text', x: 70, z: -790, label: 'stalagmite forest, 6–20 m tall' },
       { type: 'text', x: -96, z: -878, label: 'side bay: the stream rises here' },
       { type: 'text', x: 128, z: -700, label: 'rimstone terraces: three 2 m steps' },
       { type: 'text', x: 40, z: -1030, label: 'the hall opens into the Hollow: first sight of the falls' },
     ],
     idea: 'Thread it or go round',
-    play: 'Down, then up. The drive falls onto rimstone terraces: three 2 m steps like rice paddies, so where you stop decides the lie. Then the hole turns left and climbs 26 m up a slope of fallen blocks. The direct line threads a forest of tall stalagmites growing up the slope and can get you home in two; the safe way swings right around them past a long bunker and leaves a wedge. A stream rises in a side bay left of the green, runs round the back of it and falls off the ledge, down a gorge into the Deep.',
-    features: ['The drive falls 12 m down three rimstone terraces', 'The second climbs 26 m up the breakdown slope: it plays a club longer', 'A forest of stalagmites up the slope, 6–20 m tall: solid', 'The safe line swings right, past a long bunker', 'A stream behind the green that falls off the ledge into the Deep (water)', 'Two-tier green on a ledge 34 m above the Hollow floor'],
+    play: 'Down, then up. The drive falls onto rimstone terraces: three 2 m steps like rice paddies, so where you stop decides the lie. Then the hole turns left and climbs 26 m up a slope of fallen blocks. The direct line threads a forest of tall stalagmites growing up the slope and can get you home in two; the safe way swings right around them past a long bunker and leaves a wedge. A stream rises in a side bay left of the green and runs round the back of it to the lip of the ledge.',
+    features: ['The drive falls 12 m down three rimstone terraces', 'The second climbs 26 m up the breakdown slope: it plays a club longer', 'A forest of stalagmites up the slope, 6–20 m tall: solid', 'The safe line swings right, past a long bunker', 'A stream behind the green, running to the lip of the ledge (water)', 'Two-tier green on a ledge 34 m above the Hollow floor'],
   },
   /* 4 ---------------------------------------------------------------------------------------------- */
   {
