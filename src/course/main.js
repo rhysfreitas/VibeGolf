@@ -552,7 +552,7 @@ function buildHole(h) {
   if (MESA) {
     if (!CAVE) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
     MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE, snapEdges: CAVE });
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: true, snapEdges: CAVE }); // fine tiles on steep ground: no saw-toothed cliff edges
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
@@ -1118,6 +1118,17 @@ function finishShot() {
   while (oldTracers.length > 3) { const o = oldTracers.shift(); scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
   nextLie();
 }
+// a rough check that a normal shot from a to b isn't blocked by rock or a rise in the ground: an arc that
+// peaks at about a ninth of the distance (4-32 m) over the straight line between them
+function flightClear(a, b) {
+  const d = Math.hypot(b.x - a.x, b.z - a.z), apex = Math.min(32, Math.max(4, d / 9));
+  for (let t = 0.06; t < 0.95; t += 0.04) {
+    const x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t, y = a.y + (b.y - a.y) * t + 4 * apex * t * (1 - t);
+    const g = groundAt(x, z); if (g != null && g > y) return false;
+    if (T.solidAt && T.solidAt(x, y, z)) return false;
+  }
+  return true;
+}
 function nextLie() {
   carryCache.clear();
   if (SHAPED && skyCtx?.drifts?.length) SP.moveDrifts(skyCtx);
@@ -1128,7 +1139,12 @@ function nextLie() {
   // default: the first target the player can actually reach, else the pin
   const reach = carryFor(state.lie === 'tee' ? 0 : 1, 0, 0);
   const pinO = av.find(o => o.t.pin), flat = o => Math.hypot(o.p.x - state.ball.x, o.p.z - state.ball.z);
-  let pick = pinO && flat(pinO) < reach * 0.9 ? pinO : (av.find(o => !o.t.pin && flat(o) < reach * 1.02) || pinO);
+  const clear = o => flightClear(state.ball, o.p);
+  // the pin when it's in reach and nothing stands in the way; else the first target in the hole's order, skipping one
+  // that would only be a short shot (under 60% of reach) when a further one is also in reach and clear
+  const ok = av.filter(o => !o.t.pin && flat(o) < reach * 1.02 && clear(o));
+  let pick = pinO && flat(pinO) < reach * 0.9 && clear(pinO) ? pinO
+    : (ok.find(o => flat(o) >= reach * 0.6) || ok.reduce((a, o) => (!a || flat(o) > flat(a) ? o : a), null) || pinO);
   state.target = pick ? pick.i : HOLE.targets.length - 1;
   placeBall();
   selectTarget(state.target);

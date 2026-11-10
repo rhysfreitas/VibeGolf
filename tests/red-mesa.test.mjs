@@ -29,7 +29,7 @@ const TOUR = { DR: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, '7i': { Speed: 12
 test('nine holes, par 36, four tee sets with the designed totals', () => {
   assert.equal(HOLES.length, 9);
   assert.equal(HOLES.reduce((a, h) => a + h.par, 0), 36);
-  const want = { canyon: 3395, mesa: 3040, sage: 2640, lizard: 2020 };
+  const want = { canyon: 3395, mesa: 3040, sage: 2640, lizard: 2040 };
   for (const s of COURSE.teeSets) assert.equal(teeYards(HOLES, s.id), want[s.id], s.id);
 });
 
@@ -203,7 +203,7 @@ test('Dry Wash: a river from the falls crosses the hole twice and leaves the can
   for (const [x, z] of [[-40, -110], [50, -180], [-10, -275], [-52, -400]]) assert.equal(t.surfaceAt(x, z), 'water', `water at ${x}, ${z}`);
   assert.equal(t.surfaceAt(-3, -200), 'fairway', 'the fairway inside the bend is dry');
   assert.ok(t.groundAt(-60, -515) < 5, 'the river leaves through a gap at the back left');
-  // a drive pushed right finds the water
-  const wet = shoot(t, h.tees.canyon, [50, -190], { Speed: 140, VLA: 12, TotalSpin: 2800 });
+  // a drive pushed right finds the water (the tee ledge is 12 m up, so it carries further)
+  const wet = shoot(t, h.tees.canyon, [50, -190], { Speed: 132, VLA: 12, TotalSpin: 2900 }); // off the 12 m ledge
   assert.equal(t.surfaceAt(wet.end.x, wet.end.z), 'water');
 });
