@@ -48,6 +48,14 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
   width where drives land and pins at 3% or less. Rimeholm's `tools/rimeholm/shapes.mjs` (`makeGreen`
   from lobes, `makeFairway` from edges along the line) is one way to build them; in the engine a green takes
   `lobes` (the same format) and a painted fairway a half-width per point.
+- **Leave room for a tips tee (agreed with the owner, 10 November 2026).** Every course will get a fifth set
+  of tees behind the back set, at tour length: about 7,200–7,400 yd for 18, so 3,600–3,700 yd a nine (today's
+  back tees run about 3,300). Design for it from the plan: ground behind each back tee for a pad 20–50 yd further
+  back on the par 4s and 5s (a par 3 can stretch less), not a cliff, a wall or another hole's green; the landing
+  areas and their hazards still working for drives that carry 280–300 yd (fairways wide enough there, bunkers and
+  carries that matter from the tips without taking the landing area under 45 m); nothing overhead within 45 m of
+  that pad either; and the pad off the fairway, like every tee. Sketch the tips spot on the plan even before the
+  tee set exists, so adding it later is data, not a redesign.
 - **Fairway bunkers on the larger side (agreed with the owner, Rimeholm round 3).** Out where drives land,
   a bunker 25–40 m across, or a long one that follows a fairway's edge for 100 m or more, reads as a real
   hazard; a 10 m dot reads as a placeholder. Let them bite into the fairway's edge without taking the landing
