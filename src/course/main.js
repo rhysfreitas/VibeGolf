@@ -551,8 +551,8 @@ function buildHole(h) {
   const segDist = (x, z) => { const ab = b.clone().sub(a), t = THREE.MathUtils.clamp(new THREE.Vector2(x, z).sub(a).dot(ab) / ab.lengthSq(), 0, 1); return new THREE.Vector2(x, z).distanceTo(a.clone().addScaledVector(ab, t)); };
   if (MESA) {
     if (!CAVE) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
-    MW.buildFloor(T, box, islandMat, coarse, holeGroup, true);
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE });
+    MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE, snapEdges: CAVE });
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });

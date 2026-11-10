@@ -41,25 +41,69 @@ function roughen(geo, amp, scale, seed = 0) {
 }
 
 /* ---------- the canyon floor ---------- */
-export function buildFloor(T, box, mat, coarse, group, playfield = false) {
+export function buildFloor(T, box, mat, coarse, group, playfield = false, { gorgeEdge = false } = {}) {
   const F = T.floor; if (!F) return null;
   const meshes = [];
+  const inBox = (x, z) => x > box.x0 + 8 && x < box.x1 - 8 && z > box.z0 + 8 && z < box.z1 - 8;
+  // gorgeEdge: round each chasm, a fine apron of floor out to past the coarse cells that touch it (they're dropped,
+  // or two corners pulled to opposite sides of the rim would lay a lid across it); the coarse floor sits under it
+  // (one apron over all the chasms together: separate ones would overlap, and two floors at one height flicker)
+  const big = coarse ? 60 : 40, aprons = [];
+  if (gorgeEdge && F.gorges.length) { const A = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
+    for (const g of F.gorges) { const m = g.bound + big * 1.6; A.x0 = Math.min(A.x0, g.x - m); A.x1 = Math.max(A.x1, g.x + m); A.z0 = Math.min(A.z0, g.z - m); A.z1 = Math.max(A.z1, g.z + m); }
+    aprons.push(A); }
+  const inApron = (x, z) => aprons.some(A => x > A.x0 && x < A.x1 && z > A.z0 && z < A.z1);
   const grid = (x0, z0, x1, z1, step, drop) => {
     const nx = Math.ceil((x1 - x0) / step), nz = Math.ceil((z1 - z0) / step);
     const geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, nx, nz); geo.rotateX(-Math.PI / 2); geo.translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
-    const p = geo.attributes.position;
+    const p = geo.attributes.position, In = gorgeEdge ? new Uint8Array(p.count) : null;
     for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i), z = p.getZ(i);
-      let y = T.inGorge(x, z) ? F.y - 120 : T.floorShape(x, z);
-      if (drop && x > box.x0 + 8 && x < box.x1 - 8 && z > box.z0 + 8 && z < box.z1 - 8) y -= drop;
+      let x = p.getX(i), z = p.getZ(i);
+      // gorgeEdge (caves): a point in a chasm moves out onto its rim (the chasm gets its own wall, buildGorgeWalls),
+      // rather than the floor sloping down into it across a whole coarse cell
+      if (gorgeEdge && T.inGorge(x, z)) { const g = F.gorges.find(g => islandF(g, x, z) <= 1); const dx = x - g.x, dz = z - g.z, e = edgeRadius(g, Math.atan2(-dx * g.s + dz * g.c, dx * g.c + dz * g.s)); x = e.x; z = e.z; p.setX(i, x); p.setZ(i, z); In[i] = 1; }
+      let y = !In?.[i] && T.inGorge(x, z) ? F.y - 120 : T.floorShape(x, z);
+      if (drop && (inBox(x, z) || inApron(x, z))) y -= drop;
       else if (drop) y += 6 * (fbm(x / 400, z / 400) - 0.5) * sstep(300, 1400, Math.hypot(x - (box.x0 + box.x1) / 2, z - (box.z0 + box.z1) / 2));
       p.setY(i, y);
+    }
+    if (In) { // drop every triangle touching a chasm: the apron (or the playfield) covers the ground round it
+      const ix = geo.index.array, keep = [];
+      for (let t = 0; t < ix.length; t += 3) { const a = ix[t], b = ix[t + 1], c = ix[t + 2]; if (In[a] || In[b] || In[c]) continue; keep.push(a, b, c); }
+      geo.setIndex(keep);
     }
     geo.computeVertexNormals(); rockAttrs(geo, 0);
     const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; m.userData.island = { playable: F.solid, floor: true };
     group.add(m); meshes.push(m);
   };
   if (!playfield) grid(box.x0, box.z0, box.x1, box.z1, coarse ? 4 : 3, 0);
+  for (const A of aprons) { // the fine floor round a chasm, ending on its outline (not where the playfield already is)
+    const st = coarse ? 5 : 4, nx = Math.ceil((A.x1 - A.x0) / st), nz = Math.ceil((A.z1 - A.z0) / st), pos = [], H = [], idx = [];
+    for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = A.x0 + i * st, z = A.z0 + j * st; H.push(T.inGorge(x, z) ? null : T.floorShape(x, z)); pos.push(x, 0, z); }
+    const In = new Uint8Array(H.length);
+    for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
+      const k = j * (nx + 1) + i; if (H[k] !== null) { pos[k * 3 + 1] = H[k]; continue; }
+      const x = pos[k * 3], z = pos[k * 3 + 2]; let best = null;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+        const ii = i + di, jj = j + dj; if (ii < 0 || ii > nx || jj < 0 || jj > nz || H[jj * (nx + 1) + ii] === null) continue;
+        const x2 = A.x0 + ii * st, z2 = A.z0 + jj * st; let lo = 0, hi = 1;
+        for (let q = 0; q < 10; q++) { const m = (lo + hi) / 2; if (T.inGorge(x + (x2 - x) * m, z + (z2 - z) * m)) lo = m; else hi = m; }
+        if (!best || hi < best.t) best = { t: hi, x: x + (x2 - x) * hi, z: z + (z2 - z) * hi };
+      }
+      if (!best) continue;
+      H[k] = T.floorShape(best.x, best.z); pos[k * 3] = best.x; pos[k * 3 + 1] = H[k]; pos[k * 3 + 2] = best.z; In[k] = 1;
+    }
+    const ok = k => H[k] !== null;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+      if (inBox(A.x0 + (i + 0.5) * st, A.z0 + (j + 0.5) * st)) continue;
+      if (ok(a) && ok(b) && ok(c) && !(In[a] && In[b] && In[c])) idx.push(a, c, b);
+      if (ok(b) && ok(c) && ok(d) && !(In[b] && In[c] && In[d])) idx.push(b, c, d);
+    }
+    if (!idx.length) continue;
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); rockAttrs(geo, 0);
+    const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; m.userData.island = { playable: F.solid, floor: true }; group.add(m); meshes.push(m);
+  }
   const cx = (box.x0 + box.x1) / 2, cz = (box.z0 + box.z1) / 2, R = 3600;
   grid(cx - R, cz - R, cx + R, cz + R, coarse ? 60 : 40, 3);
   return meshes;
@@ -527,7 +571,7 @@ export function buildProps(hole, T, tee, mat, group, { glyphs = true } = {}) {
 // One mesh over the hole's box, sampled from the shaped ground: 24 m tiles, fine (under a metre) where a
 // green, bunker, tee or pond is, coarser elsewhere, with short skirts so tiles of different sizes meet
 // without cracks. Cells that span a cliff are left to the island walls.
-export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false } = {}) {
+export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, snapEdges = false } = {}) {
   const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
   const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water, ...FT.rockfalls];
   // (caves: banks with no island wall to cover a dropped cell)
@@ -546,6 +590,23 @@ export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false }
       const x = tx + i * step, z = tz + j * step, y = T.groundAt(x, z);
       H.push(y); pos.push(x, y ?? 0, z);
     }
+    // snapEdges (caves): a point over open air (a chasm) next to ground moves onto the edge, so the ground ends
+    // on the chasm's own outline rather than in a staircase of whole cells (the chasm wall meets it there)
+    const In = snapEdges ? new Uint8Array(H.length) : null;
+    if (snapEdges) for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+      const k = j * (n + 1) + i; if (H[k] !== null) continue;
+      const x = tx + i * step, z = tz + j * step; let best = null;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+        const ii = i + di, jj = j + dj, nx2 = tx + ii * step, nz2 = tz + jj * step;
+        const g = ii >= 0 && ii <= n && jj >= 0 && jj <= n ? H[jj * (n + 1) + ii] : T.groundAt(nx2, nz2); if (g === null) continue;
+        let lo = 0, hi = 1; // lo: open air (this point), hi: ground (the neighbour)
+        for (let q = 0; q < 10; q++) { const m = (lo + hi) / 2; if (T.groundAt(x + (nx2 - x) * m, z + (nz2 - z) * m) === null) lo = m; else hi = m; }
+        if (!best || hi < best.t) best = { t: hi, x: x + (nx2 - x) * hi, z: z + (nz2 - z) * hi };
+      }
+      if (!best) continue;
+      const g = T.groundAt(best.x, best.z); if (g === null) continue;
+      H[k] = g; pos[(base + k) * 3] = best.x; pos[(base + k) * 3 + 1] = g; pos[(base + k) * 3 + 2] = best.z; In[k] = 1;
+    }
     // normals from the ground's slope (neighbours past the tile's edge sampled directly), so tiles
     // light the same along their seams
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
@@ -558,8 +619,8 @@ export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false }
     const ok = (...k) => { let lo = Infinity, hi = -Infinity; for (const q of k) { const y = H[q]; if (y === null) return false; lo = Math.min(lo, y); hi = Math.max(hi, y); } return hi - lo < Math.max(2.5, step * 0.9); };
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const a = j * (n + 1) + i, b = a + 1, c = a + n + 1, d = c + 1;
-      if (ok(a, b, c)) idx.push(base + a, base + c, base + b);
-      if (ok(b, c, d)) idx.push(base + b, base + c, base + d);
+      if (ok(a, b, c) && !(In && In[a] && In[b] && In[c])) idx.push(base + a, base + c, base + b);
+      if (ok(b, c, d) && !(In && In[b] && In[c] && In[d])) idx.push(base + b, base + c, base + d);
     }
     // skirts down the tile's four edges
     const edge = [];

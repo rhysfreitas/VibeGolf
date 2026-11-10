@@ -8,6 +8,7 @@
 // adds what it would have lit into the meshes, per vertex, with Three's own falloff and cone. Nothing in
 // the cave moves (bar the ore cart, which isn't baked), so it looks the same at a fraction of the cost.
 import { rng, fbm, sstep } from './noise.js';
+import { edgeRadius } from './terrain.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const rockMat = new THREE.MeshStandardMaterial({ color: 0x6f675c, roughness: 1, metalness: 0, side: THREE.DoubleSide, vertexColors: true });
@@ -128,13 +129,27 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   const pat = C.sky.filter(S => S.cenote?.vines && Math.hypot(S.x - cx, S.z - cz) < reach).map(S => ({ S, R: S.r * 3.4 }));
   const artW = (x, z) => { let w = 0; for (const P of pat) w = Math.max(w, 1 - sstep(P.R - 22, P.R, Math.hypot(x - P.S.x, z - P.S.z))); return w; };
   let low = Infinity; for (const H of C.halls) low = Math.min(low, H.foot);
+  // the opening a point is under (terraced cenotes have no roof round them: they keep the plain cut)
+  const openAt = (x, z) => C.sky.find(S => !S.cenote?.terraces && Math.hypot(x - S.x, z - S.z) < S.r) || null;
+  // each opening's lip: the highest roof round it (the shaft starts there)
+  for (const S of C.sky) { let rim = -Infinity; for (let a = 0; a < 16; a++) { const y = C.ceilingAt(S.x + Math.cos(a / 16 * 6.283) * (S.r + 4), S.z + Math.sin(a / 16 * 6.283) * (S.r + 4)); if (y !== null) rim = Math.max(rim, y); } S.lip = rim === -Infinity ? 40 : rim; }
+  const knob = (x, z, w) => 3.2 * fbm(x / 8 + 5, z / 8 - 3) + 1.4 * fbm(x / 3, z / 3) + w * (2.6 * fbm(x / 2.2 + 3, z / 2.2 - 8) + 1.1 * fbm(x / 0.9, z / 0.9)); // knobbly rock, hanging a little below the solid shape
+  // where the roof meets an opening, along angle a: on a ring just inside the shaft, at the roof's height there
+  // but never more than 4 m under the lip (beside a wall the roof rises to the lip instead of dropping into the shaft)
+  const rimEdge = (S, a) => { const c = Math.cos(a), sn = Math.sin(a), loc = C.ceilingAt(S.x + c * S.r * 1.03, S.z + sn * S.r * 1.03);
+    return { x: S.x + c * S.r * 0.95, z: S.z + sn * S.r * 0.95, y: Math.max(loc ?? S.lip, S.lip - 4) }; };
   function sheet(xa, za, xb, zb, step, art, skip) {
     const nx = Math.ceil((xb - xa) / step), nz = Math.ceil((zb - za) / step);
-    const pos = new Float32Array((nx + 1) * (nz + 1) * 3), col = new Float32Array((nx + 1) * (nz + 1) * 3), Y = new Float32Array((nx + 1) * (nz + 1)), W = new Float32Array((nx + 1) * (nz + 1));
+    const pos = new Float32Array((nx + 1) * (nz + 1) * 3), col = new Float32Array((nx + 1) * (nz + 1) * 3), Y = new Float32Array((nx + 1) * (nz + 1)), W = new Float32Array((nx + 1) * (nz + 1)), In = new Uint8Array((nx + 1) * (nz + 1));
     for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
-      const x = xa + i * step, z = za + j * step, k = j * (nx + 1) + i, w = art ? artW(x, z) : 0;
-      let y = C.ceilingAt(x, z); if (y === null) y = NaN;
-      else y -= 3.2 * fbm(x / 8 + 5, z / 8 - 3) + 1.4 * fbm(x / 3, z / 3) + w * (2.6 * fbm(x / 2.2 + 3, z / 2.2 - 8) + 1.1 * fbm(x / 0.9, z / 0.9)); // knobbly rock, hanging a little below the solid shape
+      let x = xa + i * step, z = za + j * step; const k = j * (nx + 1) + i;
+      let y = C.ceilingAt(x, z);
+      // under an opening: pull the point onto the opening's rim, tucked just inside its shaft, so the roof ends
+      // in a clean ring the shaft covers (cut cell by cell, it left a stepped hole you could see out through)
+      if (y === null) { const S = openAt(x, z); if (S) { const e = rimEdge(S, Math.atan2(z - S.z, x - S.x)); x = e.x; z = e.z; y = e.y; In[k] = 1; } }
+      const w = art ? artW(x, z) : 0;
+      if (y === null) y = NaN;
+      else y -= knob(x, z, w);
       Y[k] = y; W[k] = w; pos.set([x, Number.isNaN(y) ? 0 : y, z], k * 3);
       // flowstone streaks and damp, darker rock higher up
       // a vault high overhead fades into the dark, so its top can't be seen: it reads as endless
@@ -157,6 +172,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
       const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
       if (!(ok(a) && ok(b) && ok(c) && ok(d))) continue;
+      if (In[a] && In[b] && In[c] && In[d]) continue; // wholly inside an opening
       if (buried(a) && buried(b) && buried(c) && buried(d)) continue;
       if (skip && skip(xa + (i + 0.5) * step, za + (j + 0.5) * step)) continue;
       idx.push(a, b, c, b, d, c); // wound to face down, into the cave
@@ -168,7 +184,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     // (with the art pass: harder, and in horizontal ledges, the bedding of the limestone)
     { const nr = geo.attributes.normal;
       for (let k = 0; k < Y.length; k++) {
-        if (Number.isNaN(Y[k])) continue;
+        if (Number.isNaN(Y[k]) || In[k]) continue; // (an opening's edge stays on its ring, sealed to the shaft)
         const nx_ = nr.getX(k), nz_ = nr.getZ(k), hz = Math.hypot(nx_, nz_); if (hz < 0.35) continue;
         const x = pos[k * 3], y = pos[k * 3 + 1], z = pos[k * 3 + 2], w = W[k];
         const o = (wallPush(x, y, z) * (1 + 0.7 * w) + w * 2.2 * Math.sin(y * 0.85 + 3 * fbm(x / 9, z / 9))) * Math.min(1, (hz - 0.35) * 2.5);
@@ -215,6 +231,10 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   if (flows.length) group.add(instances(flowGeo, flowMat, flows, true));
 
   /* ---------- openings to the sky: a shaft up through the rock, daylight above, a beam down ---------- */
+  // a shaft's bottom ring (the lathe's first profile point) laid exactly on the roof's edge round the opening,
+  // a metre up inside it, so roof and shaft meet with no slit and nothing hanging below the roof
+  const sealRing = (S, geo, nP) => { if (S.cenote?.terraces) return; const p = geo.attributes.position;
+    for (let k = 0; k < p.count; k += nP) { const e = rimEdge(S, Math.atan2(p.getZ(k), p.getX(k))), w = pat.length ? artW(e.x, e.z) : 0; p.setXYZ(k, e.x - S.x, e.y - knob(e.x, e.z, w) + 1, e.z - S.z); } };
   const sd = (sunDir && sunDir.y > 0.2 ? sunDir.clone() : V(0.25, 1, 0.15)).normalize();
   for (const S of C.sky) {
     if (Math.hypot(S.x - cx, S.z - cz) > reach + 400) continue;
@@ -231,7 +251,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       const ug = new THREE.LatheGeometry(P.map(([r, y]) => new THREE.Vector2(r, y)), 56), up = ug.attributes.position;
       for (let k = 0; k < up.count; k++) { const x = up.getX(k), y = up.getY(k), z = up.getZ(k), rr = Math.hypot(x, z) || 1; if (rr < S.r * 1.1 || y > rim + U.h) continue;
         const f = 1 + 0.16 * (fbm(x / 22 + 4, z / 22 + y / 30) - 0.5) + 0.06 * (fbm(x / 6, z / 6 - y / 8) - 0.5); up.setXYZ(k, x * f, y + 3 * (fbm(x / 15, z / 15) - 0.5), z * f); }
-      ug.computeVertexNormals(); withColor(ug);
+      sealRing(S, ug, P.length); ug.computeVertexNormals(); withColor(ug);
       const cc = ug.attributes.color; for (let k = 0; k < cc.count; k++) { const v = 0.45 + 0.4 * fbm(up.getX(k) / 18, up.getZ(k) / 18 + up.getY(k) / 25); cc.setXYZ(k, v * 0.95, v * 0.9, v * 0.82); }
       const um = new THREE.Mesh(ug, rockMat); um.position.set(S.x, 0, S.z); um.receiveShadow = true; group.add(um);
       const B = new THREE.PointLight(0xe9e0cc, 1.0, U.r * 2.6, 1.1); B.position.set(S.x, rim + U.h * 0.45, S.z); ctx.baked.push(B);
@@ -243,7 +263,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
       else P.push([S.r * 1.04, rim + shaftH * 0.4], [S.r * 1.18, rim + shaftH * 0.8], [S.r * 1.3, top + 4]), (open = S.r * 1.3);
       const sg = new THREE.LatheGeometry(P.map(([r, y]) => new THREE.Vector2(r, y)), 64), sp = sg.attributes.position;
       for (let k = 0; k < sp.count; k++) { const x = sp.getX(k), y = sp.getY(k), z = sp.getZ(k), f = 1 + 0.07 * (fbm(x / 14 + 3, z / 14 + y / 12) - 0.5) + 0.04 * (fbm(x / 4, z / 4 - y / 5) - 0.5); sp.setXYZ(k, x * f, y, z * f); }
-      sg.computeVertexNormals(); withColor(sg);
+      sealRing(S, sg, P.length); sg.computeVertexNormals(); withColor(sg);
       const sc = sg.attributes.color, sn = sg.attributes.normal;
       for (let k = 0; k < sc.count; k++) {
         const y = sp.getY(k), t = Math.max(0, Math.min(1, (y - rim) / (top - rim))), ny = sn.getY(k);
@@ -526,6 +546,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   // a softer light down the fairway from the tee, so the landing area reads
   const mid = V((h.tee[0] + pin.x) / 2, 0, (h.tee[1] + pin.z) / 2); mid.y = gy(mid.x, mid.z);
   const fL = new THREE.SpotLight(0xffe2b8, 1.3, 600, 0.55, 0.9, 1); fL.position.set(h.tee[0], gy(h.tee[0], h.tee[1]) + 40, h.tee[1] + 30); fL.target.position.copy(mid); group.add(fL, fL.target); ctx.lights.push(fL);
+  buildGorgeWalls(T, group, coarse);
   // the ore cart on its rails: rolls to where the course put it (T.cart.s), a few metres a second
   if (T.cart) {
     const cartG = new THREE.Group(), iron = new THREE.MeshStandardMaterial({ color: 0x6b4a34, metalness: 0.55, roughness: 0.6 });
@@ -541,6 +562,42 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     ctx.anims.push(dt => { const d = T.cart.s - shown; if (Math.abs(d) > 0.01) { shown += Math.sign(d) * Math.min(Math.abs(d), dt * 4); place(); } });
   }
   return ctx;
+}
+
+/* ---------- the chasms (floor gorges, open air for the ball): a rock wall down from the rim ----------
+   Starts on the gorge's own outline at the ground's height there (where the playfield and the far floor stop,
+   buildPlayfield snapEdges / buildFloor gorgeEdge), roughens and darkens as it drops, and has a floor far below. */
+function buildGorgeWalls(T, group, coarse) {
+  const F = T.floor; if (!F || !F.gorges.length) return;
+  const D = [0, 1.2, 3.5, 7, 12, 19, 28, 40, 56, 76, 100, 125];
+  for (const g of F.gorges) {
+    const per = 2 * Math.PI * Math.sqrt((g.rx * g.rx + g.rz * g.rz) / 2), N = Math.max(48, Math.round(per / (coarse ? 3.5 : 2.5)));
+    const ring = [];
+    for (let k = 0; k < N; k++) {
+      const e = edgeRadius(g, k / N * Math.PI * 2), ox = e.x - g.x, oz = e.z - g.z, L = Math.hypot(ox, oz) || 1;
+      const top = T.groundAt(e.x + ox / L * 0.3, e.z + oz / L * 0.3) ?? T.floorShape(e.x, e.z);
+      // where this chasm runs into another (the inlet into the Deep) there's no wall: open air on both sides
+      ring.push({ x: e.x, z: e.z, nx: ox / L, nz: oz / L, top, open: T.inGorge(e.x + ox / L * 0.8, e.z + oz / L * 0.8) });
+    }
+    const pos = [], col = [], idx = [], R = D.length;
+    for (let k = 0; k < N; k++) for (let r = 0; r < R; r++) {
+      const P = ring[k], d = D[r], y = P.top - d;
+      // ledges and bulges across the face, more of them lower down; leaning back under the rim, never out over the drop
+      const push = r === 0 ? 0 : (fbm(P.x / 9 + 2.3, P.z / 9 + y / 7) - 0.5) * 5 * Math.min(1, d / 8) + Math.min(6, d * 0.05) + 1.5 * Math.sin(y * 0.6 + fbm(P.x / 20, P.z / 20) * 4) * Math.min(1, d / 6) * 0.5;
+      pos.push(P.x + P.nx * Math.max(0, push), y, P.z + P.nz * Math.max(0, push));
+      const v = (0.18 + 0.3 * fbm(P.x / 6, y / 4 + P.z / 6)) * Math.pow(1 - sstep(0, 115, d), 1.4) + 0.02;
+      col.push(v * 0.95, v * 0.9, v * 0.82);
+    }
+    for (let k = 0; k < N; k++) { const k2 = (k + 1) % N; if (ring[k].open || ring[k2].open) continue; for (let r = 0; r < R - 1; r++) { const a = k * R + r, b = k2 * R + r, c = a + 1, d = b + 1; idx.push(a, b, c, b, d, c); } }
+    // its floor, far below in the dark
+    const c0 = pos.length / 3, bottom = Math.min(...ring.map(P => P.top)) - D[R - 1];
+    pos.push(g.x, bottom - 2, g.z); col.push(0.02, 0.02, 0.02);
+    for (let k = 0; k < N; k++) { const k2 = (k + 1) % N; idx.push(c0, k2 * R + R - 1, k * R + R - 1); }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setIndex(idx); geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, rockMat); m.receiveShadow = true; group.add(m);
+  }
 }
 
 /* ---------- baked light: what ctx.baked's lights would add, per vertex ----------
