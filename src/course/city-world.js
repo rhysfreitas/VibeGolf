@@ -222,6 +222,8 @@ export function buildCity(hole, T, box, W, hi, { group, coarse }) {
   // ---- water: ponds and the river at their levels
   const waterMat = new THREE.MeshStandardMaterial({ color: 0x5f7d86, roughness: 0.18, metalness: 0.1, transparent: true, opacity: 0.92 });
   for (const w of W.water) { const [x, z] = L(w[0], w[1]); if (!near(x, z, far)) continue;
+    // a pond is drawn only on this hole's own ground at its level: another hole's pond would float over this one
+    const gw = x > box.x0 && x < box.x1 && z > box.z0 && z < box.z1 ? T.groundAt(x, z) : null; if (gw === null || Math.abs(gw - LY(w[5])) > 2.5) continue;
     const g = new THREE.CircleGeometry(1, 48); g.rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, waterMat);
     m.scale.set(w[2], 1, w[3]); m.rotation.y = -LR(w[4]); m.position.set(x, LY(w[5]), z); m.renderOrder = 1; group.add(m); }
   for (const r of W.rivers) {
@@ -242,11 +244,13 @@ export function buildCity(hole, T, box, W, hi, { group, coarse }) {
   // ---- rubble heaps, ramps and banks: grass over them, broken concrete poking through
   if (hole.rubble && hole.rubble.length) {
     const n = hole.rubble.length / 2, Rr = rng(hi * 97 + 5), geo = new THREE.BoxGeometry(1, 1, 1), im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.95 }), n * 2);
-    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), col = new THREE.Color(); let k = 0;
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), col = new THREE.Color(), teesXZ = Object.values(hole.tees); let k = 0;
     for (let i = 0; i < n; i++) for (let j = 0; j < 2; j++) {
       if (Rr() < 0.35) continue;
       const x = hole.rubble[i * 2] + (Rr() - 0.5) * 4, z = hole.rubble[i * 2 + 1] + (Rr() - 0.5) * 4, g = T.groundAt(x, z); if (g === null) continue;
-      const s = 0.5 + Math.pow(Rr(), 2) * 3.2;
+      // nothing big right beside a tee: a block there fills the view from the stance
+      const dt = Math.min(...teesXZ.map(p => Math.hypot(p[0] - x, p[1] - z))); if (dt < 14) continue;
+      const s = (0.5 + Math.pow(Rr(), 2) * 3.2) * Math.min(1, 0.35 + (dt - 14) / 30);
       m4.compose(V3(x, g + s * 0.12, z), q.setFromEuler(e3.set((Rr() - 0.5) * 0.9, Rr() * 6.3, (Rr() - 0.5) * 0.9)), V3(s * (0.8 + Rr() * 0.8), s * (0.35 + Rr() * 0.4), s * (0.6 + Rr() * 0.7)));
       im.setMatrixAt(k, m4); col.setRGB(...lin([150 + Rr() * 40, 146 + Rr() * 36, 138 + Rr() * 30])); im.setColorAt(k, col); k++;
     }

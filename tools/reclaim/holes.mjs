@@ -253,7 +253,7 @@ export const HOLES = [
       green: { rx: 16, rz: 17, style: 'long, right to left, by the north tower' },
       bunkers: [{ at: P(250, 40), rx: 12, rz: 7 }, { at: P(492, 22), rx: 8, rz: 7 }],
       inlet: { pts: [P(392, -120), P(400, -60), P(408, -10), P(410, 14)], w: 48, y: -1, label: 'where the bank fell in' },
-      ramp: { from: P(-60, 0), to: P(30, 0), w: 22, y: [14, 10], label: 'the expressway ramp' },
+      ramp: { from: P(-70, 0), to: P(-6, 0), w: 22, y: [14, 10], label: 'the expressway ramp' },  // ends flush behind the back tee
       bridgeDeck: { a: P(415, -60), b: P(440, -170), w: 20, label: 'the fallen span' },
       bridge: { a: P(478, -98), b: P(470, -262), h: 78, label: 'the bridge' },
       buildings: [{ at: P(80, 80), w: 60, d: 50, h: 20, broken: true, label: 'warehouses' }, { at: P(180, 86), w: 70, d: 50, h: 16, broken: true },
