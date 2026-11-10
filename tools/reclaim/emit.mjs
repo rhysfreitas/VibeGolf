@@ -19,7 +19,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE,
 const CELL = 2, r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 const CITY = cityFill(), WL = HOLES.map(h => h.line.map(p => toWorld(h)(...p)));
 // my surfaces -> the engine's ('desert' is native ground: here the cracked street); sand comes from the bunkers
-const ENG = { street: 'desert', rough: 'rough', fairway: 'fairway', fringe: 'fringe', green: 'green', tee: 'tee', sand: 'rough', water: 'water', rubble: 'desert', stands: 'desert', deck: 'desert', building: 'desert', void: 'void' };
+const ENG = { street: 'desert', rough: 'rough', fairway: 'fairway', fringe: 'fringe', green: 'green', tee: 'tee', sand: 'rough', water: 'water', rubble: 'rough', stands: 'desert', deck: 'desert', building: 'desert', void: 'void' };
 const CODES = ['desert', 'rough', 'fairway', 'fringe', 'green', 'tee', 'water', 'void'];
 
 function holeOut(hi) {
@@ -36,6 +36,9 @@ function holeOut(hi) {
     hs[j * nx + i] = y === null ? NaN : y; ss[j * nx + i] = CODES.indexOf(ENG[s]);
     if (y !== null && y < lo) lo = y;
   }
+  // where the ground is rubble (heaps, ramps, banks): grass over it, plays as rough, with chunks drawn on it
+  const rubble = [];
+  for (let z = z0; z < z1; z += 4) for (let x = x0; x < x1; x += 4) if (B.surface(x, z) === 'rubble') rubble.push(r1(x), r1(z));
   const y0 = Math.floor(lo), q = new Int16Array(nx * nz);
   for (let k = 0; k < q.length; k++) q[k] = Number.isNaN(hs[k]) ? -32768 : Math.round((hs[k] - y0) * 50);
   const b64 = a => Buffer.from(a.buffer).toString('base64');
@@ -135,7 +138,7 @@ function holeOut(hi) {
   return { n: h.n, name: h.name, par: h.par, heading, line: h.line.map(p => [r1(p[0]), r1(p[1])]), tees, yards: h.yards, pin: [r1(h.pin[0]), r1(h.pin[1])], targets, drops: [],
     field: { x0, z0, cell: CELL, nx, nz, y0, codes: CODES, h: b64(q), s: b64(ss) },
     frame: { x: h.place.at[0], z: h.place.at[1], heading: h.place.heading, base },
-    green, bunkers, rocks, plants, city, card: h.words };
+    green, bunkers, rocks, plants, city, rubble, card: h.words };
 }
 
 const holes = HOLES.map((_, i) => holeOut(i));

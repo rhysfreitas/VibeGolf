@@ -109,3 +109,9 @@ test('a building facade can soak a ball', () => {
   const n = t.solidAt(R.x + Math.cos(R.rot) * (R.w / 2 - 0.2), R.y + 3, R.z + Math.sin(R.rot) * (R.w / 2 - 0.2));
   assert.ok(n && n.soak > 0, 'its wall soaks');
 });
+
+test('a ball landing on a roof comes down at the foot of the nearest wall', () => {
+  const t = T[0], R = t.rocks.find(r => r.type === 'box' && r.soak);
+  const n = t.solidAt(R.x, R.y + R.h - 0.1, R.z);
+  assert.ok(n && n[1] === 0 && n.soak === 1, 'pushed off the roof, dropped at the wall');
+});

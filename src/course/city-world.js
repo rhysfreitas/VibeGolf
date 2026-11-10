@@ -83,8 +83,9 @@ export function buildCity(hole, T, box, W, hi, { group, coarse }) {
   const L = (X, Z) => { const dx = X - F.x, dz = Z - F.z; return [dx * rx + dz * rz, -(dx * fx + dz * fz)]; };
   const LY = y => y - F.base, LR = r => r - a;   // world height / yaw -> this hole's
   const cx = (box.x0 + box.x1) / 2, cz = (box.z0 + box.z1) / 2, near = (x, z, d) => Math.hypot(x - cx, z - cz) < d;
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: TEX, roughness: 0.92, metalness: 0 });
-  const plainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
+  // double-sided: every wall shows from outside whichever way its footprint runs
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: TEX, roughness: 0.92, metalness: 0, side: THREE.DoubleSide });
+  const plainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
   const greenMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide });
   const Bw = batch(), Bp = batch(), Bg = batch();
   const trees = [], blobs = [];
@@ -230,10 +231,27 @@ export function buildCity(hole, T, box, W, hi, { group, coarse }) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
     const m = new THREE.Mesh(g, waterMat); m.renderOrder = 1; group.add(m);
   }
-  // ---- the street out to the mist, under the hole's own ground
-  let lo = Infinity; for (const [x, z] of [[box.x0, box.z0], [box.x1, box.z0], [box.x0, box.z1], [box.x1, box.z1]]) { const g = T.groundAt(x, z); if (g !== null) lo = Math.min(lo, g); }
-  const street = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x5d5c58, roughness: 1 }));
-  street.position.set(cx, (Number.isFinite(lo) ? lo : 0) - 0.6, cz); street.receiveShadow = true; group.add(street);
+  // ---- the street out to the mist: a ring round the hole's own ground (never over it), at the height of its edge
+  const edge = [];
+  for (let t = 0; t <= 1; t += 0.05) for (const [x, z] of [[box.x0 + (box.x1 - box.x0) * t, box.z0], [box.x0 + (box.x1 - box.x0) * t, box.z1], [box.x0, box.z0 + (box.z1 - box.z0) * t], [box.x1, box.z0 + (box.z1 - box.z0) * t]]) { const g = T.groundAt(x, z); if (g !== null) edge.push(g); }
+  edge.sort((p, q) => p - q);
+  const sy = (edge.length ? edge[Math.floor(edge.length * 0.3)] : 0) - 0.4, Rg = 2600, Bs = batch(), sk = lin([93, 92, 88]);
+  for (const [ax, az, bx, bz] of [[cx - Rg, cz - Rg, cx + Rg, box.z0], [cx - Rg, box.z1, cx + Rg, cz + Rg], [cx - Rg, box.z0, box.x0, box.z1], [box.x1, box.z0, cx + Rg, box.z1]])
+    Bs.quad([ax, sy, az], [ax, sy, bz], [bx, sy, bz], [bx, sy, az], sk);
+  const street = Bs.mesh(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }), false); street.receiveShadow = true; group.add(street);
+  // ---- rubble heaps, ramps and banks: grass over them, broken concrete poking through
+  if (hole.rubble && hole.rubble.length) {
+    const n = hole.rubble.length / 2, Rr = rng(hi * 97 + 5), geo = new THREE.BoxGeometry(1, 1, 1), im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.95 }), n * 2);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), col = new THREE.Color(); let k = 0;
+    for (let i = 0; i < n; i++) for (let j = 0; j < 2; j++) {
+      if (Rr() < 0.35) continue;
+      const x = hole.rubble[i * 2] + (Rr() - 0.5) * 4, z = hole.rubble[i * 2 + 1] + (Rr() - 0.5) * 4, g = T.groundAt(x, z); if (g === null) continue;
+      const s = 0.5 + Math.pow(Rr(), 2) * 3.2;
+      m4.compose(V3(x, g + s * 0.12, z), q.setFromEuler(e3.set((Rr() - 0.5) * 0.9, Rr() * 6.3, (Rr() - 0.5) * 0.9)), V3(s * (0.8 + Rr() * 0.8), s * (0.35 + Rr() * 0.4), s * (0.6 + Rr() * 0.7)));
+      im.setMatrixAt(k, m4); col.setRGB(...lin([150 + Rr() * 40, 146 + Rr() * 36, 138 + Rr() * 30])); im.setColorAt(k, col); k++;
+    }
+    im.count = k; im.castShadow = im.receiveShadow = true; group.add(im);
+  }
 
   // ---- shrubs and moss: lumpy green blobs, instanced
   if (blobs.length) {

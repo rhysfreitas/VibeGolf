@@ -219,9 +219,11 @@ export function rockNormal(R, x, y, z) {
     const u = dx * R.c + dz * R.s, w = -dx * R.s + dz * R.c, ou = R.w / 2 - Math.abs(u), ow = R.d / 2 - Math.abs(w), ot = R.h - v;
     if (ou < 0 || ow < 0) return null;
     // the nearest face pushes it out; facades can soak a ball up (it drops at the foot), as cave walls do
-    const n = ot < ou && ot < ow ? [0, 1, 0] : ou < ow ? [Math.sign(u) * R.c, 0, Math.sign(u) * R.s] : [-Math.sign(w) * R.s, 0, Math.sign(w) * R.c];
-    if (R.soak && n[1] === 0) n.soak = R.soak;
-    return n;
+    const side = ou < ow ? [Math.sign(u) * R.c, 0, Math.sign(u) * R.s] : [-Math.sign(w) * R.s, 0, Math.sign(w) * R.c];
+    // a building's roof: the ball doesn't stay up there; it drops off at the nearest wall's foot
+    if (ot < ou && ot < ow) { if (!R.soak) return [0, 1, 0]; side.soak = 1; return side; }
+    if (R.soak) side.soak = R.soak;
+    return side;
   }
   if (R.type === 'boulder') {
     const u = dx * R.c + dz * R.s, w = -dx * R.s + dz * R.c, h = v - R.cy;
