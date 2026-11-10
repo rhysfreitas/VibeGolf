@@ -571,7 +571,80 @@ export function buildProps(hole, T, tee, mat, group, { glyphs = true } = {}) {
 // One mesh over the hole's box, sampled from the shaped ground: 24 m tiles, fine (under a metre) where a
 // green, bunker, tee or pond is, coarser elsewhere, with short skirts so tiles of different sizes meet
 // without cracks. Cells that span a cliff are left to the island walls.
-export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, snapEdges = false } = {}) {
+// which level a point's ground belongs to: the island whose top it is, 'F' for the canyon floor, null over open air
+function levelAt(T, x, z) {
+  const t = T.topAt(x, z), fl = T.floorAt(x, z);
+  if (t && (fl === null || t.h >= fl)) return t.I;
+  return fl !== null ? 'F' : null;
+}
+// A tile with a cliff in it (two levels side by side, more than 2.5 m apart): the cliff cells used to be
+// dropped, leaving a saw-toothed gap along the rim. Instead each level gets its own copy of the tile: points on
+// another level move onto this level's outline (the nearest edge point along the grid's eight directions, found
+// by bisection), take this level's ground there, and the cells are drawn up to that edge.
+function splitLevels(T, tx, tz, n, step, H, pos, nrm, idx) {
+  const N1 = n + 1, LV = H.map((y, k) => (y === null ? null : levelAt(T, tx + (k % N1) * step, tz + Math.floor(k / N1) * step)));
+  let split = false;
+  for (let j = 0; j <= n && !split; j++) for (let i = 0; i <= n && !split; i++) {
+    const k = j * N1 + i; if (LV[k] === null) continue;
+    for (const [di, dj] of [[1, 0], [0, 1], [1, 1], [-1, 1]]) {
+      const ii = i + di, jj = j + dj; if (ii < 0 || ii > n || jj > n) continue;
+      const q = jj * N1 + ii; if (LV[q] !== null && LV[q] !== LV[k] && Math.abs(H[q] - H[k]) > 2.5) { split = true; break; }
+    }
+  }
+  if (!split) return false;
+  pos.length -= H.length * 3; // the caller already pushed the tile's grid points: take them back out
+  for (const L of new Set(LV.filter(v => v !== null))) {
+    const on = (x, z) => levelAt(T, x, z) === L && T.groundAt(x, z) !== null;
+    const HL = H.map((y, k) => (LV[k] === L ? y : null)), P = [], In = new Uint8Array(H.length);
+    for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+      const k = j * N1 + i, x = tx + i * step, z = tz + j * step; P.push(x, HL[k] ?? 0, z);
+      if (LV[k] === L) continue;
+      let best = null;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+        const ii = i + di, jj = j + dj, nx2 = tx + ii * step, nz2 = tz + jj * step;
+        const inL = ii >= 0 && ii <= n && jj >= 0 && jj <= n ? LV[jj * N1 + ii] === L : on(nx2, nz2); if (!inL) continue;
+        let lo = 0, hi = 1; // lo: off this level (this point), hi: on it (the neighbour)
+        for (let s = 0; s < 10; s++) { const m = (lo + hi) / 2; if (on(x + (nx2 - x) * m, z + (nz2 - z) * m)) hi = m; else lo = m; }
+        if (!best || hi < best.t) best = { t: hi, x: x + (nx2 - x) * hi, z: z + (nz2 - z) * hi };
+      }
+      if (!best) continue;
+      const g = T.groundAt(best.x, best.z); if (g === null) continue;
+      HL[k] = g; In[k] = 1; P[k * 3] = best.x; P[k * 3 + 1] = g; P[k * 3 + 2] = best.z;
+    }
+    const base = pos.length / 3; pos.push(...P);
+    for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+      const y = HL[j * N1 + i]; if (y === null) { nrm.push(0, 1, 0); continue; }
+      const at = (ii, jj) => { let v; if (ii >= 0 && ii <= n && jj >= 0 && jj <= n) v = HL[jj * N1 + ii]; else { const x = tx + ii * step, z = tz + jj * step; v = on(x, z) ? T.groundAt(x, z) : null; } return v ?? y; };
+      const gx = (at(i + 1, j) - at(i - 1, j)) / (2 * step), gz = (at(i, j + 1) - at(i, j - 1)) / (2 * step), Ln = Math.hypot(gx, 1, gz);
+      nrm.push(-gx / Ln, 1 / Ln, -gz / Ln);
+    }
+    const ok = (...k) => { let lo = Infinity, hi = -Infinity; for (const q of k) { const y = HL[q]; if (y === null) return false; lo = Math.min(lo, y); hi = Math.max(hi, y); } return hi - lo < Math.max(2.5, step * 0.9); };
+    const tri = (a, b, c) => {
+      if (!ok(a, b, c) || (In[a] && In[b] && In[c])) return;
+      idx.push(base + a, base + b, base + c);
+    };
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const a = j * N1 + i, b = a + 1, c = a + N1, d = c + 1;
+      tri(a, c, b); tri(b, c, d);
+    }
+    // skirts down the tile's four edges (as the caller does for a whole tile)
+    const edge = [];
+    for (let i = 0; i <= n; i++) edge.push(i);
+    for (let j = 1; j <= n; j++) edge.push(j * N1 + n);
+    for (let i = n - 1; i >= 0; i--) edge.push(n * N1 + i);
+    for (let j = n - 1; j >= 1; j--) edge.push(j * N1);
+    edge.push(0);
+    for (let k = 0; k < edge.length - 1; k++) {
+      const p = edge[k], q = edge[k + 1]; if (HL[p] === null || HL[q] === null || Math.abs(HL[p] - HL[q]) > 2.5) continue;
+      const s0 = pos.length / 3; pos.push(P[p * 3], HL[p] - 0.35, P[p * 3 + 2], P[q * 3], HL[q] - 0.35, P[q * 3 + 2]);
+      nrm.push(...nrm.slice((base + p) * 3, (base + p) * 3 + 3), ...nrm.slice((base + q) * 3, (base + q) * 3 + 3));
+      idx.push(base + p, base + q, s0, base + q, s0 + 1, s0);
+    }
+  }
+  return true;
+}
+
+export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, snapEdges = false, levels = false } = {}) {
   const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
   const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water, ...FT.rockfalls];
   // (caves: banks with no island wall to cover a dropped cell)
@@ -590,6 +663,9 @@ export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, 
       const x = tx + i * step, z = tz + j * step, y = T.groundAt(x, z);
       H.push(y); pos.push(x, y ?? 0, z);
     }
+    // levels (Red Mesa): where the ground drops a cliff from one island to another or to the canyon floor, each
+    // level is drawn on its own and ends on its island's outline, where the cliff wall meets it
+    if (levels && splitLevels(T, tx, tz, n, step, H, pos, nrm, idx)) continue;
     // snapEdges (caves): a point over open air (a chasm) next to ground moves onto the edge, so the ground ends
     // on the chasm's own outline rather than in a staircase of whole cells (the chasm wall meets it there)
     const In = snapEdges ? new Uint8Array(H.length) : null;
