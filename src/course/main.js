@@ -116,6 +116,8 @@ function lightPreset() {
   // in the caverns: no sky, a dim cool fill, dark air; the light comes from lanterns and the sun through the roof
   if (CAVE) return { ...P, si: 0, hs: 0x5c6880, hg: 0x221f1b, hi: 0.5, exp: 1.05, fog: 0x080a0d, near: 120, far: 1700 };
   if (w === 'haze') { P.turb += 5; P.si *= 0.82; P.hi *= 1.15; P.near *= 0.55; P.far *= 0.6; }
+  if (CITY && w === 'haze' && t !== 'night') { P.fog = 0xd2cdbf; P.near = 70; P.far = 1500; P.turb = 7; P.ray = 1.2; P.si = 2.6; P.hi = 0.5; }
+  if (CITY && w === 'clear' && t !== 'night') { P.near = 160; P.far = 2600; }
   if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : DESERT ? 0xa89c92 : CITY ? 0xb4b8b6 : 0xa9b0b6; P.exp *= 1.05; }
   return P;
 }
@@ -134,7 +136,8 @@ function applySky(heading = 0) {
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
   // the city in mist: under an overcast the sky is the fog itself, so the towers fade into it
-  if (CITY) { const misty = cond.weather !== 'clear' && !T0.night; sky.visible = !misty; scene.background = misty ? FOG_COLOR : null; }
+  if (CITY) { const misty = cond.weather === 'overcast' && !T0.night; sky.visible = !misty; scene.background = misty ? FOG_COLOR : null;
+    if (cityClouds) { cityClouds.visible = !T0.night && cond.weather !== 'overcast'; cityClouds.material.uniforms.uCov.value = cond.weather === 'overcast' ? 0.95 : cond.weather === 'haze' ? 0.47 : 0.36; cityClouds.material.uniforms.uSun.value = sunDir; cityClouds.material.uniforms.uHaze.value.set(P.fog); } }
   if (CITY && cond.weather === 'overcast' && !T0.night) { scene.fog.near = 60; scene.fog.far = 900; }
   ball.material.emissive.set(T0.night ? 0xbfe8ff : 0x000000); ball.material.emissiveIntensity = T0.night ? 1.4 : 0;
   // image-based light from the same sky
@@ -182,6 +185,37 @@ function cloudLayer(y, scale, alpha, speed) {
   return mat;
 }
 const cloudMats = MESA ? [] : [cloudLayer(-320, 0.0016, 1.0, 1.0), cloudLayer(-210, 0.0028, 0.55, 1.8)];
+// The Reclaim: big cumulus overhead, seen from below, fading into the haze toward the horizon
+const cityClouds = CITY ? (() => {
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide,
+    uniforms: { uT: { value: 0 }, uSun: { value: sunDir }, uCov: { value: 0.5 }, uHaze: { value: new THREE.Color(0xd2cdbf) } },
+    vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `varying vec3 vW; uniform float uT, uCov; uniform vec3 uSun, uHaze;
+      float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+      float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
+      float fb(vec2 p){ float a=0.5, s=0.0; for(int i=0;i<5;i++){ s += a*vn(p); p = p*2.07 + 3.1; a *= 0.5; } return s; }
+      float dens(vec2 p){ float n = fb(p + vec2(vn(p*0.5), vn(p*0.5+7.3))*0.5) + 0.35*vn(p*0.3); return smoothstep(1.06-uCov, 1.16-uCov, n*0.9); }
+      void main(){
+        vec2 p = vW.xz * 0.0024 + vec2(uT*0.004, uT*0.0016);
+        float d = dens(p), thick = dens(p*0.55 + 11.0) * d;              // the heart of a big cloud is thicker, its base darker
+        vec2 sd = normalize(uSun.xz + 1e-4) * 0.05;
+        float lit = clamp(1.0 - dens(p + sd) * 0.8, 0.0, 1.0);           // the edge toward the sun catches it
+        vec3 base = vec3(0.6,0.62,0.66), top = vec3(1.0,0.98,0.94);
+        vec3 col = mix(top, base, smoothstep(0.2, 0.95, d * (0.55 + 0.45*thick)) * (1.0 - 0.6*lit));
+        col *= 0.75 + 0.25*smoothstep(0.0, 0.5, uSun.y);
+        float dist = length(vW.xz - cameraPosition.xz);
+        float fade = 1.0 - smoothstep(2500.0, 7500.0, dist);
+        col = mix(col, uHaze, smoothstep(1500.0, 7000.0, dist)*0.85);
+        gl_FragColor = vec4(col, d * fade * 0.96);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }`,
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(16000, 16000, 1, 1).rotateX(Math.PI / 2), mat);
+  m.position.y = 900; m.renderOrder = -1; m.frustumCulled = false; scene.add(m);
+  return m;
+})() : null;
 
 /* ---------- materials ---------- */
 const islandMat = new THREE.MeshStandardMaterial({ roughness: 0.93, metalness: 0, envMapIntensity: 0.6 });
@@ -234,9 +268,10 @@ dirt = mix(lin(vec3(0.22,0.2,0.18)), lin(vec3(0.3,0.27,0.23)), mid) * (0.8 + 0.3
 // a city gone to grass: cracked asphalt, grass and weeds up the cracks, broken concrete on the steep banks
 float crack = 1.0 - smoothstep(0.0, 0.045, abs(fb(p.xz*0.21) - 0.5));
 float crack2 = 1.0 - smoothstep(0.0, 0.035, abs(vn(p.xz*0.37 + 3.0) - 0.5));
-scrub = mix(lin(vec3(0.33,0.33,0.32)), lin(vec3(0.42,0.41,0.39)), mid) * (0.82 + 0.3*fine);
+scrub = mix(lin(vec3(0.35,0.34,0.31)), lin(vec3(0.44,0.42,0.38)), mid) * (0.82 + 0.3*fine);
+scrub = mix(scrub, lin(vec3(0.4,0.36,0.28)), smoothstep(0.5, 0.75, fb(p.xz*0.13 + 9.0)) * 0.35);   // dust and leaf litter
 scrub = mix(scrub, lin(vec3(0.28,0.37,0.18)), max(crack, crack2) * 0.85);
-scrub = mix(scrub, lin(vec3(0.3,0.4,0.2)), smoothstep(0.55, 0.8, fb(p.xz*0.05)) * 0.6);
+scrub = mix(scrub, lin(vec3(0.3,0.4,0.2)), smoothstep(0.5, 0.78, fb(p.xz*0.05)) * 0.7);
 dirt = scrub;
 #endif
 vec3 col = mix(scrub, dirt, 1.0 - step(uFloorY + 4.0, p.y));
@@ -263,8 +298,8 @@ rock = mix(rock, lin(vec3(0.78,0.72,0.6)), smoothstep(0.55, 0.8, fb(vec2((p.x+p.
 rock *= (0.8 + 0.2*fine) * (0.9 + 0.1*strataLine(p.y));
 #endif
 #ifdef CITY
-rock = mix(lin(vec3(0.44,0.43,0.41)), lin(vec3(0.56,0.55,0.52)), band) * (0.8 + 0.25*fine);
-rock = mix(rock, lin(vec3(0.3,0.38,0.2)), smoothstep(0.5, 0.75, fb(p.xz*0.3 + p.y*0.2)) * 0.5);
+rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0.25*fine);
+rock = mix(rock, lin(vec3(0.27,0.34,0.18)), smoothstep(0.45, 0.72, fb(p.xz*0.3 + p.y*0.2)) * 0.65);
 #endif
 float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
 col = mix(col, rock, rw);
@@ -523,7 +558,7 @@ function buildTrees(list, group) {
     const shape = { oak: [2.5, 3, 1], juniper: [0.5, 1.5, 0.6], pinyon: [1.2, 1.9, 0.7], cotton: [4.5, 3.6, 1.4] }[t.type] || [2.5, 3, 1];
     const H = shape[0] * t.s, s = shape[1] * t.s;
     m.compose(ps.set(t.x, t.y - 0.3, t.z), q.identity(), sc.set(t.s * shape[2], H + 1.2, t.s * shape[2])); trunks.setMatrixAt(ti++, m);
-    const pal = { juniper: [0x3a4a30, 0x445436, 0x34432e], pinyon: [0x3d5230, 0x48593a, 0x3a4c2c], cotton: [0x7c8c3a, 0x8f9a44, 0x6e8034] }[t.type] || [0x3f5a28, 0x4a6230, 0x56692f];
+    const pal = CITY ? [0x2f4a20, 0x3a5726, 0x46622c] : { juniper: [0x3a4a30, 0x445436, 0x34432e], pinyon: [0x3d5230, 0x48593a, 0x3a4c2c], cotton: [0x7c8c3a, 0x8f9a44, 0x6e8034] }[t.type] || [0x3f5a28, 0x4a6230, 0x56692f];
     const base = pal[Math.floor(R() * 3)];
     for (let b = 0; b < 4; b++) {
       const a = R() * 6.28, rr = b === 0 ? 0 : s * (0.35 + R() * 0.3), bs = s * (b === 0 ? 0.8 : 0.5 + R() * 0.25);
@@ -579,11 +614,11 @@ function buildHole(h) {
   if (MESA) {
     if (!CAVE && !CITY) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
     if (!CITY) MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
-    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || CITY, snapEdges: CAVE || CITY, levels: LEVELS });
+    MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || CITY, snapEdges: CAVE || CITY, levels: LEVELS, keepSteep: CITY });
     MW.buildWater(T, holeGroup);
     MW.buildRocks(T, h, islandMat, holeGroup);
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
-    else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat }); trees.push(...mesaCtx.trees); }
+    else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
     else {
       MW.scatterShrubs(T, box, coarse, holeGroup);
       trees.push(...MW.cottonwoodSpots(T, h));
@@ -1434,7 +1469,7 @@ function projectTag(el, v) {
 }
 let last = performance.now(), clock = 0;
 function step(dt) {
-  clock += dt; clockU.value = clock; cloudMats.forEach(m => m.uniforms.uT.value = clock);
+  clock += dt; clockU.value = clock; cloudMats.forEach(m => m.uniforms.uT.value = clock); if (cityClouds) cityClouds.material.uniforms.uT.value = clock;
   camState.prevBall = (camState.prevBall || new THREE.Vector3()).copy(ball.position);
   const f = state.flight;
   if (state.phase === 'flight') {

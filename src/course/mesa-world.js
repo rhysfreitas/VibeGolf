@@ -659,7 +659,7 @@ function splitLevels(T, tx, tz, n, step, H, pos, nrm, idx) {
   return true;
 }
 
-export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, snapEdges = false, levels = false } = {}) {
+export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, snapEdges = false, levels = false, keepSteep = false } = {}) {
   const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
   const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water, ...FT.rockfalls];
   // (caves: banks with no island wall to cover a dropped cell)
@@ -707,7 +707,8 @@ export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, 
       const gx = (at(i + 1, j) - at(i - 1, j)) / (2 * step), gz = (at(i, j + 1) - at(i, j - 1)) / (2 * step), L = Math.hypot(gx, 1, gz);
       nrm.push(-gx / L, 1 / L, -gz / L);
     }
-    const ok = (...k) => { let lo = Infinity, hi = -Infinity; for (const q of k) { const y = H[q]; if (y === null) return false; lo = Math.min(lo, y); hi = Math.max(hi, y); } return hi - lo < Math.max(2.5, step * 0.9); };
+    // a cell across a cliff is dropped (Red Mesa's walls stand there); keepSteep (the city: no walls) draws it as a bank
+    const ok = (...k) => { let lo = Infinity, hi = -Infinity; for (const q of k) { const y = H[q]; if (y === null) return false; lo = Math.min(lo, y); hi = Math.max(hi, y); } return keepSteep || hi - lo < Math.max(2.5, step * 0.9); };
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const a = j * (n + 1) + i, b = a + 1, c = a + n + 1, d = c + 1;
       if (ok(a, b, c) && !(In && In[a] && In[b] && In[c])) idx.push(base + a, base + c, base + b);
