@@ -8,7 +8,9 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES } from './holes.mjs';
-import { BUILT, toWorld, toLocal, worldAt } from './scene.mjs';
+import { BUILT, toWorld, toLocal, worldAt, CRACKS } from './scene.mjs';
+import { WORLD } from './world.mjs';
+import { edgeSegs } from './shapes.mjs';
 import { at, headingAt, clamp, seOutline, lengthOf, rnd } from './geo.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out/views');
@@ -109,7 +111,8 @@ function renderView(hi, view) {
     const P = proj([[x, ys[0], z], [x + s, ys[1], z], [x + s, ys[2], z + s], [x, ys[3], z + s]]);
     if (!P) continue;
     const fc = hex(mix(col, fogAt(q.d) * (c.y === null ? 0.4 : 1)));
-    add(q.d, `<polygon points="${fmt(P)}" fill="${fc}" stroke="${fc}" stroke-width="0.7"/>`);
+    // open air (a crevasse's floor in the dark) goes down first, under its walls and everything else
+    add(c.y === null ? q.d + 5000 : q.d, `<polygon points="${fmt(P)}" fill="${fc}" stroke="${fc}" stroke-width="0.7"/>`);
     // cracks in the ice
     if (c.s === 'ice' && q.d < 320 && s <= 8 && hash(Math.floor(x * 1.9), Math.floor(z * 2.1)) > 0.5) {
       const f = fogAt(q.d), y0 = ys.reduce((a, v) => a + v, 0) / 4 + 0.08, a0 = hash(z, x) * 6.283, pts = [];
@@ -142,19 +145,54 @@ function renderView(hi, view) {
     }
   };
   for (const t of B.teePads) { const c = Math.cos(headingAt(h.line, 1)), sn = Math.sin(headingAt(h.line, 1)); drape([[-6, -5], [6, -5], [6, 5], [-6, 5]].map(([u, v]) => [t.x + u * c - v * sn, t.z + u * sn + v * c]), true, [120, 146, 180], 0.9); }
-  { const G = h.green; drape(seOutline({ x: h.pin[0], z: h.pin[1], rx: G.rx, rz: G.rz, rot: G.rot || 0 }, 48), true, [60, 96, 40], 1.4); }
-  for (const b of h.bunkers || []) drape(seOutline({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0 }, 28), true, [40, 40, 44], 1.2);
+  const segDrape = (segs, colr, wd, lift = 0.15) => { for (const [p, q] of segs) drape([p, q], false, colr, wd, () => true, lift); };
+  { const [px, pz] = h.pin; segDrape(edgeSegs((x, z) => B.gm(x, z) < 0, px - 45, pz - 45, px + 45, pz + 45, 1), [60, 96, 40], 1.4); }
+  for (const b of B.bunkers) segDrape(edgeSegs(B.inBunker(b), b.x - b.rx * 1.4, b.z - b.rx * 1.4 - b.rz, b.x + b.rx * 1.4, b.z + b.rz * 1.4 + b.rx, 0.8), [40, 40, 44], 1.2);
   for (const w of h.water || []) drape(seOutline({ x: w.at[0], z: w.at[1], rx: w.rx, rz: w.rz, rot: w.rot || 0 }, 40), true, [60, 110, 130], 1.2);
   if (h.lake) drape(seOutline({ x: h.lake.at[0], z: h.lake.at[1], rx: h.lake.rx, rz: h.lake.rz, rot: h.lake.rot || 0 }, 64), true, [70, 120, 150], 1.3);
-  for (const [s0, s1, w, off = 0] of h.fairway || []) for (const side of [1, -1]) {
-    const P = [], S = []; for (let s = s0; s <= s1; s += 3) { P.push(at(h.line, s, off + side * w / 2)); S.push(s); }
-    const ok = S.map(s => { const a = at(h.line, s, off + side * (w / 2 - 1.5)), b = at(h.line, s, off + side * (w / 2 + 1.5)); return B.surface(...a) === 'fairway' && B.surface(...b) !== 'fairway'; });
-    let run = [];
-    for (let i = 0; i < P.length; i++) { if (ok[i]) run.push(P[i]); else { if (run.length > 1) drape(run, false, [120, 146, 180], 1.0); run = []; } }
-    if (run.length > 1) drape(run, false, [120, 146, 180], 1.0);
+  { const xs = h.line.map(p => p[0]), zs = h.line.map(p => p[1]);
+    segDrape(edgeSegs((x, z) => B.surface(x, z) === 'fairway', Math.min(...xs) - 90, Math.min(...zs) - 40, Math.max(...xs) + 90, Math.max(...zs) + 40, 2), [120, 146, 180], 1.0); }
+
+  // ---- crevasses: ice walls down into the dark (the walls that face the camera), a snow cornice on the
+  // raised lip; scarps get an inked top edge. Every crack on the glacier, from its own frame into this one.
+  const WALL = [[176, 222, 242], [104, 168, 206], [52, 98, 142], [22, 36, 60]], BANDS = [0, 0.08, 0.26, 0.55, 1];
+  const wallRun = (E, inward, depth, lip, seed) => {
+    const dc = cam.hd([E[0][0], 0, E[0][1]]), kk = clamp(Math.round(dc / 140), 1, 6), P = E.filter((_, i) => i % kk === 0 || i === E.length - 1);
+    let corn = [];
+    for (let i = 0; i < P.length - 1; i++) {
+      const a = P[i], b = P[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz); if (l < 0.01) continue;
+      const nx = -dz / l * inward, nz = dx / l * inward, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, d = cam.hd([mx, 0, mz]);
+      if (d > 1400 || !inView(mx, mz, 0.3)) { corn = []; continue; }
+      const ya = gy(a[0] - nx * 0.6, a[1] - nz * 0.6), yb = gy(b[0] - nx * 0.6, b[1] - nz * 0.6);
+      if (lip) corn.push([a[0], ya + 0.25, a[1]]);
+      if ((cam.pos[0] - mx) * nx + (cam.pos[2] - mz) * nz <= 0) continue;
+      const f = fogAt(d); let svg = '';
+      for (let j = 0; j < 4; j++) {
+        const t0 = BANDS[j] * depth, t1 = BANDS[j + 1] * depth, jig = (hash(i + seed, j) - 0.5) * 1.2;
+        const q = proj([[a[0], ya - t0 + (j ? jig : 0), a[1]], [b[0], yb - t0 + (j ? jig : 0), b[1]], [b[0], yb - t1, b[1]], [a[0], ya - t1, a[1]]]);
+        if (q) { const c = hex(mix(WALL[j].map(v => v * (0.94 + 0.1 * hash(i, seed))), f * 0.85)); svg += `<polygon points="${fmt(q)}" fill="${c}" stroke="${c}" stroke-width="0.6"/>`; }
+      }
+      const top = projLine([[a[0], ya, a[1]], [b[0], yb, b[1]]]);
+      if (top) svg += `<line x1="${top[0][0].toFixed(1)}" y1="${top[0][1].toFixed(1)}" x2="${top[1][0].toFixed(1)}" y2="${top[1][1].toFixed(1)}" stroke="${hex(mix([30, 60, 90], f))}" stroke-width="${(1.1 * (1.2 - f)).toFixed(2)}"/>`;
+      add(d - 0.02, svg);
+    }
+    if (lip && corn.length > 1) for (let i = 0; i < corn.length - 1; i++) {   // the cornice: a thick white lip
+      const pa = corn[i], pb = corn[i + 1], d = cam.hd(pa), q = projLine([pa, pb]); if (!q) continue;
+      add(d - 0.3, `<line x1="${q[0][0].toFixed(1)}" y1="${q[0][1].toFixed(1)}" x2="${q[1][0].toFixed(1)}" y2="${q[1][1].toFixed(1)}" stroke="white" stroke-width="${(3.2 * (1.15 - fogAt(d)) * Math.min(1, 160 / Math.max(d, 1))).toFixed(2)}" stroke-linecap="round"/>`);
+    }
+  };
+  for (const [ci, a] of CRACKS.entries()) {
+    const tr = a.owner >= 0 ? (p => toHere(...WOR[a.owner](...p))) : (p => toHere(...p));
+    const [cx, cz] = toHere(...a.c);
+    if (cam.hd([cx, 0, cz]) > 1500) continue;
+    const o = a.obj;
+    if (o.spec && o.open) { const E = o.outline(1.5), L = E.L.map(tr), Rr = E.R.map(tr); wallRun(L, 1, o.depth, E.lipEdge === 'L', ci * 7); wallRun(Rr, -1, o.depth, E.lipEdge === 'R', ci * 7 + 3); }
+    else if (o.spec) {   // a scarp: ink its top edge, just on the high side
+      const P = o.scarpLine(2), side = o.lip.side, Q = [];
+      for (let i = 0; i < P.length - 1; i++) { const dx = P[i + 1][0] - P[i][0], dz = P[i + 1][1] - P[i][1], l = Math.hypot(dx, dz) || 1; Q.push(tr([P[i][0] - dz / l * side * 1.2, P[i][1] + dx / l * side * 1.2])); }
+      drape(Q, false, [40, 80, 120], 1.8, () => true, 0.3); drape(Q, false, [250, 252, 255], 1.0, () => true, 0.45);
+    } else { const E = o.outline(120).map(tr); wallRun(E, -1, 40, false, ci); }
   }
-  for (const v of h.voids || []) for (const side of [1, -1]) { const P = []; for (let s = 0; s <= lengthOf(v.pts); s += 2) P.push(at(v.pts, s, side * v.w / 2)); drape(P, false, [24, 30, 44], 2.0, () => true, 0.05); }
-  if (h.moulin) { const M = h.moulin, P = []; for (let a = 0; a < 6.283; a += 0.08) P.push([M.at[0] + Math.cos(a) * M.r, M.at[1] + Math.sin(a) * M.r]); drape(P, true, [24, 30, 44], 2.2, () => true, 0.05); }
 
   // ---- solids
   const ink = (d, a = 1) => `stroke="${hex(mix([36, 40, 50], fogAt(d) * 0.9))}" stroke-opacity="${a}"`;
@@ -234,6 +272,10 @@ function renderView(hi, view) {
         const [x, z] = tr([o.x, o.z]), R_ = rnd(o.seed), n = 6, pts = ngon(x, z, o.r, n, R_() * 6, 0.75 + R_() * 0.4);
         const tops = pts.map(() => o.base + yoff + o.h * (0.72 + 0.28 * R_()));
         prismUp(pts, o.base + yoff, tops, [178, 214, 232], o.seed, 0, 0.62);
+      } else if (o.kind === 'iceblock') {
+        const [x, z] = tr([o.x, o.z]), R_ = rnd(o.seed), pts = ngon(x, z, o.r, 5, R_() * 6, 0.6 + R_() * 0.5);
+        const b0 = o.base ?? (o.base = (worldAt(o.x, o.z).y ?? 0) - 0.8);
+        prismUp(pts, b0, pts.map((p, i) => b0 + o.h * (0.55 + 0.45 * R_()) + (p[0] - x) * o.tilt * 0.5), [200, 226, 242], o.seed, 0, 0.7);
       } else if (o.kind === 'boulder') {
         const [x, z] = tr([o.x, o.z]), pts = ngon(x, z, o.r * 0.8, 6, hash(x, z) * 6, 0.8);
         prismUp(pts, o.base + yoff, pts.map((_, i) => o.base + yoff + o.h * (0.75 + 0.25 * hash(i, x))), [96, 98, 108], Math.round(x + z), 0, 0.6);
@@ -292,6 +334,8 @@ function renderView(hi, view) {
     }
   }
   drawObjs(B.objs, (x, z) => [x, z], h.base, h);
+  // the glacier's scenery: ridges of ice blocks and serac bands, bases on the glacier (absolute heights)
+  drawObjs(WORLD.objs.filter(o => { const [x, z] = toHere(o.x, o.z); return cam.hd([x, 0, z]) < 1500; }).map(o => o.kind === 'serac' && o.base === undefined ? Object.assign(o, { base: (worldAt(o.x, o.z).y ?? 0) - 1 }) : o), toHere, 0, null);
   for (const [k, Hk] of HOLES.entries()) {
     if (k === hi) continue;
     const Wk = WOR[k], m = (x, z) => toHere(...Wk(x, z));
@@ -395,7 +439,7 @@ export function viewsFor(hi) {
     v.push({ id: 'land', title: 'From the landing area', fov: 50, pos: eye(aim, to), look: look(aim, to, 6) });
   }
   const gback = ((h.sketch || {}).green || {}).back || 55;
-  const sg2 = at(h.line, h.len - gback), past = at(h.line, h.len + 25);
+  const goff = ((h.sketch || {}).green || {}).off || 0, sg2 = at(h.line, h.len - gback, goff), past = at(h.line, h.len + 25);
   v.push({ id: 'green', title: 'Short of the green', fov: 50, pos: eye(sg2, pin, 0, 9), look: [past[0], g(...h.pin) - 2, past[1]] });
   for (const x of v) { x.labels = labelSet; const o = (h.sketch || {})[x.id]; if (o) { if (o.up) x.look[1] += o.up; if (o.fov) x.fov = o.fov; if (o.eye) x.pos[1] += o.eye; } }
   return v;

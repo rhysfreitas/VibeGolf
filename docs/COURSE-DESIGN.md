@@ -36,6 +36,17 @@ owner). Read this before laying out a new course; CLAUDE.md has the short versio
 - Forward tees go on their own pads beside the fairway, at least 12 m clear of it, never on it.
 - A floor-to-roof feature in front of the back tee (a column, a fin) segments the tees and makes the
   back-tee shot think.
+- **Vary the outlines of greens and fairways (agreed with the owner, Rimeholm round 2).** No plain circles,
+  ovals or constant-width strips: they read as placeholders. Give each green its own shape and size (a
+  kidney, a peanut, a crescent, an L, a long thin diagonal, a clover, a T; roughly 450 to 750 m²), with an
+  uneven edge and the pin well inside a lobe, never in a waist. Let each fairway's two edges vary on their
+  own along the hole: swell where drives land, pinch between landing areas, scallop along the edges, and
+  let bunkers, crevasses and rocks bite in. Splitting a fairway now and then is good. Keep the 45–65 m
+  width where drives land and pins at 3% or less. Rimeholm's `tools/rimeholm/shapes.mjs` (`makeGreen`
+  from lobes, `makeFairway` from edges along the line) is one way to build them.
+- **Make chasms and crevasses read from the tee.** A plain dark slit is easy to miss. Give them a jagged
+  outline, a raised lip on one side (a broken face a few metres high), walls you can see down into, and
+  more of them as scenery between the holes, layered into the distance.
 
 ## Elevation and slope
 

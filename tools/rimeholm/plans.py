@@ -48,6 +48,8 @@ def draw_objs(ax, objs):
             ax.add_patch(Polygon(P, fc=(0.36, 0.30, 0.25, 0.45), ec='#4a3a2a', lw=0.7, ls=(0, (2, 1)), zorder=6))
         elif k == 'mammoth':
             ax.add_patch(Ellipse((o['x'], o['z']), 14, 7, angle=np.degrees(o['dir']) - 90, fc=(0.45, 0.33, 0.24, 0.55), ec='#4a3a2a', lw=0.6, ls=(0, (2, 1)), zorder=8))
+        elif k == 'iceblock':
+            ax.add_patch(Polygon(np.array([[o['x'] + np.cos(a + o['tilt']) * o['r'], o['z'] + np.sin(a + o['tilt']) * o['r'] * 0.8] for a in np.linspace(0, 6.28, 6)[:-1]]), fc=(0.80, 0.90, 0.97), ec='#3d6f8f', lw=0.35, zorder=7))
         elif k == 'brazier':
             ax.plot(o['x'], o['z'], marker='o', ms=2.4, mfc='#f0a030', mec=INK, mew=0.3, zorder=9)
 
@@ -77,7 +79,23 @@ for h in D['holes']:
     ax.clabel(cs, fontsize=4.5, fmt='%d', inline=True)
     # the crevasses and the moulin's rims, inked
     ax.contour(xs, zs, void.astype(float), levels=[0.5], colors=INK, linewidths=0.6, zorder=3)
-    draw_objs(ax, h['objs'])
+    draw_objs(ax, h['objs']); draw_objs(ax, h['wobjs'])
+    # crevasse edges, the raised lip inked heavier with hachures down from it; scarps as a hachured line
+    def hach(P, side, ln=3.2, every=3):
+        P = np.array(P)
+        for i in range(0, len(P) - 1, every):
+            a, b = P[i], P[i + 1]; d = b - a; l = np.hypot(*d)
+            if l == 0: continue
+            n = np.array([-d[1], d[0]]) / l * side * ln
+            ax.plot([a[0], a[0] + n[0]], [a[1], a[1] + n[1]], color=INK, lw=0.45, zorder=4)
+    for c in h['cracks']:
+        if 'ring' in c: continue
+        if 'scarp' in c:
+            P = np.array(c['scarp']); ax.plot(P[:, 0], P[:, 1], color=INK, lw=1.1, zorder=4); hach(c['scarp'], -c['side'], 4, 2); continue
+        for e in ('L', 'R'):
+            P = np.array(c[e]); lip = c['lip'] == e
+            ax.plot(P[:, 0], P[:, 1], color=INK, lw=1.3 if lip else 0.55, zorder=4)
+            if lip: hach(c[e], -1 if e == 'R' else 1, 2.6, 2)
     ax.plot(L[:, 0], L[:, 1], ls=(0, (5, 3)), color='#c99a00', lw=1.1, zorder=14)
     if h.get('bold'): B = np.array(h['bold']['line']); ax.plot(B[:, 0], B[:, 1], ls=(0, (1.5, 2)), color='#b5341f', lw=1.2, zorder=14)
     segs = [(L[i], L[i + 1]) for i in range(len(L) - 1)]; tot = sum(hypot(*(b - a)) for a, b in segs)

@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
-import { BUILT, SURF, toWorld, worldAt, WL } from './scene.mjs';
+import { BUILT, SURF, toWorld, worldAt, WL, CRACKS, LOC, WOR } from './scene.mjs';
+import { WORLD } from './world.mjs';
 import { project, at, lengthOf, YD, headingAt } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
 
@@ -51,6 +52,7 @@ for (const [i, B] of BUILT.entries()) {
   const drives = h.par === 3 ? {} : Object.fromEntries(Object.entries(DRIVES).map(([k, sh]) => [k, drive(B, back, dir0, sh)]));
   let bold = null;
   if (h.boldLine) { const [a, b] = h.boldLine, d = Math.atan2(b[0] - a[0], -(b[1] - a[1])); bold = { line: h.boldLine, prof: along(h.boldLine), drives: Object.fromEntries(Object.entries(DRIVES).map(([k, sh]) => [k, drive(B, back, d, sh)])) }; }
+  const gcells = (() => { let n = 0; for (let x = h.pin[0] - 45; x < h.pin[0] + 45; x++) for (let z = h.pin[1] - 45; z < h.pin[1] + 45; z++) if (B.gm(x + 0.5, z + 0.5) < 0) n++; return n; })();
   const prof = along(h.line), ys = prof.map(p => p[1]).filter(v => v !== null);
   // the climb and the fall along the line (each run of 1 m or more)
   let rise = 0, fall = 0; { let last = ys[0]; for (const y of ys) { const d = y - last; if (Math.abs(d) >= 1) { if (d > 0) rise += d; else fall -= d; last = y; } } }
@@ -67,8 +69,19 @@ for (const [i, B] of BUILT.entries()) {
   if (h.esker) L_(at(h.line, 140, 54), h.esker.label + ` (${h.esker.h} m up)`);
   for (const w of h.walls || []) if (w.label) L_(at(h.line, (w.s0 + Math.min(w.s1, h.len)) / 2, w.side * (w.off + 26)), w.label);
   if (h.falls) L_(at(h.line, (h.falls.s0 + h.falls.s1) / 2, h.falls.off[1] + 14), h.falls.label);
-  meta.push({ n: h.n, name: h.name, par: h.par, yards: h.yards, x0, z0, W, H, line: h.line, len: h.len, pin: h.pin, tees: h.teePts,
-    teeY: tee0, pinY: B.ground(...h.pin), rise: Math.round(rise), fall: Math.round(fall), targets: (h.targets || []).map(t => {
+  // cracks and scarps in this hole's frame (for the plan): each as its two edges, the lip edge marked
+  const toHere = LOC[i], cr = [];
+  const box = [x0, z0, x0 + W, z0 + H], inB = p => p[0] > box[0] && p[0] < box[2] && p[1] > box[1] && p[1] < box[3];
+  for (const a of CRACKS) {
+    const Wf = a.owner >= 0 ? WOR[a.owner] : (x, z) => [x, z], loc = P => P.map(p => toHere(...Wf(...p)).map(v => +v.toFixed(1)));
+    if (a.obj.outline && a.obj.spec) {
+      if (a.obj.open) { const o = a.obj.outline(2), L = loc(o.L), R = loc(o.R); if (L.some(inB) || R.some(inB)) cr.push({ L, R, lip: o.lipEdge }); }
+      else { const P = loc(a.obj.scarpLine(2)); if (P.some(inB)) cr.push({ scarp: P, side: a.obj.lip.side }); }
+    } else if (a.obj.outline) { const P = loc(a.obj.outline(90)); if (P.some(inB)) cr.push({ ring: P }); }
+  }
+  const wobjs = WORLD.objs.map(o => { const [x, z] = toHere(o.x, o.z); return { ...o, x, z }; }).filter(o => inB([o.x, o.z]));
+  meta.push({ cracks: cr, wobjs, n: h.n, name: h.name, par: h.par, yards: h.yards, x0, z0, W, H, line: h.line, len: h.len, pin: h.pin, tees: h.teePts,
+    greenArea: gcells, teeY: tee0, pinY: B.ground(...h.pin), rise: Math.round(rise), fall: Math.round(fall), targets: (h.targets || []).map(t => {
       // the width of fairway straight across the line where the target sits
       const pr = project(h.line, ...t.at); let w = 0;
       if (B.surface(...t.at) === 'fairway') { let a = pr.off, b = pr.off; while (B.surface(...at(h.line, pr.s, a - 0.5)) === 'fairway' && a > pr.off - 120) a -= 0.5; while (B.surface(...at(h.line, pr.s, b + 0.5)) === 'fairway' && b < pr.off + 120) b += 0.5; w = b - a; }
@@ -95,6 +108,7 @@ for (const m of meta) {
   console.log(`${m.n} ${m.name.padEnd(18)} par ${m.par} ${JSON.stringify(m.yards)} tee ${(m.teeY + m.base).toFixed(0)} green ${(m.pinY + m.base).toFixed(0)} (${(m.pinY - m.teeY).toFixed(0)} m; up ${m.rise}, down ${m.fall})`);
   console.log('   ', Object.entries(d).map(([k, v]) => `${k} ${Math.round(v.carry / YD)}/${Math.round(v.total / YD)}yd ${v.rest}${v.hit ? ' HIT ' + v.hit.what + ' @' + Math.round(v.hit.d) : ''}`).join(' · '),
     b ? '| bold: ' + Object.entries(b.drives).map(([k, v]) => `${k} ${Math.round(v.carry / YD)}yd ${v.rest}${v.hit ? ' HIT ' + v.hit.what : ''}`).join(' · ') : '');
+  console.log('    green', m.greenArea, 'm2 ·', m.cracks.length, 'cracks in view ·', m.wobjs.length, 'scenery pieces');
   console.log('    targets', m.targets.map(t => `${t.name} ${t.d}yd ${t.surf} ${t.width}m`).join(' · '));
 }
 console.log('total', meta.reduce((a, m) => a + m.yards.mammoth, 0), 'yd; par', meta.reduce((a, m) => a + m.par, 0));
