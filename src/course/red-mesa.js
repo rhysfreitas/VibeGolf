@@ -77,7 +77,7 @@ export const HOLES = [
       { x: -150, z: -420, rx: 34, rz: 22, rot: -0.4, p: 3, top: 30, depth: 70, kind: 'rock', seed: 5 },
     ],
     fairways: [{ pts: [[-8, -116, 10, 9], [-8, -150, 18, 12], [-5, -185, 28, 18], [-2, -220, 31, 22], [4, -248, 24, 18], [8, -266, 25, 19], [22, -294, 22, 18]] }, { pts: [[36, -330, 9, 9], [42, -338, 11, 11]] }],
-    green: { x: 52, z: -352, rx: 14, rz: 12, lobes: [[-1, 0, 10, 16, -35], [6, 5, 7, 6, 0], [6, -4, 6, 5, 0]], join: 4, style: 'plateau', raise: 0.9, falseFront: 0.6, side: -1.2, pins: [[52, -352], [49.9, -358.7], [55.5, -345.7], [59.2, -355]] },
+    green: { shape: [], x: 52, z: -352, rx: 14, rz: 12, lobes: [[-1, 0, 10, 16, -35], [6, 5, 7, 6, 0], [6, -4, 6, 5, 0]], join: 4, style: 'plateau', raise: 0.9, falseFront: 0.6, side: -1.2, pins: [[52, -352], [49.9, -358.7], [55.5, -345.7], [59.2, -355]] },
     bunkers: [
       { x: 38.2, z: -361.6, rx: 6, rz: 4.5, style: 'flashed' }, { x: 41.2, z: -346.4, rx: 4.5, rz: 2.6, style: 'pot' },
       { x: 24, z: -236, rx: 15, rz: 6, rot: 0.6, style: 'flashed', toward: [0, 0] }, { x: 30, z: -288, rx: 12, rz: 7, rot: 0.6, style: 'waste' }, { x: -20, z: -290, rx: 11, rz: 6, rot: -0.2, style: 'flashed', toward: [0, 0] },
@@ -130,7 +130,7 @@ export const HOLES = [
       { pts: [[-30, -122, 8, 8], [-42, -160, 14, 14], [-48, -210, 18, 16], [-46, -255, 16, 14], [-38, -288, 10, 9]] },             // upper plateau
       { pts: [[1, -338, 10, 10], [1, -352, 11, 11]] },                                                                         // between the wash and the green
     ],
-    green: { x: 1, z: -374, rx: 14, rz: 13, lobes: [[0, -3, 13, 11, 20], [3, 8, 8, 10, 30], [-7, 6, 6, 6, 0]], join: 3, style: 'punchbowl', tilt: 0.6, side: -2.1, dish: 0.05, raise: -1.2, apron: 11, runoff: true, pins: [[1, -374], [-6, -369], [7, -379], [-4, -381]] },
+    green: { shape: [], x: 1, z: -374, rx: 14, rz: 13, lobes: [[0, -3, 13, 11, 20], [3, 8, 8, 10, 30], [-7, 6, 6, 6, 0]], join: 3, style: 'punchbowl', tilt: 0.6, side: -2.1, dish: 0.05, raise: -1.2, apron: 11, runoff: true, pins: [[1, -374], [-6, -369], [7, -379], [-4, -381]] },
     bunkers: [{ x: -16, z: -360, rx: 5, rz: 4, style: 'grass' }, { x: 17, z: -381, rx: 4.5, rz: 3.5, style: 'pot' }, { x: -64, z: -246, rx: 12, rz: 6, rot: 0.15, style: 'flashed' }],
     landforms: [
       { type: 'step', x: 12, z: -226, length: 22, width: 24, height: 2.5, run: 12 }, // the speed slot, right side only
@@ -166,7 +166,7 @@ export const HOLES = [
     ],
     // a fairway to bail out to, widening from the forward ledge to the wash
     fairways: [{ pts: [[18, -104, 3, 3], [10, -126, 14, 22], [0, -148, 30, 40], [-3, -158, 34, 44]] }],
-    green: { x: -3, z: -212, rx: 16, rz: 25, rot: -0.85, lobes: [[-1, -9, 13, 15, 8], [1, 9, 12, 15, -8], [11, 4, 8, 9, 0]], join: 6, style: 'redan', raise: 0.3, apron: 16, runoff: true, pins: [[-3, -212], [7, -204], [-10, -221], [3, -225]] },
+    green: { shape: [], x: -3, z: -212, rx: 16, rz: 25, rot: -0.85, lobes: [[-1, -9, 13, 15, 8], [1, 9, 12, 15, -8], [11, 4, 8, 9, 0]], join: 6, style: 'redan', raise: 0.3, apron: 16, runoff: true, pins: [[-3, -212], [7, -204], [-10, -221], [3, -225]] },
     bunkers: [{ x: 30, z: -238, rx: 12, rz: 8, rot: -0.6, style: 'flashed' }],
     targets: [{ name: 'Green', pin: true }, { name: 'Bail out short', x: 4, z: -140 }],
     drops: [],
@@ -186,13 +186,14 @@ export const HOLES = [
       { x: -10, z: -232, rx: 92, rz: 206, p: 3, top: 4, depth: 39, kind: 'mesa', seed: 42, slope: { from: [0, -40, 0], to: [0, -150, 4] }, trees: 50 },
     ],
     fairways: [{ pts: [[0, -108, 10, 10], [0, -174, 14, 14], [-4, -212, 25, 33], [-16, -248, 21, 30], [-32, -280, 19, 22], [-46, -303, 11, 11]] }],
-    green: { x: -62, z: -327, rx: 16, rz: 13, lobes: [[0, 1, 9, 18, -32], [7, 5, 6, 6, 0], [-6, -5, 6, 6, 0]], join: 4, style: 'tiered', tiers: [{ b: 1, step: 0.8 }], apron: 10, runoff: true, pins: [[-57.2, -322.9], [-69.1, -330.9], [-58.6, -334.9], [-65.4, -319.1]] },
+    green: { shape: [], x: -62, z: -327, rx: 16, rz: 13, lobes: [[0, 1, 9, 18, -32], [7, 5, 6, 6, 0], [-6, -5, 6, 6, 0]], join: 4, style: 'tiered', tiers: [{ b: 1, step: 0.6 }], apron: 10, runoff: true, pins: [[-57.2, -322.9], [-69.1, -330.9], [-58.6, -334.9], [-65.4, -319.1]] },
     bunkers: [
       { x: -38, z: -246, rx: 13, rz: 7, rot: 0.6, style: 'flashed', toward: [0, -180] },
       { x: -74, z: -319.7, rx: 5, rz: 6, style: 'grass' }, { x: -49.6, z: -324, rx: 4, rz: 3, style: 'pot' }, { x: 22, z: -228, rx: 14, rz: 6, rot: -0.35, style: 'flashed', toward: [0, -100] },
     ],
     landforms: [
       { type: 'ridge', x: 12, z: -236, rot: -0.3, length: 50, width: 16, height: 1.4 },
+      { type: 'tilt', x: 0, z: -235, length: 90, width: 90, grade: 3 },   // the landing area leans left, away from the arch's right foot
       { type: 'swale', x: -52.6, z: -311.6, rot: -0.547 + Math.PI / 2, length: 34, width: 10, height: 0.7 },
       // the bench: the last 50 m climb 8 m up onto a higher level of the mesa, wall to wall
       { type: 'step', x: -36, z: -284, from: [-20, -258], length: 54, width: 190, height: -8, run: 400 },
@@ -228,13 +229,13 @@ export const HOLES = [
       { x: 92, z: -505, rx: 36, rz: 42, p: 2.6, top: 40, depth: 40, kind: 'rock', seed: 56 },
     ],
     fairways: [{ pts: [[1, -112, 11, 11], [5, -165, 18, 14], [18, -232, 25, 25], [34, -282, 22, 20], [38, -308, 19, 17]] }, { pts: [[43, -344, 21, 19], [44, -375, 23, 18], [38, -420, 13, 11], [33, -452, 11, 11]] }],
-    green: { x: 26, z: -485, rx: 15, rz: 13, lobes: [[0, 0, 8, 19, -45], [-4, -5, 7.5, 7.5, 0]], join: 4, style: 'crowned', pins: [[26, -485], [20, -489], [32, -481], [24, -479]] },
+    green: { shape: [], x: 26, z: -485, rx: 15, rz: 13, lobes: [[0, 0, 8, 19, -45], [-4, -5, 7.5, 7.5, 0]], join: 4, style: 'crowned', crown: 0.15, pins: [[26, -485], [20, -489], [32, -481], [24, -479]] },
     bunkers: [
       { x: 40, z: -330, rx: 28, rz: 6, rot: 0.1, style: 'waste' },
       { x: 43, z: -476, rx: 5, rz: 4, style: 'flashed' }, { x: 12, z: -495, rx: 4, rz: 3.5, style: 'pot' }, { x: 12, z: -292, rx: 13, rz: 6, rot: 0.4, style: 'flashed', toward: [5, -170] }, { x: 54, z: -428, rx: 12, rz: 6, rot: -0.2, style: 'flashed', toward: [26, -485] },
     ],
     landforms: [
-      { type: 'tilt', x: 10, z: -215, length: 80, width: 44, grade: 4 },
+      { type: 'tilt', x: 10, z: -215, length: 80, width: 70, grade: 5.5 },
       // the switchbacks: two ramps of 6 m at the bends, wall to wall
       { type: 'step', x: 12, z: -205, from: [4, -160], length: 56, width: 250, height: -6, run: 900 },
       { type: 'step', x: 42, z: -398, from: [44, -350], length: 56, width: 250, height: -6, run: 900 },
@@ -261,7 +262,7 @@ export const HOLES = [
       { x: -20, z: -176, rx: 102, rz: 72, p: 3, top: -12, depth: 128, kind: 'mesa', seed: 63, trees: 26 },
     ],
     fairways: [{ pts: [[-2, -112, 10], [-1, -136, 14]] }],
-    green: { x: 0, z: -170, rx: 13, rz: 22, rot: 0, lobes: [[1, -11, 13, 12, 0], [0, 11, 12, 12, 0]], join: 9, style: 'biarritz', apron: 11, runoff: true, pins: [P6, [-3, -180], [5, -155], [4, -186]] },
+    green: { shape: [], x: 0, z: -170, rx: 13, rz: 22, rot: 0, lobes: [[1, -11, 13, 12, 0], [0, 11, 12, 12, 0]], join: 9, style: 'biarritz', apron: 11, runoff: true, pins: [P6, [-3, -180], [5, -155], [4, -186]] },
     bunkers: [{ x: -18, z: -170, rx: 3, rz: 14, style: 'flashed', toward: [0, -170] }, { x: 17, z: -166, rx: 3, rz: 12, style: 'flashed', toward: [0, -170] }],
     targets: [{ name: 'Green', pin: true }],
     drops: [[0, -120], [-28, -116]],
@@ -286,7 +287,7 @@ export const HOLES = [
       { pts: [[-46, -152, 10, 10], [-50, -178, 22, 21], [-52, -225, 23, 22], [-48, -265, 18, 18], [-42, -282, 9, 9]] }, // the plateau
       { pts: [[22, -250, 16, 16], [26, -270, 23, 22], [26, -290, 18, 18]] },                                             // receiving fairway
     ],
-    green: { x: 23, z: -320, rx: 20, rz: 14, rot: 0.15, lobes: [[-9, -4, 11, 11, 20], [9, 3, 11, 10, -20]], join: 6, style: 'tiered', tiers: [{ b: 0, step: 0.6, axis: 'u' }], side: 1, apron: 10, runoff: true, pins: [[18, -312], [30, -318], [12, -324], [34, -327]] },
+    green: { shape: [], x: 23, z: -320, rx: 20, rz: 14, rot: 0.15, lobes: [[-9, -4, 11, 11, 20], [9, 3, 11, 10, -20]], join: 6, style: 'tiered', tiers: [{ b: 0, step: 0.6, axis: 'u' }], side: 1, apron: 10, runoff: true, pins: [[18, -312], [30, -318], [12, -324], [34, -327]] },
     bunkers: [
       { x: -92, z: -180, rx: 16, rz: 120, style: 'flashed', toward: [-50, -200] }, // the huge fairway bunker below the plateau's left edge
       { x: -29, z: -300, rx: 12, rz: 24, style: 'flashed', toward: [23, -320] },   // front left of the green
@@ -320,9 +321,9 @@ export const HOLES = [
     ],
     rockfalls: [{ x: -14, z: -70, rx: 44, rz: 5, toward: [-14, -58], height: 3.5, n: 30, size: [0.4, 2.2] }], // rock fallen from the ledge's face
     fairways: [{ pts: [[-3, -150, 15, 13], [-5, -185, 27, 23], [-2, -228, 27, 22], [0, -250, 15, 9]] }, { pts: [[4, -305, 15, 14], [9, -338, 22, 20], [15, -372, 13, 12]] }],
-    green: { x: 22, z: -412, rx: 16, rz: 14, lobes: [[1, 0, 9, 18, 35], [-7, 6, 7, 6, 0], [7, -6, 6, 5, 0]], join: 2.5, style: 'tilt', tilt: 2.2, apron: 12, runoff: true, pins: [[22, -412], [16, -418], [28, -406], [25, -420]] },
+    green: { x: 22, z: -412, rx: 16, rz: 14, lobes: [[1, 0, 9, 18, 35], [-7, 6, 7, 6, 0], [7, -6, 6, 5, 0]], join: 2.5, style: 'tilt', tilt: 2, shape: [{ bowl: [-6, 6], r: 9, h: 0.3 }], apron: 12, runoff: true, pins: [[22, -412], [16, -418], [28, -406], [25, -420]] },
     bunkers: [{ x: 36, z: -364, rx: 13, rz: 9, rot: 0.5, style: 'flashed', toward: [22, -412] }],
-    landforms: [{ type: 'ridge', x: -5, z: -205, length: 50, width: 12, height: 1.1 }],
+    landforms: [{ type: 'ridge', x: -5, z: -205, length: 50, width: 12, height: 1.1 }, { type: 'tilt', x: -5, z: -220, length: 90, width: 90, grade: -3 }],
     targets: [{ name: 'Fairway', x: -5, z: -215 }, { name: 'Lay up', x: 8, z: -335 }, { name: 'Green', pin: true }],
     drops: [],
     props: [
@@ -359,7 +360,7 @@ export const HOLES = [
       { x: -150, z: -240, rx: 60, rz: 230, p: 3, top: 40, depth: 40, kind: 'rock', seed: 96 },
     ],
     fairways: [{ pts: [[-1, -108, 14, 14], [-4, -160, 24, 24], [-3, -198, 25, 25]] }, { pts: [[-2, -210, 27, 27], [6, -250, 23, 27], [15, -290, 19, 19]] }, { pts: [[20, -304, 22, 22], [28, -336, 20, 20], [22, -366, 16, 16]] }, { pts: [[17, -384, 14, 14], [8, -418, 16, 16], [0, -448, 13, 13]] }],
-    green: { x: -6, z: -468, rx: 15, rz: 12, lobes: [[0, -5, 15, 7.5, 0], [2, 6, 7, 13, 35]], join: 5, style: 'plateau', raise: 1.2, falseFront: 0.6, pins: [[-6, -468], [-13, -461], [-2, -463], [-4, -477]] },
+    green: { shape: [], x: -6, z: -468, rx: 15, rz: 12, lobes: [[0, -5, 15, 7.5, 0], [2, 6, 7, 13, 35]], join: 5, style: 'plateau', raise: 1.2, falseFront: 0.6, pins: [[-6, -468], [-13, -461], [-2, -463], [-4, -477]] },
     bunkers: [
       { x: -24, z: -462, rx: 5, rz: 4, style: 'flashed' }, { x: 10, z: -476, rx: 4, rz: 3.5, style: 'pot' },
       { x: 24, z: -182, rx: 13, rz: 6, rot: 0.1, style: 'grass', toward: [0, -100] }, { x: 29, z: -420, rx: 12, rz: 7, rot: 0.3, style: 'grass', toward: [24, -330] }, { x: -1, z: -330, rx: 13, rz: 6, rot: -0.3, style: 'flashed', toward: [6, -262] },
