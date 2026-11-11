@@ -48,6 +48,10 @@ course against these two rows as well; replace them with the measured rows when 
   first view of the valley from above); the drivable par 4 is the 8th; a reachable par 5 finishes at the shelf
   green under the Great Falls. First par 37, first with three par 5s, first not to finish with a climb. Same par
   as another course on four holes at most (Red Mesa).
+  Routing check sent 11 November 2026 (`tools/lostvalley/`): the ledge moved to the east wall with its ramp at the
+  south end; Titan 3,395 yd, 4R 5R 4L 3 5L 4↑ 3↓ 4d 5L, forms fan, broken, island, split, funnel, split,
+  scalloped; classics Long (2), Short (4), Eden (7), Leven (8). The measured row replaces this one when Rhys
+  approves the layout.
 - Against each other they share a par on two holes.
 
 **Not yet used, so open to the next course (after those two):** par 35; one or three par 3s; one par 5; a par 3

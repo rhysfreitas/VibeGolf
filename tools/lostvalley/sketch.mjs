@@ -465,7 +465,7 @@ function renderView(hi, view) {
   }
   // the skeleton in the Bone Bluff's face: a long-neck's spine curving along the rock, ribs, the neck up the face
   {
-    const toward = WOR[6](...at(HOLES[6].line, 150)), ux = toward[0] - BLUFF.c[0], uz = toward[1] - BLUFF.c[1], ul = Math.hypot(ux, uz);
+    const kS = HOLES.findIndex(q => q.skeleton), toward = WOR[kS](...at(HOLES[kS].line, 150)), ux = toward[0] - BLUFF.c[0], uz = toward[1] - BLUFF.c[1], ul = Math.hypot(ux, uz);
     let F = null; for (let r = 0; r < 200; r += 1) { const X = BLUFF.c[0] + ux / ul * r, Z = BLUFF.c[1] + uz / ul * r; if (bluffD(X, Z) > 0.97) { F = [X, Z]; break; } }
     if (F) {
       const tx = -uz / ul, tz = ux / ul, out = [ux / ul, uz / ul], foot = V(F[0] + out[0] * 6, F[1] + out[1] * 6);
@@ -588,12 +588,12 @@ export function viewsFor(hi) {
   for (const f of h.forms || []) if (f.label) labelSet.push(L3(f.at, f.label, -36, f.h));
   if (h.strangler) labelSet.push(L3(h.strangler.trunk, 'the Strangler', -80, 40));
   if (h.spire) labelSet.push(L3(h.spire.at, 'the spire', -40, h.spire.h - 26));
-  for (const [wp, t, up] of [[[TAR.c[0], TAR.c[1]], 'the tar pit', 1], [POOL.c, 'the plunge pool', 1], [[BLUFF.c[0], BLUFF.c[1]], 'the Bone Bluff', 34], [[-34, -242], 'the creek', 2], [BACKCH.pond.c, 'the oxbow', 2], [[(BRIDGE.a[0] + BRIDGE.b[0]) / 2, (BRIDGE.a[1] + BRIDGE.b[1]) / 2], 'the rope bridge', 3],
-    [[360, -560], 'the swamp', 1], [[455, -1200], 'the river', 1], [[520, -940], 'the river', 1], [[50, 70], 'the camp', 4], [[200, 92], 'Camp Falls', 30], [[520, -1630], 'the Great Falls', 80]]) {
+  for (const [wp, t, up] of [[[TAR.c[0], TAR.c[1]], 'the tar pit', 1], [POOL.c, 'the plunge pool', 1], [[BLUFF.c[0], BLUFF.c[1]], 'the Bone Bluff', 34], [[690, -756], 'the creek', 2], [BACKCH.pond.c, 'the oxbow', 2], [[(BRIDGE.a[0] + BRIDGE.b[0]) / 2, (BRIDGE.a[1] + BRIDGE.b[1]) / 2], 'the rope bridge', 3],
+    [[360, -580], 'the swamp', 1], [[455, -1200], 'the river', 1], [[520, -940], 'the river', 1], [[-120, -1180], 'the camp', 4], [[952, -694], 'Nest Falls', 30], [[520, -1630], 'the Great Falls', 80]]) {
     const p = here(...wp), pr = project(h.line, ...p); if (pr.d < 300 && pr.s > -80 && pr.s < h.len + 120) labelSet.push(L3(p, t, -40, up));
   }
   // the herd and the hunter, labelled wherever they show
-  labelSet.push(L3(here(-150, -1100), 'the herd', -34, 14), L3(here(-330, -1250), 'the hunter', -34, 6), L3(here(460, -1205), 'long-necks wading', -34, 12), L3(here(890, -1270), 'the east herd', -34, 14));
+  labelSet.push(L3(here(120, -220), 'the herd', -34, 14), L3(here(-110, -280), 'the hunter', -34, 6), L3(here(460, -1205), 'long-necks wading', -34, 12), L3(here(890, -1270), 'the east herd', -34, 14));
   const v = [];
   if (h.par === 3) {
     v.push({ id: 'tee', title: 'From the back tee', pos: eye(tee, pin), look: look(tee, pin, 6) });

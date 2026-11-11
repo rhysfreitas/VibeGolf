@@ -189,9 +189,9 @@ else: d = (hh_ / asp - w) / 2; x0 -= d; x1 += d
 ax.set_xlim(x0, x1); ax.set_ylim(z1, z0); ax.set_aspect('equal'); ax.axis('off')
 ax.plot([x0 + 40, x0 + 240], [z1 - 40, z1 - 40], color=INK, lw=2); ax.text(x0 + 140, z1 - 55, '200 m', fontsize=7, ha='center', bbox=dict(boxstyle='round,pad=0.2', fc='white', ec='none', alpha=0.85))
 ax.annotate('N', xy=(x1 - 50, z0 + 30), xytext=(x1 - 50, z0 + 90), fontsize=8, ha='center', arrowprops=dict(arrowstyle='-|>', color=INK))
-for p_, t_ in (((70, 140), 'the camp'), ((200, 150), 'Camp Falls'), ((560, -1690), 'the Great Falls'), ((500, -1520), 'plunge pool'), ((520, -1440), 'rope bridge'),
-               ((140, -670), 'tar pit'), ((300, -620), 'the swamp'), ((470, -1100), 'the river'), ((735, -1010), 'the Bone Bluff'), ((-150, -1200), 'the plain herd'),
-               ((880, -1330), 'east meadow herd'), ((-330, -1290), 'the hunter'), ((330, -60), 'the ramp'), ((-120, -60), 'the bluff')):
+for p_, t_ in (((-150, -1230), 'the camp'), ((960, -660), 'Nest Falls'), ((560, -1690), 'the Great Falls'), ((560, -1600), 'plunge pool'), ((410, -1440), 'rope bridge'),
+               ((-120, -500), 'tar pit'), ((300, -620), 'the swamp'), ((470, -1100), 'the river'), ((-60, -720), 'the Bone Bluff'), ((60, -230), 'the plain herd'),
+               ((880, -1330), 'east meadow herd'), ((-110, -280), 'the hunter'), ((660, -460), 'the ramp'), ((900, -880), 'the ledge'), ((180, -840), 'the oxbow')):
     label(ax, p_, t_, fs=6.5)
 fig.savefig(f'{OUT}/map.png', facecolor='white'); plt.close(fig)
 # green diagrams: the approach comes up from the bottom; contours every 5 cm (bold every 25), arrows downhill

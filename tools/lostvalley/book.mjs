@@ -15,15 +15,11 @@ const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : nul
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const img = f => `file://${OUT}/${f}`;
 const shape = h => {
-  if (h.n === 6) return 'Straight, drivable';
-  if (h.n === 9) return 'Sidehill climb';
+  if (h.shape) return h.shape;   // round 3 on: each hole names its own shape in holes.mjs
   const L = h.line; if (L.length < 3) return h.par === 3 ? 'One shot' : 'Straight';
   const turns = []; for (let i = 1; i < L.length - 1; i++) { const a = [L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]], b = [L[i + 1][0] - L[i][0], L[i + 1][1] - L[i][1]];
     // x right, -z downrange: a right turn has a positive cross product
     const cr = a[0] * b[1] - a[1] * b[0]; turns.push(cr > 0 ? 'R' : 'L'); }
-  if (h.n === 7) return 'Cape right round the river';
-  if (h.n === 6) return 'Straight, drivable';
-  if (h.n === 9) return 'Sidehill climb';
   return turns.length === 1 ? `Dogleg ${turns[0] === 'R' ? 'right' : 'left'}` : turns.join('') === 'LR' ? 'S-bend (left, then right)' : turns.join('') === 'RL' ? 'S-bend (right, then left)' : 'Bends ' + turns.join(' ');
 };
 const lines = n => Array.from({ length: n }, () => '<div class="rule"></div>').join('');
@@ -146,7 +142,7 @@ for (const h of D.holes) {
       <div class="side">
         <p>${esc(w.plays)}</p>
         <p class="kv"><b>Safe</b> ${esc(w.safe)}</p>
-        <p class="kv"><b>Bold</b> ${esc(w.bold)}</p>
+        ${w.bold ? `<p class="kv"><b>Bold</b> ${esc(w.bold)}</p>` : ''}
         <p class="kv"><b>A miss</b> ${esc(w.miss)}</p>
         ${h.targets.length ? `<p class="kv"><b>Targets</b> ${h.targets.map(t => `${esc(t.name)} (${t.d} yd, ${t.width} m wide)`).join(' · ')}</p>` : ''}
         <p class="kv"><b>Green</b> ${esc(h.green.style)} (${h.greenShape.depth} m deep × ${h.greenShape.width} m wide, ${h.greenArea} m²).</p>

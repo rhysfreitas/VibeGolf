@@ -7,7 +7,7 @@
 import { project, seDist, seOutline, rectPts, inPoly, smooth, clamp, at, rnd, distLine, headingAt, lerp, lengthOf } from './geo.mjs';
 import { makeGreen, makeFairway, noise1, noise2 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { V, cutAt, standAt, waterAt, nativeAt, wallD, riverAt, swampD, swampWet, SWAMP, LEDGE, CAMP_FALLS } from './world.mjs';
+import { V, cutAt, standAt, waterAt, nativeAt, wallD, riverAt, swampD, swampWet, SWAMP } from './world.mjs';
 
 export const SURF = ['meadow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'waste', 'bar', 'water', 'tar', 'cliff', 'jungle', 'mud', 'gravel', 'rubble', 'camp', 'void'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
@@ -222,7 +222,7 @@ export function buildHole(h) {
     objs.push({ kind: 'strangler', x: tx, z: tz, r: S.r, h: S.h, canopy: S.canopy, base: by - 0.5, label: S.label });
     objs.push({ kind: 'arch', a: [tx, tz, by], b: [fx, fz, fy], crown: S.arch.crown, t: S.arch.t, w: 4.5 });
   }
-  // the 9th's camp is drawn from world.mjs (CAMP); the 7th's skeleton and the 3rd's bones likewise
+  // the camp is drawn from life.mjs (CAMP); the Bone Bed's skeleton and the tar pit's bones from world.mjs likewise
 
   // solid intervals over a point: what a ball at (x, z) could hit above the ground
   const archAt = (o, x, z) => {   // the root arch as a curve from the trunk to the foot, w wide; [bottom, top] or null

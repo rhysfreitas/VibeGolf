@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE, BACK } from './holes.mjs';
 import { BUILT, SURF, toWorld, worldAt, WL, LOC, WOR } from './scene.mjs';
-import { V, RIVER, POOL, TAR, SWAMP, BLUFF, BRIDGE, LEDGE, CAMP_FALLS, GREAT_FALLS, BACKCH } from './world.mjs';
+import { V, RIVER, POOL, TAR, SWAMP, BLUFF, BRIDGE, LEDGE, NEST_FALLS, GREAT_FALLS, BACKCH } from './world.mjs';
 import { CAMP, LIFE } from './life.mjs';
 import { project, at, lengthOf, YD, headingAt } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
@@ -68,7 +68,7 @@ for (const [i, B] of BUILT.entries()) {
   if (h.step) L_(at(h.line, h.step.s, -52), h.step.label);
   // the valley's features labelled where they are in this hole's frame
   const feats = [[[TAR.c[0], TAR.c[1] - 26], 'the tar pit'], [POOL.c, 'the plunge pool'], [[BLUFF.c[0], BLUFF.c[1]], 'the Bone Bluff'], [[(BRIDGE.a[0] + BRIDGE.b[0]) / 2, (BRIDGE.a[1] + BRIDGE.b[1]) / 2 - 14], 'the rope bridge'],
-    [[350, -560], 'the swamp'], [[-60, -268], 'the creek'], [[160, -88], 'the creek'], [[-104, -470], 'the creek'], [[-92, -620], 'the pond'], [[372, -1066], 'the back channel'], [[196, -1062], 'the oxbow'], [[470, -1250], 'the river'], [[520, -950], 'the river'], [[110, 80], 'the camp'], [CAMP_FALLS.pool.c, 'Camp Falls'], [GREAT_FALLS.foot, 'the Great Falls'], [[450, -1500], 'the gorge']];
+    [[360, -580], 'the swamp'], [[690, -756], 'the creek'], [[580, -880], 'the creek'], [[372, -800], 'the back channel'], [BACKCH.pond.c, 'the oxbow'], [[470, -1250], 'the river'], [[520, -950], 'the river'], [[-120, -1180], 'the camp'], [NEST_FALLS.pool.c, 'Nest Falls'], [[880, -820], 'the ledge'], [[690, -490], 'the ramp'], [GREAT_FALLS.foot, 'the Great Falls'], [[476, -1480], 'the gorge']];
   for (const [wp, t] of feats) { const p = LOC[i](...wp), pr = project(h.line, ...p); if (Math.abs(pr.off) < 170 && pr.s > -60 && pr.s < h.len + 80) L_(p, t); }
   const cr = [];
   const wobjs = [];
@@ -82,7 +82,7 @@ for (const [i, B] of BUILT.entries()) {
       if (B.surface(...t.at) === 'fairway') { let a = pr.off, b = pr.off; while (B.surface(...at(h.line, pr.s, a - 0.5)) === 'fairway' && a > pr.off - 120) a -= 0.5; while (B.surface(...at(h.line, pr.s, b + 0.5)) === 'fairway' && b < pr.off + 120) b += 0.5; w = b - a; }
       return { name: t.name, p: t.at, bold: !!t.bold, d: Math.round(Math.hypot(t.at[0] - back[0], t.at[1] - back[1]) / YD), surf: B.surface(...t.at), width: Math.round(w), toPin: Math.round(Math.hypot(t.at[0] - h.pin[0], t.at[1] - h.pin[1]) / YD) };
     }),
-    objs: B.objs, prof, drives, bold, words: h.words, green: h.green, base: h.base, place: h.place, labels });
+    objs: B.objs, prof, drives, bold, words: h.words, card: h.card, shape: h.shape, green: h.green, base: h.base, place: h.place, labels });
 }
 fs.writeFileSync(`${OUT}/holes.json`, JSON.stringify({ SURF, holes: meta, teeSets: COURSE.teeSets }));
 
