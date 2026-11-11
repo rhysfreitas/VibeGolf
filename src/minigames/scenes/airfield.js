@@ -21,8 +21,10 @@ const glowTex = canvasTex(64, 64, (g, w) => { const gr = g.createRadialGradient(
 
 export function createAirfield(container) {
   const st = createStage(container, {
-    turbidity: 6, rayleigh: 2.2, mie: 0.006, mieG: 0.85, elev: 6, az: 200,
-    sunColor: 0xffc890, sunInt: 1.9, exposure: 0.58, hemiSky: 0xb8c4ec, hemiGround: 0x6a5a40, hemiInt: 0.5,
+    // art pass 1: the sun just up, low over the right of the runway, so it rakes across it and every sign,
+    // the plane and the tower throw a long shadow; warm sky that way, a cool blue fill from the rest of it
+    turbidity: 6, rayleigh: 2.4, mie: 0.007, mieG: 0.86, elev: 7, az: 236,
+    sunColor: 0xffb46a, sunInt: 2.6, exposure: 0.6, hemiSky: 0xa9bde6, hemiGround: 0x6a5a40, hemiInt: 0.55,
     fogColor: 0xe6cdb8, fogNear: 260, fogFar: 1700, shadowBox: 130,
   });
   const { scene } = st;
@@ -54,12 +56,19 @@ vec3 grass = mix(lin(vec3(0.34, 0.48, 0.2)), lin(vec3(0.28, 0.42, 0.17)), step(0
 grass *= 0.8 + 0.35 * fine; grass *= 0.85 + 0.3 * fb(p.xz * 0.03);
 // runway: weathered asphalt with patches, tyre marks, edge lines, centreline dashes, threshold keys
 float onRW = step(abs(p.x), ${RW.toFixed(2)}) * step(p.z, ${RZ0.toFixed(1)}) * step(${RZ1.toFixed(1)}, p.z);
-vec3 asph = lin(vec3(0.27, 0.27, 0.29)) * (0.75 + 0.45 * fine) * (0.85 + 0.3 * fb(p.xz * 0.06 + 2.0));
+vec3 asph = lin(vec3(0.34, 0.335, 0.34)) * (0.75 + 0.45 * fine) * (0.85 + 0.3 * fb(p.xz * 0.06 + 2.0));
+// weathered: resurfaced patches, tar-banded cracks, lighter wear down the middle
+float patchId = h21(floor(p.xz / vec2(7.0, 11.0) + vec2(0.0, floor(p.x / 7.0) * 0.5)));
+asph *= mix(1.0, 0.82 + 0.3 * patchId, step(0.72, patchId) * (1.0 - far * 0.5));
+float crack = 1.0 - smoothstep(0.0, 0.006 + px * 0.3, abs(fb(p.xz * 0.23 + 3.0) - 0.5));
+asph = mix(asph, lin(vec3(0.16, 0.16, 0.17)), crack * 0.45 * (1.0 - far));
+asph *= 1.0 + 0.1 * (1.0 - smoothstep(2.0, 9.0, abs(p.x)));
 asph *= 1.0 - 0.25 * smoothstep(0.55, 0.7, fb(vec2(p.x * 0.25, p.z * 0.02) + 5.0)) * (1.0 - smoothstep(4.0, 9.0, abs(p.x))); // tyre-darkened touchdown lanes
 float edge = 1.0 - smoothstep(0.25, 0.25 + px, abs(abs(p.x) - ${(RW - 1).toFixed(2)}));
 float centre = (1.0 - smoothstep(0.2, 0.2 + px, abs(p.x))) * step(0.45, fract(p.z / 12.0)) * step(p.z, -26.0);
 float keys = step(10.0, p.z) * step(p.z, 16.0) * step(0.5, fract((p.x + ${RW.toFixed(2)}) / 3.0)) * step(abs(p.x), ${(RW - 2.5).toFixed(2)});
-float paint = max(max(edge, centre), keys) * (0.75 + 0.25 * fb(p.xz * 3.0));
+float tdz = step(-72.0, p.z) * step(p.z, -50.0) * step(3.0, abs(p.x)) * step(abs(p.x), 9.0) * step(0.34, fract((abs(p.x) - 3.0) / 2.0)); // touchdown-zone bars
+float paint = max(max(max(edge, centre), keys), tdz) * (0.75 + 0.25 * fb(p.xz * 3.0));
 vec3 rw = mix(asph, lin(vec3(0.9, 0.9, 0.86)), paint * (1.0 - far * 0.3));
 // taxiway and apron to the hangars (right) and the tower (left)
 float taxi = step(${RW.toFixed(1)}, p.x) * step(p.x, 95.0) * step(abs(p.z + 70.0), 7.0) + step(55.0, p.x) * step(p.x, 110.0) * step(-135.0, p.z) * step(p.z, -20.0);
@@ -77,6 +86,33 @@ float rough = mix(mix(0.95, 0.85, taxi), 0.8, onRW);
   // the runway number at the threshold, stretched lengthwise like the real thing
   const numTex = (text, colr = 'rgba(240,240,232,0.92)') => canvasTex(256, 256, (g, w, h) => { g.fillStyle = colr; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 200px "Saira Semi Condensed", "Arial Narrow", sans-serif'; g.fillText(text, w / 2, h / 2 + 10); });
   const decal = (tex, w, l, opacity = 1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l), new THREE.MeshStandardMaterial({ map: tex, transparent: true, opacity, depthWrite: false, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2 })); m.rotation.x = -Math.PI / 2; m.receiveShadow = true; return m; };
+
+  // the runway's designator painted big just past the threshold, the way you'd read it rolling out
+  { const rwNum = decal(numTex('27'), 10, 18, 0.8); rwNum.position.set(0, 0.012, -16); scene.add(rwNum); }
+
+  /* ---------------- morning mist lying over the grass (art pass 1) ---------------- */
+  const mistU = { uT: { value: 0 }, uSun: { value: st.sunDir }, ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog) };
+  const mistMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, fog: true, uniforms: mistU,
+    vertexShader: 'varying vec3 vW; \n#include <fog_pars_vertex>\n void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;\n#include <fog_vertex>\n}',
+    fragmentShader: `varying vec3 vW; uniform float uT; uniform vec3 uSun;
+      #include <fog_pars_fragment>
+      ${GLSL_NOISE}
+      void main(){
+        vec2 p = vW.xz * 0.012 + vec2(uT * 0.004, uT * 0.0015);
+        float n = fb(p + fb(p * 0.6) * 1.3);
+        float camD = length(vW - cameraPosition);
+        float a = smoothstep(0.42, 0.78, n) * 0.4 * smoothstep(50.0, 160.0, camD) * (1.0 - smoothstep(${(RW + 2).toFixed(1)}, ${(RW + 30).toFixed(1)}, -abs(vW.x) + ${(RW + 32).toFixed(1)}));
+        vec3 toS = normalize(vec3(uSun.x, 0.0, uSun.z)), v = normalize(vec3(vW.x - cameraPosition.x, 0.0, vW.z - cameraPosition.z));
+        float glow = pow(max(0.0, dot(v, toS)), 4.0);
+        vec3 c = mix(vec3(0.86, 0.84, 0.86), vec3(1.0, 0.82, 0.6), glow);   // lit gold where the sun is behind it
+        gl_FragColor = vec4(c, a);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+        #include <fog_fragment>
+      }`,
+  });
+  for (const y of [0.8, 2.2]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400).rotateX(-Math.PI / 2), mistMat); m.position.set(0, y, -500); m.renderOrder = 1; scene.add(m); }
 
   /* ---------------- landing bands (one per rung; rebuilt per player's difficulty) ---------------- */
   const bandGroup = new THREE.Group(); scene.add(bandGroup);
@@ -235,7 +271,7 @@ float rough = mix(mix(0.95, 0.85, taxi), 0.8, onRW);
 
   /* ---------------- hot-air balloons in the sunrise ---------------- */
   const stripeTex = (a, b) => canvasTex(256, 64, (g, w, h) => { for (let i = 0; i < 12; i++) { g.fillStyle = i % 2 ? a : b; g.fillRect(i * w / 12, 0, w / 12 + 1, h); } });
-  const balloons = [[-140, 90, -560, '#d8342a', '#f2c31a', 1], [120, 60, -640, '#2a6ad8', '#f2efe6', 0.85], [30, 140, -820, '#2fa060', '#f2c31a', 0.9]].map(([x, y, z, a, b, s]) => {
+  const balloons = [[-95, 30, -330, '#d8342a', '#f2c31a', 1], [105, 22, -390, '#2a6ad8', '#f2efe6', 0.9], [30, 44, -470, '#2fa060', '#f2c31a', 0.95], [-210, 36, -520, '#e07a1a', '#3a2a6a', 0.8]].map(([x, y, z, a, b, s]) => { // nearer, so they read
     const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s * 1.6); scene.add(g);
     const env = new THREE.Mesh(new THREE.SphereGeometry(8, 24, 16), new THREE.MeshStandardMaterial({ map: stripeTex(a, b), roughness: 0.6 })); env.scale.y = 1.2; g.add(env);
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 1.2, 4, 16, 1, true), new THREE.MeshStandardMaterial({ map: stripeTex(a, b), roughness: 0.6, side: THREE.DoubleSide })); neck.position.y = -10.5; g.add(neck);
@@ -248,7 +284,7 @@ float rough = mix(mix(0.95, 0.85, taxi), 0.8, onRW);
   return {
     ...st, groundAt, surfaceAt, setBands, markLanding, clearMarks,
     animate(clock, dt) {
-      for (const b of bands) b.m.uniforms.uT.value = clock;
+      for (const b of bands) b.m.uniforms.uT.value = clock; mistU.uT.value = clock;
       // the live band's lights pulse in sequence toward the band
       if (live) for (let k = 0; k < NBL; k++) { const u = blGlows[k].userData, on = 0.6 + 0.4 * Math.sin(clock * 4 + (u.j || 0) * 0.5); blM.setColorAt(k, col.set(u.near ? 0x5aff7a : 0xff4a3a).multiplyScalar(1 + on)); blGlows[k].material.opacity = 0.45 + 0.45 * on; }
       floatNum.position.y += Math.sin(clock * 2) * 0.004;
