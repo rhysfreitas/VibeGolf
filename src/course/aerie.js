@@ -51,9 +51,10 @@ export const HOLES = [
       {"pts":[[46,-304,11],[72,-312,15],[104,-326,11]]},
     ],
     landforms: [
+      { type: "tilt", x: -4, z: -215, length: 90, width: 70, grade: 3 },
       {"type":"swale","x":-4,"z":-218,"rot":0.08,"length":120,"width":56,"height":0.9},
     ],
-    green: {"x":80,"z":-344,"rx":16,"rz":14,"lobes":[[0,0,9,15,-30],[7,3,7,7,0],[-7,-3,6,6,0],[1,8,7,6,0]],"join":3,"style":"tilt","tilt":2,"apron":6,"runoff":true,"from":[40,-260],"pins":[[82,-346],[74,-340],[86,-352],[78,-336]]},
+    green: {"x":80,"z":-344,"rx":16,"rz":14,"lobes":[[0,0,9,15,-30],[7,3,7,7,0],[-7,-3,6,6,0],[1,8,7,6,0]],"join":3,"style":"tilt","tilt":2,"apron":6,"runoff":true,"from":[40,-260],"pins":[[82,-346],[74,-340],[86,-352],[78,-336]],"shape":[{"tier":[0,-2.5],"up":180,"h":0.4,"w":4}]},
     bunkers: [
       {"x":64,"z":-354,"rx":5,"rz":4,"style":"flashed","toward":[80,-344]},
       {"x":-17,"z":-272,"rx":11,"rz":6,"rot":0.3,"style":"flashed","toward":[0,0]},
@@ -94,7 +95,7 @@ export const HOLES = [
     fairways: [
       {"pts":[[-52,-104,13],[-38,-116,12]]},
     ],
-    green: {"x":-8,"z":-153,"rx":15,"rz":13,"lobes":[[0,0,9,15,30],[-9,3,6,6,0],[2,8,6,5,0]],"join":4,"style":"tiered","tiers":[{"b":1,"step":0.7}],"apron":7,"runoff":true,"pins":[[-4,-157],[-12,-148],[-6,-161],[-18,-156]]},
+    green: {"x":-8,"z":-153,"rx":15,"rz":13,"lobes":[[0,0,9,15,30],[-9,3,6,6,0],[2,8,6,5,0]],"join":4,"style":"tiered","tiers":[{"b":1,"step":0.5}],"apron":7,"runoff":true,"pins":[[-4,-157],[-12,-148],[-6,-161],[-18,-156]],"shape":[]},
     bunkers: [
       {"x":9,"z":-141,"rx":5,"rz":4,"style":"flashed","toward":[-8,-153]},
       {"x":-24,"z":-164,"rx":3.5,"rz":3,"style":"pot"},
@@ -145,7 +146,7 @@ export const HOLES = [
       {"type":"mound","x":8,"z":-354,"length":24,"width":24,"height":9},
     ],
     water: [{"x":-23,"z":-470,"rx":10,"rz":20,"depth":1.2}],
-    green: {"x":18,"z":-464,"rx":15,"rz":15,"lobes":[[0,0,8,18,-45],[5,5,6,6,0],[-4,-6,6,6,0]],"join":4,"style":"crowned","runoff":true,"pins":[[23,-469],[14,-458],[12,-470],[24,-459]]},
+    green: {"x":18,"z":-464,"rx":15,"rz":15,"lobes":[[0,0,8,18,-45],[5,5,6,6,0],[-4,-6,6,6,0]],"join":4,"style":"crowned","runoff":true,"pins":[[23,-469],[14,-458],[12,-470],[24,-459]],"shape":[],"crown":0.15},
     bunkers: [
       {"x":1,"z":-450,"rx":5,"rz":4,"style":"flashed","toward":[18,-464]},
       {"x":31,"z":-212,"rx":10,"rz":6,"rot":-0.1,"style":"flashed","toward":[0,4]},
@@ -188,7 +189,8 @@ export const HOLES = [
       {"pts":[[-16,-230,10],[-32,-242,9]]},
       {"pts":[[-2,-240,13],[0,-268,15],[-6,-296,9]]},
     ],
-    green: {"x":-44,"z":-264,"rx":14,"rz":13,"lobes":[[-8,1,7,7,0],[8,1,7,7,0],[0,9,7,6,0],[0,-5,8,7,0]],"join":4,"style":"plateau","falseFront":1,"runoff":true,"from":[-6,-176],"pins":[[-44,-266],[-50,-260],[-38,-270],[-46,-274]]},
+    landforms: [{ type: "tilt", x: -6, z: -190, length: 90, width: 60, grade: -3 }],
+    green: {"x":-44,"z":-264,"rx":14,"rz":13,"lobes":[[-8,1,7,7,0],[8,1,7,7,0],[0,9,7,6,0],[0,-5,8,7,0]],"join":4,"style":"plateau","falseFront":1,"runoff":true,"from":[-6,-176],"pins":[[-44,-266],[-50,-260],[-38,-270],[-46,-274]],"shape":[]},
     bunkers: [
       {"x":-62,"z":-248,"rx":5,"rz":4,"style":"flashed","toward":[-44,-264]},
       {"x":-27,"z":-252,"rx":3.5,"rz":3,"style":"pot"},
@@ -229,11 +231,12 @@ export const HOLES = [
       {"pts":[[84,-192,22],[104,-214,28],[118,-248,20],[122,-290,12]]},
     ],
     landforms: [
+      { type: "tilt", x: 0, z: -230, length: 90, width: 70, grade: 3 },
       {"type":"step","x":-2,"z":-205,"rot":0,"length":14,"width":52,"height":0.8,"run":20},
       {"type":"step","x":2,"z":-245,"rot":0,"length":14,"width":52,"height":0.8,"run":20},
       {"type":"bowl","x":104,"z":-220,"rot":-0.3,"length":60,"width":60,"height":1.2},
     ],
-    green: {"x":130,"z":-332,"rx":23,"rz":11.5,"lobes":[[-12,1,10,8,15],[0,-2,11,8,0],[12,1,10,8,-15]],"join":5,"style":"tiered","tiers":[{"b":0,"step":0.7,"axis":"u"}],"runoff":true,"from":[104,-214],"pins":[[118.7,-336.5],[140.1,-326.7],[124.2,-329.2],[136.7,-334.6]]},
+    green: {"x":130,"z":-332,"rx":23,"rz":11.5,"lobes":[[-12,1,10,8,15],[0,-2,11,8,0],[12,1,10,8,-15]],"join":5,"style":"tiered","tiers":[{"b":0,"step":0.5,"axis":"u"}],"runoff":true,"from":[104,-214],"pins":[[118.7,-336.5],[140.1,-326.7],[124.2,-329.2],[136.7,-334.6]],"shape":[]},
     bunkers: [
       {"x":110,"z":-318,"rx":10,"rz":3.5,"rot":0.6,"style":"flashed","toward":[130,-332]},
       {"x":-24,"z":-262,"rx":12,"rz":6,"rot":0.4,"style":"flashed","toward":[0,21]},
@@ -270,7 +273,7 @@ export const HOLES = [
     landforms: [
       {"type":"mound","x":0,"z":-114,"length":58,"width":58,"height":1.8},
     ],
-    green: {"x":0,"z":-114,"rx":14,"rz":12,"lobes":[[-8,1,8,8,-25],[8,1,8,8,25],[0,-3,9,7,0]],"join":3,"style":"punchbowl","apron":12,"runoff":true,"pins":[[0,-114],[-6,-110],[5,-118],[3,-108]]},
+    green: {"x":0,"z":-114,"rx":14,"rz":12,"lobes":[[-8,1,8,8,-25],[8,1,8,8,25],[0,-3,9,7,0]],"join":3,"style":"punchbowl","apron":12,"runoff":true,"pins":[[0,-114],[-6,-110],[5,-118],[3,-108]],"shape":[]},
     bunkers: [],
     pin: [0,-114],
     corridor: 9999,
@@ -317,12 +320,13 @@ export const HOLES = [
       {"pts":[[-36,-306,11],[-56,-312,14],[-76,-318,10]]},
     ],
     landforms: [
+      { type: "tilt", x: -8, z: -230, length: 100, width: 80, grade: 6.5 },
       {"type":"mound","x":92,"z":-232,"length":100,"width":70,"height":14},
       {"type":"mound","x":-116,"z":-416,"length":34,"width":34,"height":12},
       {"type":"mound","x":-20,"z":-430,"length":40,"width":44,"height":16},
       {"type":"mound","x":-63,"z":-464,"length":30,"width":34,"height":18},
     ],
-    green: {"x":-69,"z":-354,"rx":15,"rz":14,"lobes":[[0,-1,10,16,25],[5,-8,7,6,0],[-7,-4,7,6,0]],"join":3,"style":"tilt","tilt":1.8,"side":-1,"runoff":true,"from":[-6,-215],"pins":[[-65,-358],[-73,-348],[-61,-348],[-73,-360]]},
+    green: {"x":-69,"z":-354,"rx":15,"rz":14,"lobes":[[0,-1,10,16,25],[5,-8,7,6,0],[-7,-4,7,6,0]],"join":3,"style":"tilt","tilt":1.8,"side":-1,"runoff":true,"from":[-6,-215],"pins":[[-65,-358],[-73,-348],[-61,-348],[-73,-360]],"shape":[{"bowl":[-6.1,-3.8],"r":9,"h":0.3}]},
     bunkers: [
       {"x":-90,"z":-338,"rx":5,"rz":4,"style":"flashed","toward":[-69,-354]},
       {"x":-34,"z":-205,"rx":12,"rz":6,"rot":0.05,"style":"flashed","toward":[0,12]},
@@ -364,11 +368,12 @@ export const HOLES = [
       {"pts":[[0,-165,18,16],[2,-205,24,32],[3,-255,31,24],[2,-300,16,18]]},
     ],
     landforms: [
+      { type: "tilt", x: 2, z: -250, length: 90, width: 60, grade: -3 },
       {"type":"ridge","x":1,"z":-200,"rot":0,"length":70,"width":22,"height":1.2},
       {"type":"swale","x":2,"z":-232,"rot":0,"length":70,"width":20,"height":0.9},
       {"type":"ridge","x":3,"z":-266,"rot":0,"length":60,"width":22,"height":1.4},
     ],
-    green: {"x":-22,"z":-400,"rx":17,"rz":14,"lobes":[[-9,3,8,11,0],[9,1,8,11,0],[0,-6,11,7,0]],"join":3,"style":"tiered","tiers":[{"b":0,"step":0.7,"axis":"u"}],"swale":{"b":0,"depth":0.5,"width":5},"runoff":true,"from":[2,-235],"pins":[[-12,-396],[-34,-398],[-16,-408],[-32,-408]]},
+    green: {"x":-22,"z":-400,"rx":17,"rz":14,"lobes":[[-9,3,8,11,0],[9,1,8,11,0],[0,-6,11,7,0]],"join":3,"style":"tiered","tiers":[{"b":0,"step":0.45,"axis":"u"}],"runoff":true,"from":[2,-235],"pins":[[-12,-396],[-34,-398],[-16,-408],[-32,-408]],"shape":[]},
     bunkers: [
       {"x":-42,"z":-388,"rx":5,"rz":4,"style":"flashed","toward":[-22,-400]},
       {"x":-2,"z":-386,"rx":5,"rz":4,"style":"grass","toward":[-22,-400]},
@@ -422,11 +427,12 @@ export const HOLES = [
       {"pts":[[-20,-350,20],[-24,-392,26],[-22,-428,16],[-18,-446,20],[-12,-460,14]]},
     ],
     landforms: [
+      { type: "tilt", x: -4, z: -230, length: 90, width: 70, grade: 3.5 },
       {"type":"mound","x":50,"z":-244,"length":120,"width":46,"height":8},
       {"type":"ridge","x":-20,"z":-432,"rot":0.15,"length":64,"width":20,"height":5},
       {"type":"mound","x":-12,"z":-572,"length":92,"width":116,"height":42},
     ],
-    green: {"x":-10,"z":-480,"rx":16,"rz":14,"lobes":[[0,0,9,17,-32],[5,6,6,6,0],[-4,-6,6,6,0]],"join":3,"style":"tilt","tilt":1,"apron":6,"runoff":true,"from":[-24,-392],"pins":[[-10,-480],[-15,-476],[-5,-485],[-8,-474]]},
+    green: {"x":-10,"z":-480,"rx":16,"rz":14,"lobes":[[0,0,9,17,-32],[5,6,6,6,0],[-4,-6,6,6,0]],"join":3,"style":"tilt","tilt":1.5,"apron":6,"runoff":true,"from":[-24,-392],"pins":[[-10,-480],[-15,-476],[-5,-485],[-8,-474]],"shape":[]},
     bunkers: [
       {"x":-30,"z":-470,"rx":5,"rz":4,"style":"flashed","toward":[-10,-480]},
       {"x":-34,"z":-218,"rx":12,"rz":6,"style":"flashed","toward":[0,4]},
