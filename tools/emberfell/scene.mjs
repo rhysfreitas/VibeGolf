@@ -7,7 +7,7 @@
 import { project, seDist, seOutline, rectPts, inPoly, smooth, clamp, at, rnd, distLine, headingAt, lerp, lengthOf } from './geo.mjs';
 import { makeGreen, makeFairway, makeCrack, makeShaft, noise1, noise2 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { V, lavaAt, nativeAt, BARRANCO, CAL, FALL, polar, rimR, INSIDE } from './world.mjs';
+import { V, lavaAt, nativeAt, BARRANCO, CAL, FALL, polar, rimR, INSIDE, riverCut } from './world.mjs';
 
 export const SURF = ['flow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'scoria', 'lava', 'rock', 'rubble', 'cinder', 'ash', 'forest', 'sulfur', 'hall', 'void', 'crust', 'sinter'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
@@ -98,20 +98,30 @@ export function buildHole(h) {
   const fwD = makeFairway(h.line, h.fw || []);
   // ash-grey sand by the greens; red scoria (cinder) waste out in the fairways
   const bunkers = (h.bunkers || []).map((b, i) => {
+    if (b.wrap) return { wrap: b.wrap, kind: b.kind === 'cinder' ? 'scoria' : 'sand', depth: 0.9, seed: 95 + i, x: h.pin[0], z: h.pin[1], box: [h.pin[0] - 70, h.pin[1] - 70, h.pin[0] + 70, h.pin[1] + 70] };
     if (b.strip) { const fd = makeFairway(h.line, [{ e: b.strip, wob: b.wob ?? 3, seed: 90 + i }]), sx = b.strip.map(([s, L, R]) => at(h.line, s, (R - L) / 2));
       return { strip: true, kind: b.kind === 'cinder' ? 'scoria' : 'sand', depth: 0.9, edgeM: fd, x: sx[0][0], z: sx[0][1], box: [Math.min(...sx.map(p => p[0])) - 70, Math.min(...sx.map(p => p[1])) - 70, Math.max(...sx.map(p => p[0])) + 70, Math.max(...sx.map(p => p[1])) + 70] }; }
     const kind = b.kind === 'cinder' ? 'scoria' : b.kind || (Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45 ? 'sand' : 'scoria');
     return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, kind, depth: kind === 'sand' ? 0.8 : 0.9 }; });
   const bunkerE = (b, x, z) => seDist(b, x, z) + 0.13 * noise2(x / 4, z / 4, b.seed);
   for (const b of bunkers) {   // a greenside bunker sits at least 2.5 m outside the green's edge
-    if (b.kind !== 'sand' || b.strip) continue;
+    if (b.kind !== 'sand' || b.strip || b.wrap) continue;
     const clear = () => Math.min(gm(b.x, b.z), ...seOutline({ ...b, rx: b.rx * 1.15, rz: b.rz * 1.15 }, 32).map(p => gm(...p)));
     let dx = b.x - h.pin[0], dz = b.z - h.pin[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     b.was = [b.x, b.z];
     for (let i = 0; i < 120 && clear() < 2.5; i++) { b.x += dx * 0.5; b.z += dz * 0.5; }
     b.edge = clear(); b.moved = Math.hypot(b.x - b.was[0], b.z - b.was[1]);
   }
-  const edgeM = (b, x, z) => b.strip ? b.edgeM(x, z) : (bunkerE(b, x, z) - 1) * Math.min(b.rx, b.rz);
+  // a band of sand wrapping the green ({ wrap: { from, to, d, w } }: degrees round the green, 0 = past the pin,
+  // + to the right; d metres off its edge, w wide), as on Rimeholm's 6th
+  const wrapM = (b, x, z) => {
+    const Wr = b.wrap, [u, v] = gUV(x, z), a = Math.atan2(u, v) * 180 / Math.PI, span = Wr.to - Wr.from;
+    const t = (((a - Wr.from) % 360) + 360) % 360 / span, r = Math.hypot(u, v);
+    if (t > 1) { const over = Math.min((t - 1) * span, 360 - t * span) * Math.PI / 180 * r; return Math.max(over, 1); }
+    const w = Wr.w * Math.pow(Math.sin(Math.PI * t), 0.35) * (1 + 0.22 * noise1(t * 6, b.seed)), c = Wr.d + w / 2;
+    return Math.abs(gm(x, z) - c) - w / 2 + 0.6 * noise2(x / 4, z / 4, b.seed);
+  };
+  const edgeM = (b, x, z) => b.strip ? b.edgeM(x, z) : b.wrap ? wrapM(b, x, z) : (bunkerE(b, x, z) - 1) * Math.min(b.rx, b.rz);
   for (const b of bunkers) if (!b.box) b.box = [b.x - b.rx * 1.5 - b.rz, b.z - b.rz * 1.5 - b.rx, b.x + b.rx * 1.5 + b.rz, b.z + b.rz * 1.5 + b.rx];
   const inBunker = b => (x, z) => x > b.box[0] && x < b.box[2] && z > b.box[1] && z < b.box[3] && edgeM(b, x, z) < 0;
   const extra = (h.extraFw || []).map((e, i) => ({ x: e.at[0], z: e.at[1], rx: e.rx, rz: e.rz, rot: e.rot || 0, seed: 60 + i }));
@@ -136,7 +146,7 @@ export function buildHole(h) {
   // the ground without the shared shapes (absolute): the line's profile near the line, the mountain away from it
   function baseAbs(x, z) {
     const pr = along(x, z), kk = smooth((Math.abs(pr.off) - (h.flat ?? 30)) / (h.fade ?? 36));
-    const line = PR.at(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -90, 90);
+    const line = PR.at(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -90, 90) + (kk < 1 ? riverCut(...W(x, z)) : 0);   // a lava channel crossing the line cuts it too
     return kk >= 1 ? V(...W(x, z)) : kk <= 0 ? line : lerp(line, V(...W(x, z)), kk);
   }
   // everything but lava and tee pads, relative to the hole's base

@@ -61,9 +61,11 @@ p { font-size: 8.6pt; line-height: 1.34; margin: 0 0 4pt; }
 .side .txt { flex: none; }
 .side p { font-size: 7.7pt; line-height: 1.26; margin-bottom: 2.5pt; }
 .side p.small { font-size: 7pt; }
+.side p.story { font-size: 8pt; font-style: italic; margin-bottom: 3pt; }
+.side p.story b { font-style: normal; font-weight: 600; margin-right: 3pt; }
 .side p.kv { font-size: 7.5pt; line-height: 1.24; margin: 0 0 2pt; }
 .kv b { display: inline-block; min-width: 0.5in; font-weight: 600; }
-.side img.prof { width: 100%; max-height: 1.42in; object-fit: contain; clear: both; object-position: left top; border: 0.6pt solid #ddd; margin-top: 3pt; display: block; }
+.side img.prof { width: 100%; max-height: 1.22in; object-fit: contain; clear: both; object-position: left top; border: 0.6pt solid #ddd; margin-top: 3pt; display: block; }
 .notes { border: 0.6pt solid #333; padding: 3pt 8pt; margin-top: 5pt; flex: 1; min-height: 0.36in; overflow: hidden; }
 .side .gimg { float: right; width: 1.45in; margin: 0 0 4pt 8pt; }
 .side .gimg img { width: 1.45in; height: 1.45in; border: 0.6pt solid #ddd; display: block; }
@@ -143,6 +145,7 @@ for (const h of D.holes) {
       <div class="plan"><img src="${img('plan' + h.n + '.png')}"><div class="pcap">Ticks on the line: yards to the green. Targets: yards from the back tee (and left to the green).</div></div>
       <div class="side"><div class="txt">
         <div class="gimg"><img src="${img('green' + h.n + '.png')}"><div class="cap">The green: 5 cm contours, arrows downhill (red over 3%), pin areas dashed.</div></div>
+        ${w.story ? `<p class="story"><b>The story</b> ${esc(w.story)} <span class="small">(${esc(w.structure || '')})</span></p>` : ''}
         <p>${esc(w.plays)}</p>
         <p class="kv"><b>Safe</b> ${esc(w.safe)}</p>
         <p class="kv"><b>Bold</b> ${esc(w.bold)}</p>

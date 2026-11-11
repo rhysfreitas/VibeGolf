@@ -133,6 +133,12 @@ const fwWidth = (B, p, dir) => {   // contiguous fairway straight across a direc
   while (b < 120 && B.surface(p[0] + nx * (b + 0.5), p[1] + nz * (b + 0.5)) === 'fairway') b += 0.5;
   return b - a;
 };
+// a split fairway: the runs of fairway straight across (within 70 m of the line), widest first
+const fwRuns = (B, p, dir) => {
+  const nx = Math.cos(dir), nz = Math.sin(dir), runs = []; let st = null;
+  for (let o = -70; o <= 70.01; o += 0.5) { const f = B.surface(p[0] + nx * o, p[1] + nz * o) === 'fairway'; if (f && st === null) st = o; if ((!f || o >= 70) && st !== null) { runs.push(o - st); st = null; } }
+  return runs.filter(r => r >= 4).sort((a, b) => b - a);
+};
 const report = [];
 const R_ = (...a) => { const l = a.join(' '); report.push(l); console.log(l); };
 // plays-like for a par 3 from the game's flight: the flat carry of the iron that lands at this distance and drop
@@ -163,7 +169,7 @@ for (const [i, B] of BUILT.entries()) {
   let land = '';
   if (h.par > 3) {   // a tips drive carrying 280 and 300 yd down the line: the fairway there
     const tsl = project(h.line, ...t).s;
-    for (const c of [280, 300]) { const s = Math.min(h.len - 1, tsl + c * YD), p = at(h.line, s); land += ` ${c} yd: ${B.surface(...p)} ${Math.round(fwWidth(B, p, headingAt(h.line, s)))} m;`; }
+    for (const c of [280, 300]) { const s = Math.min(h.len - 1, tsl + c * YD), p = at(h.line, s); land += h.split ? ` ${c} yd: lanes ${fwRuns(B, p, headingAt(h.line, s)).slice(0, 2).map(Math.round).join(' + ')} m;` : ` ${c} yd: ${B.surface(...p)} ${Math.round(fwWidth(B, p, headingAt(h.line, s)))} m;`; }
   }
   R_(`${okT ? ' ' : '!'} ${h.n} tips ${h.tipsYards} yd (+${h.tipsYards - h.yards[BACK]}): ${ts}, slope ${(sl * 100).toFixed(0)}%, ${nearF === Infinity ? '16+' : nearF} m off fairway, nearest other green ${Math.round(nearG)} m${over.length ? ', OVERHEAD' : ''};${land}`);
   // every tee set's drive lands on 40 m or more of fairway: the fairway across the line at the drive's length
@@ -171,7 +177,13 @@ for (const [i, B] of BUILT.entries()) {
   if (h.par > 3) {
     const ws = [];
     for (const T of COURSE.teeSets) {
-      const s0 = project(h.line, ...h.teePts[T.id]).s, s = Math.min(h.len - 20, s0 + (T.minDrive || 150) * YD), p = at(h.line, s), w = fwWidth(B, p, headingAt(h.line, s));
+      const s0 = project(h.line, ...h.teePts[T.id]).s, s = Math.min(h.len - 20, s0 + (T.minDrive || 150) * YD), p = at(h.line, s);
+      if (h.split) {   // two lanes, each 25 m or more where drives land
+        const r = fwRuns(B, p, headingAt(h.line, s)); ws.push(`${T.name} ${r.slice(0, 2).map(Math.round).join(' + ')}`);
+        if (r.length < 2 ? (r[0] || 0) < 40 : r[1] < 25) R_(`! ${h.n} ${T.name} drive (${T.minDrive || 150} yd): lanes ${r.map(Math.round).join(', ') || 'none'} m`);
+        continue;
+      }
+      const w = fwWidth(B, p, headingAt(h.line, s));
       ws.push(`${T.name} ${Math.round(w)}`);
       if (w < 40) R_(`! ${h.n} ${T.name} drive (${T.minDrive || 150} yd) lands on ${B.surface(...p)}, ${Math.round(w)} m of fairway`);
     }

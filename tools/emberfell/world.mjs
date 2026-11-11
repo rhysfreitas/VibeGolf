@@ -71,11 +71,12 @@ export const BARRANCO = { pts: [[40, 262], [52, 420], [70, 560], [80, 760], [110
 export const RIVERS = [
   { name: 'the lava river', pts: [[-175, 540], [-238, 618], [-305, 658], [-371, 676], [-446, 708], [-526, 758], [-616, 828], [-716, 908], [-826, 998], [-946, 1098]], w: 22, levee: 4, sink: 4, len: 760 },
   { name: 'the Spill', pts: [[-30, -322], [-108, -352], [-170, -374], [-235, -394], [-292, -406], [-330, -434]], w: 17, levee: 2.6, sink: 3, len: 360, inside: true },
+  { name: 'the overflow', pts: [[-878,-230],[-828,-191],[-789,-214],[-744,-235],[-707,-251],[-683,-265],[-669,-284],[-667,-309],[-669,-334],[-670,-362],[-667,-400],[-663,-441]], w: 9, levee: 1.2, sink: 1.8, len: 408, inside: true },   // round 4: the lavafall's pool spills back down the 7th's bay along the wall and across its fairway on the second shot
   { name: 'the northern flow', pts: [[-60, -1010], [-92, -940], [-122, -870], [-150, -790], [-172, -720], [-190, -672]], w: 18, levee: 2.8, sink: 3, len: 380, inside: true },
 ];
 export const RIVER = RIVERS[0];
 const riverP = (R, X, Z) => project(R.pts, X, Z);
-const riverCut = (X, Z) => { let y = 0; for (const R of RIVERS) { const rp = riverP(R, X, Z), half = R.w / 2; if (rp.d < half + 24 && rp.s > 0.5) y += R.levee * Math.exp(-(((rp.d - half - 3) / 6) ** 2)) - R.sink * (1 - smooth((rp.d - half + 2) / 4)); } return y; };
+export const riverCut = (X, Z) => { let y = 0; for (const R of RIVERS) { const rp = riverP(R, X, Z), half = R.w / 2; if (rp.d < half + 24 && rp.s > 0.5) y += R.levee * Math.exp(-(((rp.d - half - 3) / 6) ** 2)) - R.sink * (1 - smooth((rp.d - half + 2) / 4)); } return y; };
 // crust fields: lobes of fresh black lava crusted over, glowing at the seams (native ground; raised a metre or two
 // with steep fronts). Kept 40 m or more off the fairways
 export const CRUSTS = [
