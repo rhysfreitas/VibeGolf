@@ -241,7 +241,7 @@ function step(dt) {
 }
 function frame(now) { const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; fitToScreen(); step(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 window.__advance = (sec, n) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (n && i % n === 0) renderer.render(scene, camera); } renderer.render(scene, camera); };
-window.__ih = G; window.__kit = kit;
+window.__ih = G; window.__kit = kit; window.__world = world;
 
 resize();
 sv.address(false);
