@@ -36,13 +36,14 @@ formality: Lost Valley round 1 met every outline and slope rule and still read a
 | **Decisions** | Which two to four holes ask a real question, and of which type. No type twice on a course. |
 | **Landmarks** | Two to four, with the tees and landing areas each is seen from, and the one planned reveal. |
 | **Rhythm** | The opener, where the hardest holes sit, the breather, the finish. |
+| **New and borrowed** | The three or more kinds of set piece no course has used, and the two at most taken from the register's over-used list (see "Sameness"). The fairway form of every par 4 and 5, side by side, so repeats show before anything is drawn. |
 
 ## The hole card
 
 | Line | What goes on it |
 |---|---|
 | **Story** | One line. "The giant: a monkey-puzzle alone in the fairway at the corner." If the hole could sit on any course, it isn't done. |
-| **Type** | The classic it is built on, or "original". Its fairway structure (single, split, broken by a cross hazard, stepping stones, hourglass, stepped). |
+| **Type** | The classic it is built on, or "original". Its **fairway form** from the sheet (`docs/fairway-forms.svg`): spindle, hourglass, fan, funnel, bowl, hook, split, island, broken, stepping stones, double, scalloped. Choose the form for the hole's story before setting any numbers. |
 | **Feature and its job** | The feature, and what it does for the golf: hazard, aim point, frame, obstacle, lie-setter or helper (see "Features"). |
 | **Decision** | The type and the two routes with their numbers (what the bold line gains, what each risks), or "none: one clear line". |
 | **Miss map** | Where the small miss, the medium miss and the big miss finish on each side, and which side is the safe miss at the green. |
@@ -51,7 +52,8 @@ formality: Lost Valley round 1 met every outline and slope rule and still read a
 
 # Part 2: the nine, as a checklist
 
-Run `node tools/review/design.mjs <course>` (and `all` to compare courses) and `tools/review/analyse.mjs <course>`.
+Run `node tools/review/design.mjs <course>` (and `all` to compare courses), `node tools/review/alike.mjs <course>`
+(and `all`) and `tools/review/analyse.mjs <course>`.
 The plan-book tools (`tools/<course>/sample.mjs`) carry the same checks for a course that isn't in the engine yet.
 
 | # | Rule | Tag | Checked by |
@@ -75,10 +77,13 @@ The plan-book tools (`tools/<course>/sample.mjs`) carry the same checks for a co
 | 17 | Most par 4/5 landing areas lean 2–5%; a strong 6–8% sidehill once or twice | Should | `analyse.mjs` |
 | 18 | Greens fall 1.5–2.5%, six or seven with one feature, three or four pin areas each | Should | `analyse.mjs` |
 | 19 | Greens deeper than wide, angled both ways; three of a style at most | Should | `analyse.mjs` |
-| 20 | Fairway width changes 30% or more along a par 4/5; two or three plain single fairways at most | Should | `analyse.mjs`, the hole cards |
+| 20 | Fairway width changes 30% or more along a par 4/5 | Should | `analyse.mjs` |
 | 21 | Every fairway bunker has a job and touches the fairway; no bunker pattern twice | Should | `analyse.mjs` |
 | 22 | Room for the tips tee on every hole | Should | the plan-book checks |
 | 23 | Grand visuals by layering; edges that wander; chasms that catch the eye; big sand now and then | Taste | a review round |
+| 24 | Fairway forms: no form more than twice, never two in a row, two plain strips at most, no two fairways measured alike | Must | `alike.mjs` |
+| 25 | No kind of feature more than twice a nine, and the second does a different job | Should | the hole cards |
+| 26 | Against the other courses: three or more kinds of set piece nobody has used, two at most from the over-used list, two fairways at most that match an earlier course's | Should | the register, `alike.mjs all` |
 
 # Part 3: the rules by topic
 
@@ -278,6 +283,81 @@ tees with a player who hits it 80% as far, a decent amateur's scatter on every s
 - **Penalties**: under one for every three holes across the nine.
 - Then the game itself: `tools/review/playthrough.mjs` on the holes that changed.
 
+## Sameness: the repeat budget (fairways Must, the rest Should; new 11 November 2026)
+
+Rhys, after the rules review: "I was getting pretty frustrated that all the fairways seemed to be the same rough
+shape with no interesting things about it or features to mix things up." And the limit he set: **there can be
+some repeat, but not a lot.**
+
+He was right, and it was measurable. `node tools/review/alike.mjs all` walks every par 4 and 5 fairway and
+compares each with every other. On 11 November 2026, of 49 fairways across seven courses, 17 were one shape (a
+spindle: narrow at the tee end, widest where drives land, narrow again), and no course had a fan, a funnel, a
+bowl or a hook anywhere. The Reclaim had five spindles of seven and six pairs the check couldn't tell apart;
+Emberfell three spindles and three hourglasses; Hollowmere four spindles. The cause was in the data: almost every
+fairway began from the same numbers (`[60, 14, 14], [100, 22, 22], [150, 28, 28], [200, 32, 30]` ...) with the
+hazards arranged round it. The Lost Valley's round 2 cured that by splitting or breaking every hole, which is
+its own repeat: four splits and three broken fairways.
+
+The earlier checks looked at one hole at a time. These look across the nine and across the courses.
+
+**On one course**
+
+| What | The budget |
+|---|---|
+| **Fairway form** (Must) | No form more than twice. Never the same form two holes running. Plain strips (spindle, ribbon, uneven) two at most. No two fairways the check measures as alike (under 0.25), mirror images included. |
+| **Kind of feature** (a lone tree, a water crossing, a rock in the fairway, a cliff edge, an arch, a bridge, a fall) | Twice at most, and the second time it does a different job (see "Features"). |
+| **Decision type** | Once. |
+| **Green** | A style three times at most; an outline (kidney, peanut, L, clover ...) once; a contour feature (tier, bowl, spine) three times at most. |
+| **Bunker pattern** | Once. "One each side of the landing area and two at the green" is a pattern. |
+| **The main threat** | The same hazard on the same side three holes at most, and never three in a row. |
+| **Kind of height change, par and bend** | Never two holes running (see "Rhythm"). |
+
+**Against the other courses** (`docs/COURSE-REGISTER.md` keeps the counts)
+
+- A new course brings **three or more kinds of set piece no course has used**, and takes **two at most** from the
+  kinds already on three or more courses (today: a waterfall backdrop, a tee shot off a ledge, a punchbowl, a
+  bridge, a chasm beside the fairway, a climb to the clubhouse, something to play through or under).
+- **Two of its fairways at most** match a fairway on an earlier course (`alike.mjs all`).
+- Its classics overlap any one other course's by two at most.
+
+A repeat inside the budget is fine, and sometimes right: a course's logic wants echoes (lava on most of
+Emberfell's holes, the Deep seen from four of Hollowmere's). What the budget stops is the default: reaching for
+the same shape or the same trick because it was the last one used.
+
+## Fairway forms (Must with the budget above; new 11 November 2026)
+
+`docs/fairway-forms.svg` (and `.png`) shows the twelve forms, each built from the plan tools' own pieces and named by the
+check, so the picture, the builder and the measurement agree. `tools/review/forms.mjs` holds the data for each:
+copy a piece list into a hole's `fw` and adjust.
+
+| Form | What it is | What it asks |
+|---|---|---|
+| **Spindle** | Narrow, widest where drives land, narrow again. The stock shape. | Nothing much. Two a nine at most. |
+| **Hourglass (Bottle)** | Wide short of a pinch, tight beyond it. | Lay back to the wide part, or thread it. |
+| **Fan** | Opens toward the green. | The longer the drive, the more room: it rewards the bold. |
+| **Funnel** | Generous off the tee, closing all the way in. | The long drive is the hard one: it rewards restraint. |
+| **Bowl** | One basin nearly as wide as it is long. | The ground does the work: where the ball feeds to decides the next shot. |
+| **Hook** | Wraps round a hazard; the line to the green crosses it. | How much to cut off. |
+| **Split** | Two lanes round a feature. | One shorter or with the angle, one wider. |
+| **Island (doughnut)** | One fairway with a hole in it: a tree, a rock, a pot. | Left or right of it. |
+| **Broken** | Cut in two by a cross hazard. | Lay up or carry. |
+| **Stepping stones** | Islands of fairway through the hazard. | How many to skip. |
+| **Double (Channel)** | A second fairway out across the hazard. | The carry to it shortens the hole. |
+| **Scalloped** | Hazards bite in from alternate sides. | The line weaves; pick a side for each shot. |
+
+- **Choose the form from the hole's story, before any numbers.** Never start a fairway by copying the last
+  hole's knots. A hole whose card says "spindle" needs a reason on the card.
+- **The plan tools draw all of them** (`tools/<course>/shapes.mjs` `makeFairway`). A piece is a ribbon
+  (`{ e: [[s, L, R] ...] }`: its two edges at knots along the line), a free shape (`{ lobes: [[s, off, along,
+  across, rot] ...] }`: a smooth union of ellipses placed by distance along the line and offset from it), or a
+  cut-out (`{ bite: [...] }`: the same shapes removed from the rest). Bowls, hooks, stepping stones and the far
+  half of a double fairway are lobes; an island in the middle and a scalloped edge are bites.
+- **A form needs the ground to match.** A bowl is a real hollow; a hook's inside edge falls toward its hazard; a
+  funnel's sides rise. A shape painted on flat ground is still a strip to play.
+- **Every tee set still lands on enough fairway** (40 m, or two lanes of 25 m): a fan's narrow end and a
+  funnel's are measured where each tee set's drive finishes, so move the tees to suit the form.
+- Beyond the twelve, invent. The check names anything it doesn't know "uneven" and still compares it.
+
 ## Hole shape and outline (Should)
 
 - Vary the shapes: doglegs both ways, a cape, an S-bend, a drivable par 4, a par 3 over water, a blind
@@ -312,8 +392,9 @@ strip, doglegs one way then the other, a bunker on each side).
   each 25 m or more where drives land, one shorter or with the better angle, the other wider and safer); a
   fairway broken in two by a cross hazard (a creek, a back channel, a band of sand); stepping stones of fairway
   between pools with a dry way round; an hourglass pinched by hazards from both sides; a fairway climbing a step.
-  No more than two or three plain single fairways a nine, and never two of the same structure in a row. Doglegs
-  alternating left and right is not variety on its own. A splitter has to stop a ball: branches low, or solid
+  Two plain single fairways a nine at most, no structure more than twice, and never two of the same in a row
+  (see "Sameness" and "Fairway forms": splitting or breaking every hole is a repeat too). Doglegs alternating
+  left and right is not variety on its own. A splitter has to stop a ball: branches low, or solid
   rock.
 - **Big sand now and then.** It can be really fun to build a huge bunker: a waste or bunker running the length
   of a fairway (150 m or more down one side), a cross bunker right across the fairway short of a green, or a
@@ -578,6 +659,8 @@ What the engine and the tools taught us. Read the part for the kind of course yo
 - The tips tee (10 November). Story, features and fairway structure, big sand (Lost Valley round 2, 10 November).
 - The rules review (11 November): this layout, the cards, the Must/Should/Taste tags, and the new rules:
   skeleton and register, measured decisions (two to four a nine), classic hole types, feature jobs, landmarks
-  and sightlines, the fixed-camera view, rhythm of the nine, graded misses, the playability gate. Contradictions
+  and sightlines, the fixed-camera view, rhythm of the nine, graded misses, the playability gate; then, the same
+  day, the repeat budget and the twelve fairway forms, after Rhys asked whether the rules would really stop every
+  fairway coming out the same shape (measured: 17 of 49 were). Contradictions
   settled then: fairways are 45–65 m (the playbook said 50–65); contours are under 4% on top of a lean of 2–5%;
   a cant toward trouble only on an easy hole; a drivable par 4 is 280–320 yd (the old text said metres).

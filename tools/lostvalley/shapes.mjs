@@ -1,6 +1,6 @@
 // Shapes for Emberfell (copied from Rimeholm) (pure): greens built from lobes, fairways with two edges that vary along the
 // hole, jagged crevasses and scarps with a raised lip, and a marching-squares outline for drawing any of them.
-import { project, lengthOf, at, clamp, smooth, lerp } from './geo.mjs';
+import { project, lengthOf, at, headingAt, clamp, smooth, lerp } from './geo.mjs';
 
 // value noise, 1D and 2D, in [-1, 1]
 const h1 = (i, s) => { const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return (v - Math.floor(v)) * 2 - 1; };
@@ -41,8 +41,28 @@ export function makeGreen(pin, head, spec) {
 // are how far the left and right edges sit from the line (a negative L puts the left edge right of the line).
 // Edges ease between the knots, wobble (scallops of about `wob` metres) and round off at the ends.
 // Returns fd(x, z): metres outside the nearest piece (negative inside).
+//
+// Two more kinds of piece, for fairways that aren't a ribbon along the line (docs/COURSE-DESIGN.md "Fairway forms"):
+//   { lobes: [[s, off, along, across, rot]...], join, wob, seed }   a free shape: a smooth union of ellipses, each
+//       centred `s` metres along the line and `off` to its right, with radii along and across the line there, turned
+//       `rot` degrees to the right. One big lobe is a bowl; lobes that grow are a fan; lobes curving round a hazard
+//       are a hook; a lobe on its own away from the rest is an island.
+//   { bite: [[s, off, along, across, rot]...], join, wob, seed }    the same shapes cut OUT of every other piece: a
+//       hazard biting into an edge, or a hole in the middle round a rock or a tree (a doughnut).
+// A fairway can mix all three.
 export function makeFairway(line, pieces) {
-  const P = pieces.map((p, i) => ({ e: p.e, wob: p.wob ?? 3, seed: p.seed ?? 11 + i * 7, s0: p.e[0][0], s1: p.e.at(-1)[0] }));
+  const P = pieces.filter(p => p.e).map((p, i) => ({ e: p.e, wob: p.wob ?? 3, seed: p.seed ?? 11 + i * 7, s0: p.e[0][0], s1: p.e.at(-1)[0] }));
+  const lenL = lengthOf(line);
+  const blob = (p, i) => ({ wob: p.wob ?? 3, seed: p.seed ?? 53 + i * 7, k: p.join ?? 10, L: (p.lobes || p.bite).map(([s, off, ra, rc, rot = 0]) => {
+    const c = at(line, s, off), hd = headingAt(line, clamp(s, 0.5, lenL - 0.5)) + rot * Math.PI / 180;
+    return { x: c[0], z: c[1], ra, rc, ux: Math.sin(hd), uz: -Math.cos(hd), m: Math.min(ra, rc) };
+  }) });
+  const blobD = (B, x, z) => {
+    let d = Infinity;
+    for (const o of B.L) { const dx = x - o.x, dz = z - o.z, a = dx * o.ux + dz * o.uz, b = -dx * o.uz + dz * o.ux, di = (Math.hypot(a / o.ra, b / o.rc) - 1) * o.m; d = d === Infinity ? di : smin(d, di, B.k); }
+    return d + B.wob * 0.6 * noise2(x / 19, z / 19, B.seed);
+  };
+  const LOBES = pieces.filter(p => p.lobes).map(blob), BITES = pieces.filter(p => p.bite).map(blob);
   const knot = (e, s, k) => {
     if (s <= e[0][0]) return e[0][k];
     for (let i = 0; i < e.length - 1; i++) if (s <= e[i + 1][0]) return lerp(e[i][k], e[i + 1][k], smooth((s - e[i][0]) / (e[i + 1][0] - e[i][0])));
@@ -70,6 +90,8 @@ export function makeFairway(line, pieces) {
       const d = beyond > 0 ? Math.hypot(beyond, Math.max(0, lat)) : lat;
       if (d < best) best = d;
     }
+    for (const B of LOBES) best = Math.min(best, blobD(B, x, z));
+    for (const B of BITES) best = Math.max(best, -blobD(B, x, z));
     return best;
   };
 }

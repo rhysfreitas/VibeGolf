@@ -70,6 +70,54 @@ middle; a long par 3 early.
 Classics no course has used yet: **Eden, Road, Bottle, Channel, Leven, Double Plateau, Hog's Back, Sahara, Long,
 Dell.** A punchbowl is on six of seven courses: give it a rest.
 
+## Fairway forms, counted (`node tools/review/alike.mjs all`, 11 November 2026)
+
+49 par 4 and 5 fairways on seven courses. Forms: **spindle 17, broken 11, island 7, split 7, hourglass 4,
+scalloped 2, uneven 1. Never used: fan, funnel, bowl, hook, stepping stones, double.** (The Lost Valley's
+stepping stones measure as a split: its pools don't yet cut the fairway into separate pieces.) 83 of 1,029 pairs
+of fairways on different courses measure as alike.
+
+| Course | Forms | Pairs alike | Against the budget |
+|---|---|---|---|
+| The Aerie | broken 3, island, split, spindle, scalloped | 0 of 21 | Three broken (its islands), one over |
+| Red Mesa | spindle 2, broken 2, scalloped, hourglass, split | 0 of 21 | Inside it. The most varied course |
+| Hollowmere | spindle 4, island 2, split | 4 | Four spindles; the Adit, the Rim, the Grotto and the Cenote alike |
+| The Reclaim | spindle 5, broken 2 | 6 | Five spindles; the Atrium, Broken Tower, Riverside and the Rift all alike |
+| Rimeholm | island 3, spindle 2, uneven, broken | 2 | Three plain strips; the Ice Gate and the Hot Springs alike, in a row |
+| Emberfell (planned) | spindle 3, hourglass 3, island | 5 | Kipuka, the Barranco and the Lake alike; the Lava Tube and the Lavafall alike |
+| The Lost Valley (planned) | split 4, broken 3 | 0 | Every hole split or broken: two forms, and three splits in a row |
+
+The two planned courses fix theirs in their re-lay (their briefs say so). The playable five keep theirs until
+each is next touched; The Reclaim and Hollowmere have the most to gain.
+
+## Set pieces, counted (from the course notes; approximate)
+
+| Kind | Courses | Count |
+|---|---|---|
+| A waterfall (or the theme's version) as a backdrop | The Aerie, Red Mesa, Hollowmere, Rimeholm, Emberfell, the Lost Valley | 6 |
+| A tee shot off a ledge, 25 m or more down | Red Mesa, Hollowmere, The Reclaim, Rimeholm, Emberfell, the Lost Valley | 6 |
+| A punchbowl green | The Aerie, Red Mesa, Hollowmere, The Reclaim, Rimeholm, Emberfell | 6 |
+| A bridge, in play or as a landmark | Red Mesa, Hollowmere, The Reclaim, Rimeholm, Emberfell, the Lost Valley | 6 |
+| A climb to the clubhouse to finish | Every course but the re-laid Lost Valley | 6 |
+| A chasm or void beside the fairway | The Aerie, Red Mesa, Hollowmere, The Reclaim, Rimeholm | 5 |
+| Something to play through or under (an arch, a lobby, an eyelet) | Red Mesa, Hollowmere, The Reclaim, the Lost Valley | 4 |
+| A relic in the ground (a fossil, a ship, a mammoth, a skeleton) | Red Mesa, Rimeholm, the Lost Valley | 3 |
+| A fairway split round an object | Rimeholm, Emberfell, the Lost Valley | 3 |
+| Something that moves between shots | The Aerie (island), Red Mesa (train), Hollowmere (ore cart) | 3 |
+| Terraces to play up or down | Hollowmere, Rimeholm, Emberfell | 3 |
+| A green inside a shell (a geode, a crater) | Hollowmere, Emberfell | 2 |
+| An island green | Emberfell | 1 |
+| Stepping-stone fairway | The Lost Valley | 1 |
+
+**Over-used (on three or more): a new course takes two of these at most.** Everything from "a relic" up.
+
+**Never used, to start from:** a fairway along a ridge crest; a hole round the rim of something, playing
+clockwise; a green in a natural amphitheatre; a green hidden behind a wall or bank; a hole along a shoreline with
+a beach as the miss; a causeway or dam to play along; a zigzag down a slope in switchbacks; an up-and-over
+saddle between two peaks; a hole through a tunnel of trees; a shared double green; a tee you reach the fairway
+from across still water with a bail-out beach; dunes and blowouts; a quarry with benches; a canal with locks; a
+tide or a level that changes between shots.
+
 ## Audit of all seven courses against the rules, 11 November 2026
 
 How to read it. *Measured* means `node tools/review/design.mjs` (8 seeds for the gate, 12 for the decisions). Its

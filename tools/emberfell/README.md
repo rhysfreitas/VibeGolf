@@ -17,4 +17,6 @@ profiles and sketch views always agree. They follow `tools/rimeholm/` (geo.mjs a
 | `node sketch.mjs [holes]` | The projected sketch views: plain shapes through a real camera, inked and washed in SVG; past 1.7 km the mountain is drawn as silhouettes from `V` (the far walls, the cone, the sea at the horizon), under a pale dusk sky with the plume and its lightning. Seconds a view. |
 | `node book.mjs` | The PDF (`out/emberfell-plan-book-r<ROUND>.pdf`): a cover with the map, the course at a glance (with the tips yardages and the greens' shapes), then one page a hole. `ROUND=2 NEW=rounds-r2.json node book.mjs` adds a "new in this round" page. |
 
+Fairways aren't only ribbons: in `holes.mjs` a piece of `fw` is `{ e: [[s, L, R] ...] }` (two edges along the line), `{ lobes: [[s, off, along, across, rot] ...] }` (a free shape: a bowl, a fan, a hook, an island of fairway) or `{ bite: [...] }` (the same shapes cut out of the rest: an island in the middle, a scalloped edge). `docs/fairway-forms.svg` shows twelve forms and `tools/review/forms.mjs` has the data for each; `node tools/review/alike.mjs emberfell` names each fairway's form and flags repeats (`docs/COURSE-DESIGN.md` "Sameness" and "Fairway forms").
+
 Run them in that order. Output goes to `out/` (ignored by git). No emitter to the engine format yet.

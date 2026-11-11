@@ -20,6 +20,8 @@ views always agree. They follow `tools/emberfell/` (geo.mjs and shapes.mjs are c
 | `node sketch.mjs [holes]` | The projected sketch views: plain shapes through a real camera, inked and washed in SVG. The walls are drawn as ground out to 2.7 km (sandstone banded and streaked, jungle on the talus and the ledges), the table mountains beyond as silhouettes; falls hang down the faces from lips found on the walls; trees by kind; scattered stands on the floor kept 35 m off every line; the camp, the rope bridge, the spire with its perched pterosaur, the Strangler, the skeleton, the tar pit's bones; the animals as true-shape silhouettes. About 40 s a hole. |
 | `node book.mjs` | The PDF (`out/lostvalley-plan-book-r<ROUND>.pdf`): a cover with the map, the course at a glance, then one page a hole. `ROUND=2 NEW=rounds-r2.json node book.mjs` adds a "new in this round" page. |
 
+Fairways aren't only ribbons: in `holes.mjs` a piece of `fw` is `{ e: [[s, L, R] ...] }` (two edges along the line), `{ lobes: [[s, off, along, across, rot] ...] }` (a free shape: a bowl, a fan, a hook, an island of fairway) or `{ bite: [...] }` (the same shapes cut out of the rest: an island in the middle, a scalloped edge). `docs/fairway-forms.svg` shows twelve forms and `tools/review/forms.mjs` has the data for each; `node tools/review/alike.mjs lostvalley` names each fairway's form and flags repeats (`docs/COURSE-DESIGN.md` "Sameness" and "Fairway forms").
+
 Run them in that order. Output goes to `out/` (ignored by git). No emitter to the engine format yet.
 
 Things the engine will need that it doesn't have (from `claude/course-brief-lost-valley.md`): the jungle look fast
