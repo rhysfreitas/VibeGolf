@@ -216,16 +216,54 @@ export function decoMesas(hole, T, pin, coarse) {
     if (out.some(d => Math.hypot(d.x - x, d.z - z) < (Math.max(d.rx, d.rz) + size) * 1.05)) continue;
     if (near.some(d => Math.hypot(d.x - x, d.z - z) < d.r + size + 20)) continue;
     const top = fy + (butte ? 60 + R() * 140 : 30 + R() * 150) + (rad > 1400 ? R() * 80 : 0);
-    out.push(prepIsland({ x, z, rx: size, rz: size * (0.55 + R() * 0.9), rot: R() * 3, p: 2.6 + R() * 1.4, top, depth: top - fy, kind: 'rock', seed: 300 + i, relief: 2 }));
+    out.push(prepIsland({ x, z, rx: size, rz: size * (0.55 + R() * 0.9), rot: R() * 3, p: 2.2 + R() * 1.1, top, depth: top - fy, kind: 'rock', seed: 300 + i, relief: 2, ragged: true }));
   }
   return out;
 }
 
+/* ---------- talus: blocks fallen from the walls, heaped at their feet (scenery) ---------- */
+export function talus(pts, coarse, group) {
+  if (!pts || !pts.length) return;
+  const list = coarse ? pts.filter((_, i) => i % 2 === 0) : pts;
+  const geos = [0, 1].map(k => { const g = new THREE.IcosahedronGeometry(1, 0), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const n = 1 + (fbm(p.getX(i) * 2 + k * 5, p.getZ(i) * 2 + p.getY(i)) - 0.5) * 0.7; p.setXYZ(i, p.getX(i) * n * 1.2, p.getY(i) * n * 0.7, p.getZ(i) * n); }
+    g.computeVertexNormals(); return g; });
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.97, flatShading: true }), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), e3 = new THREE.Euler();
+  geos.forEach((geo, k) => {
+    const L = list.filter((_, i) => i % 2 === k); if (!L.length) return;
+    const im = new THREE.InstancedMesh(geo, mat, L.length);
+    L.forEach(([x, y, z, s, r], i) => {
+      m4.compose(V(x, y + s * 0.15, z), q.setFromEuler(e3.set(r * 2, r * 13, r * 5)), V(s, s * (0.6 + r * 0.5), s * (0.8 + r * 0.4))); im.setMatrixAt(i, m4);
+      c.set([0x8a4228, 0x9c5434, 0x6e3822, 0xa8603e, 0x52301f][Math.floor(r * 5)]).offsetHSL(0, 0, (r - 0.5) * 0.05); im.setColorAt(i, c);
+    });
+    im.castShadow = !coarse; im.receiveShadow = true; group.add(im);
+  });
+}
+
 /* ---------- plants ---------- */
 const shrubGeo = new THREE.IcosahedronGeometry(1, 1);
+// sagebrush and blackbrush: crossed, twiggy cut-outs, silver-green (a smooth sphere read as a stone)
+const sageGeo = (() => { const g = new THREE.BufferGeometry(), P = [], U = [];
+  for (const r of [0, Math.PI / 3, Math.PI * 2 / 3]) { const c = Math.cos(r) * 0.5, s = Math.sin(r) * 0.5;
+    P.push(-c, 0, -s, c, 0, s, c, 1, s, -c, 0, -s, c, 1, s, -c, 1, -s); U.push(0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1); }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.computeVertexNormals(); return g; })();
+let sageTex = null;
+function sagebrushTexture() {
+  if (sageTex) return sageTex;
+  const S = 128, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d'), R = rng(41);
+  // a rounded clump of fine twigs and tiny leaves, thinning toward its edge
+  for (let i = 0; i < 900; i++) {
+    const a = R() * Math.PI, rr = Math.sqrt(R()), x = S / 2 + Math.cos(a) * rr * S * 0.46, y = S - Math.sin(a) * rr * S * 0.92;
+    if (rr > 0.8 && R() < 0.5) continue;
+    const v = R(); g.fillStyle = `rgb(${140 + v * 45},${150 + v * 40},${125 + v * 40})`; g.fillRect(x, y, 1.5 + R() * 2.5, 1.5 + R() * 2);
+  }
+  g.strokeStyle = 'rgba(110,95,80,0.9)'; g.lineWidth = 1.2;
+  for (let i = 0; i < 14; i++) { const x0 = S / 2 + (R() - 0.5) * 20; g.beginPath(); g.moveTo(x0, S); g.lineTo(x0 + (R() - 0.5) * 70, S - 20 - R() * 60); g.stroke(); }
+  sageTex = new THREE.CanvasTexture(cv); sageTex.encoding = THREE.sRGBEncoding; return sageTex;
+}
 const shrubMat = new THREE.MeshStandardMaterial({ roughness: 0.95, envMapIntensity: 0.4 });
-export function scatterShrubs(T, box, coarse, group) {
-  const R = rng(Math.round(box.x0 * 7 + box.z1 * 3)), n = coarse ? 900 : 1700, list = [];
+export function scatterShrubs(T, box, coarse, group, { red = false } = {}) {
+  const R = rng(Math.round(box.x0 * 7 + box.z1 * 3)), n = red ? (coarse ? 1600 : 3200) : coarse ? 900 : 1700, list = [];
   for (let i = 0; i < n * 4 && list.length < n; i++) {
     const x = box.x0 + R() * (box.x1 - box.x0), z = box.z0 + R() * (box.z1 - box.z0), s = T.surfaceAt(x, z);
     if (s !== 'desert' && !(s === 'rough' && T.fairwayD(x, z) > 14)) continue;
@@ -234,10 +272,16 @@ export function scatterShrubs(T, box, coarse, group) {
     const g = T.groundAt(x, z); if (g === null) continue;
     list.push([x, g, z, 0.35 + R() * R() * 1.1, R()]);
   }
-  const im = new THREE.InstancedMesh(shrubGeo, shrubMat, list.length), m = new THREE.Matrix4(), c = new THREE.Color(), q = new THREE.Quaternion();
+  const sage = !!red;
+  const im = sage ? new THREE.InstancedMesh(sageGeo, new THREE.MeshStandardMaterial({ map: sagebrushTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1 }), list.length)
+    : new THREE.InstancedMesh(shrubGeo, shrubMat, list.length), m = new THREE.Matrix4(), c = new THREE.Color(), q = new THREE.Quaternion();
   list.forEach(([x, y, z, s, r], i) => {
-    m.compose(V(x, y + s * 0.25, z), q.setFromAxisAngle(V(0, 1, 0), r * 6), V(s * 1.2, s * 0.65, s));
-    im.setMatrixAt(i, m); c.set(r < 0.55 ? 0x7d8a62 : r < 0.85 ? 0x9a9c6c : 0x6a6a44).offsetHSL(0, 0, (r - 0.5) * 0.06); im.setColorAt(i, c);
+    if (sage) m.compose(V(x, y - 0.05, z), q.setFromAxisAngle(V(0, 1, 0), r * 6), V(s * 1.9, s * 1.2, s * 1.9));
+    else m.compose(V(x, y + s * 0.25, z), q.setFromAxisAngle(V(0, 1, 0), r * 6), V(s * 1.2, s * 0.65, s));
+    im.setMatrixAt(i, m);
+    if (sage) c.set(r < 0.6 ? 0x8a9478 : r < 0.85 ? 0x9a9878 : 0x55583f).offsetHSL(0, 0, (r - 0.5) * 0.05); // sagebrush, rabbitbrush, blackbrush
+    else c.set(r < 0.55 ? 0x7d8a62 : r < 0.85 ? 0x9a9c6c : 0x6a6a44).offsetHSL(0, 0, (r - 0.5) * 0.06);
+    im.setColorAt(i, c);
   });
   im.receiveShadow = true; im.castShadow = !coarse; group.add(im);
   // stones on the floor
@@ -333,15 +377,21 @@ function birdMesh(color, span) {
   return g;
 }
 function birds(p, y, ctx, kind) {
-  const n = kind === 'kestrels' ? 3 : 9, R = rng(n * 17);
+  // kestrels hover and stoop, swallows dart, ravens wheel in a pair, a red-tailed hawk soars wide and high
+  const SPEC = { kestrels: [3, 0x8a5a3a, 0.9, 18, 26, 0.12, 0.08, 14], swallows: [9, 0x2a2a35, 0.35, 10, 30, 0.5, 0.5, 18],
+    ravens: [2, 0x141418, 1.15, 28, 20, 0.16, 0.04, 8], hawk: [1, 0x6a4a32, 1.3, 70, 30, 0.07, 0.02, 6] }[kind];
+  const [n, col, span, r0, r1, s0, s1, dy] = SPEC, R = rng(n * 17 + span * 10);
   for (let i = 0; i < n; i++) {
-    const b = birdMesh(kind === 'kestrels' ? 0x8a5a3a : 0x2a2a35, kind === 'kestrels' ? 0.9 : 0.35); ctx.group.add(b);
-    const rad = kind === 'kestrels' ? 18 + R() * 26 : 10 + R() * 30, sp = kind === 'kestrels' ? 0.12 + R() * 0.08 : 0.5 + R() * 0.5, ph = R() * 6.28, hy = y + (R() - 0.5) * (kind === 'kestrels' ? 14 : 18);
+    const b = birdMesh(col, span); ctx.group.add(b);
+    const rad = r0 + R() * r1, sp = s0 + R() * s1, ph = kind === 'ravens' ? i * 0.5 : R() * 6.28, hy = y + (R() - 0.5) * dy;
     ctx.anims.push((dt, t) => {
       const a = ph + t * sp * (i % 2 ? 1 : -1), x = p.x + Math.cos(a) * rad + (kind === 'swallows' ? Math.sin(t * 2.1 + ph) * 6 : 0), z = p.z + Math.sin(a) * rad * 0.7;
       const yy = hy + Math.sin(t * 0.4 + ph) * 3;
       b.position.set(x, yy, z); b.rotation.y = -a + (i % 2 ? 0 : Math.PI);
-      const flap = kind === 'kestrels' ? (Math.sin(t * 1.3 + ph) > 0.6 ? Math.sin(t * 16) * 0.6 : 0.12) : Math.sin(t * 22 + ph) * 0.8;
+      const flap = kind === 'kestrels' ? (Math.sin(t * 1.3 + ph) > 0.6 ? Math.sin(t * 16) * 0.6 : 0.12)
+        : kind === 'hawk' ? 0.08 + (Math.sin(t * 0.21 + ph) > 0.93 ? Math.sin(t * 9) * 0.45 : 0)       // soars; a few slow beats now and then
+        : kind === 'ravens' ? (Math.sin(t * 0.7 + ph) > 0.2 ? Math.sin(t * 8 + ph) * 0.6 : 0.1)
+        : Math.sin(t * 22 + ph) * 0.8;
       b.userData.wings[0].rotation.z = flap; b.userData.wings[1].rotation.z = -flap;
     });
   }
@@ -355,6 +405,65 @@ function boulders(p, T, ctx) {
     m.compose(V(x, y + s * 0.3, z), q.setFromEuler(new THREE.Euler(R() * 3, R() * 3, 0)), V(s, s * 0.7, s * 0.9)); im.setMatrixAt(i, m);
   }
   im.castShadow = im.receiveShadow = true; ctx.group.add(im);
+}
+
+// Ancestral Puebloan cliff dwellings in an alcove: a dark arched recess in the wall at height p.y, a ledge,
+// stone rooms with T-shaped doors, a round tower, a ladder. rot: the way it faces, out of the wall. Scenery.
+function dwellings(p, T, ctx) {
+  const fx = Math.sin(p.rot), fz = Math.cos(p.rot), rx = Math.cos(p.rot), rz = -Math.sin(p.rot), W = p.w || 30, H = p.h || 13;
+  // find the wall's face at this height: walk in from the open air until the ground stands above it
+  let fxp = p.x + fx * 30, fzp = p.z + fz * 30;
+  for (let d = 30; d > -40; d -= 0.5) { const x = p.x + fx * d, z = p.z + fz * d, g = T.groundAt(x, z); if (g !== null && g > p.y + H) { fxp = x + fx * 0.6; fzp = z + fz * 0.6; break; } }
+  const g = new THREE.Group(); g.position.set(fxp, p.y, fzp); g.rotation.y = p.rot; ctx.group.add(g);
+  const M = c => new THREE.MeshStandardMaterial({ color: c, roughness: 1 });
+  // the alcove: a dark arched recess (the wall can't be cut, so its shadowed back is laid just proud of the
+  // face), the overhang's lip around it, and the ledge the rooms stand on
+  const back = new THREE.Mesh(new THREE.CircleGeometry(1, 28, 0, Math.PI), new THREE.MeshStandardMaterial({ color: 0x24140d, roughness: 1 }));
+  back.scale.set(W / 2, H, 1); back.position.z = 1.0; g.add(back);
+  const lip = new THREE.Mesh(new THREE.RingGeometry(0.93, 1.06, 28, 1, 0, Math.PI), new THREE.MeshStandardMaterial({ color: 0x7a3c22, roughness: 1, side: THREE.DoubleSide }));
+  lip.scale.set(W / 2 + 1, H + 1, 1); lip.position.z = 1.15; g.add(lip);
+  const ledge = new THREE.Mesh(new THREE.BoxGeometry(W * 0.96, 1.4, 7), M(0x9a5a3a)); ledge.position.set(0, -0.7, 3.5); g.add(ledge);
+  // rooms: dry-laid stone in the rock's own colours, one to three storeys, T doors and little windows
+  const R = rng(Math.round(p.x * 3 + p.z)), stone = [0xb98a64, 0xa87a58, 0xc49a74], dark = M(0x1c120c);
+  for (let i = 0, x = -W * 0.4; x < W * 0.38 && i < 9; i++) {
+    const w = 2.6 + R() * 2.6, d = 2.8 + R() * 1.8, h = (1 + Math.floor(R() * (Math.abs(x) < W * 0.2 ? 3 : 2))) * 2.4, bk = 2.6 + R() * 2.4;
+    if (R() < 0.18 && i > 1) { // the round tower
+      const tw = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2, h + 1.8, 12), M(stone[0])); tw.position.set(x + 1.8, (h + 1.8) / 2, bk + 0.5); g.add(tw);
+      x += 4.2; continue;
+    }
+    const rm = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(stone[Math.floor(R() * 3)])); rm.position.set(x + w / 2, h / 2, bk - d / 2); g.add(rm);
+    for (let f = 0; f < h / 2.4; f++) {
+      const dx = x + w * (0.3 + R() * 0.4), dy = f * 2.4, fz2 = bk + 0.02;
+      if (R() < 0.6) { const t1 = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.7, 0.1), dark), t2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.9, 0.1), dark);
+        t1.position.set(dx, dy + 1.45, fz2); t2.position.set(dx, dy + 0.75, fz2); g.add(t1, t2); }           // a T-shaped door
+      else { const wnd = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.35, 0.1), dark); wnd.position.set(dx, dy + 1.4, fz2); g.add(wnd); }
+    }
+    x += w + 0.2 + R() * 0.6;
+  }
+  // a ladder up to the ledge from the talus below
+  const lad = M(0x5a4030), lx = W * 0.2;
+  for (const s of [-0.3, 0.3]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 7, 5), lad); r.position.set(lx + s, -3.6, 7.6); r.rotation.x = 0.25; g.add(r); }
+  for (let k = 0; k < 9; k++) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.7, 4), lad); r.rotation.z = Math.PI / 2; r.position.set(lx, -6.8 + k * 0.75, 7.6 - (k - 4) * 0.19); g.add(r); }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+}
+
+// a chuckwalla on a warm rock beside the Lizard tees: it does push-ups now and then (scenery)
+function lizard(hole, T, ctx) {
+  const tee = hole.tees && hole.tees.lizard; if (!tee) return;
+  const pin = hole.pin || (hole.green && hole.green.pins && hole.green.pins[0]) || [0, -100], L = hole.line ? hole.line[1] : pin;
+  const dx = L[0] - tee[0], dz = L[1] - tee[1], l = Math.hypot(dx, dz) || 1, sx = -dz / l, sz = dx / l;
+  let x = tee[0] + sx * 7, z = tee[1] + sz * 7, y = T.groundAt(x, z);
+  if (y === null) { x = tee[0] - sx * 7; z = tee[1] - sz * 7; y = T.groundAt(x, z); } if (y === null) return;
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = Math.atan2(sx, sz) + 0.6; ctx.group.add(g);
+  const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xa8603c, roughness: 1, flatShading: true }));
+  rock.scale.set(1.3, 0.45, 1); rock.position.y = 0.2; g.add(rock);
+  const body = new THREE.Group(); body.position.y = 0.62; g.add(body);
+  const skin = new THREE.MeshStandardMaterial({ color: 0x6a5a48, roughness: 0.9 }), tail = new THREE.MeshStandardMaterial({ color: 0xb08a5a, roughness: 0.9 });
+  const torso = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 6), skin); torso.scale.set(1, 0.55, 2); body.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), skin); head.scale.set(1, 0.7, 1.3); head.position.set(0, 0.04, 0.38); body.add(head);
+  const tl = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.6, 6), tail); tl.rotation.x = -Math.PI / 2; tl.position.z = -0.6; body.add(tl);
+  for (const [lx, lz] of [[-0.15, 0.18], [0.15, 0.18], [-0.15, -0.18], [0.15, -0.18]]) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.14, 4), skin); leg.position.set(lx, -0.07, lz); leg.rotation.z = lx > 0 ? -0.7 : 0.7; body.add(leg); }
+  ctx.anims.push((dt, t) => { const u = (t % 7) / 7, up = u > 0.8 ? Math.max(0, Math.sin((u - 0.8) / 0.2 * Math.PI * 3)) : 0; body.position.y = 0.62 + up * 0.07; head.rotation.y = Math.sin(t * 0.4) * 0.4; });
 }
 
 function mine(p, T, ctx) {
@@ -545,7 +654,7 @@ function railing(I, T, ctx) {
 }
 
 // build every prop on the hole; returns the animation hooks
-export function buildProps(hole, T, tee, mat, group, { glyphs = true } = {}) {
+export function buildProps(hole, T, tee, mat, group, { glyphs = true, life = false } = {}) {
   const ctx = { group, anims: [], glow: [] };
   for (const p of hole.props || []) {
     const y = T.groundAt(p.x, p.z);
@@ -561,6 +670,12 @@ export function buildProps(hole, T, tee, mat, group, { glyphs = true } = {}) {
     else if (p.type === 'observatory') observatory(p, T, ctx);
     else if (p.type === 'windowArch') windowArch(p, T, mat, ctx);
     else if (p.type === 'waterfall') waterfall(p, T, ctx);
+    else if (p.type === 'dwellings') dwellings(p, T, ctx);
+  }
+  if (life) { // Red Mesa: a pair of ravens and a hawk over every hole, a lizard by the Lizard tees
+    const L = hole.line || [tee, hole.pin || [0, -150]], m = L[Math.floor(L.length / 2)], g = T.groundAt(m[0], m[1]) ?? 0;
+    if (life === 'sky') { birds({ x: m[0] + 60, z: m[1] }, g + 25, ctx, 'swallows'); birds({ x: m[0] - 40, z: m[1] - 60 }, g + 70, ctx, 'hawk'); } // swifts and an eagle
+    else { birds({ x: m[0] + 30, z: m[1] }, g + 38, ctx, 'ravens'); birds({ x: m[0] - 20, z: m[1] - 40 }, g + 85, ctx, 'hawk'); lizard(hole, T, ctx); }
   }
   for (const I of T.ISL) if (I.rail) railing(I, T, ctx);
   if (glyphs) petroglyph(hole, T, hole.tees[Object.keys(hole.tees)[0]], ctx);
@@ -752,6 +867,6 @@ export function buildWater(T, group) {
     const g = new THREE.CircleGeometry(1, 64); g.rotateX(-Math.PI / 2);
     const m = new THREE.Mesh(g, waterMat);
     m.scale.set(W.rx * 1.45, 1, W.rz * 1.45); m.rotation.y = -W.rot; m.position.set(W.x, W.level, W.z);
-    m.receiveShadow = true; m.renderOrder = 1; group.add(m);
+    m.receiveShadow = true; m.renderOrder = 1; m.userData.pond = W; group.add(m);
   }
 }

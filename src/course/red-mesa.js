@@ -7,7 +7,8 @@
 //   islands   kinds 'mesa' (playable top), 'rock' (cliffs and walls), plus the Aerie kinds;
 //             slope { from, to } makes a ramp
 //   green, bunkers, landforms, water   shaped features (features.js); green.pins are picked per round
-//   rocks     arches and hoodoos the ball can hit; props: scenery placed by type
+//   rocks     arches and hoodoos the ball can hit; props: scenery placed by type (dwellings: cliff dwellings in an
+//             alcove at height y in the wall that faces rot, found by walking in from x, z)
 // The course builder will read and write this same shape.
 
 export const COURSE = {
@@ -142,7 +143,7 @@ export const HOLES = [
     ],
     targets: [{ name: 'Lower right', x: 12, z: -262 }, { name: 'Upper plateau', x: -46, z: -232 }, { name: 'Green', pin: true }],
     drops: [],
-    props: [{ type: 'swallows', x: 0, z: -390 }],
+    props: [{ type: 'swallows', x: 0, z: -390 }, { type: 'dwellings', x: 50, z: -192, y: -6, rot: -Math.PI / 2, w: 30, h: 12 }],
     glyph: 'snake',
   },
   {
@@ -170,7 +171,7 @@ export const HOLES = [
     targets: [{ name: 'Green', pin: true }, { name: 'Bail out short', x: 4, z: -140 }],
     drops: [],
     rocks: [{ type: 'arch', x: 70, z: -310, rot: 0, w: 150, h: 68, t: 22, d: 26, crown: 0.6, flare: 16 }],
-    props: [{ type: 'kestrels', x: 0, z: -110, y: -35 }, { type: 'boulders', x: 2, z: -262, w: 120, d: 14, n: 26 }],
+    props: [{ type: 'kestrels', x: 0, z: -110, y: -35 }, { type: 'boulders', x: 2, z: -262, w: 120, d: 14, n: 26 }, { type: 'dwellings', x: -75, z: -128, y: -44, rot: Math.PI / 2, w: 38, h: 15 }],
     glyph: 'bird',
   },
   {
@@ -327,6 +328,7 @@ export const HOLES = [
     props: [
       { type: 'waterfall', x: -62, z: -108, rot: Math.PI / 2, w: 22, back: 80 },
       { type: 'fossil', x: -63, z: -236, rot: Math.PI / 2 }, { type: 'cottonwoods' },
+      { type: 'dwellings', x: 55, z: -262, y: 20, rot: -Math.PI / 2, w: 26, h: 11 },
     ],
     glyph: 'lizard',
   },

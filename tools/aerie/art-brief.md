@@ -32,6 +32,10 @@ trees.
 amber on one side; a bright cloud sea below that you can read from the tee (a white floor, not a grey
 haze); a few high cumulus; mist drifting through the gaps between islands.
 
+**Rhys's picks (10 November 2026).** Golden morning over a bright cloud sea. Plus clouds at and above the
+horizon in the background (banks of cumulus standing up behind the far islands), and some in the
+foreground too: wisps and small clouds drifting between and in front of the near islands.
+
 **Life and details.** Swifts or a pair of eagles riding the air between islands; prayer-flag or
 lantern strings on a footbridge; the balloon; waterfalls falling into the cloud with spray where they
 meet it. A few, not busy.

@@ -35,6 +35,10 @@ by the falls; a few prickly pear and yucca near the tees. Fewer round cartoon tr
 one side glows and the other falls into blue shadow; long shadows from every butte and hoodoo; a warm
 dust haze toward the sun; a few high, lit cirrus.
 
+**Rhys's picks (10 November 2026).** Red Mesa gets its art pass first. Besides the walls, sagebrush,
+junipers, red sand and a real golden hour: the cliff dwellings as a landmark, and ravens, a hawk and a
+lizard at the Lizard tees.
+
 **Life and details.** Ravens and a red-tailed hawk circling; a lizard on the tee rock (the Lizard tees);
 the train on the trestle, the windmill and the mine (there now); Ancestral Puebloan cliff dwellings in an
 alcove on one wall, as a landmark; a rusting ore cart at the mine. A few, not busy.

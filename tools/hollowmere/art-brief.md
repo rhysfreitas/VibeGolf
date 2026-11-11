@@ -36,6 +36,9 @@ little doline jungle under the biggest shaft; elsewhere bare rock. Giant mushroo
 misty beams with no hard edges, dust motes in them; the lit green and fairway as now; lanterns along
 the play; everything else falls away to black.
 
+**Rhys's picks (10 November 2026).** All four fixes: misty beams and real falls (pool, spray, mist),
+Mirror Lake reflects, mushrooms and crystals with depth, turf that falls into the dark.
+
 **Life and details.** Bats leaving through a shaft; drips and ripples in the pools; mine relics (rails,
 carts, a winch, a lamp hook); glowworm threads hanging from the grotto's ceiling.
 

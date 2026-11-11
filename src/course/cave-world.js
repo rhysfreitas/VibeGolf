@@ -37,8 +37,30 @@ function lumpy(detail, seed, amt) { // a faceted boulder
 const lathe = (n, seg, f) => withColor(new THREE.LatheGeometry(Array.from({ length: n + 1 }, (_, i) => new THREE.Vector2(Math.max(0.02, f(i / n)), i / n)), seg));
 const stalGeo = lathe(14, 8, t => Math.pow(t, 1.25) * (1 + 0.12 * Math.sin(t * 23))); // tip at y=0, base (radius 1) at y=1
 const flowGeo = lathe(18, 9, t => 0.3 + 0.95 * Math.pow(1 - t, 2.2) + 0.08 * Math.sin(t * 31)); // flowstone draped down a wall, spreading at its foot (y=0)
-const crystalGeo = withColor(new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(0.5, 0.02), new THREE.Vector2(0.5, 0.74), new THREE.Vector2(0, 1)], 6));
+const crystalGeo = (() => { const g = new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(0.5, 0.02), new THREE.Vector2(0.46, 0.5), new THREE.Vector2(0.5, 0.74), new THREE.Vector2(0, 1)], 6).toNonIndexed(); g.computeVertexNormals(); return withColor(g); })();
+// a crystal's glow comes from inside: dim at its root, bright toward the tip (the lathe's v runs root to tip)
+const crystalGlow = (() => { const cv = document.createElement('canvas'); cv.width = 4; cv.height = 64; const g = cv.getContext('2d'), gr = g.createLinearGradient(0, 64, 0, 0);
+  gr.addColorStop(0, '#202020'); gr.addColorStop(0.55, '#7a7a7a'); gr.addColorStop(0.8, '#ffffff'); gr.addColorStop(1, '#d0d0d0'); g.fillStyle = gr; g.fillRect(0, 0, 4, 64); return new THREE.CanvasTexture(cv); })();
+const crystalMat = hue => new THREE.MeshStandardMaterial({ color: hue, emissive: hue, emissiveMap: crystalGlow, emissiveIntensity: 1.1, roughness: 0.12, metalness: 0.25, vertexColors: true, flatShading: true });
 const UP = new THREE.Vector3(0, 1, 0);
+// a shaft of sunlight with no hard edge: the sides fade where you look across the cylinder's skin, the top and
+// the foot fade out, and motes of dust drift down through it
+function softBeam(strength) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false,
+    uniforms: { uA: { value: strength }, uT: { value: 0 }, uC: { value: new THREE.Color(0xfff0cf) } },
+    vertexShader: `varying vec3 vN, vV, vW; varying float vY; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - w.xyz); vY = uv.y; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform float uA, uT; uniform vec3 uC; varying vec3 vN, vV, vW; varying float vY;
+      float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+      void main(){
+        float face = pow(abs(dot(normalize(vN), normalize(vV))), 2.2);              // the middle of the shaft, not its edge
+        float ends = smoothstep(0.0, 0.25, vY) * smoothstep(1.0, 0.7, vY);         // fades in from the floor and out toward the roof
+        vec2 g = vec2(vW.x + vW.z, vW.y + uT * 1.4) * 1.3; float mote = step(0.985, h21(floor(g))) * 0.9;
+        float a = uA * face * ends * (1.0 + mote);
+        gl_FragColor = vec4(uC * a, a);
+        #include <encodings_fragment>
+      }` });
+}
 function instances(geo, mat, list, tint) { // list: [{ p, q, s, c }]
   const im = new THREE.InstancedMesh(geo, mat, list.length), m4 = new THREE.Matrix4(), c = new THREE.Color();
   list.forEach((o, i) => { m4.compose(o.p, o.q, o.s); im.setMatrixAt(i, m4); if (tint) { c.setScalar(o.c ?? 1); im.setColorAt(i, c); } });
@@ -288,7 +310,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
     const g0 = gy(S.x, S.z), H = top - g0, lean = V(-sd.x / sd.y, 0, -sd.z / sd.y).multiplyScalar(H * 0.35);
     const bg = new THREE.CylinderGeometry(open * 0.95, open * 1.05 + (S.r - open) * 0.5, H, 32, 1, true); bg.translate(0, -H / 2, 0);
     const bp = bg.attributes.position; for (let q = 0; q < bp.count; q++) { const t = -bp.getY(q) / H; bp.setX(q, bp.getX(q) + lean.x * t); bp.setZ(q, bp.getZ(q) + lean.z * t); }
-    const beamMat = new THREE.MeshBasicMaterial({ color: 0xfff0cf, transparent: true, opacity: S.r > 40 ? 0.035 : 0.06, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    const beamMat = softBeam(S.r > 40 ? 0.05 : 0.085); ctx.anims.push((dt, t) => { beamMat.uniforms.uT.value = t; });
     const bm = new THREE.Mesh(bg, beamMat); bm.position.set(S.x, top, S.z); bm.renderOrder = 3; group.add(bm);
     // the pool of light where it lands
     const L = new THREE.SpotLight(0xfff1d4, VN ? 5 : S.r > 40 ? 2.4 : 3.2, H * 1.8, Math.min(1.1, Math.atan((S.r * 1.25) / H)), 0.45, 1);
@@ -394,10 +416,21 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         fp.setXYZ(k, p.x, top - drop * Hh, p.z);
       }
       fg.computeVertexNormals();
-      const sheet = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: Hh > 120 ? 0.62 : 0.85, depthWrite: false, side: THREE.DoubleSide, color: 0xcfe4ee, fog: !far })); // a tall curtain reads as falling water, not a wall
+      { const cA = new Float32Array(fp.count * 4); for (let k = 0; k < fp.count; k++) { const u = fg.attributes.uv.getX(k), v = fg.attributes.uv.getY(k);
+          cA.set([1, 1, 1, Math.min(1, Math.min(u, 1 - u) * 9) * Math.min(1, v * 12) * Math.min(1, (1 - v) * 20 + 0.2)], k * 4); } // ragged sides, thin at the lip, faded at the foot
+        fg.setAttribute('color', new THREE.BufferAttribute(cA, 4)); }
+      const sheet = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: tex, vertexColors: true, transparent: true, opacity: Hh > 120 ? 0.62 : 0.85, depthWrite: false, side: THREE.DoubleSide, color: 0xcfe4ee, fog: !far })); // a tall curtain reads as falling water, not a wall
       sheet.renderOrder = 2; group.add(sheet);
       const mist = []; for (let k = 0; k < 7; k++) { const s = glow(0xcfe3ea, W * (1.2 + k * 0.3), 0.18); s.position.set(mid.x + (R() - 0.5) * W, Math.max(bot, gy(mid.x, mid.z)) + 4 + k * 3, mid.z + (R() - 0.5) * W); s.material.blending = THREE.NormalBlending; group.add(s); mist.push(s); }
-      ctx.anims.push((dt, t) => { tex.offset.y = t * 0.8; mist.forEach((s, i) => { s.material.opacity = 0.14 + 0.06 * Math.sin(t * 1.7 + i); }); });
+      // the foot: churned white water along the base, spray thrown up and drifting off, a low cloud of mist
+      const footY = Math.max(bot, gy(mid.x, mid.z)), foam = [], spray = [];
+      if (!M.bottom) {
+        for (let k = 0; k < Math.max(4, Math.round(W / 4)); k++) { const p = pts[0].clone().lerp(pts.at(-1), (k + 0.5) / Math.max(4, Math.round(W / 4))); const f = glow(0xf2f8fa, 6 + R() * 5, 0.5); f.material.blending = THREE.NormalBlending; f.position.set(p.x, footY + 1.2, p.z); group.add(f); foam.push(f); }
+        for (let k = 0; k < 14; k++) { const f = glow(0xe6f0f4, 4 + R() * 6, 0.3); f.material.blending = THREE.NormalBlending; group.add(f); spray.push({ f, ph: R(), x: mid.x + (R() - 0.5) * W, z: mid.z + (R() - 0.5) * W * 0.5 }); }
+      }
+      ctx.anims.push((dt, t) => { tex.offset.y = t * 0.8; mist.forEach((s, i) => { s.material.opacity = 0.14 + 0.06 * Math.sin(t * 1.7 + i); });
+        foam.forEach((f, i) => { const k = 1 + 0.15 * Math.sin(t * 3.1 + i * 1.7); f.scale.set(f.userData.s ??= f.scale.x, f.userData.s * 0.6 * k, 1); });
+        spray.forEach(o => { const u = (t * 0.22 + o.ph) % 1; o.f.position.set(o.x + u * 4, footY + 1 + u * 14, o.z); o.f.material.opacity = 0.32 * (1 - u); }); });
     }
     else if (M.type === 'geode') {
       // a geode cracked open, like a halved stone: the green sits in the lower half (crystals lining the
@@ -445,8 +478,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         if (!far) { const P = new THREE.PointLight(0xa57bff, 2.4, 80, 1.3); P.position.copy(face).addScaledVector(d, -12); ctx.baked.push(P); }
       }
       for (const [L, hue] of [[purple, 0x9b6bff], [blue, 0x5f8dff], [white, 0xe6e2ff]]) if (L.length) {
-        const mat = new THREE.MeshStandardMaterial({ color: hue, emissive: hue, emissiveIntensity: 0.7, roughness: 0.15, metalness: 0.1, vertexColors: true });
-        group.add(instances(crystalGeo, mat, L, true));
+        group.add(instances(crystalGeo, crystalMat(hue), L, true));
       }
       for (let k = 0; k < 4; k++) { const a = (k - 1.5) * 0.7, gl = glow(k % 2 ? 0x6f8dff : 0x9b6bff, 22, 0.3); gl.position.set(M.x + (d.x * Math.cos(a) - d.z * Math.sin(a)) * M.r, gy(M.x, M.z) + 4, M.z + (d.x * Math.sin(a) + d.z * Math.cos(a)) * M.r); group.add(gl); }
     }
@@ -482,7 +514,7 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
         if (where < 0.45 || top === null) L1.push({ p: V(x, g - 0.2, z), q: new THREE.Quaternion().setFromUnitVectors(UP, V((R() - 0.5) * 0.8, 1, (R() - 0.5) * 0.8).normalize()), s: V(len * 0.3, len, len * 0.3), c: 0.85 + R() * 0.3 });
         else L1.push({ p: V(x, top + 0.4, z), q: new THREE.Quaternion().setFromUnitVectors(UP, V((R() - 0.5) * 0.7, -1, (R() - 0.5) * 0.7).normalize()), s: V(len * 0.3, len, len * 0.3), c: 0.85 + R() * 0.3 });
       }
-      L.forEach((list, i) => list.length && group.add(instances(crystalGeo, new THREE.MeshStandardMaterial({ color: hues[i], emissive: hues[i], emissiveIntensity: 0.8, roughness: 0.15, vertexColors: true }), list, true)));
+      L.forEach((list, i) => list.length && group.add(instances(crystalGeo, crystalMat(hues[i]), list, true)));
       if (!far) for (let k = 0; k < 3; k++) { const P = new THREE.PointLight(k % 2 ? 0x6fd8ff : 0x9b7bff, 1.6, 70, 1.3), a = k * 2.1; P.position.set(M.x + Math.cos(a) * M.r * 0.4, gy(M.x, M.z) + 6, M.z + Math.sin(a) * M.r * 0.4); ctx.baked.push(P); }
       for (let k = 0; k < 5; k++) { const gl = glow(k % 2 ? 0x6fd8ff : 0x9b7bff, 26, 0.25), a = R() * 6.28, r = R() * M.r * 0.7; gl.position.set(M.x + Math.cos(a) * r, gy(M.x, M.z) + 3 + R() * 8, M.z + Math.sin(a) * r); group.add(gl); }
     }
@@ -530,14 +562,27 @@ export function buildCave(h, T, box0, { group, coarse, sunDir }) {
   // giant glowing mushrooms (they play as trees: trees.js 'mushroom')
   const shrooms = T.trees.filter(t => t.type === 'mushroom');
   if (shrooms.length) {
-    const stem = new THREE.MeshStandardMaterial({ color: 0xd9d2c0, roughness: 0.8, emissive: 0x2a3b3a, emissiveIntensity: 0.6 });
-    const capM = new THREE.MeshStandardMaterial({ color: 0x48e0c8, roughness: 0.5, emissive: 0x2fd6c0, emissiveIntensity: 0.85 });
-    for (const t of shrooms) {
-      const H = 3.2 * t.s, cs = 2.4 * t.s;
-      const st = new THREE.Mesh(new THREE.CylinderGeometry(0.35 * t.s, 0.55 * t.s, H + cs * 0.4, 10), stem); st.position.set(t.x, t.y + (H + cs * 0.4) / 2 - 0.3, t.z); group.add(st);
-      const cp = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), capM); cp.scale.set(cs * 1.05, cs * 0.55, cs * 1.05); cp.position.set(t.x, t.y + H + cs * 0.25, t.z); group.add(cp);
-    }
-    const P = new THREE.PointLight(0x46e3cc, 1.6, 60, 1.4), m = shrooms[Math.floor(shrooms.length / 2)]; P.position.set(m.x, m.y + 10, m.z); ctx.baked.push(P);
+    const stem = new THREE.MeshStandardMaterial({ color: 0xcfc6b0, roughness: 0.85, emissive: 0x24302e, emissiveIntensity: 0.5 });
+    // cap: a dome that turns down into a rolled lip; gills: a finely ribbed disc under it that glows the cap's colour
+    const capGeo = new THREE.LatheGeometry([[0, 1], [0.35, 0.96], [0.7, 0.8], [0.93, 0.52], [1.02, 0.24], [0.98, 0.08], [0.86, 0.04]].map(([x, y]) => new THREE.Vector2(x, y)), 22);
+    const gillTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d'); g.fillStyle = '#d2c3ae'; g.fillRect(0, 0, 128, 128); g.strokeStyle = '#5e4c40'; g.lineWidth = 1;
+      for (let i = 0; i < 90; i++) { const a = i / 90 * Math.PI * 2; g.beginPath(); g.moveTo(64 + Math.cos(a) * 10, 64 + Math.sin(a) * 10); g.lineTo(64 + Math.cos(a) * 64, 64 + Math.sin(a) * 64); g.stroke(); }
+      g.fillStyle = '#6a5848'; g.beginPath(); g.arc(64, 64, 12, 0, 7); g.fill(); return new THREE.CanvasTexture(cv); })();
+    const gillMats = new Map(), gillMat = hue => { if (!gillMats.has(hue)) gillMats.set(hue, new THREE.MeshStandardMaterial({ color: 0x8a7c6c, map: gillTex, roughness: 1, emissive: hue, emissiveMap: gillTex, emissiveIntensity: 0.75, side: THREE.DoubleSide })); return gillMats.get(hue); };
+    const HUES = [[0x3fd2bc, 0x2fc6b0], [0x6f8bff, 0x5470ff], [0xe6a64a, 0xd88a2e], [0x9a72e6, 0x7d56d6]], caps = [];
+    const spotTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d'), RR = rng(77); g.fillStyle = '#fff'; g.fillRect(0, 0, 128, 128);
+      for (let i = 0; i < 26; i++) { g.fillStyle = 'rgba(255,250,235,1)'; g.globalAlpha = 1; g.fillStyle = '#e8e0d0'; g.beginPath(); g.arc(RR() * 128, RR() * 70, 2 + RR() * 6, 0, 7); g.fill(); } return new THREE.CanvasTexture(cv); })();
+    shrooms.forEach((t, i) => {
+      const H = 3.2 * t.s, cs = 2.4 * t.s, hu = HUES[(i * 7 + Math.floor(t.r * 4)) % 4], bend = (t.r - 0.5) * 0.25;
+      const capM = new THREE.MeshStandardMaterial({ color: hu[0], map: spotTex, roughness: 0.55, emissive: hu[1], emissiveIntensity: 0.7 }); caps.push(capM);
+      const st = new THREE.Mesh(new THREE.CylinderGeometry(0.3 * t.s, 0.6 * t.s, H + cs * 0.4, 12), stem); st.position.set(t.x, t.y + (H + cs * 0.4) / 2 - 0.3, t.z); st.rotation.z = bend; group.add(st);
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.62 * t.s, 0.34 * t.s, 0.3 * t.s, 12, 1, true), stem); ring.position.set(t.x - Math.sin(bend) * H * 0.7, t.y + H * 0.72, t.z); group.add(ring);
+      const top = new THREE.Vector3(t.x - Math.sin(bend) * (H + cs * 0.2), t.y + H + cs * 0.05, t.z);
+      const cp = new THREE.Mesh(capGeo, capM); cp.scale.set(cs * 1.08, cs * 0.6, cs * 1.08); cp.position.copy(top); cp.rotation.z = bend * 0.6; group.add(cp);
+      const gl = new THREE.Mesh(new THREE.CircleGeometry(cs * 0.95, 24).rotateX(Math.PI / 2), gillMat(hu[1])); gl.position.copy(top).add(new THREE.Vector3(0, cs * 0.05, 0)); gl.rotation.z = bend * 0.6; group.add(gl);
+    });
+    ctx.anims.push((dt, tt) => caps.forEach((m, i) => { m.emissiveIntensity = 0.6 + 0.18 * Math.sin(tt * 0.6 + i * 1.3); }));
+    const P = new THREE.PointLight(0x46e3cc, 1.1, 60, 1.4), m = shrooms[Math.floor(shrooms.length / 2)]; P.position.set(m.x, m.y + 10, m.z); ctx.baked.push(P);
   }
   // the play is lit: the lanterns nearest the line, and a warm light over the green
   const along = p => { const tx = h.tee[0], tz = h.tee[1]; const dx = pin.x - tx, dz = pin.z - tz, L2 = dx * dx + dz * dz, t = Math.max(0, Math.min(1, ((p.x - tx) * dx + (p.z - tz) * dz) / L2)); return Math.hypot(p.x - tx - dx * t, p.z - tz - dz * t); };
