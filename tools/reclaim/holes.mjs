@@ -43,7 +43,7 @@ export const HOLES = [
       prof: [[0, 0], [110, 0], [170, 1.5], [260, 0.5], [366, 0]],
       fairway: [{ e: [[70, 14, 14], [110, 20, 22], [160, 24, 30], [215, 30, 26], [245, 22, 18], [275, 20, 24], [320, 22, 20], [352, 16, 14]] }],
       corridor: 20,
-      green: { rx: 15, rz: 18, lobes: [[2, -4, 9, 13, -25], [-7, 9, 9, 6, -10]], join: 3, pins: [[-6, 8], [6, -6], [2, -9]], engine: { style: 'tilt', tilt: 1.2 }, style: 'a kidney turned back-left, tilted back to front' },
+      green: { rx: 15, rz: 18, lobes: [[2, -4, 9, 13, -25], [-7, 9, 9, 6, -10]], join: 3, pins: [[-6, 8], [6, -6], [2, -9]], engine: { style: 'tilt', tilt: 1.5, shape: [{ tier: [-3, 4], up: 217, h: 0.4, w: 4 }] }, style: 'a kidney turned back-left, tilted back to front' },
       bunkers: [{ at: P(238, 30), rx: 15, rz: 6, rot: 0.15 }, { at: P(352, -17), rx: 4, rz: 3.5, style: 'pot' }],
       // a skyscraper fell across the second leg: its body lies on its side off the right, its broken top
       // end buried in a grassed rubble ridge 11 m high across the fairway, low (3 m) at the left by the El
@@ -65,6 +65,7 @@ export const HOLES = [
         // round the green
         { at: P(395, 10), w: 70, d: 30, h: 28, broken: true }, { at: P(330, 78), w: 40, d: 50, h: 42, broken: true },
       ],
+      cant: [[150, 290, 3]],   // the boulevard falls toward the corner
       targets: [{ name: 'Past the El', at: P(226, -6) }, { name: 'Round the low end', at: P(262, -14), bold: true }],
       words: {
         plays: 'Tee off the broken platform of the elevated line, 12 m above the boulevard. The track runs on down the left on its girders and ends in mid-air, a carriage hanging off the break. Round the bend a skyscraper lies on its side across the street: its body off to the right, its broken top end buried in a ridge of grassed rubble 11 m high. The green is out of sight behind it.',
@@ -90,7 +91,7 @@ export const HOLES = [
         trench: { s0: 140, s1: 236, depth: 7, w: 62, ramp: 26, bank: 9, label: 'the tunnel cave-in' },
         fairway: [{ e: [[60, 16, 18], [110, 22, 28], [170, 26, 30], [205, 24, 22], [240, 18, 20], [290, 22, 24], [336, 15, 15]] }],
         corridor: 18,
-        green: { rx: 14, rz: 17, lobes: [[0, 0, 10, 16, 30], [-7, 4, 7, 6, 0], [4, -8, 5, 5, 0]], join: 3, pins: [[5, 8], [-4, -7], [-6, 4]], engine: { style: 'tiered', tiers: [{ b: -3.5, step: 0.6 }], falseFront: 0.5 }, style: 'two tiers on a long green turned back-right, old fountain steps as a false front' },
+        green: { rx: 14, rz: 17, lobes: [[0, 0, 10, 16, 30], [-7, 4, 7, 6, 0], [4, -8, 5, 5, 0]], join: 3, pins: [[5, 8], [-4, -7], [-6, 4]], engine: { style: 'tiered', shape: [], tiers: [{ b: -3.5, step: 0.6 }], falseFront: 0.5 }, style: 'two tiers on a long green turned back-right, old fountain steps as a false front' },
         bunkers: [{ at: P(332, -20), rx: 4.5, rz: 3.5, style: 'pot' }, { at: P(208, 32), rx: 14, rz: 7, rot: -0.3 }],
         rubble: [{ at: P(214, 14), rx: 30, rz: 22, rot: -0.4, h: 2.5, label: 'rubble ramp' }],
         buildings: [
@@ -124,7 +125,7 @@ export const HOLES = [
       pit: { at: P(128), rx: 62, rz: 76, rot: 0, depth: 10, bank: 14, label: 'the cave-in' },
       ramp: { from: P(40, 46), to: P(110, 40), w: 26, label: 'the station stairs' },  // a way down on the right
       corridor: 10,
-      green: { rx: 15, rz: 14, lobes: [[0, -1, 14, 10, 0], [-8, 6, 8, 7, 0]], join: 3, pins: [[-8, 6], [9, 0], [2, -6]], style: 'a kidney across the line, in a punchbowl on the concourse floor' },
+      green: { rx: 15, rz: 14, lobes: [[0, -1, 14, 10, 0], [-8, 6, 8, 7, 0]], join: 3, pins: [[-8, 6], [9, 0], [2, -6]], engine: { style: 'punchbowl', shape: [] }, style: 'a kidney across the line, in a punchbowl on the concourse floor' },
       fairway: [[95, 140, 34, 22]],
       bunkers: [{ at: P(146, -21), rx: 7, rz: 9 }],
       water: [{ at: P(176), rx: 46, rz: 7, y: -10.4, label: 'flooded tracks' }],
@@ -154,7 +155,7 @@ export const HOLES = [
         prof: [[0, 0], [300, 0.5], [352, 3.5], [366, 6.5], [380, 5], [430, 7], [498, 10]],
         fairway: [{ e: [[50, 14, 14], [90, 22, 24], [150, 30, 28], [190, 24, 22], [230, 25, 27], [275, 28, 24], [330, 20, 18], [360, 20, 22], [420, 24, 22], [470, 18, 18], [488, 14, 14]] }],
         corridor: 18,
-        green: { rx: 16, rz: 19, lobes: [[0, 0, 8, 18, 45], [-5, 4, 6, 6, 0]], join: 4, pins: [[6, 7], [-6, -7], [-5, 5]], engine: { style: 'plateau', raise: 0.3, falseFront: 0.6 }, style: 'a long diagonal on the floor slab of a gutted pavilion, 2.2 m up; broken steps make a false front' },
+        green: { rx: 16, rz: 19, lobes: [[0, 0, 8, 18, 45], [-5, 4, 6, 6, 0]], join: 4, pins: [[6, 7], [-6, -7], [-5, 5]], engine: { style: 'plateau', raise: 0.3, falseFront: 0.6, shape: [{ bowl: [6, 7], r: 9, h: 0.25 }] }, style: 'a long diagonal on the floor slab of a gutted pavilion, 2.2 m up; broken steps make a false front' },
         // the pavilion's ground floor: a raised slab in the hill park, broken steps up its front, a few columns left
         sketch: { tee: { up: 26, fov: 68 }, extra: [{ title: 'Hole 4: the green on the pavilion floor, from the third-shot landing', from: [430, -8, 4], to: [498, 0, 1], fov: 50 }] },
         podium: { w: 50, d: 54, h: 2.2, front: 10, label: 'the pavilion floor' },
@@ -196,7 +197,7 @@ export const HOLES = [
       greenTier: { s: 184, h: 1.1, roll: 0.2 },
       sinkhole: { at: P(124), rx: 26, rz: 18, label: 'the sinkhole' },
       corridor: 0,
-      green: { rx: 18, rz: 19, lobes: [[0, -5, 13, 11, 0], [2, 8, 11, 10, 10]], join: 6, pins: [[0, 8], [-6, -3], [7, -1]], engine: { style: 'tiered', tiers: [{ b: 4, step: 0.9 }] }, style: 'a pear in two tiers: the back tier is the north stand\'s rubble, rolling' },
+      green: { rx: 18, rz: 19, lobes: [[0, -5, 13, 11, 0], [2, 8, 11, 10, 10]], join: 6, pins: [[0, 8], [-6, -3], [7, -1]], engine: { style: 'tiered', shape: [], tiers: [{ b: 4, step: 0.6 }] }, style: 'a pear in two tiers: the back tier is the north stand\'s rubble, rolling' },
       fairway: [[95, 168, 40]],
       bunkers: [{ at: P(166, -18), rx: 8, rz: 6 }, { at: P(186, 14), rx: 9, rz: 5 }],
       poles: [P(60, -62), P(60, 62), P(186, -62), P(186, 62)].map((p, i) => ({ at: p, h: 46, lean: i === 3 ? 14 : 0 })),
@@ -216,11 +217,11 @@ export const HOLES = [
     build: (P) => ({
       tees: { spire: 0, brick: 22, ivy: [50, 30], moss: [88, 32] },
       prof: [[0, 0], [120, 1], [200, 2], [240, 5], [274, 6]],
-      cant: [[60, 220, -1.5]],
+      cant: [[140, 240, 3]],   // the square leans right, away from the fountain, toward the lay-up
       fairway: [{ e: [[64, 12, 16], [110, 16, 32], [160, 21, 42], [212, 16, 46]] }, [200, 236, 36, 30]],
       extraFw: [{ at: P(215, 34), rx: 22, rz: 26 }],
       corridor: 22,
-      green: { rx: 14, rz: 16, lobes: [[0, 0, 10, 16, 30], [-6, -5, 7, 7, 0], [5, -6, 6, 6, 0]], join: 4, pins: [[5, 8], [-6, -5], [5, -6]], engine: { style: 'plateau', raise: 0.9, falseFront: 0.4, tilt: 1.4 }, style: 'a long green turned back-right, raised on the old plaza steps, tilted to the front' },
+      green: { rx: 14, rz: 16, lobes: [[0, 0, 10, 16, 30], [-6, -5, 7, 7, 0], [5, -6, 6, 6, 0]], join: 4, pins: [[5, 8], [-6, -5], [5, -6]], engine: { style: 'plateau', raise: 0.9, falseFront: 0.4, tilt: 1.4, shape: [{ ridge: [[0, -12], [0, -4]], h: 0.3, w: 2.2 }] }, style: 'a long green turned back-right, raised on the old plaza steps, tilted to the front' },
       bunkers: [{ at: P(258, 18), rx: 8, rz: 5 }, { at: P(286, -10), rx: 9, rz: 5 }],
       water: [{ at: P(222, -16), rx: 24, rz: 22, y: 3.5, rim: true, label: 'the fountain' }],
       trees: [...grove(P(120, -54), 34, 14, 61, [12, 20]), ...grove(P(150, 66), 30, 10, 62, [12, 20]), ...grove(P(250, -50), 14, 5, 63)],
@@ -250,7 +251,7 @@ export const HOLES = [
       slabEdge: { s0: 80, s1: 385, off: -54, drop: 5, label: 'the slab\'s broken edge (5 m)' },
       fairway: [{ e: [[90, 16, 16], [140, 24, 26], [200, 30, 32], [250, 26, 24], [290, 20, 22], [340, 26, 24], [372, 20, 18]] }, { e: [[440, 16, 18], [475, 22, 22], [504, 15, 15]] }],
       corridor: 18,
-      green: { rx: 16, rz: 17, lobes: [[0, 0, 9, 19, -35], [-4, -8, 6, 6, 0]], join: 4, pins: [[-6, 8], [6, -10], [-6, -4]], engine: { style: 'redan' }, style: 'a Redan, long, running right to left by the north tower' },
+      green: { rx: 16, rz: 17, lobes: [[0, 0, 9, 19, -35], [-4, -8, 6, 6, 0]], join: 4, pins: [[-6, 8], [6, -10], [-6, -4]], engine: { style: 'redan', shape: [] }, style: 'a Redan, long, running right to left by the north tower' },
       bunkers: [{ at: P(246, 33), rx: 15, rz: 7, rot: 0.1 }, { at: P(456, -20), rx: 12, rz: 6 }, { at: P(494, 20), rx: 8, rz: 6 }],
       inlet: { pts: [P(392, -120), P(400, -60), P(408, -10), P(410, 14)], w: 48, y: -1, label: 'where the bank fell in' },
       ramp: { from: P(-70, 0), to: P(-6, 0), w: 22, y: [14, 10], label: 'the expressway ramp' },  // ends flush behind the back tee
@@ -277,7 +278,7 @@ export const HOLES = [
       prof: [[0, 0], [150, 0.5], [228, 3], [300, 6], [348, 8]],
       fairway: [{ e: [[60, 18, 14], [110, 26, 22], [170, 30, 26], [215, 26, 24], [240, 20, 20], [280, 23, 22], [336, 15, 15]] }],
       corridor: 18,
-      green: { rx: 15, rz: 16, lobes: [[0, 0, 9, 16, -25], [8, -4, 7, 7, 0], [7, 8, 6, 6, 0]], join: 3, pins: [[-5, 9], [8, -4], [-3, -5]], engine: { style: 'tilt', tilt: 1.2, side: 1 }, style: 'a long green turned back-left on the wharf, the drop to the water on its right' },
+      green: { rx: 15, rz: 16, lobes: [[0, 0, 9, 16, -25], [8, -4, 7, 7, 0], [7, 8, 6, 6, 0]], join: 3, pins: [[-5, 9], [8, -4], [-3, -5]], engine: { style: 'tilt', tilt: 1.5, side: 1, shape: [] }, style: 'a long green turned back-left on the wharf, the drop to the water on its right' },
       bunkers: [{ at: P(338, -19), rx: 9, rz: 4, rot: 0.4, style: 'grass' }, { at: P(226, -34), rx: 14, rz: 7 }],
       water: [{ at: P(200, 92), rx: 68, rz: 46, rot: 0.5, p: 3, y: -1, label: 'the dock basin' }],
       wharf: { from: P(240, 30), to: P(360, 30), y: 8, label: 'the wharf wall' },
@@ -303,7 +304,7 @@ export const HOLES = [
       cant: [[60, 330, 3]],               // the slab falls to the right, away from the rift
       fairway: [{ e: [[70, 16, 20], [120, 22, 30], [180, 26, 30], [230, 24, 26], [260, 20, 22], [300, 24, 22], [350, 20, 18], [383, 14, 14]] }],
       corridor: 16,
-      green: { rx: 15, rz: 17, lobes: [[0, -3, 11, 10, 0], [1, 10, 8, 8, 10]], join: 6, pins: [[1, 11], [-6, -5], [6, -4]], engine: { style: 'plateau', raise: 0.4, falseFront: 0.6, tilt: 1 }, style: 'a pear up the line on a level shelf at the top, false front' },
+      green: { rx: 15, rz: 17, lobes: [[0, -3, 11, 10, 0], [1, 10, 8, 8, 10]], join: 6, pins: [[1, 11], [-6, -5], [6, -4]], engine: { style: 'plateau', raise: 0.4, falseFront: 0.6, tilt: 1.5, shape: [] }, style: 'a pear up the line on a level shelf at the top, false front' },
       bunkers: [{ at: P(242, 33), rx: 14, rz: 7, rot: -0.1 }, { at: P(376, 20), rx: 8, rz: 5 }],
       rift: { pts: [P(50, -64), P(140, -58), P(240, -56), P(330, -64), P(380, -84)], w: 26, label: 'THE RIFT' },
       terraces: [{ s: 140, label: 'broken pavement step' }, { s: 272, label: 'second step' }],
