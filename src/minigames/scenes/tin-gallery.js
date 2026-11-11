@@ -20,13 +20,20 @@ function canvasTex(w, h, draw, { repeat = null, srgb = true } = {}) {
   if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...repeat); }
   return t;
 }
-const stripes = (a, b, n = 8, vertical = true) => canvasTex(256, 256, (g, w, h) => { for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? b : a; if (vertical) g.fillRect(i * w / n, 0, w / n + 1, h); else g.fillRect(0, i * h / n, w, h / n + 1); } });
+const stripes = (a, b, n = 8, vertical = true) => canvasTex(256, 256, (g, w, h) => { for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? b : a; if (vertical) g.fillRect(i * w / n, 0, w / n + 1, h); else g.fillRect(0, i * h / n, w, h / n + 1); }
+  // decades of wear (art pass 1): chipped paint showing grey primer and wood, rust spots, grime low down
+  let sd = 7; const rr = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 45; i++) { g.fillStyle = rr() < 0.6 ? 'rgba(150,140,124,0.7)' : 'rgba(120,84,52,0.65)'; g.beginPath(); g.ellipse(rr() * w, rr() * h, 0.8 + rr() * 2.5, 0.6 + rr() * 1.6, rr() * 3, 0, 7); g.fill(); }
+  for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(110,60,30,${0.15 + rr() * 0.2})`; g.beginPath(); g.ellipse(rr() * w, rr() * h, 2 + rr() * 6, 2 + rr() * 6, 0, 0, 7); g.fill(); }
+  const gr = g.createLinearGradient(0, h * 0.7, 0, h); gr.addColorStop(0, 'rgba(60,45,30,0)'); gr.addColorStop(1, 'rgba(60,45,30,0.22)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 
 export function createTinGallery(container) {
   const st = createStage(container, {
-    turbidity: 4, rayleigh: 1.6, mie: 0.005, mieG: 0.82, elev: 21, az: 32,
-    sunColor: 0xffd9a8, sunInt: 2.4, exposure: 0.62, hemiSky: 0xbcd6ff, hemiGround: 0x6a5238, hemiInt: 0.45,
-    fogColor: 0xd8d4cc, fogNear: 400, fogFar: 3000, shadowBox: 120,
+    // art pass 1: a lower, warmer late-afternoon sun from behind you (long shadows down the planks), and a
+    // warm haze that softens the fairground so the gallery stands out
+    turbidity: 4.5, rayleigh: 1.9, mie: 0.006, mieG: 0.84, elev: 12, az: 32,
+    sunColor: 0xffc48a, sunInt: 2.6, exposure: 0.62, hemiSky: 0xb6cdf0, hemiGround: 0x6a5238, hemiInt: 0.45,
+    fogColor: 0xe8d8bf, fogNear: 220, fogFar: 1500, shadowBox: 120,
   });
   const { scene } = st;
   const R = rng(321), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), col = new THREE.Color(), eu = new THREE.Euler();
@@ -376,6 +383,11 @@ float rough = mix(0.95, 0.7, inside);
   const bulbM = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), bulbs.length);
   bulbs.forEach((b, i) => { m4.makeTranslation(...b.p); bulbM.setMatrixAt(i, m4); bulbM.setColorAt(i, col.set(0xffd890)); });
   scene.add(bulbM);
+  // a warm halo round every bulb (one points draw), so they read as lit in the low sun
+  { const hp = new Float32Array(bulbs.length * 3); bulbs.forEach((b, i) => hp.set(b.p, i * 3));
+    const hg = new THREE.BufferGeometry(); hg.setAttribute('position', new THREE.BufferAttribute(hp, 3));
+    const ht = canvasTex(64, 64, (g, w) => { const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.3)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); }, { srgb: false });
+    scene.add(new THREE.Points(hg, new THREE.PointsMaterial({ map: ht, color: 0xffc070, size: 1.1, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }))); }
   // Ferris wheel bulbs ride with the wheel
   const fwBulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.3, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffe0a0, toneMapped: false }), 64);
   for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2; m4.makeTranslation(Math.cos(a) * fwR, Math.sin(a) * fwR, 1.9); fwBulbs.setMatrixAt(i, m4); }

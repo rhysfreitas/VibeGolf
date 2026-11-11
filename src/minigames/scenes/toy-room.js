@@ -146,8 +146,9 @@ if (uGuide.y > 0.5) {
   float gl = (1.0 - smoothstep(gw, gw + px, abs(p.x - gx))) * step(0.4, fract(p.z / 5.0)) * step(-uL + 1.5, p.z) * step(p.z, -uL + 40.0);
   c = mix(c, lin(vec3(1.0, 0.82, 0.3)), gl * 0.95);
 }
-// the pile: fine fibres up close, a soft sheen far away
-c *= mix(0.78 + 0.4 * fine, 0.98, far) * (0.94 + 0.1 * fb(p.xz * 0.15));
+// the pile: a woven over-under up close (each tuft a few centimetres at x30), a soft sheen far away
+float weave = abs(sin(p.x * 18.0) * sin(p.z * 18.0 + step(0.5, fract(p.x * 2.86)) * 1.57));
+c *= mix((0.78 + 0.4 * fine) * (0.9 + 0.14 * weave), 0.98, far) * (0.94 + 0.1 * fb(p.xz * 0.15));
 diffuseColor.rgb = c;
 `);
   };
@@ -252,7 +253,7 @@ diffuseColor.rgb = c;
     const fl = corners.map(c => c.clone().addScaledVector(sd, -(c.y + RUG_T) / sd.y));
     const g = new THREE.BufferGeometry(), v = [], cl = [];
     const quad = (a, b, c, d, ia, ib) => { for (const [p, al] of [[a, ia], [b, ia], [c, ib], [a, ia], [c, ib], [d, ib]]) { v.push(p.x, p.y, p.z); cl.push(1, 0.9, 0.7, al); } };
-    for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; quad(corners[i], corners[j], fl[j], fl[i], 0.13, 0.015); }
+    for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; quad(corners[i], corners[j], fl[j], fl[i], 0.2, 0.045); } // art pass 1: a shaft you can see all the way to the floor
     g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cl, 4));
     const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
     m.renderOrder = 3; beams.add(m);
@@ -264,7 +265,7 @@ diffuseColor.rgb = c;
   const ND = 260, dustGeo = new THREE.BufferGeometry(), dpos = new Float32Array(ND * 3), dseed = [];
   for (let i = 0; i < ND; i++) dseed.push({ u: R(), v: R(), s: R(), ph: R() * 6.28 });
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3));
-  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: dustTex, color: 0xfff0c8, size: 0.5, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
+  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: dustTex, color: 0xfff0c8, size: 0.7, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
   dust.frustumCulled = false; scene.add(dust);
   function moveDust(t) {
     const c = lb.corners;
