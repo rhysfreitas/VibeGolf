@@ -138,12 +138,17 @@ courses tilt far more. The rules, and the numbers behind them:
   across it, a bowl that gathers to one pin, a back shelf, a crown that sheds the edges. A couple can be
   flatter (just the fall), and one bold green a nine is fine (a bigger tier, a Redan's fall, a Biarritz
   swale). Mix the features across the nine; no two neighbouring greens the same.
-- **Pin areas stay puttable.** Three or four pin areas a green, each about 10 m across or more at 3% or less
-  (tested); steeper ground goes between them and round the edges (ridges up to about 0.6 m at 10–15% where
+- **Pin areas stay puttable.** Three or four pin areas a green (two on a narrow one), each a disc about 6 m across, 3 m or more inside
+  the edge, at 3% or less (pins tested); steeper ground goes between them and round the edges (ridges up to about 0.6 m at 10–15% where
   pins never go). Pins 1–1.5 m or more off a tier's top or foot. A green needs only 14–21 cup spots, so
   it can afford the contour.
 - **The game already reads it.** The slope under the ball changes every shot (ball above the feet pulls
   left, uphill launches higher), and putting odds read break, tiers and downhill speed, so these play.
+- **What the engine did before.** Every features.js green got three random humps and hollows (0.2–0.4 m)
+  flattened only round its pins, so the playable greens were bumpy rather than designed (typical slopes
+  2–6%, little puttable ground beyond the pins) and their real features hardly read. Greens now take a
+  designed `shape` and no random rolls. Even so, contour barely shows in a render from short of the green:
+  making it readable (shading on the putting surface) is an art job.
 - **Measured, not eyeballed.** The book tools (`tools/emberfell/sample.mjs`) and `tools/review/analyse.mjs`
   report each landing area's cross slope and each green's fall, relief beyond its plane and pin areas.
 
