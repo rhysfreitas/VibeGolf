@@ -9,6 +9,7 @@ import { hash2, vnoise, fbm, rng, sstep } from './noise.js';
 import { prepFeatures } from './features.js';
 import { groveTrees } from './trees.js';
 import { createCave } from './cave.js';
+import { unpackHeights } from './field-code.js';
 export { hash2, vnoise, fbm, rng, sstep };
 
 /* ---------- islands ---------- */
@@ -259,11 +260,11 @@ export function lineProj(L, x, z) {
   return best;
 }
 // hole.field: ground sampled on a grid (a course generated from plan data, like The Reclaim): { x0, z0, cell,
-// nx, nz, h (heights, NaN = open air), s (surface codes), codes (names) }. Outside the grid the edge carries on.
+// nx, nz, h (heights, NaN = open air; `pred: 1` when packed as differences, field-code.js), s (surface codes), codes (names) }. Outside the grid the edge carries on.
 export function prepField(F) {
   if (F.ready) return F;
   const dec = (b64, T) => { const bin = typeof atob === 'function' ? atob(b64) : Buffer.from(b64, 'base64').toString('binary'); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
-  if (typeof F.h === 'string') { const q = dec(F.h, Int16Array); F.h = Float32Array.from(q, v => (v === -32768 ? NaN : v / 50 + F.y0)); }
+  if (typeof F.h === 'string') { const q = dec(F.h, Int16Array); if (F.pred) unpackHeights(q, F.nx); F.h = Float32Array.from(q, v => (v === -32768 ? NaN : v / 50 + F.y0)); }
   if (typeof F.s === 'string') F.s = dec(F.s, Uint8Array);
   F.ready = true;
   return F;

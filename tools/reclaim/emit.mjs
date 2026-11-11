@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
 import { BUILT, toWorld, toLocal, cityFill, RIVER, SURF } from './scene.mjs';
 import { at, headingAt, distLine, YD, rectPts } from './geo.mjs';
+import { packHeights } from '../../src/course/field-code.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, '../../src/course/reclaim.js');
 const CELL = 2, r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
@@ -141,7 +142,7 @@ function holeOut(hi) {
   const tees = Object.fromEntries(Object.entries(h.teePts).map(([k, p]) => [k, [r1(p[0]), r1(p[1])]]));
   const targets = [...(h.targets || []).filter(t => !t.pin).map(t => ({ name: t.name, x: r1(t.at[0]), z: r1(t.at[1]) })), { name: 'Green', pin: true }];
   return { n: h.n, name: h.name, par: h.par, heading, line: h.line.map(p => [r1(p[0]), r1(p[1])]), tees, yards: h.yards, pin: [r1(h.pin[0]), r1(h.pin[1])], targets, drops: [],
-    field: { x0, z0, cell: CELL, nx, nz, y0, codes: CODES, h: b64(q), s: b64(ss) },
+    field: { x0, z0, cell: CELL, nx, nz, y0, codes: CODES, pred: 1, h: b64(packHeights(q, nx)), s: b64(ss) },
     frame: { x: h.place.at[0], z: h.place.at[1], heading: h.place.heading, base },
     green, bunkers, rocks, plants, city, rubble, card: h.words };
 }

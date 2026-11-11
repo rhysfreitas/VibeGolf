@@ -19,6 +19,7 @@ import { BUILT, worldAt, toWorld, toLocal } from './scene.mjs';
 import { WORLD } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { at, headingAt, distLine, project, seOutline, rnd } from './geo.mjs';
+import { packHeights } from '../../src/course/field-code.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, '../../src/course/rimeholm.js');
 const CELL = 2, r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
@@ -136,7 +137,7 @@ function holeOut(hi) {
   const teePads = Object.fromEntries(Object.keys(h.teePts).map(k => [k, { w: 9, l: 9, h: 0.05 }]));
   const targets = [...(h.targets || []).filter(t => !t.pin).map(t => ({ name: t.name, x: r1(t.at[0]), z: r1(t.at[1]), ...(t.bold ? { bold: true } : {}) })), { name: 'Green', pin: true }];
   return { n: h.n, name: h.name, par: h.par, heading, line: h.line.map(p => [r1(p[0]), r1(p[1])]), tees, teePads, yards: h.yards, pin: [r1(h.pin[0]), r1(h.pin[1])], targets, drops: [],
-    field: { x0, z0, cell: CELL, nx, nz, y0, codes: CODES, h: b64(q), s: b64(ss), m: b64(ms) },
+    field: { x0, z0, cell: CELL, nx, nz, y0, codes: CODES, pred: 1, h: b64(packHeights(q, nx)), s: b64(ss), m: b64(ms) },
     frame: { x: h.place.at[0], z: h.place.at[1], heading: h.place.heading, base },
     green, bunkers, rocks, plants, card: h.words };
 }
@@ -169,7 +170,7 @@ for (let j = 0; j < wnz; j++) for (let i = 0; i < wnx; i++) {
 }
 const wy0 = Math.floor(wlo);
 for (let k = 0; k < wq.length; k++) wq[k] = Math.round((wraw[k] - wy0) * 20);
-ICE.world = { x0: WX0, z0: WZ0, cell: WC, nx: wnx, nz: wnz, y0: wy0, scale: 20, h: b64(wq), m: b64(wm) };
+ICE.world = { x0: WX0, z0: WZ0, cell: WC, nx: wnx, nz: wnz, y0: wy0, scale: 20, pred: 1, h: b64(packHeights(wq, wnx)), m: b64(wm) };
 
 const holes = HOLES.map((_, i) => { const o = holeOut(i); process.stdout.write(`${i + 1} `); return o; });
 const course = { id: 'rimeholm', name: 'Rimeholm', theme: 'ice', altFt: COURSE.altFt,

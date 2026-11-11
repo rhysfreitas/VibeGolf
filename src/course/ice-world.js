@@ -6,6 +6,7 @@
 // One merged mesh per material, so a hole is a handful of draw calls. The ball's side of it (boxes, boulders,
 // wedges, spruce) is in the course module and terrain.js.
 import { rng, fbm } from './noise.js';
+import { unpackHeights } from './field-code.js';
 
 const lin = c => c.map(v => Math.pow(v / 255, 2.2));
 function batch() {
@@ -164,7 +165,7 @@ export function buildIce(hole, T, box, ICE, hi, { group, coarse, groundMat, rock
   const Bi = batch(), Bs = batch(), Br = batch(), Bw = batch();   // ice, snow (ground and caps), rock and timber, the longship's timber
 
   // ---- the far glacier, from the height map: this hole's field where it has one (so the edges meet the playfield)
-  const WM = ICE.world; if (!WM.hDec) { WM.hDec = dec(WM.h, Int16Array); WM.mDec = dec(WM.m, Uint8Array); }
+  const WM = ICE.world; if (!WM.hDec) { WM.hDec = dec(WM.h, Int16Array); if (WM.pred) unpackHeights(WM.hDec, WM.nx); WM.mDec = dec(WM.m, Uint8Array); }
   const st = coarse ? 3 : 2, wnx = WM.nx, wnz = WM.nz;
   const shrink = 6, inPlay = (x, z) => x > box.x0 + shrink && x < box.x1 - shrink && z > box.z0 + shrink && z < box.z1 - shrink;
   const wH = (i, j) => WM.hDec[j * wnx + i] / WM.scale + WM.y0;
