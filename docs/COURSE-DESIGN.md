@@ -113,6 +113,32 @@ from how real architects size, angle and guard greens. `tools/review/analyse.mjs
   (plays-like) and facing different ways. Where it fits, one classic fairway idea per course: a hog's back, a
   reverse camber, a split fairway, a speed slot.
 
+## Story, features and fairway structure (agreed with the owner, Lost Valley round 2, 10 November 2026)
+
+Rhys's note on round 1 of the Lost Valley: the holes were starting to feel rinse-and-repeat (the same tapered
+strip, doglegs one way then the other, a bunker on each side). What fixes it:
+
+- **Every hole has a story built round a feature of its own** that shapes how it plays and is seen: a giant
+  tree in the fairway, a creek across the landing area, a bluff splitting the corner, a green on a shelf out
+  into a pool, a step of rock across a climb, the tree on Emberfell, the climb up the 9th there. Write the story
+  in one line before the shape ("the giant: a monkey-puzzle alone in the fairway at the corner"); if the hole
+  could sit on any course, it isn't done. Layer the view: the feature in front, the hazard round it, the
+  landmark beyond, and let the feature be seen from other holes too.
+- **Vary the fairway's structure, not just its outline.** A split fairway round a tree or a rock (two lanes,
+  each 25 m or more where drives land, one shorter or with the better angle, the other wider and safer); a
+  fairway broken in two by a cross hazard (a creek, a back channel, a band of sand); stepping stones of fairway
+  between pools with a dry way round; an hourglass pinched by hazards from both sides; a fairway climbing a step.
+  No more than two or three plain single fairways a nine, and never two of the same structure in a row. Doglegs
+  alternating left and right is not variety on its own. A splitter has to stop a ball: branches low, or solid
+  rock.
+- **Big sand now and then.** It can be really fun to build a huge bunker: a waste or bunker running the length
+  of a fairway (150 m or more down one side), a cross bunker right across the fairway short of a green, or a
+  green set inside a ring of sand with one way in. Once or twice a course each, so they stay memorable. Equally,
+  a hole with no sand at all is fine where another hazard does the job (the tar pit).
+- **Put a cross hazard where it asks a question.** Short of where the safe drive finishes, or across the second
+  shot, so long hitters choose between laying back and carrying; never right where every tee set's drive lands.
+  A creek coming in on a diagonal is the classic: nearest on the bold side.
+
 ## Side slope and green contour (agreed with the owner, 10 November 2026)
 
 Rhys noticed the courses had plenty of up and down but fairways level from side to side, and greens that
