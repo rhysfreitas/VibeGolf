@@ -129,7 +129,7 @@ export const HOLES = [
       { pts: [[-30, -122, 8, 8], [-42, -160, 14, 14], [-48, -210, 18, 16], [-46, -255, 16, 14], [-38, -288, 10, 9]] },             // upper plateau
       { pts: [[1, -338, 10, 10], [1, -352, 11, 11]] },                                                                         // between the wash and the green
     ],
-    green: { x: 1, z: -374, rx: 14, rz: 13, lobes: [[0, -3, 13, 11, 20], [3, 8, 8, 10, 30], [-7, 6, 6, 6, 0]], join: 3, style: 'tilt', tilt: 0.6, side: -2.1, raise: -0.3, mound: 1.2, apron: 11, runoff: true, pins: [[1, -374], [-6, -369], [7, -379], [-4, -381]] },
+    green: { x: 1, z: -374, rx: 14, rz: 13, lobes: [[0, -3, 13, 11, 20], [3, 8, 8, 10, 30], [-7, 6, 6, 6, 0]], join: 3, style: 'punchbowl', tilt: 0.6, side: -2.1, dish: 0.05, raise: -1.2, apron: 11, runoff: true, pins: [[1, -374], [-6, -369], [7, -379], [-4, -381]] },
     bunkers: [{ x: -16, z: -360, rx: 5, rz: 4, style: 'grass' }, { x: 17, z: -381, rx: 4.5, rz: 3.5, style: 'pot' }, { x: -64, z: -246, rx: 12, rz: 6, rot: 0.15, style: 'flashed' }],
     landforms: [
       { type: 'step', x: 12, z: -226, length: 22, width: 24, height: 2.5, run: 12 }, // the speed slot, right side only

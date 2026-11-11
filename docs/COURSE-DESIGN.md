@@ -102,6 +102,10 @@ from how real architects size, angle and guard greens. `tools/review/analyse.mjs
 - **Pot bunkers are sunk, not rimmed.** A pot is a small (3–5 m), deep hole cut into the ground: a steep,
   revetted sod face toward the green, a flat sand floor, the back easing in from grade so you can walk in.
   No raised lip round it; only flashed bunkers build a lip up their face.
+- **A punchbowl is sunk into level ground, not rimmed.** The ground stays level up to the bowl, then banks
+  fall about 1.2–1.5 m to the green and feed a near miss in. Nothing stands above the land round it: the
+  engine's punchbowl once built a 1.6 m ring outside the green, which read as a donut (Rhys spotted it on
+  Drift). A rim belongs only to a feature that has one (the Geode's cracked shell).
 - **Check the landing area for every tee set.** For each tee set, the drive (its `minDrive`, or about 150 yd
   for the forward set) lands on fairway at least 40 m wide. On long holes a staggered landing area for the
   forward tees is fine.

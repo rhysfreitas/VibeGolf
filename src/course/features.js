@@ -95,7 +95,7 @@ const GREEN_STYLES = {
   tiered: { tiers: [{ b: 0, step: 0.75 }] },
   crowned: { crown: 0.25, tilt: 0.6, runoff: true, raise: 0.8 },
   plateau: { raise: 1.4, runoff: true, falseFront: 0.5 },
-  punchbowl: { raise: -0.6, dish: 0.18, mound: 1.6, tilt: 0.8 },
+  punchbowl: { raise: -1.4, dish: 0.18, tilt: 0.8, apron: 12 }, // sunk into level ground: banks fall to the green, no rim
   redan: { tilt: -2.1, side: 1.6, raise: 0.9, runoff: true },
   biarritz: { swale: { b: 0, depth: 1.1, width: 7 }, tilt: 1, rz: 22 },
 };
