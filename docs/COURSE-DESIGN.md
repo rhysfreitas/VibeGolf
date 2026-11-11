@@ -113,6 +113,45 @@ from how real architects size, angle and guard greens. `tools/review/analyse.mjs
   (plays-like) and facing different ways. Where it fits, one classic fairway idea per course: a hog's back, a
   reverse camber, a split fairway, a speed slot.
 
+## Side slope and green contour (agreed with the owner, 10 November 2026)
+
+Rhys noticed the courses had plenty of up and down but fairways level from side to side, and greens that
+were interesting only in outline (and the punchbowls). Measured on Emberfell round 2: fairways tilted
+0–0.8% across on average, three greens dead flat, three a single 1–1.5% plane, one tier on nine. Real
+courses tilt far more. The rules, and the numbers behind them:
+
+- **Most fairways lean.** On most par 4/5 landing areas the ground falls 2–5% across the line, and the lean
+  has a purpose: the high side gives the better angle in (a ball on the low side kicks toward the rough or a
+  bunker and leaves the harder approach), or a reverse camber leans against the shape the hole asks for (a
+  dogleg left that leans right). Vary which way across the nine. A hole that's already hard leans away from
+  its trouble (toward safety or into a catch bunker), never toward a penalty.
+- **Now and then, a strong one.** Once or twice a nine, a side slope of 6–8% across the landing area: a
+  sidehill fairway along a hillside, the ball above or below your feet for the second. Keep it under about
+  7% on a level landing area, 4–5% where the fairway also runs downhill (it adds roll), and give the low
+  side a wide rough or a catch bunker so the slope sets the lie rather than the score.
+- **Lean the ground, not just the line.** A lean runs 60–120 m along the hole and right across the fairway
+  into the rough, blending out beyond; it moves the ball, it doesn't bounce it. The flatter "landing
+  plateau" idea still holds for where most drives stop: a lean of 2–3% there, more just short of or past it.
+- **Greens: moderate, like a modern course.** Overall fall about 1.5–2.5% (today's greens average about 2%;
+  classic greens 3% and more). Most greens (six or seven of nine) also get one internal feature: a tier
+  0.3–0.6 m high with a slope of about 1 in 6 to 1 in 7 between, a spine or ridge that splits it, a swale
+  across it, a bowl that gathers to one pin, a back shelf, a crown that sheds the edges. A couple can be
+  flatter (just the fall), and one bold green a nine is fine (a bigger tier, a Redan's fall, a Biarritz
+  swale). Mix the features across the nine; no two neighbouring greens the same.
+- **Pin areas stay puttable.** Three or four pin areas a green, each about 10 m across or more at 3% or less
+  (tested); steeper ground goes between them and round the edges (ridges up to about 0.6 m at 10–15% where
+  pins never go). Pins 1–1.5 m or more off a tier's top or foot. A green needs only 14–21 cup spots, so
+  it can afford the contour.
+- **The game already reads it.** The slope under the ball changes every shot (ball above the feet pulls
+  left, uphill launches higher), and putting odds read break, tiers and downhill speed, so these play.
+- **Measured, not eyeballed.** The book tools (`tools/emberfell/sample.mjs`) and `tools/review/analyse.mjs`
+  report each landing area's cross slope and each green's fall, relief beyond its plane and pin areas.
+
+Sources: golfcourseindustry.com "Modern green contours" (pin areas 3% at Stimp 10, greens about 2% now,
+perimeter ridges to 2 ft at 10–15%); golfnewsstoriesonline.com "How much cup space does a green have?"
+(14–21 cup spots, a 1 ft tier at 5–7 to 1 across 50–70 ft, pins 3–5 ft off a tier) and "Using fairway
+slopes for strategy" (cross slopes to about 7% on level zones, 4–5% when also downhill).
+
 ## Elevation and slope
 
 - **Every hole goes up or down.** Several holes 8–15 m, two or three big ones (25–35 m: a drive off a
@@ -138,8 +177,8 @@ from how real architects size, angle and guard greens. `tools/review/analyse.mjs
   cavern come along as scenery; the shaped ground (`sceneryAt` in terrain.js) keeps their height. And
   don't let one hole's slab run under another hole's green (the 3rd's tee slab made jagged cliffs beside
   the 2nd green).
-- Pins stay at 3% or less (tested). Rolls and tiers can push a spot over; move the pin or soften the
-  green.
+- Pins stay at 3% or less (tested). Rolls and tiers can push a spot over; move the pin to a flatter spot
+  on the same green, or ease that part, rather than flattening the whole green.
 
 ## Hazards and misses
 
@@ -208,8 +247,8 @@ from how real architects size, angle and guard greens. `tools/review/analyse.mjs
 - **Terraces are where the ball stops.** Rimstone banks (`step` landforms of a couple of metres with a
   short `run`) set the next lie: a ball on the upper terrace has a flat stance, one short of it a
   downslope.
-- **A cant is a soft hazard.** Tilt a fairway a percent or two toward trouble only on a hole that's
-  otherwise easy; on a hole that's already hard, keep it level.
+- **A cant is a soft hazard.** Lean a fairway toward trouble only on a hole that's otherwise easy; on a
+  hole that's already hard, lean it away from the trouble (see "Side slope and green contour").
 - **Green surrounds decide how hard a hole plays.** A rim or bowl (the geode) keeps near misses at green
   level; a false front sends short shots back; a punchbowl gathers. Pick one per green, matched to how
   hard the shot in already is.
