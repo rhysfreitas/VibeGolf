@@ -74,3 +74,28 @@ test('a ball that flies into rock bounces back off it', () => {
   assert.ok(r.rockHits >= 1);
   assert.ok(r.pts.at(-1).p[2] > -100, 'ends short of the wall');
 });
+
+test('bounces follow the slope: a sidehill kicks the ball down it, an upslope shortens the run', () => {
+  const drive = { Speed: 150, VLA: 12, HLA: 0, TotalSpin: 2800, SpinAxis: 0 };
+  const flat = simulate(drive);
+  const side = simulate(drive, { groundAt: x => -x * 0.06 });        // 6% falling to the right
+  assert.ok(Math.abs(flat.offline) < 0.05, 'flat ground: straight');
+  assert.ok(side.offline > 2.5 && side.offline < 8, `a 6% sidehill moves a drive ${side.offline.toFixed(1)} yd down the slope`);
+  assert.ok(Math.abs(side.carryOffline) < 0.5, 'the kick comes after landing, not in the air');
+  const other = simulate(drive, { groundAt: x => x * 0.06 });
+  assert.ok(Math.abs(other.offline + side.offline) < 0.2, 'and the same the other way');
+  const up = simulate(drive, { groundAt: (x, z) => -z * 0.06 }), down = simulate(drive, { groundAt: (x, z) => z * 0.06 });
+  const run = r => r.totalDown - r.carry;
+  assert.ok(run(up) < run(flat) && run(flat) < run(down), 'less run into a hill, more down one');
+});
+
+test('a ball on a moderate slope stops at once instead of sitting until the clock runs out', () => {
+  const wedge = { Speed: 85, VLA: 30, HLA: 0, TotalSpin: 9000, SpinAxis: 0 };
+  for (const pct of [5, 7, 8, 9]) {
+    const r = simulate(wedge, { groundAt: (x, z) => -z * pct / 100, surfaceAt: () => 'green' });
+    assert.ok(r.totalTime - r.flightTime < 6, `${pct}% green: ${(r.totalTime - r.flightTime).toFixed(1)} s on the ground`);
+  }
+  // steep enough to beat the grass, and it rolls back down
+  const back = simulate(wedge, { groundAt: (x, z) => Math.min(8, Math.max(0, (-z - 60) * 0.14)), surfaceAt: () => 'green' });
+  assert.ok(back.totalDown < back.carry - 5, 'a 14% green slope sends it back');
+});

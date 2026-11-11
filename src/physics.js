@@ -199,19 +199,33 @@ function simulate(shot, opts = {}) {
         }
         if (nearCup(s.pos[0], s.pos[2]) && vh < 3) { outcome = 'holed'; pts.push({ t, p: s.pos.slice(), phase: 'bounce' }); break; }
         const surf = SURFACES[surfaceAt(s.pos[0], s.pos[2])] || SURFACES.rough;
-        // --- bounce: impulse model with sliding/rolling friction ---
-        const vn = -s.vel[1];
+        // --- bounce: impulse model with sliding/rolling friction, about the ground's own normal, so a
+        // sidehill kicks the ball down the slope and an upslope stands it up (flat ground: n = straight up) ---
+        let n = [0, 1, 0];
+        {
+          const eb = 0.5, y0 = s.pos[1], hb = (a, b) => { const v = groundAt(a, b); return v === null || Math.abs(v - y0) > 0.6 ? y0 : v; };
+          let sx = (hb(s.pos[0] + eb, s.pos[2]) - hb(s.pos[0] - eb, s.pos[2])) / (2 * eb);
+          let sz = (hb(s.pos[0], s.pos[2] + eb) - hb(s.pos[0], s.pos[2] - eb)) / (2 * eb);
+          const sl = Math.hypot(sx, sz);
+          if (sl > 0.5) { sx *= 0.5 / sl; sz *= 0.5 / sl; } // faces steeper than 50% bounce as 50%: walls are handled above
+          if (sl > 1e-4) { const k = 1 / Math.hypot(sx, 1, sz); n = [-sx * k, k, -sz * k]; }
+        }
+        let vn = -(s.vel[0] * n[0] + s.vel[1] * n[1] + s.vel[2] * n[2]);
+        if (vn <= 0) { n = [0, 1, 0]; vn = -s.vel[1]; } // skimming down a slope: treat the ground as level
         const e = cor(vn) * surf.eScale;
-        const dh = vh > 1e-6 ? [s.vel[0] / vh, s.vel[2] / vh] : [0, -1];
-        const perp = [-dh[1], dh[0]]; // horizontal axis that gives backspin for travel dh
-        const wb = s.spin[0] * perp[0] + s.spin[2] * perp[1];
-        const u = vh + BALL_R * wb; // contact-point slip speed (forward +)
+        const tv = [s.vel[0] + vn * n[0], s.vel[1] + vn * n[1], s.vel[2] + vn * n[2]]; // along the ground
+        const vt = Math.hypot(tv[0], tv[1], tv[2]);
+        const dh = vt > 1e-6 ? [tv[0] / vt, tv[1] / vt, tv[2] / vt] : [0, 0, -1];
+        const perp = [dh[1] * n[2] - dh[2] * n[1], dh[2] * n[0] - dh[0] * n[2], dh[0] * n[1] - dh[1] * n[0]]; // axis that gives backspin for travel dh
+        const wb = s.spin[0] * perp[0] + s.spin[1] * perp[1] + s.spin[2] * perp[2];
+        const wn = s.spin[0] * n[0] + s.spin[1] * n[1] + s.spin[2] * n[2];
+        const u = vt + BALL_R * wb; // contact-point slip speed (forward +)
         const maxImp = surf.mu * (1 + e) * vn;
         const dv = -Math.sign(u) * Math.min(maxImp, (2 / 7) * Math.abs(u));
-        const vh2 = (vh + dv) * surf.tScale;
+        const vh2 = (vt + dv) * surf.tScale;
         const wb2 = -vh2 / BALL_R; // leaves the turf rolling
-        s.vel = [dh[0] * vh2, e * vn, dh[1] * vh2];
-        s.spin = [perp[0] * wb2, s.spin[1] * 0.5, perp[1] * wb2];
+        s.vel = [dh[0] * vh2 + n[0] * e * vn, dh[1] * vh2 + n[1] * e * vn, dh[2] * vh2 + n[2] * e * vn];
+        s.spin = [perp[0] * wb2 + n[0] * wn * 0.5, perp[1] * wb2 + n[1] * wn * 0.5, perp[2] * wb2 + n[2] * wn * 0.5];
         bounces++;
         if (e * vn < 1.2 || bounces > 6) { phase = 'roll'; s.vel[1] = 0; }
         else s.pos[1] += 1e-4;
@@ -228,11 +242,14 @@ function simulate(shot, opts = {}) {
       const h = (a, b) => { const v = groundAt(a, b); return v === null ? s.pos[1] : v; };
       const gx = (h(x + e1, z) - h(x - e1, z)) / (2 * e1);
       const gz = (h(x, z + e1) - h(x, z - e1)) / (2 * e1);
-      if (vh < 0.05 && Math.hypot(gx, gz) < surf.crr) break; // at rest, and the slope can't start it rolling
+      // at rest when the slope's pull on a rolling ball (5/7 g sin θ) can't beat the rolling resistance: the
+      // same line the roll below uses, so a ball never sits at zero speed waiting for the clock to run out
+      const holds = (5 / 7) * Math.hypot(gx, gz) < surf.crr;
+      if (vh < 0.05 && holds) break;
       let vx = s.vel[0] - (5 / 7) * G * gx * dt, vz = s.vel[2] - (5 / 7) * G * gz * dt;
       const v2 = Math.hypot(vx, vz) || 1e-9;
       const nv = Math.max(0, v2 - surf.crr * G * dt), f = nv / v2;
-      if (nv < 0.05 && Math.hypot(gx, gz) < surf.crr) break;
+      if (nv < 0.05 && holds) break;
       s.vel = [vx * f, 0, vz * f];
       const nx = x + s.vel[0] * dt, nz = z + s.vel[2] * dt;
       const ng = groundAt(nx, nz);

@@ -125,7 +125,9 @@ test('The Overhang and Long Roll: the rock is solid, but drives and approaches p
 
 test('The Ascent: a long second from the fairway can run onto the green; long ones come back off the bank', () => {
   const t = T[8], h = HOLES[8];
-  const two = shoot(t, [-4, -240], h.pin, TOUR['3W']);
+  // from the left half of the fairway, the green's open side: bounces follow the slope now, and the same
+  // shot from the right half lands on the steep bank short right of the green and is kicked off it
+  const two = shoot(t, [-26, -240], h.pin, TOUR['3W']);
   assert.notEqual(two.r.outcome, 'void');
   assert.equal(t.surfaceAt(two.end.x, two.end.z), 'green', `a 3 wood ends ${Math.hypot(two.end.x - h.pin[0], two.end.z - h.pin[1]).toFixed(0)} m from the pin`);
   const long = shoot(t, [-20, -380], h.pin, TOUR['3W']);
