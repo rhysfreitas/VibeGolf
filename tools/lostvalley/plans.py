@@ -10,7 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(HERE, 'out
 D = json.load(open(f'{G}/holes.json')); SURF = D['SURF']; TEES = D['teeSets']
 YD = 0.9144
 COL = {'meadow': (0.84, 0.88, 0.70), 'rough': (0.76, 0.84, 0.60), 'fairway': (0.62, 0.80, 0.50), 'fringe': (0.55, 0.78, 0.45),
-       'green': (0.60, 0.86, 0.48), 'tee': (0.70, 0.84, 0.56), 'sand': (0.95, 0.91, 0.78), 'bar': (0.90, 0.86, 0.74),
+       'green': (0.60, 0.86, 0.48), 'tee': (0.70, 0.84, 0.56), 'sand': (0.95, 0.91, 0.78), 'waste': (0.88, 0.84, 0.72), 'bar': (0.90, 0.86, 0.74),
        'water': (0.62, 0.78, 0.90), 'tar': (0.14, 0.13, 0.13), 'cliff': (0.66, 0.58, 0.50), 'jungle': (0.38, 0.56, 0.38),
        'mud': (0.62, 0.58, 0.46), 'gravel': (0.80, 0.77, 0.70), 'rubble': (0.70, 0.66, 0.60), 'camp': (0.80, 0.70, 0.52), 'void': (0.10, 0.10, 0.12)}
 INK = '#2b2b2b'
@@ -37,6 +37,8 @@ def draw_objs(ax, objs):
             else:
                 ax.add_patch(Circle((o['x'], o['z']), o['r'], fc=fc, ec=ec, lw=0.3, zorder=7, alpha=0.92))
                 if k == 'cypress' and o.get('wet'): ax.add_patch(Circle((o['x'], o['z']), o['r'] * 0.3, fc='none', ec='white', lw=0.3, zorder=7))
+        elif k == 'log':
+            ax.plot([o['a'][0], o['b'][0]], [o['a'][1], o['b'][1]], color=(0.40, 0.30, 0.22), lw=2.6, solid_capstyle='round', zorder=9)
         elif k == 'spire':
             ax.add_patch(Circle((o['x'], o['z']), o['r'], fc=(0.55, 0.47, 0.40), ec=INK, lw=0.6, zorder=9))
         elif k == 'strangler':
@@ -74,7 +76,7 @@ for h in D['holes']:
     ax = fig.add_axes([0.005, 0.005, 0.99, 0.99]); ax.imshow(rgb, extent=ext, interpolation='bilinear', zorder=1)
     # stipple the bunkers and sandbars (grains), the swamp's mud and the tar
     rng = np.random.default_rng(n)
-    for code, col, ms in ((SURF.index('sand'), '#a89470', 0.8), (SURF.index('bar'), '#9a8c74', 0.8), (SURF.index('mud'), '#857a5e', 0.6), (SURF.index('tar'), '#5a5550', 0.7)):
+    for code, col, ms in ((SURF.index('sand'), '#a89470', 0.8), (SURF.index('bar'), '#9a8c74', 0.8), (SURF.index('waste'), '#8c826c', 0.9), (SURF.index('mud'), '#857a5e', 0.6), (SURF.index('tar'), '#5a5550', 0.7)):
         rr, cc = np.nonzero(srf == code)
         if len(rr):
             k = rng.random(len(rr)) < 0.07

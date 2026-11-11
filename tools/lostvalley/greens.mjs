@@ -32,11 +32,12 @@ export function greenStats(B, opt = {}) {
     pinSlope: slope(...h.pin), areas, steep, maxSlope: Math.max(...pts.map(p => p.s)) };
 }
 // lean across the fairway (positive = falls to the right of the line), every 5 m along it
-export function leanAlong(B, s0 = 40, s1 = B.h.len - 50, half = 12) {
+export function leanAlong(B, s0 = 40, s1 = B.h.len - 50, half = 12, off = 0) {
   const h = B.h, G = (x, z) => B.ground(x, z, true), out = [];
   for (let s = s0; s <= s1; s += 5) {
-    const p = at(h.line, s, 0); if (B.fairwayD(p[0], p[1]) > 0) continue;
-    const l = at(h.line, s, -half), r = at(h.line, s, half), gl = G(...l), gr = G(...r);
+    const p = at(h.line, s, off); if (B.fairwayD(p[0], p[1]) > 0) continue;
+    const l = at(h.line, s, off - half), r = at(h.line, s, off + half), gl = G(...l), gr = G(...r);
+    if (B.fairwayD(...l) > 6 || B.fairwayD(...r) > 6) continue;   // across the fairway, not off its edge
     if (gl == null || gr == null || ['water', 'tar', 'cliff'].includes(B.surface(...l)) || ['water', 'tar', 'cliff'].includes(B.surface(...r))) continue;
     out.push([s, (gl - gr) / (2 * half) * 100]);
   }

@@ -81,7 +81,7 @@ table.sc td.l b { white-space: nowrap; }
 .tips { color: #777; font-style: italic; }
 .legend span i { display: inline-block; width: 12pt; height: 8pt; border: 0.5pt solid #777; margin-right: 3pt; vertical-align: -1pt; }
 `;
-const SW = { fairway: '#9ecc80', rough: '#c2d699', green: '#99db7a', fringe: '#8cc773', meadow: '#d6e0b3', jungle: '#618f61', sand: '#f2e8c7', bar: '#e6dbbd', water: '#9ec7e6', tar: '#242121', cliff: '#a8947f', mud: '#9e9475', rubble: '#b3a899' };
+const SW = { fairway: '#9ecc80', rough: '#c2d699', green: '#99db7a', fringe: '#8cc773', meadow: '#d6e0b3', jungle: '#618f61', sand: '#f2e8c7', waste: '#dccfae', bar: '#e6dbbd', water: '#9ec7e6', tar: '#242121', cliff: '#a8947f', mud: '#9e9475', rubble: '#b3a899' };
 
 const pages = [];
 const tot = k => D.holes.reduce((a, h) => a + h.yards[k], 0), par = D.holes.reduce((a, h) => a + h.par, 0), tips = D.holes.reduce((a, h) => a + h.tipsYards, 0);
@@ -117,7 +117,7 @@ pages.push(`<div class="page">
     </div>
     <div>
       <h3>Reading the plans</h3>
-      <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', fringe: 'Short grass', rough: 'Rough', meadow: 'Fern meadow (native)', jungle: 'Jungle (the walls\' talus)', sand: 'Bunker (river sand)', bar: 'Sandbar in the river (plays as a bunker)', water: 'Water: river, pool, swamp (a stroke and a drop)', tar: 'The tar pit (plays as water)', mud: 'Swamp hummocks (mud)', cliff: 'Rock: walls, bluffs, banks', rubble: 'Steep banks, rubble' }).map(([k, v]) => `<span><i style="background:${SW[k]}"></i>${v}</span>`).join('')}</div>
+      <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', fringe: 'Short grass', rough: 'Rough', meadow: 'Fern meadow (native)', jungle: 'Jungle (the walls\' talus)', sand: 'Bunker (river sand)', waste: 'Waste (sand and gravel, a shallow bunker)', bar: 'Sandbar in the river (plays as a bunker)', water: 'Water: river, creek, pools, swamp (a stroke and a drop)', tar: 'The tar pit (plays as water)', mud: 'Swamp hummocks (mud)', cliff: 'Rock: walls, bluffs, banks', rubble: 'Steep banks, rubble' }).map(([k, v]) => `<span><i style="background:${SW[k]}"></i>${v}</span>`).join('')}</div>
       <p class="small" style="margin-top:6pt">Tee at the bottom. Dots: the four tees; the hollow ring behind them is the tips spot. Blue dots: course-management targets (red: the bold one), with their yardage from the Titan tee. Numbers along the line: yards to the green. Contours every 2 m, labelled every 10 (none up the walls). Stars: cycads and tree ferns; circles: monkey-puzzles, broadleaves and swamp cypresses (a white ring: standing in water). The Strangler: its trunk, its canopy (shaded) and the root arch (the dotted bar).</p>
       <h3>Reading the profiles</h3>
       <p class="small">The ground along the playing line, coloured by surface, from the back tee. Grey bars: anything solid over the line (the root arch on the 6th). Red: a tour drive (167 mph); dotted red: a high drive; blue: a 150 mph drive. All flown with the game's physics at the valley's 1,320 ft over this ground.</p>

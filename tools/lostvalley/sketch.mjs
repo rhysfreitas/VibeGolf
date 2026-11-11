@@ -11,7 +11,7 @@ import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES, BACK, FRONT } from './holes.mjs';
 import { BUILT, toWorld, toLocal, worldAt, WL } from './scene.mjs';
-import { V, waterAt, inValley, wallD, BLUFF, bluffD, TAR, BRIDGE, POOL, SWAMP, swampD, riverAt, VALLEY, topY, polar } from './world.mjs';
+import { V, waterAt, inValley, wallD, BLUFF, bluffD, TAR, BRIDGE, POOL, SWAMP, BACKCH, swampD, riverAt, VALLEY, topY, polar } from './world.mjs';
 import { CAMP, FALLS, LIFE } from './life.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { at, headingAt, clamp, lengthOf, rnd, project, distLine, smooth } from './geo.mjs';
@@ -22,7 +22,7 @@ const VW = 1600, VH = 900;
 let HFOV = 60 * Math.PI / 180, FPX = (VW / 2) / Math.tan(HFOV / 2);
 const FOG = [238, 234, 222], MIST = 2100;
 const SC = { meadow: [196, 210, 150], rough: [184, 206, 138], fairway: [164, 204, 118], fringe: [150, 198, 106], green: [156, 214, 112], tee: [176, 210, 140],
-  sand: [236, 226, 196], bar: [222, 212, 186], water: [150, 192, 214], tar: [84, 76, 70], cliff: [190, 160, 136], jungle: [92, 136, 84], mud: [150, 140, 110],
+  sand: [236, 226, 196], waste: [218, 206, 176], bar: [222, 212, 186], water: [150, 192, 214], tar: [84, 76, 70], cliff: [190, 160, 136], jungle: [92, 136, 84], mud: [150, 140, 110],
   gravel: [204, 196, 176], rubble: [176, 166, 150], camp: [200, 184, 150], void: [26, 26, 30] };
 const LOC = HOLES.map(toLocal), WOR = HOLES.map(toWorld);
 
@@ -168,7 +168,7 @@ function renderView(hi, view) {
     const fc = hex(mix(col, fogAt(q.d)));
     add(q.d, `<polygon points="${fmt(P)}" fill="${fc}" stroke="${fc}" stroke-width="0.7"/>`);
     // grains in the bunkers and on the sandbars; ripples on the water; the tar's sheen
-    if ((c.s === 'sand' || c.s === 'bar') && q.d < 300 && s <= 4) {
+    if ((c.s === 'sand' || c.s === 'bar' || c.s === 'waste') && q.d < 300 && s <= 4) {
       const f = fogAt(q.d), y0 = ys.reduce((a, v) => a + v, 0) / 4 + 0.05, cc = hex(mix([170, 150, 112], f));
       let dots = '';
       for (let i = 0; i < 3; i++) { const v = cam.view([x + hash(x + i, z) * s, y0, z + hash(z + i, x) * s]); if (v[2] < 1) continue; const p = cam.scr(v); dots += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${Math.max(0.6, 1.4 * (1.1 - f)).toFixed(2)}" fill="${cc}"/>`; }
@@ -254,7 +254,7 @@ function renderView(hi, view) {
   const lineSvg = (p, colr, w, extra = '') => p ? `<line x1="${p[0][0].toFixed(1)}" y1="${p[0][1].toFixed(1)}" x2="${p[1][0].toFixed(1)}" y2="${p[1][1].toFixed(1)}" stroke="${colr}" stroke-width="${w}" ${extra}/>` : '';
   const pxPerM = (x, y, z) => { const v = cam.view([x, y, z]); return v[2] > 0.5 ? FPX / v[2] : 0; };
   // trees by kind, as a trunk and a crown facing the camera
-  const GREENS = { broad: [[70, 110, 62], [62, 100, 58], [82, 118, 66]], conifer: [[52, 86, 58], [46, 78, 54]], cypress: [[74, 104, 74], [66, 96, 70]], fern: [[96, 140, 72], [86, 132, 68]], cycad: [[110, 140, 70], [98, 130, 64]] };
+  const GREENS = { broad: [[70, 110, 62], [62, 100, 58], [82, 118, 66]], conifer: [[52, 86, 58], [46, 78, 54]], giant: [[46, 80, 54], [40, 72, 50]], cypress: [[74, 104, 74], [66, 96, 70]], fern: [[96, 140, 72], [86, 132, 68]], cycad: [[110, 140, 70], [98, 130, 64]] };
   function tree(kind, x, z, y0, r, hh, seed, dark = 0) {
     const d = cam.hd([x, 0, z]); if (d > 2500 || !inView(x, z, 0.3)) return;
     const f = fogAt(d), ppm = pxPerM(x, y0, z); if (ppm * hh < 1.5) return;
@@ -262,7 +262,13 @@ function renderView(hi, view) {
     const cx = cam.r[0], cz = cam.r[2];   // the camera's right, flat, for crowns that face it
     let svg = '';
     const trunkW = (w) => Math.max(0.8, w * ppm).toFixed(2);
-    if (kind === 'conifer') {   // a monkey-puzzle: a tall bare trunk, a flat, layered umbrella crown
+    if (kind === 'giant') {   // the giant monkey-puzzle: a massive trunk under tier on tier of flat, spiny boughs
+      svg += lineSvg(projLine([[x, y0, z], [x, y0 + hh * 0.97, z]]), hex(mix([92, 74, 58], f)), trunkW(2.2));
+      for (const [lv, rr] of [[0.16, 0.8], [0.27, 1.0], [0.38, 0.98], [0.49, 0.9], [0.6, 0.8], [0.71, 0.66], [0.82, 0.5], [0.92, 0.32]]) {
+        const P = []; for (let i = 0; i <= 10; i++) { const a = Math.PI * i / 10; P.push([x + Math.cos(a) * r * rr * cx, y0 + hh * lv + Math.sin(a) * hh * 0.045 - Math.abs(Math.cos(a)) * hh * 0.03, z + Math.cos(a) * r * rr * cz]); }
+        const c = proj(P); if (c) svg += `<polygon points="${fmt(wob(c, true, seed + lv * 9, 0.8))}" fill="${fill}" stroke="${outline}" stroke-width="${(0.6 * (1.2 - f)).toFixed(2)}"/>`;
+      }
+    } else if (kind === 'conifer') {   // a monkey-puzzle: a tall bare trunk, a flat, layered umbrella crown
       svg += lineSvg(projLine([[x, y0, z], [x, y0 + hh * 0.86, z]]), hex(mix([92, 74, 58], f)), trunkW(0.7));
       for (const [lv, rr] of [[0.7, 0.9], [0.8, 1.0], [0.9, 0.7]]) {
         const P = []; for (let i = 0; i <= 8; i++) { const a = Math.PI * i / 8; P.push([x + Math.cos(a) * r * rr * cx, y0 + hh * lv + Math.sin(a) * hh * 0.07, z + Math.cos(a) * r * rr * cz]); }
@@ -345,7 +351,14 @@ function renderView(hi, view) {
       if (o.kind === 'boulder') {
         const [x, z] = tr([o.x, o.z]), pts = ngon(x, z, o.r * 0.8, 6, hash(x, z) * 6, 0.8);
         prismUp(pts, o.base + yoff, pts.map((_, i) => o.base + yoff + o.h * (0.75 + 0.25 * hash(i, x))), [168, 142, 118], Math.round(x + z), 0, 0.6);
-      } else if (GREENS[o.kind]) { const p = tr([o.x, o.z]); tree(o.kind, p[0], p[1], o.base + yoff, o.r, o.h, Math.round(o.x * 7 + o.z)); }
+      } else if (GREENS[o.kind]) { const p = tr([o.x, o.z]); tree(o.giant ? 'giant' : o.kind, p[0], p[1], o.base + yoff, o.r, o.h, Math.round(o.x * 7 + o.z)); }
+      else if (o.kind === 'log') {   // the fallen giant: a long trunk lying on the ground, its root plate up at one end
+        const a = [...tr([o.a[0], o.a[1]])], b = [...tr([o.b[0], o.b[1]])], P = [[a[0], o.a[2] + yoff + o.r, a[1]], [b[0], o.b[2] + yoff + o.r * 0.8, b[1]]];
+        const pm = pxPerM(...P[0]), d = cam.hd(P[0]);
+        let sv = lineSvg(projLine(P), '#4a3a2c', Math.max(1.2, o.r * 2.2 * pm).toFixed(2)) + lineSvg(projLine(P), '#7a634c', Math.max(0.6, o.r * 1.2 * pm).toFixed(2));
+        const rp = proj(ngon(a[0], a[1], o.r * 2.6, 9, 0.2, 1).map(([u, v]) => [u, o.a[2] + yoff + o.r * 1.6, v])); if (rp) sv += `<polygon points="${fmt(rp)}" fill="#5a4636" stroke="#3a2c20" stroke-width="0.8"/>`;
+        add(d, sv);
+      }
       else if (o.kind === 'spire') {   // a sandstone pinnacle off the bluff, the pterosaur on top
         const [x, z] = tr([o.x, o.z]), y0 = o.base + yoff, pts = ngon(x, z, o.r, 7, 0.4, 1);
         prismUp(pts, y0, pts.map((_, i) => y0 + o.top * (0.94 + 0.06 * hash(i, 4))), [182, 150, 124], 41, 0, 0.55);
@@ -423,9 +436,9 @@ function renderView(hi, view) {
   // the falls: a ribbon down the wall's face from its lip to its foot, white water and spray
   for (const F of FALLS) {
     // the lip: out from the foot, away from the valley's centre, up the face until it stops rising
-    const ox = F.foot[0] - VALLEY.c[0], oz = F.foot[1] - VALLEY.c[1], ol = Math.hypot(ox, oz), ux = ox / ol, uz = oz / ol;
-    const topAt = topY(polar(...F.foot).th) - 4; let lipD = 0; for (let dd = 0; dd < 500; dd += 2) { lipD = dd; if (V(F.foot[0] + ux * dd, F.foot[1] + uz * dd) >= topAt) break; }
-    const lip = [F.foot[0] + ux * lipD, F.foot[1] + uz * lipD], T = toHere(...lip), Ft = toHere(...F.foot), N = 90, Lp = [], Rp = [], dxf = Ft[0] - T[0], dzf = Ft[1] - T[1], lf = Math.hypot(dxf, dzf), nx = -dzf / lf, nz = dxf / lf;
+    const ox = F.fixed ? F.lip[0] - F.foot[0] : F.foot[0] - VALLEY.c[0], oz = F.fixed ? F.lip[1] - F.foot[1] : F.foot[1] - VALLEY.c[1], ol = Math.hypot(ox, oz), ux = ox / ol, uz = oz / ol;
+    const topAt = topY(polar(...F.foot).th) - 4; let lipD = 0; if (!F.fixed) for (let dd = 0; dd < 500; dd += 2) { lipD = dd; if (V(F.foot[0] + ux * dd, F.foot[1] + uz * dd) >= topAt) break; }
+    const lip = F.fixed ? F.lip : [F.foot[0] + ux * lipD, F.foot[1] + uz * lipD], T = toHere(...lip), Ft = toHere(...F.foot), N = 90, Lp = [], Rp = [], dxf = Ft[0] - T[0], dzf = Ft[1] - T[1], lf = Math.hypot(dxf, dzf), nx = -dzf / lf, nz = dxf / lf;
     const d = cam.hd([(T[0] + Ft[0]) / 2, 0, (T[1] + Ft[1]) / 2]); if (d > 4500) continue;
     // it drops from the lip: each step down, the ribbon sits on the face at that height (bunched where the face is
     // sheer, so it hangs straight down, spread where it runs down the talus), just out from the rock
@@ -456,7 +469,7 @@ function renderView(hi, view) {
     let F = null; for (let r = 0; r < 200; r += 1) { const X = BLUFF.c[0] + ux / ul * r, Z = BLUFF.c[1] + uz / ul * r; if (bluffD(X, Z) > 0.97) { F = [X, Z]; break; } }
     if (F) {
       const tx = -uz / ul, tz = ux / ul, out = [ux / ul, uz / ul], foot = V(F[0] + out[0] * 6, F[1] + out[1] * 6);
-      const S = (t, y) => { const X = F[0] + tx * t - out[0] * 0.5, Z = F[1] + tz * t - out[1] * 0.5, [x, z] = toHere(X, Z); return [x, foot + y, z]; };
+      const S = (t, y) => { const X = F[0] + tx * t * 0.72 - out[0] * 0.5, Z = F[1] + tz * t * 0.72 - out[1] * 0.5, [x, z] = toHere(X, Z); return [x, foot + y * 0.72, z]; };
       const d = cam.hd(S(0, 0)); if (d < 1400 && inView(...[S(0, 0)[0], S(0, 0)[2]], 0.4)) {
         const f = fogAt(d), bone = hex(mix([246, 238, 218], f * 0.6)), edge = hex(mix([92, 76, 60], f));
         let sv = '';
@@ -472,13 +485,24 @@ function renderView(hi, view) {
   }
   // the bones in the tar pit: ribs and a horned skull breaking the surface
   {
-    const [x0, z0] = toHere(...TAR.c), d = cam.hd([x0, 0, z0]);
-    if (d < 900) {
-      const f = fogAt(d), bone = hex(mix([240, 228, 200], f * 0.5)), edge = hex(mix([60, 50, 40], f)), y = TAR.level;
+    // a horned plant-eater sunk on its belly in the largest pool, its spine pointing at the 3rd tee: the ribcage
+    // as nested arches, the skull with its frill and three horns at the near end
+    const [X0, Z0] = TAR.blobs[0], Q = (u, y, w) => { const [x, z] = toHere(X0 + u, Z0 + w); return [x, TAR.level + y, z]; };
+    const d = cam.hd(Q(0, 0, 0));
+    if (d < 1100) {
+      const f = fogAt(d), bone = hex(mix([240, 228, 200], f * 0.5)), edge = hex(mix([60, 50, 40], f));
       let sv = '';
-      for (let i = 0; i < 6; i++) { const P = []; for (let k = 0; k <= 5; k++) { const a = k / 5; P.push([x0 - 8 + i * 2.2 + Math.sin(a * Math.PI) * 1.2, y + Math.sin(a * Math.PI) * 2.6, z0 + 4 + a * 3]); } const p = projLine(P); if (p) sv += `<polyline points="${fmt(p)}" fill="none" stroke="${edge}" stroke-width="2.6"/><polyline points="${fmt(p)}" fill="none" stroke="${bone}" stroke-width="1.4"/>`; }
-      const sk = proj(ngon(x0 + 10, z0 - 4, 1.5, 7, 0.3, 0.7).map(([a, b]) => [a, y + 0.6, b])); if (sk) sv += `<polygon points="${fmt(sk)}" fill="${bone}" stroke="${edge}" stroke-width="1"/>`;
-      for (const [hx, hz] of [[0.8, -1.4], [-0.6, -1.6]]) sv += lineSvg(projLine([[x0 + 10, y + 1.2, z0 - 4], [x0 + 10 + hx, y + 2.6, z0 - 4 + hz]]), bone, 1.6);
+      const sp = projLine([Q(-9, 1.2, 0), Q(-3, 4.6, 0), Q(4, 4.2, 0), Q(10, 1.4, 0), Q(14, 0, 0.5)]); if (sp) sv += `<polyline points="${fmt(sp)}" fill="none" stroke="${edge}" stroke-width="5"/><polyline points="${fmt(sp)}" fill="none" stroke="${bone}" stroke-width="3" stroke-dasharray="4 1.5"/>`;
+      for (let i = 0; i < 8; i++) {
+        const u = -7 + i * 2.1, top = 4.6 - Math.abs(u + 1.5) * 0.12, wd = 3.6 - Math.abs(u + 1) * 0.12, P = [];
+        for (let k = 0; k <= 10; k++) { const a = k / 10 * Math.PI; P.push(Q(u + 0.4 * Math.sin(a), top * Math.sin(a) - 0.3, -wd * Math.cos(a))); }
+        const p = projLine(P); if (p) sv += `<polyline points="${fmt(p)}" fill="none" stroke="${edge}" stroke-width="3"/><polyline points="${fmt(p)}" fill="none" stroke="${bone}" stroke-width="1.7"/>`;
+      }
+      // the skull: a beak toward the tee, a broad frill behind it, two brow horns and a nose horn
+      const fr = []; for (let k = 0; k <= 12; k++) { const a = -Math.PI / 2 + k / 12 * Math.PI; fr.push(Q(-11.5 + 0.8 * Math.cos(a), 1.2 + 3.4 * Math.cos(a) * 0.9, 3.6 * Math.sin(a))); }
+      const pf = proj(fr); if (pf) sv += `<polygon points="${fmt(pf)}" fill="${bone}" stroke="${edge}" stroke-width="1.4"/>`;
+      const hd = proj([Q(-12.5, 0, -1.4), Q(-12.5, 2.4, -1.2), Q(-15.5, 1.6, 0), Q(-16.8, 0.4, 0), Q(-12.5, 0, 1.4), Q(-12.5, 2.4, 1.2)]); if (hd) sv += `<polygon points="${fmt(hd)}" fill="${bone}" stroke="${edge}" stroke-width="1.2"/>`;
+      for (const [a0, b0] of [[[-13, 2.2, -0.9], [-15.6, 4.6, -1.3]], [[-13, 2.2, 0.9], [-15.6, 4.6, 1.3]], [[-15.4, 1.6, 0], [-16.4, 2.8, 0]]]) sv += lineSvg(projLine([Q(...a0), Q(...b0)]), edge, 2.6) + lineSvg(projLine([Q(...a0), Q(...b0)]), bone, 1.5);
       add(d - 1, sv);
     }
   }
@@ -564,7 +588,7 @@ export function viewsFor(hi) {
   for (const f of h.forms || []) if (f.label) labelSet.push(L3(f.at, f.label, -36, f.h));
   if (h.strangler) labelSet.push(L3(h.strangler.trunk, 'the Strangler', -80, 40));
   if (h.spire) labelSet.push(L3(h.spire.at, 'the spire', -40, h.spire.h - 26));
-  for (const [wp, t, up] of [[[TAR.c[0], TAR.c[1]], 'the tar pit', 1], [POOL.c, 'the plunge pool', 1], [[BLUFF.c[0] - 40, BLUFF.c[1]], 'the Bone Bluff', 36], [[(BRIDGE.a[0] + BRIDGE.b[0]) / 2, (BRIDGE.a[1] + BRIDGE.b[1]) / 2], 'the rope bridge', 3],
+  for (const [wp, t, up] of [[[TAR.c[0], TAR.c[1]], 'the tar pit', 1], [POOL.c, 'the plunge pool', 1], [[BLUFF.c[0], BLUFF.c[1]], 'the Bone Bluff', 34], [[-34, -242], 'the creek', 2], [BACKCH.pond.c, 'the oxbow', 2], [[(BRIDGE.a[0] + BRIDGE.b[0]) / 2, (BRIDGE.a[1] + BRIDGE.b[1]) / 2], 'the rope bridge', 3],
     [[360, -560], 'the swamp', 1], [[455, -1200], 'the river', 1], [[520, -940], 'the river', 1], [[50, 70], 'the camp', 4], [[200, 92], 'Camp Falls', 30], [[520, -1630], 'the Great Falls', 80]]) {
     const p = here(...wp), pr = project(h.line, ...p); if (pr.d < 300 && pr.s > -80 && pr.s < h.len + 120) labelSet.push(L3(p, t, -40, up));
   }

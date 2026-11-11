@@ -20,6 +20,8 @@ const at_ = (th, r) => { const a = th * Math.PI / 180; return [VALLEY.c[0] + Mat
 export const FALLS = [
   { name: 'Great Falls', lip: GREAT_FALLS.lip, foot: GREAT_FALLS.foot, w: GREAT_FALLS.w, big: true },
   { name: 'Camp Falls', lip: CAMP_FALLS.lip, foot: CAMP_FALLS.pool.c, w: 16 },
+  // its stream spills off the bluff's lip in a cascade to the floor, where the creek begins
+  { name: 'Camp Falls cascade', lip: CAMP_FALLS.cascade.top, foot: CAMP_FALLS.cascade.foot, w: 5, fixed: true },
   ...BAYS.slice(1).map((b, i) => { const r = footR(b.th); return { name: 'falls', lip: at_(b.th, r + 72 + (topY(b.th) - VALLEY.floor - 45) / 6.5), foot: at_(b.th, r + 8), w: 8 + 4 * (i % 2) }; }),
   // two thin threads off the east and west walls, seen from most of the holes
   ...[[78, 7], [205, 6], [282, 6]].map(([th, w]) => { const r = footR(th); return { name: 'falls', lip: at_(th, r + 72 + (topY(th) - VALLEY.floor - 45) / 6.5), foot: at_(th, r + 8), w }; }),

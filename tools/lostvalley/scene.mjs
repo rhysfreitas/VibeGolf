@@ -7,9 +7,9 @@
 import { project, seDist, seOutline, rectPts, inPoly, smooth, clamp, at, rnd, distLine, headingAt, lerp, lengthOf } from './geo.mjs';
 import { makeGreen, makeFairway, noise1, noise2 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { V, waterAt, nativeAt, wallD, riverAt, swampD, swampWet, SWAMP, LEDGE, CAMP_FALLS } from './world.mjs';
+import { V, cutAt, standAt, waterAt, nativeAt, wallD, riverAt, swampD, swampWet, SWAMP, LEDGE, CAMP_FALLS } from './world.mjs';
 
-export const SURF = ['meadow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'bar', 'water', 'tar', 'cliff', 'jungle', 'mud', 'gravel', 'rubble', 'camp', 'void'];
+export const SURF = ['meadow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'waste', 'bar', 'water', 'tar', 'cliff', 'jungle', 'mud', 'gravel', 'rubble', 'camp', 'void'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
 const span = (s, a, b, r = 30) => smooth((s - a) / r) * (1 - smooth((s - b) / r));
 
@@ -28,7 +28,7 @@ const LOC = HOLES.map(toLocal), WOR = HOLES.map(toWorld), WL = HOLES.map((h, k) 
 // line is bridged at the bank's height, so a fairway never dips into a channel)
 const PROF = HOLES.map((h, k) => {
   const st = 2, n = Math.ceil(h.len / st) + 1, y = [];
-  for (let i = 0; i < n; i++) y.push(V(...WOR[k](...at(h.line, Math.min(i * st, h.len)))));
+  for (let i = 0; i < n; i++) y.push(V(...WOR[k](...at(h.line, Math.min(i * st, h.len))), true));
   for (const [a, b] of h.ramps || []) { const ia = Math.round(a / st), ib = Math.min(n - 1, Math.round(b / st)), ya = y[ia], yb = y[ib]; for (let i = ia; i <= ib; i++) y[i] = lerp(ya, yb, smooth((i - ia) / (ib - ia))); }
   const sm = y.map((_, i) => { let s = 0, c = 0; for (let j = -3; j <= 3; j++) { const q = y[clamp(i + j, 0, n - 1)]; s += q; c++; } return s / c; });
   return { st, y: sm, at: s => { const f = clamp(s / st, 0, n - 1), i = Math.floor(f), t = f - i; return lerp(sm[i], sm[Math.min(n - 1, i + 1)], t); } };
@@ -68,26 +68,43 @@ export function buildHole(h) {
   const endHead = headingAt(h.line, h.len - 1);
   const GR = makeGreen(h.pin, endHead, { seed: 70 + h.n, ...h.green }), gm = GR.gm, gUV = GR.uv;
   const fwD = makeFairway(h.line, h.fw || []);
-  // pale river sand in every bunker; out in the fairways they are bigger
+  // pale river sand in every bunker; out in the fairways they are bigger. A waste is shallow sand and gravel; a
+  // ring wraps the green between `inner` and `outer` metres off its edge, open toward `gap` (degrees clockwise from
+  // the front, as the contour) over `gapW` degrees
   const bunkers = (h.bunkers || []).map((b, i) => {
+    if (b.ring) { const R = b.ring, r = Math.max(...(h.green.lobes || [[0, 0, h.green.rx || 10, h.green.rz || 10]]).map(l => Math.hypot(l[0], l[1]) + Math.max(l[2], l[3]))) + R.outer + 4;
+      return { ring: R, kind: 'sand', depth: 0.8, side: true, job: b.job, x: h.pin[0], z: h.pin[1], box: [h.pin[0] - r, h.pin[1] - r, h.pin[0] + r, h.pin[1] + r] }; }
     if (b.strip) { const fd = makeFairway(h.line, [{ e: b.strip, wob: b.wob ?? 3, seed: 90 + i }]), sx = b.strip.map(([s, L, R]) => at(h.line, s, (R - L) / 2));
-      return { strip: true, kind: 'sand', depth: 0.9, edgeM: fd, job: b.job, x: sx[0][0], z: sx[0][1], box: [Math.min(...sx.map(p => p[0])) - 70, Math.min(...sx.map(p => p[1])) - 70, Math.max(...sx.map(p => p[0])) + 70, Math.max(...sx.map(p => p[1])) + 70] }; }
+      return { strip: true, kind: b.waste ? 'waste' : 'sand', depth: b.waste ? 0.35 : 0.9, edgeM: fd, job: b.job, x: sx[0][0], z: sx[0][1], box: [Math.min(...sx.map(p => p[0])) - 70, Math.min(...sx.map(p => p[1])) - 70, Math.max(...sx.map(p => p[0])) + 70, Math.max(...sx.map(p => p[1])) + 70] }; }
     const side = Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45;
     return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, kind: 'sand', side, job: b.job, pot: !!b.pot, depth: b.pot ? 1.2 : side ? 0.8 : 0.9 }; });
   const bunkerE = (b, x, z) => seDist(b, x, z) + 0.13 * noise2(x / 4, z / 4, b.seed);
   for (const b of bunkers) {   // a greenside bunker sits at least 2.5 m outside the green's edge
-    if (!b.side || b.strip) continue;
+    if (!b.side || b.strip || b.ring) continue;
     const clear = () => Math.min(gm(b.x, b.z), ...seOutline({ ...b, rx: b.rx * 1.15, rz: b.rz * 1.15 }, 32).map(p => gm(...p)));
     let dx = b.x - h.pin[0], dz = b.z - h.pin[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     b.was = [b.x, b.z];
     for (let i = 0; i < 120 && clear() < 2.5; i++) { b.x += dx * 0.5; b.z += dz * 0.5; }
     b.edge = clear(); b.moved = Math.hypot(b.x - b.was[0], b.z - b.was[1]);
   }
-  const edgeM = (b, x, z) => b.strip ? b.edgeM(x, z) : (bunkerE(b, x, z) - 1) * Math.min(b.rx, b.rz);
+  const ringE = (b, x, z) => {
+    const R = b.ring, go = gm(x, z), [u, v] = gUV(x, z), w = 1.6 * noise2(x / 9, z / 9, 77);
+    let e = Math.max(R.inner - go, go - (R.outer + w));
+    const a = Math.atan2(u, -v) * 180 / Math.PI, dA = Math.abs(((a - R.gap) % 360 + 540) % 360 - 180);
+    return Math.max(e, (R.gapW / 2 - dA) * Math.PI / 180 * Math.hypot(u, v));
+  };
+  const edgeM = (b, x, z) => b.ring ? ringE(b, x, z) : b.strip ? b.edgeM(x, z) : (bunkerE(b, x, z) - 1) * Math.min(b.rx, b.rz);
   for (const b of bunkers) if (!b.box) b.box = [b.x - b.rx * 1.5 - b.rz, b.z - b.rz * 1.5 - b.rx, b.x + b.rx * 1.5 + b.rz, b.z + b.rz * 1.5 + b.rx];
   const inBunker = b => (x, z) => x > b.box[0] && x < b.box[2] && z > b.box[1] && z < b.box[3] && edgeM(b, x, z) < 0;
   const extra = (h.extraFw || []).map((e, i) => ({ x: e.at[0], z: e.at[1], rx: e.rx, rz: e.rz, rot: e.rot || 0, seed: 60 + i }));
   const cantAt = s => { let g = 0; for (const [a, b, gr] of h.cant || []) g += gr * span(s, a, b); return g; };
+  // a step of rock across the hole: the ground flattened over [from, to] and the rise gathered into a face at s,
+  // which on `gap` (offsets) breaks down into a long rubble slope
+  const stepAt = (s, off) => {
+    const S = h.step; if (!S) return 0;
+    const gap = smooth((off - S.gap[0]) / 8) * (1 - smooth((off - S.gap[1]) / 8)), f = lerp(S.face, 34, gap);
+    return S.h * (smooth((s - S.s) / f + 0.5) - clamp((s - S.from) / (S.to - S.from), 0, 1));
+  };
   const teePads = Object.entries(h.teePts).map(([key, p]) => ({ k: key, x: p[0], z: p[1] }));
   const teeHead = headingAt(h.line, 1), tc = Math.cos(teeHead), ts = Math.sin(teeHead);
   const onPad = (t, x, z) => { const [u, v] = [(x - t.x) * tc + (z - t.z) * ts, (x - t.x) * ts - (z - t.z) * tc]; return Math.abs(u) < 6 && Math.abs(v) < 5; };
@@ -104,10 +121,11 @@ export function buildHole(h) {
   // where the valley is within a few metres of it)
   function baseAbs(x, z) {
     const pr = along(x, z), kk = smooth((Math.abs(pr.off) - (h.flat ?? 30)) / (h.fade ?? 36));
-    const line = PR.at(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -90, 90);
-    if (kk >= 1) return V(...W(x, z));
-    const v = V(...W(x, z)), gap = Math.abs(v - line), keep = smooth((gap - 4) / 6) * smooth((Math.abs(pr.off) - 14) / 10);
-    return lerp(lerp(line, v, kk), v, keep);
+    const line = PR.at(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -90, 90) + stepAt(pr.s, pr.off);
+    const [X, Z] = W(x, z);
+    if (kk >= 1) return V(X, Z);
+    const v = V(X, Z, true), gap = Math.abs(v - line), keep = smooth((gap - 4) / 6) * smooth((Math.abs(pr.off) - 14) / 10);
+    return cutAt(X, Z, lerp(lerp(line, v, kk), v, keep) + standAt(X, Z));
   }
   // everything but water and tee pads, relative to the hole's base
   function base(x, z) {
@@ -126,7 +144,7 @@ export function buildHole(h) {
     return y;
   }
   // the green's own surface is levelled to the pin's height before tilts (the collar blends it back over 9 m)
-  const pinBase = (() => { const pr = along(...h.pin); return PR.at(pr.s) - h.base + shapesAt(...W(...h.pin)); })();
+  const pinBase = (() => { const pr = along(...h.pin); return PR.at(pr.s) + stepAt(pr.s, 0) - h.base + shapesAt(...W(...h.pin)); })();
   const level = (x, z, y) => { const go = gm(x, z); if (go > 9) return y; const raw = baseAbs(x, z) - h.base + shapesAt(...W(x, z)); return y + (pinBase - raw) * (1 - smooth((go + 1) / 10)); };
   for (const t of teePads) t.y = level(t.x, t.z, base(t.x, t.z)) + 0.4;
 
@@ -168,10 +186,12 @@ export function buildHole(h) {
   // the solid and built things, in the hole's frame (y up from the hole's base)
   const objs = [];
   const gAt = (x, z) => ground(x, z);
-  const notInPlay = ['fairway', 'green', 'fringe', 'tee', 'sand', 'bar', 'water', 'tar'];
+  const notInPlay = ['fairway', 'green', 'fringe', 'tee', 'sand', 'waste', 'bar', 'water', 'tar'];
   const surfaceOk = p => !notInPlay.includes(surface(...p));
   for (const b of h.boulders || []) if (surfaceOk(b.at)) objs.push({ kind: 'boulder', x: b.at[0], z: b.at[1], r: b.r, h: b.h, base: gAt(...b.at) - b.h * 0.25 });
-  for (const t of h.trees || []) if (surfaceOk([t.x, t.z]) && distLine(h.line, t.x, t.z) > t.r + 9) objs.push({ kind: t.kind, x: t.x, z: t.z, r: t.r, h: t.h, base: gAt(t.x, t.z) });
+  for (const t of h.trees || []) if (surfaceOk([t.x, t.z]) && (t.keep || distLine(h.line, t.x, t.z) > t.r + 9)) objs.push({ kind: t.kind, x: t.x, z: t.z, r: t.r, h: t.h, base: gAt(t.x, t.z) });
+  if (h.giant) { const G = h.giant, [x, z] = G.at; objs.push({ kind: 'conifer', giant: true, x, z, r: G.r, h: G.h, low: G.low, base: gAt(x, z), label: G.label }); }
+  if (h.log) { const L = h.log; objs.push({ kind: 'log', a: [...L.a, gAt(...L.a)], b: [...L.b, gAt(...L.b)], r: L.r, label: L.label }); }
   if (h.swampTrees) {   // cypresses through the swamp: in the water and on the hummocks, clear of the fairway
     const R = rnd(h.swampTrees.seed);
     for (let i = 0; i < h.swampTrees.n * 4 && objs.filter(o => o.kind === 'cypress').length < h.swampTrees.n; i++) {
@@ -203,7 +223,8 @@ export function buildHole(h) {
     const out = [];
     for (const o of objs) {
       if (o.kind === 'boulder' && Math.hypot(x - o.x, z - o.z) < o.r * 0.8) out.push([o.base, o.base + o.h, 'a boulder']);
-      else if (TREE_LOW[o.kind] !== undefined && Math.hypot(x - o.x, z - o.z) < o.r) out.push([o.base + o.h * TREE_LOW[o.kind], o.base + o.h, 'a tree']);
+      else if (TREE_LOW[o.kind] !== undefined && Math.hypot(x - o.x, z - o.z) < o.r) out.push([o.base + o.h * (o.low ?? TREE_LOW[o.kind]), o.base + o.h, o.giant ? 'the giant' : 'a tree']);
+      else if (o.kind === 'log') { const d = distLine([o.a, o.b], x, z); if (d < o.r) { const t = clamp(((x - o.a[0]) * (o.b[0] - o.a[0]) + (z - o.a[1]) * (o.b[1] - o.a[1])) / ((o.b[0] - o.a[0]) ** 2 + (o.b[1] - o.a[1]) ** 2), 0, 1), y = lerp(o.a[2], o.b[2], t); out.push([y - 0.5, y + o.r * 1.6, 'the fallen giant']); } }
       else if (o.kind === 'spire' && Math.hypot(x - o.x, z - o.z) < o.r) out.push([o.base, o.base + o.top, 'the spire']);
       else if (o.kind === 'strangler') { const d = Math.hypot(x - o.x, z - o.z); if (d < o.r) out.push([o.base, o.base + o.h, 'the fig\'s trunk']); else if (d < o.canopy) out.push([o.base + 30, o.base + o.h, 'the fig\'s canopy']); }
       else if (o.kind === 'arch') { const a = archAt(o, x, z); if (a) out.push([a[0], a[1], 'the root arch']); }

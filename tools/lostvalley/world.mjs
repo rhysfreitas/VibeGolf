@@ -61,7 +61,7 @@ export const CTRL = [
   // the swamp's east side (8), the ramp's foot (9)
   [480, -720, 402], [500, -560, 399.5], [490, -410, 399], [623, -260, 398.5], [680, -170, 400],
   // between the 4th and the sill, so the floor doesn't swell where nothing holds it
-  [200, -1150, 402], [240, -1300, 404], [120, -1050, 401], [290, -1420, 407], [100, -1250, 403], [60, -920, 400],
+  [200, -1150, 402], [240, -1300, 404], [365, -955, 398.5], [320, -1010, 397.5], [430, -1040, 400], [120, -1050, 401], [290, -1420, 407], [100, -1250, 403], [60, -920, 400],
   // away from the holes: the west plain, the north-west meadows, the east meadows
   [-450, -500, 402], [-430, -1100, 405], [-80, -1300, 404], [150, -1550, 408], [900, -700, 405], [880, -1250, 408], [820, -400, 403],
 ];
@@ -89,26 +89,40 @@ const ledgeF = (X, Z) => {   // metres north of the bluff's lip (+ = out over th
   const crag = 15 * noise1(pr.s / 55, 31) + 7 * noise1(pr.s / 17, 32) + 2.5 * noise1(pr.s / 5, 33);
   return { e: -pr.off - crag, s: pr.s, len: lengthOf(LEDGE.pts) };
 };
-export const CAMP_FALLS = { lip: [205, 215], pool: { c: [200, 92], rx: 30, rz: 20, rot: 0.2, level: 431 }, cascade: [[196, 66], [190, -24]], stream: [[190, -36], [214, -100], [250, -160], [282, -220], [300, -262]] };
+// Camp Falls lands in a pool on the ledge just behind-left of the 9th green; its water spills off the bluff's east end
+// in a cascade and runs west along the bluff's foot as the creek, then north-west, diagonally across the 1st's
+// landing area, down the left of the 2nd to the hollow pond short of its green, which drains away underground
+export const CAMP_FALLS = { lip: [326, 222], pool: { c: [326, 74], rx: 22, rz: 15, rot: 0.3, level: 429.6 }, stream: [[318, 60], [302, 24], [291, -6], [287, -29]], cascade: { top: [287, -31], foot: [284, -49] } };
+export const CREEK = { pts: [[283, -52], [240, -60], [170, -84], [98, -111], [63, -149], [38, -183], [14, -213], [-4, -228], [-8, -250], [-13, -274], [-21, -304], [-34, -336], [-68, -372], [-102, -420], [-112, -480], [-100, -548], [-92, -574]], w: 3.2, from: 399.9, to: 396.6 };
+export const HOLLOW_POND = { c: [-92, -598], rx: 26, rz: 17, rot: 0.6, level: 396.4 };
 
 // ---- the river: [x, z, half-width, water level]; it starts in the plunge pool, runs through the gorge in the
 // sill, braids south, bends west round the Bone Bluff and spreads into the swamp
-export const POOL = { c: [484, -1570], rx: 56, rz: 40, rot: 0.3, level: 406 };
+export const POOL = { c: [468, -1566], rx: 66, rz: 44, rot: 0.3, level: 406 };
+// the 5th's green stands on a shelf of rock jutting into the pool from its south-west shore
+export const SHELF = { c: [429, -1524], r: 19, neck: [[412, -1506], [400, -1488]], y: 407.6 };
 export const GREAT_FALLS = { lip: [560, -1790], foot: [520, -1625], w: 44 };
 export const RIVER = { pts: [
   [486, -1556, 8, 405.6], [482, -1505, 8, 404.6], [476, -1455, 9, 403.8], [468, -1395, 24, 403.2], [462, -1320, 38, 402.6],
-  [458, -1240, 44, 402.0], [450, -1160, 42, 401.4], [444, -1080, 34, 400.8], [470, -1000, 22, 400.3], [536, -952, 18, 399.9],
-  [520, -890, 17, 399.5], [470, -838, 18, 399.1], [430, -778, 20, 398.7], [400, -715, 24, 398.3]] };
+  [458, -1240, 44, 402.0], [450, -1160, 42, 401.4], [444, -1080, 34, 400.8], [462, -1000, 22, 400.3], [512, -956, 18, 399.9],
+  [498, -894, 17, 399.5], [470, -838, 18, 399.1], [430, -778, 20, 398.7], [400, -715, 24, 398.3]] };
+// the back channel: a braid that leaves the river and crosses the 4th about 300 m out, ending in an oxbow pond
+export const BACKCH = { pts: [[440, -1066], [400, -1060], [350, -1066], [300, -1058], [262, -1048], [228, -1046]], w: 6, pond: { c: [196, -1042], rx: 30, rz: 17, rot: -0.2 } };
 // the gorge: where the river cuts through the sill, its walls stand sheer
 export const GORGE = { from: 0.2, to: 2.6 };   // between these river points (by index, fractional)
 export const BRIDGE = { a: [450, -1478], b: [512, -1468] };   // the rope bridge across the gorge, rim to rim
 // the swamp: still water in pools between tall trees, about 1 m below the land round it; the fairway on the 8th
 // weaves between the pools
+// the 8th's stepping stones: two pools reaching across its second leg from the swamp, leaving a dry way round
+// the left (each a rotated ellipse: centre, half-length across the line, half-width along it, rotation)
+export const POOLS8 = [[508, -373, 30, 10, 2.443], [470, -436, 22, 9, 2.443]];
 export const SWAMP = { level: 397.4, blobs: [[372, -668, 52], [392, -598, 60], [342, -560, 62], [398, -520, 46], [378, -468, 60], [336, -436, 50], [296, -520, 58], [436, -506, 24]], seed: 41 };
 // the tar pit: a black seep in a hollow on the 3rd, a little below the ground round it
-export const TAR = { c: [140, -698], rx: 30, rz: 19, rot: 0.15, level: 394.8, seed: 51 };
+// the tar pit wraps the 3rd green's front and right
+export const TAR = { c: [140, -698], rx: 30, rz: 19, rot: 0.15, level: 394.8, seed: 51, blobs: [[132, -703, 26, 17, 0.15], [162, -690, 18, 12, 0.6], [184, -684, 13, 8, 0.1]] };
 // the Bone Bluff: a sandstone outcrop on the 7th's left, 34 m high, a long-neck's skeleton half out of its face
-export const BLUFF = { c: [735, -1010], rx: 62, rz: 46, rot: -1.2, h: 34, seed: 61 };
+// the Bone Bluff stands in the middle of the 7th's fairway at the corner, splitting it
+export const BLUFF = { c: [626, -965], rx: 17, rz: 30, rot: 0, h: 30, seed: 61 };
 
 const riverAt = (X, Z) => {   // nearest point on the river: s, offset, half-width and level there
   const P = RIVER.pts, L = P.map(p => [p[0], p[1]]), pr = project(L, X, Z);
@@ -126,13 +140,24 @@ function braidWet(rp) {
 export const swampD = (X, Z) => { let d = Infinity; for (const [x, z, r] of SWAMP.blobs) d = Math.min(d, Math.hypot(X - x, Z - z) - r); return d + 14 * noise2(X / 45, Z / 45, SWAMP.seed) + 6 * noise2(X / 15, Z / 15, SWAMP.seed + 1); };
 // inside the swamp, water stands in pools; between them low hummocks of mud and roots
 export const swampWet = (X, Z) => swampD(X, Z) < -6 && noise2(X / 26, Z / 26, SWAMP.seed + 3) + 0.4 * noise2(X / 9, Z / 9, SWAMP.seed + 4) > -0.15 - 0.012 * Math.min(40, -swampD(X, Z));
-const tarE = (X, Z) => seDist({ x: TAR.c[0], z: TAR.c[1], rx: TAR.rx, rz: TAR.rz, rot: TAR.rot }, X, Z) + 0.12 * noise2(X / 11, Z / 11, TAR.seed);
+const tarE = (X, Z) => Math.min(...TAR.blobs.map(([x, z, rx, rz, rot]) => seDist({ x, z, rx, rz, rot }, X, Z))) + 0.1 * noise2(X / 11, Z / 11, TAR.seed);
+const poolE = (X, Z) => seDist({ x: POOL.c[0], z: POOL.c[1], rx: POOL.rx, rz: POOL.rz, rot: POOL.rot }, X, Z) + 0.1 * noise2(X / 14, Z / 14, 81);
+// the shelf: metres inside its edge (+ inside), with the neck that joins it to the shore
+const shelfIn = (X, Z) => Math.max(SHELF.r - Math.hypot(X - SHELF.c[0], Z - SHELF.c[1]) + 2.2 * noise1(Math.atan2(Z - SHELF.c[1], X - SHELF.c[0]) * 3, 82), 11 - distLine([SHELF.c, ...SHELF.neck], X, Z));
+const p8E = (X, Z) => Math.min(...POOLS8.map(([x, z, rx, rz, rot]) => seDist({ x, z, rx, rz, rot }, X, Z))) + 0.1 * noise2(X / 10, Z / 10, 83);
+const pondE = (P, X, Z) => seDist({ x: P.c[0], z: P.c[1], rx: P.rx, rz: P.rz, rot: P.rot }, X, Z) + 0.1 * noise2(X / 9, Z / 9, 84);
+// the creek's water level along it, falling with the floor (worked out once, from the floor alone)
+// the creek's water falls evenly from the cascade's foot to the hollow pond; the back channel's follows the floor
+// down from the river into the trough, falling only
+const CRK = (() => { const L = lengthOf(CREEK.pts); return { L, lv: s => lerp(CREEK.from, CREEK.to, clamp(s / L, 0, 1)) }; })();
+const BCK = (() => { const L = lengthOf(BACKCH.pts), out = []; let lo = Infinity; for (let s = 0; s <= L + 2; s += 2) { const [x, z] = at(BACKCH.pts, Math.min(s, L)); lo = Math.min(lo, floorAt(x, z) - 0.5); out.push(lo); }
+  return { L, end: lo, lv: s => out[Math.min(out.length - 1, Math.max(0, Math.round(s / 2)))] }; })();
 const bluffE = (X, Z) => seDist({ x: BLUFF.c[0], z: BLUFF.c[1], rx: BLUFF.rx, rz: BLUFF.rz, rot: BLUFF.rot, p: 2.6 }, X, Z) + 0.16 * noise2(X / 24, Z / 24, BLUFF.seed) + 0.05 * noise2(X / 7, Z / 7, BLUFF.seed + 1);
 
 // other table mountains standing beyond the rim, higher and further off: the far skyline
 export const FAR = [[-2900, -4200, 1100, 1220], [3300, -3100, 900, 1150], [-3600, 1500, 1000, 1180], [2600, 2600, 800, 1060], [400, -5600, 1300, 1260]];
 const farY = (X, Z) => { let y = -Infinity; for (const [x, z, r, top] of FAR) { const e = Math.hypot(X - x, Z - z) / r + 0.08 * noise1(Math.atan2(Z - z, X - x) * 5, x); if (e < 1.15) y = Math.max(y, top - 700 * smooth((e - 0.9) / 0.25)); } return y; };
-export function V(X, Z) {
+export function V(X, Z, raw = false) {
   const { th, r } = polar(X, Z), fr = footR(th), d = r - fr;
   if (d > 600) { const top = topY(th) + 20 * noise2(X / 500, Z / 500, 9) * smooth((d - 600) / 400) - 0.03 * (d - 600); return Math.max(top, farY(X, Z)); }
   let y = floorAt(X, Z);
@@ -149,9 +174,6 @@ export function V(X, Z) {
     if (pr.d < edge + 60 && pr.s > -30 && pr.s < l) { const t = Math.max(0, pr.s) / l, ry = lerp(LEDGE.y, floorAt(...R.b), smooth(t * 1.08 - 0.04)), w = 1 - smooth((pr.d - edge) / (26 + 16 * noise1(pr.s / 30, 40))); y = Math.max(y, lerp(y, ry, w)); } }
   // the walls
   if (d > -5) y += wallLift(d, th, topY(th));
-  // the Bone Bluff: sheer sandstone sides, a broken top
-  const be = bluffE(X, Z);
-  if (be < 1.25) y += BLUFF.h * (1 - smooth((be - 0.88) / 0.24)) * (1 + 0.1 * noise2(X / 13, Z / 13, 62)) + 6 * (1 - smooth((be - 1.0) / 0.25)) * smooth((be - 0.85) / 0.15);
   // the river: banks 1.5-2 m above the water; through the sill the gorge's walls stand sheer
   const rp = riverAt(X, Z);
   if (rp.d < rp.hw + 40 && rp.s > 0) {
@@ -164,28 +186,57 @@ export function V(X, Z) {
       y = lerp(y, Math.min(y, rp.d < rp.hw ? inner : bank + Math.max(0, e - 2) * 0.12), k);
     }
   }
-  // the plunge pool, in a rock basin at the falls' foot
-  const pe = seDist({ x: POOL.c[0], z: POOL.c[1], rx: POOL.rx, rz: POOL.rz, rot: POOL.rot }, X, Z) + 0.1 * noise2(X / 14, Z / 14, 81);
+  // the plunge pool, in a rock basin at the falls' foot, the 5th's shelf of rock standing out into it
+  const pe = poolE(X, Z);
   if (pe < 1.6) y = lerp(y, POOL.level - 1.5, 1 - smooth((pe - 0.9) / 0.5));
+  { const si = shelfIn(X, Z); if (si > -6 && pe < 1.8) y = lerp(y, SHELF.y + 0.3 * noise2(X / 9, Z / 9, 85), smooth((si + 6) / 6)); }
+  // the creek's shallow valley, 60-80 m across, its banks about 1.3 m over the water
+  { const cp = project(CREEK.pts, X, Z); if (cp.d < 60 && cp.s > 1 && Z < -30) { const bank = CRK.lv(cp.s) + 1.3 + cp.d * 0.035; y = lerp(y, Math.min(y, bank), 1 - smooth((cp.d - 8) / 40)); } }
   // the swamp sits in a shallow basin; the tar pit in its hollow
   const sd = swampD(X, Z);
   if (sd < 20) y = lerp(y, SWAMP.level + 0.5 + 0.4 * noise2(X / 8, Z / 8, 44), 1 - smooth((sd + 4) / 24));
   const te = tarE(X, Z);
   if (te < 1.5) y = lerp(y, TAR.level - 0.5, 1 - smooth((te - 0.85) / 0.6));
+  return raw ? y : cutAt(X, Z, y + standAt(X, Z));
+}
+// what stands up off the ground in the middle of the play: the Bone Bluff (sheer sandstone sides, a broken top,
+// a skirt of fallen blocks). The holes' lines run under it (scene.mjs adds it back after the line's profile)
+export function standAt(X, Z) {
+  const be = bluffE(X, Z);
+  if (be >= 1.25) return 0;
+  return BLUFF.h * (1 - smooth((be - 0.88) / 0.24)) * (1 + 0.1 * noise2(X / 13, Z / 13, 62)) + 3 * (1 - smooth((be - 1.0) / 0.25)) * smooth((be - 0.85) / 0.15);
+}
+// the narrow water cut into any ground: the creek's channel, the back channel and their ponds, the 8th's pools.
+// The holes' lines run over them (scene.mjs samples V raw under a line, then cuts)
+export function cutAt(X, Z, y) {
+  // Camp Falls' pool on the ledge and the stream from it across the ledge to the bluff's lip
+  { const cp = CAMP_FALLS.pool, e = seDist({ x: cp.c[0], z: cp.c[1], rx: cp.rx, rz: cp.rz, rot: cp.rot }, X, Z); if (e < 1.6) y = lerp(y, Math.min(y, cp.level - 1.2), 1 - smooth((e - 0.9) / 0.5)); }
+  { const sp = project(CAMP_FALLS.stream, X, Z); if (sp.d < 8 && sp.s > 0) y = lerp(y, Math.min(y, CAMP_FALLS.pool.level - 0.9), 1 - smooth((sp.d - 1.6) / 3)); }
+  // the creek: a channel about 6 m across, 1.5 m below its banks
+  { const cp = project(CREEK.pts, X, Z); if (cp.d < 14 && cp.s > 1 && Z < -30) { const lv = CRK.lv(cp.s), bed = lv - 0.5; y = lerp(y, Math.min(y, bed), 1 - smooth((cp.d - CREEK.w) / 6)); } }
+  { const e = pondE(HOLLOW_POND, X, Z); if (e < 1.6) y = lerp(y, HOLLOW_POND.level - 0.8, 1 - smooth((e - 0.9) / 0.6)); }
+  // the back channel across the 4th: water between low gravel banks, and its oxbow pond
+  { const bp = project(BACKCH.pts, X, Z); if (bp.d < 30 && bp.s > 0) { const bank = BCK.lv(bp.s) + 0.9; y = lerp(y, Math.min(y, bp.d < BACKCH.w ? BCK.lv(bp.s) - 0.6 : bank + (bp.d - BACKCH.w) * 0.08), 1 - smooth((bp.d - BACKCH.w - 4) / 18)); } }
+  { const e = pondE(BACKCH.pond, X, Z); if (e < 1.6) y = lerp(y, BCK.end - 0.8, 1 - smooth((e - 0.9) / 0.6)); }
+  // the 8th's two pools, in shallow hollows
+  { const e = p8E(X, Z); if (e < 1.6) y = lerp(y, SWAMP.level - 0.5, 1 - smooth((e - 0.9) / 0.6)); }
   return y;
 }
 
 // water and tar: where it lies and its level (null if none)
 export function waterAt(X, Z) {
-  if (seDist({ x: POOL.c[0], z: POOL.c[1], rx: POOL.rx, rz: POOL.rz, rot: POOL.rot }, X, Z) + 0.1 * noise2(X / 14, Z / 14, 81) < 1) return { level: POOL.level, body: 'pool' };
+  if (poolE(X, Z) < 1 && shelfIn(X, Z) < 0) return { level: POOL.level, body: 'pool' };
   if (tarE(X, Z) < 1) return { level: TAR.level, body: 'tar' };
   const cp = CAMP_FALLS.pool; if (seDist({ x: cp.c[0], z: cp.c[1], rx: cp.rx, rz: cp.rz, rot: cp.rot }, X, Z) < 1) return { level: cp.level, body: 'campPool' };
+  { const sp = project(CAMP_FALLS.stream, X, Z); if (sp.d < 1.8 && sp.s > 0 && sp.s < lengthOf(CAMP_FALLS.stream) - 0.5) return { level: CAMP_FALLS.pool.level - 0.3, body: 'stream' }; }
   const rp = riverAt(X, Z);
   if (rp.s > 0.5 && rp.d < rp.hw && braidWet(rp)) return { level: rp.level, body: 'river' };
   if (swampWet(X, Z)) return { level: SWAMP.level, body: 'swamp' };
-  // Camp Falls' stream: a narrow channel from the cascade's foot into the swamp
-  const sp = project(CAMP_FALLS.stream, X, Z);
-  if (sp.d < 3.2 + 2 * noise1(sp.s / 30, 91) && sp.s > 2 && sp.s < lengthOf(CAMP_FALLS.stream) - 2) return { level: V(X, Z) + 0.3, body: 'stream' };
+  if (p8E(X, Z) < 1) return { level: SWAMP.level, body: 'swamp' };
+  if (pondE(HOLLOW_POND, X, Z) < 1) return { level: HOLLOW_POND.level, body: 'pond' };
+  if (pondE(BACKCH.pond, X, Z) < 1) return { level: BCK.end, body: 'pond' };
+  { const cp = project(CREEK.pts, X, Z); if (cp.d < CREEK.w * (1 + 0.2 * noise1(cp.s / 17, 91)) && cp.s > 1 && cp.s < CRK.L - 1 && Z < -30) return { level: CRK.lv(cp.s), body: 'creek' }; }
+  { const bp = project(BACKCH.pts, X, Z); if (bp.d < BACKCH.w * (1 + 0.25 * noise1(bp.s / 15, 92)) && bp.s > 0.5 && bp.s < BCK.L - 0.5) return { level: BCK.lv(bp.s), body: 'channel' }; }
   return null;
 }
 export const inValley = (X, Z) => { const { th, r } = polar(X, Z); return r < footR(th); };

@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE, BACK } from './holes.mjs';
 import { BUILT, SURF, toWorld, worldAt, WL, LOC, WOR } from './scene.mjs';
-import { V, RIVER, POOL, TAR, SWAMP, BLUFF, BRIDGE, LEDGE, CAMP_FALLS, GREAT_FALLS } from './world.mjs';
+import { V, RIVER, POOL, TAR, SWAMP, BLUFF, BRIDGE, LEDGE, CAMP_FALLS, GREAT_FALLS, BACKCH } from './world.mjs';
 import { CAMP, LIFE } from './life.mjs';
 import { project, at, lengthOf, YD, headingAt } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
@@ -14,7 +14,7 @@ import { greenStats, leanAlong } from './greens.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out/grid');
 fs.mkdirSync(OUT, { recursive: true });
 const DRIVES = { tour: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, mid: { Speed: 150, VLA: 12, TotalSpin: 3000 }, high: { Speed: 160, VLA: 14.5, TotalSpin: 3200 } };
-const PHYS = { bar: 'sand', fringe: 'fairway', tee: 'fairway', tar: 'water', meadow: 'desert', jungle: 'rough', cliff: 'desert', mud: 'desert', gravel: 'waste', rubble: 'waste', camp: 'rough', void: 'rough' };
+const PHYS = { bar: 'sand', waste: 'waste', fringe: 'fairway', tee: 'fairway', tar: 'water', meadow: 'desert', jungle: 'rough', cliff: 'desert', mud: 'desert', gravel: 'waste', rubble: 'waste', camp: 'rough', void: 'rough' };
 
 // a drive from p along direction dir (radians from -z, + right) over the hole's ground: the flight, and where
 // it first meets anything solid above the ground
@@ -63,9 +63,12 @@ for (const [i, B] of BUILT.entries()) {
   for (const f of h.forms || []) if (f.label) L_(f.at, f.label);
   if (h.spire) L_([h.spire.at[0] - 30, h.spire.at[1]], h.spire.label);
   if (h.strangler) L_([h.strangler.trunk[0] + 30, h.strangler.trunk[1] - 30], h.strangler.label);
+  if (h.giant) L_([h.giant.at[0] + 34, h.giant.at[1] - 10], h.giant.label);
+  if (h.log) L_([(h.log.a[0] + h.log.b[0]) / 2 + 26, (h.log.a[1] + h.log.b[1]) / 2], h.log.label);
+  if (h.step) L_(at(h.line, h.step.s, -52), h.step.label);
   // the valley's features labelled where they are in this hole's frame
   const feats = [[[TAR.c[0], TAR.c[1] - 26], 'the tar pit'], [POOL.c, 'the plunge pool'], [[BLUFF.c[0], BLUFF.c[1]], 'the Bone Bluff'], [[(BRIDGE.a[0] + BRIDGE.b[0]) / 2, (BRIDGE.a[1] + BRIDGE.b[1]) / 2 - 14], 'the rope bridge'],
-    [[350, -560], 'the swamp'], [[470, -1250], 'the river'], [[520, -950], 'the river'], [[110, 80], 'the camp'], [CAMP_FALLS.pool.c, 'Camp Falls'], [GREAT_FALLS.foot, 'the Great Falls'], [[450, -1500], 'the gorge']];
+    [[350, -560], 'the swamp'], [[-60, -268], 'the creek'], [[160, -88], 'the creek'], [[-104, -470], 'the creek'], [[-92, -620], 'the pond'], [[372, -1066], 'the back channel'], [[196, -1062], 'the oxbow'], [[470, -1250], 'the river'], [[520, -950], 'the river'], [[110, 80], 'the camp'], [CAMP_FALLS.pool.c, 'Camp Falls'], [GREAT_FALLS.foot, 'the Great Falls'], [[450, -1500], 'the gorge']];
   for (const [wp, t] of feats) { const p = LOC[i](...wp), pr = project(h.line, ...p); if (Math.abs(pr.off) < 170 && pr.s > -60 && pr.s < h.len + 80) L_(p, t); }
   const cr = [];
   const wobjs = [];
@@ -123,6 +126,12 @@ const fwWidth = (B, p, dir) => {   // contiguous fairway straight across a direc
   while (b < 120 && B.surface(p[0] + nx * (b + 0.5), p[1] + nz * (b + 0.5)) === 'fairway') b += 0.5;
   return b - a;
 };
+const lanes = (B, p, dir) => {   // the runs of fairway straight across a direction through p, within 90 m, 6 m or more each
+  const nx = Math.cos(dir), nz = Math.sin(dir), out = []; let run = 0;
+  for (let a = -90; a <= 90; a += 0.5) { if (B.surface(p[0] + nx * a, p[1] + nz * a) === 'fairway') run += 0.5; else { if (run >= 6) out.push(run); run = 0; } }
+  if (run >= 6) out.push(run);
+  return out;
+};
 const report = [];
 const R_ = (...a) => { const l = a.join(' '); report.push(l); console.log(l); };
 // plays-like for a par 3 from the game's flight: the flat carry of the iron that lands at this distance and drop
@@ -161,9 +170,12 @@ for (const [i, B] of BUILT.entries()) {
   if (h.par > 3) {
     const ws = [];
     for (const T of COURSE.teeSets) {
-      const s0 = project(h.line, ...h.teePts[T.id]).s, s = Math.min(h.len - 20, s0 + (T.minDrive || 150) * YD), p = at(h.line, s), w = fwWidth(B, p, headingAt(h.line, s));
-      ws.push(`${T.name} ${Math.round(w)}`);
-      if (w < 40) R_(`! ${h.n} ${T.name} drive (${T.minDrive || 150} yd) lands on ${B.surface(...p)}, ${Math.round(w)} m of fairway`);
+      const s0 = project(h.line, ...h.teePts[T.id]).s, s = Math.min(h.len - 20, s0 + (T.minDrive || 150) * YD), p = at(h.line, s), dir = headingAt(h.line, s);
+      // straight across the line there: one fairway 40 m or more wide, or (where a tree or a bluff splits it)
+      // two lanes 25 m or more each
+      const ln = lanes(B, p, dir), wide = Math.max(0, ...ln), ok = wide >= 40 || ln.filter(v => v >= 25).length >= 2;
+      ws.push(`${T.name} ${ln.length > 1 ? ln.map(Math.round).join('+') : Math.round(wide)}`);
+      if (!ok) R_(`! ${h.n} ${T.name} drive (${T.minDrive || 150} yd) lands on ${B.surface(...p)}, lanes ${ln.map(Math.round).join(', ') || 'none'} m`);
     }
     R_(`  ${h.n} landing widths (m): ${ws.join(', ')}`);
   }
@@ -205,9 +217,9 @@ for (const [i, B] of BUILT.entries()) {
   R_(`${badG ? '!' : ' '} ${h.n} green contour: typical slope ${gs.median.toFixed(1)}%, ${gs.relief.toFixed(2)} m beyond its plane (${feat}), pin ${gs.pinSlope.toFixed(1)}%, ${gs.areas.length} pin areas, ${Math.round(gs.cup * 100)}% cuppable`);
   // the fairway's lean across the line where drives land: round each fairway target, 30 m either side
   if (h.par > 3) {
-    const L = leanAlong(B), ws = [];
-    for (const q of (h.targets || []).filter(q => !q.bold)) {
-      const s0 = project(h.line, ...q.at).s, v = L.filter(([s]) => Math.abs(s - s0) <= 30).map(x => x[1]);
+    const ws = [];
+    for (const q of (h.targets || []).filter(q => !q.bold)) {   // round the target, at its own offset (a lane)
+      const pq = project(h.line, ...q.at), v = leanAlong(B, pq.s - 30, pq.s + 30, 12, pq.off).map(x => x[1]);
       if (v.length) ws.push({ name: q.name, lean: v.reduce((a, b) => a + b, 0) / v.length });
     }
     const top = ws.reduce((a, b) => Math.abs(b.lean) > Math.abs(a?.lean ?? 0) ? b : a, null);
