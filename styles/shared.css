@@ -15,6 +15,22 @@
 .lm-row input { min-width: 0; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 8px; color: var(--bone); font-family: var(--f-data); font-size: 15px; padding: 9px 10px; }
 .lm-go { appearance: none; border: 0; border-radius: 8px; background: var(--flag); color: var(--flag-ink); padding: 0 14px; font-family: var(--f-data); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
 .lm-state { margin: 0; font-family: var(--f-data); font-size: 13.5px; color: var(--bone); }
+.lm-pop { max-height: calc(100dvh - 84px - env(safe-area-inset-top, 0px) - 12px); overflow-y: auto; }
+.lm-pane { display: flex; flex-direction: column; gap: 8px; }
+.lm-pane[hidden] { display: none; }
+.lm-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 9px; background: rgba(0,0,0,0.2); }
+.lm-seg button { appearance: none; border: 0; border-radius: 7px; background: transparent; color: var(--sage, var(--mist)); padding: 6px 8px; font-family: var(--f-data); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+.lm-seg button[aria-selected="true"] { background: rgba(255,255,255,0.1); color: var(--bone); }
+.lm-row-ble { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+.lm-row-ble .lm-go { padding: 10px 14px; }
+.lm-go:disabled { opacity: 0.4; cursor: default; }
+.lm-tee { justify-self: end; display: flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage, var(--mist)); white-space: nowrap; }
+.lm-tee input { width: 4.2em; padding: 7px 6px; text-align: center; }
+.lm-dbg { display: flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sage, var(--mist)); border-top: 1px solid var(--line); padding-top: 8px; }
+.lm-dbg[hidden] { display: none; }
+.lm-dbg span { flex: 1; }
+.lm-dbg button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--bone); border-radius: 6px; padding: 4px 8px; font: inherit; cursor: pointer; }
+@media (max-height: 420px) { .lm-pop { top: calc(env(safe-area-inset-top, 0px) + 56px); max-height: calc(100dvh - 64px); padding: 10px 14px 12px; gap: 6px; } .lm-note { font-size: 12px; line-height: 1.35; } }
 .menu-link .mshort { display: none; font-size: 20px; line-height: 0.8; }
 @media (max-width: 560px) { .menu-link .mlong { display: none; } .menu-link .mshort { display: inline; } }
 

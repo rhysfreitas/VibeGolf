@@ -38,7 +38,30 @@ The layout is built for a phone held sideways (landscape), like a launch-monitor
 
 ## Connect the R10
 
-A browser can't talk to the R10 over Bluetooth on every platform, and it can't open raw TCP sockets. So a small **bridge** runs on the same computer. Existing R10 connectors already speak **GSPro Open Connect**. The bridge pretends to be GSPro for them and relays each shot into the game over a WebSocket.
+### Direct, over Bluetooth (no bridge)
+
+VibeGolf talks to the R10 itself, straight from the browser.
+
+1. Switch the R10 on and **close the Garmin Golf app** on every phone nearby: the R10 talks to one device at a time.
+2. In the game, tap the **R10** status, pick **Bluetooth**, and tap **Connect R10**. Choose *Approach R10* in the browser's list.
+3. The dot turns green when the radar is armed. Live shots are tagged **R10** in the readout.
+
+If it won't connect, pair the R10 once in the phone's or PC's Bluetooth settings and try again. **R10 to ball** (in feet) is optional: set it and the game sends it to the R10 as its tee distance; leave it blank to keep the R10's own setting. Where the browser remembers the R10 (Chrome), each page reconnects by itself; otherwise the status reads **R10 · tap** and one tap on **Connect R10** links it again.
+
+| Device | Browser |
+|---|---|
+| Android phone or tablet | Chrome, Edge |
+| Windows or Mac | Chrome, Edge |
+| iPhone or iPad | **Bluefy** (a free Web Bluetooth browser in the App Store; Safari has none) |
+| Safari on Mac, Firefox | no Web Bluetooth: use the bridge below |
+
+**Debugging.** Open any page with `?r10debug=1` (it stays on across pages until `?r10debug=0`). The popover then shows a **Capture** row: play a few shots, then **Save** (or **Copy**) and send the file. It holds the frames and decoded messages both ways; the R10's own identity (serial number, names) is left out.
+
+The protocol comes from [10over](https://github.com/divotmaker/10over) by Eric Thill (MIT or Apache-2.0), a reverse-engineered client for the R10. VibeGolf isn't affiliated with or endorsed by Garmin.
+
+### Through the bridge (fallback)
+
+For browsers without Web Bluetooth, a small **bridge** runs on the same computer. Existing R10 connectors already speak **GSPro Open Connect**. The bridge pretends to be GSPro for them and relays each shot into the game over a WebSocket.
 
 ```
 R10 ──Bluetooth──> connector (OpenLaunch Connect, gsp-r10-adapter, …)
@@ -58,7 +81,7 @@ R10 ──Bluetooth──> connector (OpenLaunch Connect, gsp-r10-adapter, …)
 3. Start your connector in GSPro mode, pointed at `127.0.0.1` port `921`:
    - [OpenLaunch Connect](https://github.com/chgl42/openlaunch-connect) (macOS): direct Bluetooth to the R10, no phone needed.
    - [gsp-r10-adapter](https://github.com/mholow/gsp-r10-adapter) (Windows): see its README for the direct-Bluetooth and Garmin-app relay modes.
-4. In the game, tap the **R10** status and press **Connect** (default `ws://localhost:8921`). The dot turns green when shots are flowing. Live shots are tagged **R10** in the readout. The game sends the club you select back to the connector.
+4. In the game, tap the **R10** status, pick **Bridge** and press **Connect** (default `ws://localhost:8921`). The dot turns green when shots are flowing. The game sends the club you select back to the connector.
 
 Chrome and Edge allow a page served over `https://` to reach `ws://localhost`. If your browser blocks that connection, run the game locally with `npm start`.
 
@@ -72,7 +95,9 @@ online.html           Online: the friends lobby (coming)
 range.html            the Practice Ground (?mode=range|coach)
 course.html           the courses (?c=aerie, ?c=redmesa, ?c=hollowmere, ?c=reclaim, ?c=rimeholm)
 src/physics.js        ball flight, bounce, roll, cup (pure functions, SI units, no Three.js)
-src/launch-monitor.js live shot link + connection popover, shared by every page
+src/launch-monitor.js live shot link (Bluetooth or bridge) + connection popover, shared by every page
+src/r10/protocol.js   the R10's wire protocol (pure: COBS, CRC, GFDI, protobuf, the session)
+src/r10/ble.js        the thin Web Bluetooth transport for it, and the ?r10debug capture
 src/range/main.js     range page: tracers, cameras, session stats, practice menu
 src/world/practice-ground.js the Practice Ground campus: stations, lights, screen, Swing Lab
 src/range/coach-ui.js the coaching screens: readout, cause cards, chip, progress, drills, explorer
@@ -95,7 +120,7 @@ src/course/ice-world.js Rimeholm's glacier: seracs, crevasse walls, the frozen f
 src/course/minimap.js corner hole map
 bridge/               GSPro Open Connect → WebSocket relay (Node)
 vendor/three-r147/    Three.js r147 plus Sky and Line2 add-ons, vendored so the app works offline
-tests/                physics calibration, coaching rules, mini games and bridge (`npm test`)
+tests/                physics calibration, coaching rules, mini games, bridge and R10 protocol (`npm test`)
 ```
 
 **Ball flight.** The flight is integrated with RK4 at 240 Hz, using gravity, drag and Magnus lift. The drag coefficient rises with spin ratio and below about 50 m/s (Reynolds effect). The lift coefficient saturates with spin ratio, and spin decays exponentially. The coefficients were fit to TrackMan PGA Tour averages. Carry, apex and landing angle land within about 4% from driver to pitching wedge, and `npm test` fails if a change drifts more than 5%. Air density comes from temperature, altitude and humidity. Wind acts on the ball's speed through the air, so a headwind costs more than a tailwind gives.
@@ -106,7 +131,7 @@ tests/                physics calibration, coaching rules, mini games and bridge
 
 ## Developing
 
-- `npm test` runs the physics calibration and the bridge end-to-end tests.
+- `npm test` runs the physics calibration, the bridge end-to-end tests and the R10 protocol tests (10over's golden bytes and a fake R10).
 - Change a page, refresh the browser. There is no build. Push to `main` and GitHub Pages redeploys in about a minute. The service worker fetches from the network first, so pushes show up on the next load.
 - Course holes are data in `src/course/aerie.js` and `src/course/red-mesa.js`. Each island is a superellipse with a top height and rock depth, plus optional green, bunkers, waterfalls and trees. Tees per set, targets and drop zones sit beside the islands; Red Mesa adds a canyon floor, painted fairways and washes, ramps, rock you can hit (arches, hoodoos, boulders and rockfalls), groves and props. Trees on both courses are in play. The format is described in CLAUDE.md.
 - Test hooks for headless screenshots: `window.__lowq = true` (set before load) lowers render quality, `__advance(seconds)` steps the simulation, and `window.__pose = { pos, look, fov }` poses the course camera.
@@ -119,4 +144,4 @@ tests/                physics calibration, coaching rules, mini games and bridge
 - Course builder that reads and writes the hole format
 - Red Mesa's back nine
 - A putting green that uses the R10's putt data
-- Native wrappers (Capacitor/Tauri) with direct Bluetooth to the R10
+- Native wrappers (Capacitor/Tauri), so iPhone works without Bluefy: swap `src/r10/ble.js` for a native BLE plugin
