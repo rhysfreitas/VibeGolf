@@ -136,7 +136,7 @@ export function holeOutlines(h, T, COURSE, L) {
   cand.sort((a, b) => a.worst - b.worst); const areas = []; for (const c of cand) if (areas.every(q => Math.hypot(c.x - q.x, c.z - q.z) >= 8)) areas.push(c);
   const sl = cells.map(c => c.s).sort((a, b) => a - b);
   const contour = { median: +sl[Math.floor(sl.length / 2)].toFixed(1), relief: +(rhi - rlo).toFixed(2), pin: +slope(pin[0], pin[1]).toFixed(1), areas: areas.length, steep: Math.round(cells.filter(c => c.s > 3).length / cells.length * 100) };
-  contour.feature = contour.relief >= 0.25;
+  contour.feature = contour.relief >= 0.25 || ['redan', 'biarritz', 'crowned'].includes(h.green.style);   // a Redan's fall, a Biarritz's swale, a crown
   if (contour.median < 1) flags.push(`green nearly flat (typical slope ${contour.median}%)`);
   if (contour.median > 3) flags.push(`green steep (typical slope ${contour.median}%)`);
   if (contour.areas < 2) flags.push(`green has ${contour.areas} pin area${contour.areas === 1 ? '' : 's'}`);
