@@ -453,7 +453,7 @@ export function createCoachUI({ clubName = id => id, setClub = null, currentClub
   /* ---------------- shots in ---------------- */
   function shot(s, club) {
     if (!active) return;
-    if (mode === 'skill' && sk) return skillShot(s, club);
+    if (mode === 'skill' && sk) { skillShot(s, club); return [{ type: 'skill', id: sk.skill.id + (sk.option ? '.' + sk.option : ''), phase: sk.phase }]; }
     normals.push({ shot: s, club }); if (normals.length > 60) normals.shift();
     if (!mode) { renderChip(); return; }
     // a new shot while a readout is open: fold it into the chip
@@ -469,6 +469,8 @@ export function createCoachUI({ clubName = id => id, setClub = null, currentClub
       else if (e.type === 'good' && !shown) toast(e.streak > 1 ? `That's the one · ${e.streak} in a row` : "That's the one", true);
     }
     renderChip();
+    // what the coach made of it, for the session record
+    return evs.filter(e => e.type !== 'tick').map(e => ({ type: e.type, id: e.id || (e.condition && e.condition.id) || undefined }));
   }
 
   return {

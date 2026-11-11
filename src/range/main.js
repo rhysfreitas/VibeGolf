@@ -11,6 +11,8 @@ import { createPracticeGround } from '../world/practice-ground.js';
 import { FAULTS, applyFault } from '../coach/faults.js';
 import { createCoachUI } from './coach-ui.js';
 import { recordDrive } from '../drives.js';
+import { recorder } from '../recorder.js';
+import { createFeelRow } from './feel-row.js';
 
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
 /* ===================== world (shared with the mini games) ===================== */
@@ -81,6 +83,7 @@ function loadClub(i) { const c = CLUBS[i]; state.club = i; state.custom = false;
 
 /* ===================== UI ===================== */
 const $ = id => document.getElementById(id);
+const feelRow = createFeelRow({ parent: $('rightDock') });
 function renderClubs() {
   $('vClub').textContent = CLUBS[state.club].name;
   if (tool) { tool.suggest({ club: state.club }); tool.setClub(state.club); customNote.hidden = !state.custom; }
@@ -307,6 +310,8 @@ function receiveShot(shot) {
   initAudio();
   if (state.phase === 'idle') launch(shot, true); else state.pending = shot;
 }
+// every live shot goes in the session record (My game), before the range takes it
+recorder.attach(launchMonitor, { page: 'range', mode: () => (coachUI.active ? 'coach' : 'range'), club: () => CLUBS[state.club].id });
 launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
 mountLaunchMonitorUI({ dot: $('lmDot'), text: $('lmText'), button: $('lmBtn') });
 window.PracticeGround = window.WoodsonRange = { receiveShot: msg => { const shot = parseShot(msg); if (shot) receiveShot(shot); } };
@@ -358,6 +363,8 @@ function refreshAim() { clearTimeout(aim.t); aim.t = setTimeout(() => drawAim(fa
 }
 
 function launch(shot, live) {
+  if (!live) recorder.capture(shot, { live: false }); // only kept with ?recsim=1
+  feelRow.hide();
   placeBallAtAddress();
   const coef = { clScale: state.lift, cd0: DEFAULT_COEF.cd0 * state.drag, cdS: DEFAULT_COEF.cdS * state.drag, cdLow: DEFAULT_COEF.cdLow * state.drag };
   const startY = ball.position.y;
@@ -390,7 +397,10 @@ function finishShot() {
   restDisc.position.set(end[0], end[1] + 0.03, end[2]); restDisc.visible = true;
   $('tagRest').innerHTML = `<b>${yd(r.totalDown)}</b> total`; $('tagRest').hidden = false;
   if (!$('session').hidden) drawSession();
-  if (coachUI.active) coachUI.shot(f.shot, CLUBS[state.club].id);
+  const yd1 = v => Math.round(v * 10) / 10, land = r.pts[r.landIdx].p;
+  recorder.result(f.shot, { carry: yd1(r.carry), total: yd1(r.totalDown), offline: yd1(r.offline), landOffline: yd1(land[0] / 0.9144), apexFt: Math.round(r.apexFt), descent: yd1(r.descent) });
+  if (coachUI.active) { const ce = coachUI.shot(f.shot, CLUBS[state.club].id); if (ce && ce.length) recorder.note(f.shot, { coach: ce }); }
+  if (recorder.idOf(f.shot)) feelRow.show(recorder.idOf(f.shot));
   if (world.showShot) world.showShot(r, f.shot);
   if (CLUBS[state.club].id === 'DR') recordDrive(r.total); // course tee suggestions
 }

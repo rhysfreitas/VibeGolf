@@ -1,0 +1,92 @@
+/* My game: your bag, practice tendencies and course tendencies, from the shots the recorder keeps.
+   Same night-campus look as the Practice Ground page; landscape-first, scrolls when it needs to. */
+:root {
+  color-scheme: dark;
+  --ink: #101c22; --glass: rgba(14, 26, 32, 0.8); --glass-hi: rgba(26, 42, 50, 0.92);
+  --line: rgba(214, 228, 232, 0.16); --bone: #f2efe6; --mist: #a9bcc2; --flag: #f5c542; --flag-ink: #2a2206;
+  --left: #7cc4ff; --right: #ffb04a; --ok: #7fdc8a; --bad: #ff7b6b;
+  --f-title: "Cormorant SC", "Cormorant Garamond", Georgia, serif;
+  --f-data: "Saira Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: #101c22 url(../assets/menu-bg.jpg) center / cover no-repeat fixed; color: var(--bone); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0; background: rgba(10,18,22,0.7); pointer-events: none; }
+:focus-visible { outline: 2px solid var(--flag); outline-offset: 3px; }
+.glass { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px) saturate(1.2); }
+main { position: relative; max-width: 1080px; margin: 0 auto; padding-block: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-bottom, 0px) + 20px); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 12px; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+h1 { margin: 0; font-family: var(--f-title); font-weight: 700; font-size: clamp(28px, 4.4vw, 40px); line-height: 1; letter-spacing: 0.02em; }
+.back { margin-left: auto; text-decoration: none; color: var(--mist); font-family: var(--f-data); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 12px; }
+.back:hover { color: var(--bone); }
+.tabs { display: flex; gap: 2px; padding: 3px; }
+.tabs button { appearance: none; border: 0; background: transparent; color: var(--mist); font-family: var(--f-data); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 11px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.tabs button:hover { color: var(--bone); }
+.tabs button[aria-selected="true"] { background: var(--bone); color: var(--ink); }
+section { display: flex; flex-direction: column; gap: 10px; }
+h2 { margin: 0; font-family: var(--f-data); font-weight: 700; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; }
+.lede { margin: 0; color: #d3dde0; font-size: 13.5px; line-height: 1.45; max-width: 760px; }
+.lbl { font-family: var(--f-data); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mist); }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; font-weight: 600; }
+.L { color: var(--left); } .R { color: var(--right); } .ok { color: var(--ok); } .bad { color: var(--bad); }
+.demo { margin: 0; padding: 8px 12px; font-size: 13px; color: var(--flag); border-color: rgba(245,197,66,0.4); }
+.demo code { color: var(--bone); white-space: nowrap; }
+.card { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.empty { padding: 18px; display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
+.empty h2 { color: var(--flag); }
+.empty p { margin: 0; color: #d3dde0; font-size: 14px; line-height: 1.5; }
+.empty .go { align-self: flex-start; text-decoration: none; font-family: var(--f-data); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--flag); color: var(--flag-ink); padding: 8px 14px; border-radius: 8px; font-weight: 600; }
+
+/* the bag table */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--f-data); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mist); font-weight: 500; }
+td.n, th.n { text-align: right; font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+td.club { font-family: var(--f-data); font-weight: 700; letter-spacing: 0.04em; }
+td.club small { display: block; font-weight: 500; color: var(--mist); font-size: 11px; letter-spacing: 0; }
+td.carry { font-family: var(--f-data); font-weight: 700; font-size: 17px; }
+td.ladder { width: 32%; min-width: 150px; }
+tr.thin td { color: var(--mist); }
+.lad { position: relative; height: 14px; }
+.lad .track { position: absolute; inset: 6px 0; background: rgba(255,255,255,0.06); border-radius: 2px; }
+.lad .band { position: absolute; top: 3px; height: 8px; background: rgba(245,197,66,0.35); border-radius: 4px; }
+.lad .dot { position: absolute; top: 1px; width: 3px; height: 12px; margin-left: -1.5px; background: var(--flag); border-radius: 2px; }
+.scale { display: flex; justify-content: space-between; font-family: var(--f-data); font-size: 10px; color: var(--mist); }
+
+/* tendencies */
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13.5px; }
+.row .v { font-family: var(--f-data); font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 8px; flex-wrap: wrap; }
+.head b { font-family: var(--f-data); font-size: 16px; letter-spacing: 0.04em; }
+.split { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(127,220,138,0.35); }
+.split i { display: block; height: 100%; }
+.split .l { background: var(--left); } .split .r { background: var(--right); margin-left: auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font-family: var(--f-data); font-size: 12px; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--bone); }
+.chip.read { border-color: rgba(255,176,74,0.5); color: var(--right); }
+.note { font-size: 12.5px; color: var(--mist); margin: 0; line-height: 1.4; }
+.insight { border-color: rgba(245,197,66,0.45); }
+.insight li { font-size: 14px; line-height: 1.5; }
+.insight ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.compass { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.compass div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border-radius: 8px; background: rgba(255,255,255,0.04); }
+.compass .num { font-size: 18px; }
+
+/* sessions */
+.sess { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 14px; }
+.sess b { font-family: var(--f-data); font-size: 15px; letter-spacing: 0.03em; }
+.sess .meta { font-size: 12.5px; color: var(--mist); }
+.btn { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--bone); font-family: var(--f-data); font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: rgba(245,197,66,0.6); }
+.btn.primary { background: var(--flag); color: var(--flag-ink); border-color: var(--flag); font-weight: 600; }
+.btn.danger { color: var(--bad); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; border-color: rgba(255,123,107,0.5); }
+.confirm span { font-size: 13.5px; }
+
+@media (max-width: 760px) { .hide-s { display: none; } .tabs button { padding: 7px 8px; font-size: 12px; } }
+@media (max-width: 520px) { .sess { grid-template-columns: 1fr auto; } .sess .meta { grid-column: 1; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

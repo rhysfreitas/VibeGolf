@@ -6,7 +6,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 
 | Mode | What it is |
 |---|---|
-| **Practice Ground** | A floodlit practice campus at blue hour, with a city skyline past the range, glowing target greens, lit distance boards and a big screen that shows your last shot. Its own page offers each mode at its own station. **Range** (the main tee line): stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. **Coaching** (in the Swing Lab, a glass studio with capture cameras and a pressure mat; the coach's target window stands downrange as two lit poles): the coach reads your shots in fours, names the one fault worth fixing, shows it on a 3D golfer next to the goal swing with two or three likely causes, gives you a cue, and checks your progress after 8 shots. **Learn a skill** (Coaching opens on the choice): nine lessons (shape it, compress your irons, hit up on the driver, flight it high or low, start it on your line, find the centre, wedge distance control, tighten your pattern, add speed), each shown on the 3D golfer, scored shot by shot toward a goal, then a 5-of-8 test. **Short game** (lit wedge pods behind a hedge) and **Bag Mapping** are coming. |
+| **Practice Ground** | A floodlit practice campus at blue hour, with a city skyline past the range, glowing target greens, lit distance boards and a big screen that shows your last shot. Its own page offers each mode at its own station. **Range** (the main tee line): stacked shot tracers, a dispersion plot, club gapping, adjustable conditions, and lift/drag trims to match the flight model to your R10. **Coaching** (in the Swing Lab, a glass studio with capture cameras and a pressure mat; the coach's target window stands downrange as two lit poles): the coach reads your shots in fours, names the one fault worth fixing, shows it on a 3D golfer next to the goal swing with two or three likely causes, gives you a cue, and checks your progress after 8 shots. **Learn a skill** (Coaching opens on the choice): nine lessons (shape it, compress your irons, hit up on the driver, flight it high or low, start it on your line, find the centre, wedge distance control, tighten your pattern, add speed), each shown on the 3D golfer, scored shot by shot toward a goal, then a 5-of-8 test. **My game**: your bag (every club's carry, the band your middle 80% land in, total, gaps, side, launch and spin from your real Practice Ground shots), how each club behaves in practice (the miss side, shape, path and face, the coach's reads, the feels you tagged), how you play on the course (fairways and the miss off the tee, approaches short, long, left or right of where you aimed, clubs that play differently from practice), and your sessions to export. Every real shot is kept on your device; after a range shot you can tag how it felt (Pure, Fat, Thin, Toe, Heel). **Short game** (lit wedge pods behind a hedge) is coming. |
 | **The Aerie** | Nine holes (par 36) on floating islands over the clouds: a pulled drive knocked down by a waterfall off an island hanging over the first tee, a blind drive at a hot air balloon, a short climb up grass terraces, a Cape over a cove of open sky, a wedge past a drifting island, a dogleg under a granite overhang, rock ceilings jutting from floating islands, and a climb to the clubhouse. Big landing areas and room around every green; the clouds play as a red penalty area (a drop beside where the ball went over). Landmarks from one hole show in the distance on others. |
 | **Red Mesa** | Nine holes (par 36) across and between red-rock mesas, high on the plateau, each built around a classic idea: a Cape, a speed slot into a punchbowl, a Redan from a 70 m drop, a two-tier green past a long natural arch slung across the fairway, a double dogleg with cross waste, a Biarritz over a gorge with a steam train, a drivable par 4 through hoodoos, an Eden with a spring pond, and an Alps finish to the clubhouse. Real green complexes, bunker bowls, rough cuts, tee pads, native carries, sloped lies and pins that change each round. |
 | **Hollowmere** | Nine holes through old limestone mine caverns (`course.html?c=hollowmere`): off a ledge at the mine mouth, down to a still lake, through a stalagmite forest, four holes round the Hollow (a vast vaulted cavern with a chasm and a curtain of falls pouring into it), a green cradled in a cracked-open geode, a glowworm grotto with giant mushrooms, and a finish through an eyelet in a rock fin up into a cenote open to the sky. Side caves glitter with crystal, and an ore cart rolls along the rails. Every hole goes up or down. The roof, walls and stalactites are solid rock, and a wall can kill a wild shot into a rubble lie at its foot. |
@@ -89,7 +89,8 @@ Chrome and Edge allow a page served over `https://` to reach `ws://localhost`. I
 
 ```
 index.html            title screen
-practice.html         the Practice Ground's page: Range, Coaching, Short game, Bag Mapping
+practice.html         the Practice Ground's page: Range, Coaching, Short game, My game
+my-game.html          My game: Bag, Practice, On the course, Sessions (?demo=1 for example data)
 courses.html          Play Golf: pick a course
 online.html           Online: the friends lobby (coming)
 range.html            the Practice Ground (?mode=range|coach)
@@ -102,7 +103,10 @@ src/range/main.js     range page: tracers, cameras, session stats, practice menu
 src/world/practice-ground.js the Practice Ground campus: stations, lights, screen, Swing Lab
 src/range/coach-ui.js the coaching screens: readout, cause cards, chip, progress, drills, explorer
 src/coach/            coaching rules (pure), club windows from the flight model, the condition
-                      catalogue, fault presets, and the 3D swing mannequin with its lessons
+                      catalogue, fault presets, the trust checks (club data, spin), and the 3D
+                      swing mannequin with its lessons
+src/recorder.js       the session record: every live shot, kept on this device, with export
+src/mygame/           My game's numbers and tendencies (pure), its page, example data
 src/course/main.js    course renderer, round setup, course-management UI, cameras, scoring
 src/course/terrain.js ground, surfaces and rock for a hole (pure; shared with the physics and tests)
 src/course/conditions.js time of day, wind, weather, temperature, tee suggestion (pure)
@@ -138,7 +142,7 @@ tests/                physics calibration, coaching rules, mini games, bridge an
 
 ## Roadmap
 
-- Coaching: field-test the thresholds with real R10 sessions; more lessons; the Short game area
+- Coaching: tune the thresholds from recorded R10 sessions (a replay tool), tempo, hands-free, the swing profile in My game; more lessons; the Short game area
 - Mini games: Glass Tower next
 - Play Golf: multiple players, each on their own tee (set by their difficulty)
 - Course builder that reads and writes the hole format

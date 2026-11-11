@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101c22">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<title>My game · VibeGolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&family=Cormorant+SC:wght@600;700&display=swap">
+<link rel="stylesheet" href="styles/mygame.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>My game</h1>
+    <nav class="tabs glass" role="tablist" aria-label="My game">
+      <button role="tab" id="tBag" data-tab="bag" aria-selected="true">Bag</button>
+      <button role="tab" id="tPractice" data-tab="practice" aria-selected="false">Practice</button>
+      <button role="tab" id="tCourse" data-tab="course" aria-selected="false">On the course</button>
+      <button role="tab" id="tSessions" data-tab="sessions" aria-selected="false">Sessions</button>
+    </nav>
+    <a class="back glass" href="practice.html">‹ Practice</a>
+  </header>
+  <p class="demo glass" id="demo" hidden>Example data, so you can see what fills in. Your own shots replace it: open My game without <code>?demo=1</code>.</p>
+  <section id="bag" role="tabpanel" aria-labelledby="tBag"></section>
+  <section id="practice" role="tabpanel" aria-labelledby="tPractice" hidden></section>
+  <section id="course" role="tabpanel" aria-labelledby="tCourse" hidden></section>
+  <section id="sessions" role="tabpanel" aria-labelledby="tSessions" hidden></section>
+</main>
+<script type="module" src="src/app.js"></script>
+<script type="module" src="src/mygame/main.js"></script>
+</body>
+</html>

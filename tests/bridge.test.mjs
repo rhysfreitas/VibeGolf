@@ -35,6 +35,7 @@ test('relays a GSPro Open Connect shot to the game and acks the connector', asyn
   sock.write(JSON.stringify({
     DeviceID: 'Approach R10', Units: 'Yards', ShotNumber: 2, APIversion: '1',
     BallData: { Speed: 121.4, SpinAxis: -3.2, TotalSpin: 6900, HLA: 1.1, VLA: 16.8 },
+    ClubData: { Speed: 1, Path: 1, FaceToTarget: 1, AngleOfAttack: 1, Loft: 1 },   // a connector's placeholders
     ShotDataOptions: { ContainsBallData: true, ContainsClubData: false, IsHeartBeat: false },
   }));
   await new Promise(r => setTimeout(r, 200));
@@ -42,6 +43,7 @@ test('relays a GSPro Open Connect shot to the game and acks the connector', asyn
   const shot = messages.find(m => m.type === 'shot');
   assert.ok(shot, 'game received the shot');
   assert.equal(shot.ball.Speed, 121.4);
+  assert.equal(shot.club, null, 'club data marked absent is dropped, placeholders and all');
   assert.ok(messages.some(m => m.type === 'status' && m.device === 'Approach R10'), 'game saw the device');
   assert.ok(fromBridge.some(m => m.Code === 200), 'connector got Code 200');
   assert.ok(fromBridge.some(m => m.Code === 201 && m.Player.Club === 'I7'), 'connector got the club');

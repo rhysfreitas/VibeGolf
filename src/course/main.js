@@ -7,6 +7,7 @@ import { createTreeField } from './trees.js';
 import { cloudDrop } from './relief.js';
 import { TIMES, WINDS, WEATHER, TEMPS, WIND_FROM, rollWind, holeWind, windVector, windInShot, skyAngles, suggestTee, teeYards } from './conditions.js';
 import { recentDrives, recordDrive } from '../drives.js';
+import { recorder } from '../recorder.js';
 import { createMinimap } from './minimap.js';
 import { createSimTool } from '../sim-tool.js';
 import { cumulusBanks, skyPines, clumpGeo, clumpMat } from '../world/sky-art.js';
@@ -1306,6 +1307,8 @@ function realSwing(base) {
 // Real shots from the R10 arrive through the bridge (see src/launch-monitor.js).
 // On the green the app putts for you, since the R10 doesn't read putts well.
 function receiveShot(shot) { initAudio(); if (state.phase === 'address') launch(shot); }
+// every live shot goes in the session record (My game's On the course tab)
+recorder.attach(launchMonitor, { page: 'course', mode: 'course', club: () => CLUBS[state.club].id });
 launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
 mountLaunchMonitorUI({ dot: document.getElementById('lmDot'), text: document.getElementById('lmText'), button: document.getElementById('lmBtn'), compact: true });
 window.Aerie = { receiveShot(msg) { const b = msg.BallData || msg; if (b.Speed > 0) receiveShot({ Speed: +b.Speed, VLA: +b.VLA, HLA: +(b.HLA || 0), TotalSpin: +b.TotalSpin, SpinAxis: +(b.SpinAxis || 0) }); } };
@@ -1323,7 +1326,7 @@ function launch(raw) {
   const li = W.findIndex(p => p.phase !== 'flight');
   r.landIdx = li < 0 ? W.length - 1 : li;
   r.apexT = W.reduce((b, p) => p.w.y > b.y ? { y: p.w.y, t: p.t } : b, { y: -1e9, t: 0 }).t;
-  state.flight = { r, shot, raw, W, from: state.ball.clone(), fromLie: state.lie, arr: [] };
+  state.flight = { r, shot, raw, W, from: state.ball.clone(), fromLie: state.lie, arr: [], aim: state.previewLand ? state.previewLand.clone() : null, k: state.k };
   state.t = 0; state.phase = 'flight'; state.strokes++;
   for (const m of [aimRing, aimFill, restDot]) m.visible = false; previewArc.visible = false;
   oldTracers.forEach(l => { l.material.opacity *= 0.5; });
@@ -1341,6 +1344,7 @@ function finishShot() {
   if (r.outcome === 'holed') {
     state.tracks.push(groundTrack(f.W, f.W.length - 1));
     state.ball.copy(HOLE.pinPos); res = '<span style="color:var(--ok)">Holed</span>';
+    recordCourseShot(f, r, HOLE.pinPos, 'holed');
     holeOut(); showReadout(r, f.shot, res); return;
   }
   if (r.outcome === 'void') {
@@ -1383,11 +1387,27 @@ function finishShot() {
     else if (r.rockHits && T.rocks.length) toast('Off the rock', '', 1600);
   }
   showReadout(r, f.shot, res);
+  recordCourseShot(f, r, end, state.lie);
   state.tracks.push(groundTrack(f.W, f.W.length - 1));
   // keep this shot's tracer as a faint ghost
   const ghost = mkLine('#f5c542', 1.6, 0.35); setLine(ghost, f.arr.slice()); oldTracers.push(ghost); resizeLines();
   while (oldTracers.length > 3) { const o = oldTracers.shift(); scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
   nextLie();
+}
+// the shot's place in the round, for My game's On the course tab: where it was hit from, where it
+// ended up, and the miss against where you aimed (the aim line's landing spot), along and across the line
+function recordCourseShot(f, r, end, restLie) {
+  if (!recorder.idOf(f.raw)) return;
+  const yd = m => Math.round(m / M_PER_YD * 10) / 10, pin = HOLE.pinPos;
+  const land = f.W[r.landIdx].w, c = { course: COURSE.id, hole: state.holeIdx + 1, par: HOLE.par, stroke: state.strokes,
+    fromLie: f.fromLie, fromPin: yd(Math.hypot(pin.x - f.from.x, pin.z - f.from.z)), restLie: r.outcome === 'void' ? 'void' : restLie,
+    toPin: yd(Math.hypot(pin.x - end.x, pin.z - end.z)), carry: Math.round(r.carry * 10) / 10, swing: Math.round((f.k || 1) * 100) };
+  if (f.aim) { // + = long / right of where you aimed
+    const ax = f.aim.x - f.from.x, az = f.aim.z - f.from.z, L = Math.hypot(ax, az) || 1, ux = ax / L, uz = az / L;
+    const dx = land.x - f.aim.x, dz = land.z - f.aim.z;
+    c.aimYd = yd(L); c.long = yd(dx * ux + dz * uz); c.right = yd(dx * -uz + dz * ux);
+  }
+  recorder.course(f.raw, c);
 }
 // a rough check that a normal shot from a to b isn't blocked by rock or a rise in the ground: an arc that
 // peaks at about a ninth of the distance (4-32 m) over the straight line between them

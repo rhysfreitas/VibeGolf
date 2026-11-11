@@ -23,6 +23,17 @@ Coaching opens on a choice: **Watch my swing** (the loop above) or **Learn a ski
 
 `range.html?mode=coach&skill=shape.draw` opens a lesson directly. The shot tool's *Swing fault* list has skill attempts (draw swing, fade swing, compressed, hitting up, knockdown, high shot, faster swing) so every lesson can be tried without an R10.
 
+## Trust checks
+
+The coach believes what the R10 measures well (ball speed, launch, start line) and checks the rest before using it.
+
+- **Club data** counts as missing when face, path and attack are all alike (the R10's 0/0/0 on a slow swing, or a connector's dummy 1/1/1), a number is out of range, or the club speed or smash factor is impossible. Then face and path come from the start line and spin axis, as before. The bridge also drops club data a connector marks as absent.
+- **Spin** passes four checks: measured beats estimated (a marked ball); possible for the club at that launch; within 30% of the spin the measured attack and the loft implied by launch predict; spin axis within 4° of 1.9 × face to path. All pass: used. One fails: a tie-breaker (the rules see half way to the predicted spin). Two fail, or it's impossible: ignored (the rules see the predicted spin). With a plain ball (and into a net) the R10's spin is its own estimate, so it supports a read rather than making one.
+
+## Session record and My game
+
+Every live shot is kept on the device (`src/recorder.js`) with its club, mode, the trust verdicts, the flight or the course result, the coach's events and an optional feel tag. Range and Coaching shots feed **My game**'s Bag and Practice tabs; course shots feed On the course; mini-game shots are kept but feed nothing. Sessions export as JSON from My game; the next step is a replay tool that runs them back through the coach to tune the thresholds.
+
 ## Code
 
 | File | Kind | What it does |
@@ -32,12 +43,13 @@ Coaching opens on a choice: **Watch my swing** (the loop above) or **Learn a ski
 | `src/coach/conditions.js` | Data | The catalogue: headline, one line, cue, evidence, and up to three causes each with a check, a lesson and a drill |
 | `src/coach/faults.js` | Pure | Swing-fault presets for simulated shots (the shot tool's *Swing fault* picker on the range) |
 | `src/coach/skills.js` | Pure | Learn a skill: `SKILLS` (options, clubs, keys, goals, blockers per skill), `scoreShot`, `skillMetrics` (adds peak height and carry from the flight model) and `createSkillCoach()` (baseline → learn → test → open) |
+| `src/coach/trust.js` | Pure | `clubTrust` (placeholder and impossible club data), `expectedSpin`, `spinTrust` (the four spin checks: use, tie or ignore), `spinForRules` |
 | `src/coach/lessons.js` | Data | Mannequin lessons, one per cause: changes to the base swing, camera, pause point, highlighted body part, readout, caption |
 | `src/coach/mannequin.js` | Three.js | The rig (cylinders and spheres, two-bone IK), the ten P-position base swing blended in the chest's frame, one renderer moved between slots, drills, and numbers read off the scene |
 | `src/range/coach-ui.js` | DOM | The chip, readout, explorer, progress, drill and notice screens; history in `localStorage` (`vibegolf.coach.v1`) |
 | `styles/coach.css` | CSS | Coach sheet, chip, explorer, practice menu |
 
-Tests: `tests/coach.test.mjs` (windows, every condition, the window rule, priority, confidence, the focus loop, presets against a decent amateur's misses), `tests/lessons.test.mjs` (lesson data) and `tests/skills.test.mjs` (each skill's goal reached by the swing it teaches, the usual miss naming the right blocker, the learn → test → open flow).
+Tests: `tests/trust.test.mjs` (the trust checks, placeholders, nonsense spin), `tests/coach.test.mjs` (windows, every condition, the window rule, priority, confidence, the focus loop, presets against a decent amateur's misses), `tests/lessons.test.mjs` (lesson data) and `tests/skills.test.mjs` (each skill's goal reached by the swing it teaches, the usual miss naming the right blocker, the learn → test → open flow).
 
 ## Rules of thumb
 

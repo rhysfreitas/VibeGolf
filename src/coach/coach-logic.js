@@ -13,6 +13,7 @@
 
 import { CLUB_REF, LAUNCH_PER_LOFT, windowsFor as physicsWindows } from './windows.js';
 import { CONDITIONS } from './conditions.js';
+import { clubTrust, spinTrust, spinForRules } from './trust.js';
 
 export const READ_WINDOW = 4;     // shots before the coach speaks
 export const FOCUS_SHOTS = 8;     // shots on a cue before the progress check
@@ -28,8 +29,10 @@ const num = v => (v === undefined || v === null || v === '' ? NaN : +v);
 /* ---------------- one shot -> impact metrics ---------------- */
 // Signs follow GSPro / TrackMan for a right-hander: path + in-to-out, face + open,
 // attack + up, spin axis + tilted right, start direction + right.
+// Club data that fails the trust check (trust.js) is treated as missing; the spin rules see
+// the spin the trust check allows (spinRaw keeps what the R10 sent).
 export function shotMetrics(shot, clubId) {
-  const ref = CLUB_REF[clubId] || CLUB_REF['7i'], c = shot.Club || {};
+  const ref = CLUB_REF[clubId] || CLUB_REF['7i'], ct = clubTrust(shot), c = ct.ok ? shot.Club : {};
   const axis = +shot.SpinAxis || 0, dir = +shot.HLA || 0;
   const hasClub = isFinite(num(c.Path)) && isFinite(num(c.FaceToTarget));
   // no club data: a rough D-plane inverse (start mostly face, curve from face to path)
@@ -39,10 +42,13 @@ export function shotMetrics(shot, clubId) {
   const aoa = isFinite(num(c.AngleOfAttack)) ? num(c.AngleOfAttack) : ref.aoa;
   const launch = +shot.VLA || 0;
   const dynLoft = isFinite(num(c.Loft)) ? num(c.Loft) : launch / LAUNCH_PER_LOFT[ref.kind];
+  const spinRaw = +shot.TotalSpin || 0, aoaMeasured = isFinite(num(c.AngleOfAttack));
+  const st = spinTrust({ spin: spinRaw, axis, launch, clubSpeed, aoa: aoaMeasured ? aoa : null, ftp: hasClub ? face - path : null,
+    spinSource: shot.Meta && shot.Meta.spinSource }, clubId);
   return {
-    club: clubId, kind: ref.kind, hasClub,
+    club: clubId, kind: ref.kind, hasClub, clubTrust: ct.why,
     ballSpeed: +shot.Speed || 0, clubSpeed, smash: (+shot.Speed || 0) / clubSpeed,
-    launch, dir, spin: +shot.TotalSpin || 0, axis,
+    launch, dir, spin: spinForRules(spinRaw, st), spinRaw, spinTrust: st.verdict, spinWhy: st.why, axis,
     face, path, ftp: face - path, aoa, dynLoft, spinLoft: dynLoft - aoa,
   };
 }

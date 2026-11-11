@@ -57,6 +57,13 @@ button { font: inherit; color: inherit; }
 .carryRow .more { margin-left: auto; align-self: center; font-size: 22px; line-height: 1; color: var(--sage); padding-left: 4px; }
 #readout:hover .more { color: var(--flag); }
 
+/* the feel-tag row under the readout (optional, after a recorded shot) */
+.feel { display: flex; align-items: center; gap: 3px; padding: 4px 5px; }
+.feel .lbl { padding: 0 3px 0 2px; }
+.feel button { flex: 1; min-width: 0; appearance: none; border: 1px solid var(--line); background: transparent; color: var(--sage); border-radius: 6px; padding: 4px 0; font-family: var(--f-data); font-size: 11px; letter-spacing: 0.04em; cursor: pointer; }
+.feel button:hover { color: var(--bone); }
+.feel button[aria-pressed="true"] { background: var(--flag); border-color: var(--flag); color: var(--flag-ink); }
+
 /* ---------- chips + hit ---------- */
 .chip { appearance: none; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; cursor: pointer; color: var(--bone); font-family: var(--f-data); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 4px 12px; min-height: 52px; min-width: 56px; }
 .chip b { font-size: 18px; font-weight: 700; line-height: 1; color: var(--flag); }

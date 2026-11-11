@@ -61,7 +61,9 @@ export function startBridge({ tcpPort = DEFAULTS.tcpPort, wsPort = DEFAULTS.wsPo
       sock.write(JSON.stringify({ Code: 200, Message: 'Shot received successfully' }));
       const b = msg.BallData;
       log(`shot ${msg.ShotNumber ?? ''}: ${(+b.Speed).toFixed(1)} mph, ${(+b.VLA).toFixed(1)}° launch, ${Math.round(+b.TotalSpin || 0)} rpm`);
-      toBrowsers({ type: 'shot', ball: b, club: msg.ClubData || null, shotNumber: msg.ShotNumber ?? null });
+      // a connector that marks club data absent may still fill ClubData with placeholders: drop it
+      const club = opts.ContainsClubData === false ? null : msg.ClubData || null;
+      toBrowsers({ type: 'shot', ball: b, club, shotNumber: msg.ShotNumber ?? null });
     });
     sock.on('data', split);
     sock.on('close', () => { connectors.delete(sock); if (!connectors.size) device = null; status(); log('connector disconnected'); });

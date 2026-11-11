@@ -14,6 +14,7 @@
 //   when the shot is over: kit.endShot(scored) → then kit.next()
 
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
+import { recorder } from '../recorder.js';
 import { createSimTool } from '../sim-tool.js';
 import { createAimLine } from '../aim-line.js';
 import { amateurMiss, landOf, bearingOf, turnBall, turnPts, aimTurn, toolBall, solveCustom } from './aim.js';
@@ -246,6 +247,8 @@ export function createKit(cfg) {
     g.strokeStyle = '#ffd257'; g.lineWidth = 2; g.beginPath(); g.moveTo(x - 4, y - 4); g.lineTo(x + 4, y + 4); g.moveTo(x + 4, y - 4); g.lineTo(x - 4, y + 4); g.stroke();
     g.strokeStyle = 'rgba(255,210,87,0.5)'; g.lineWidth = 1; g.beginPath(); g.arc(x, y, 7, 0, 7); g.stroke();
   }
+  // live shots go in the session record (they don't feed your numbers: mini-game swings vary on purpose)
+  recorder.attach(launchMonitor, { page: cfg.id || location.pathname.split('/').pop(), mode: 'game', club: () => (clubs[tool.club] ? clubs[tool.club].id : null) });
   const syncClub = () => { const c = tool.club; if (c !== lastClub && clubs[c]) { lastClub = c; launchMonitor.setPlayer({ club: clubs[c].id }); emit('club', c); } };
   tool.el.addEventListener('click', () => setTimeout(syncClub, 0));
   // games call setClub(i, true) with their suggestion (and suggest({ club, axis }) to suggest a shape too)
