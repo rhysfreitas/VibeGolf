@@ -368,33 +368,36 @@ function windmill(p, y, ctx) {
   ctx.anims.push((dt, t, wind) => { head.rotation.y = Math.atan2(-wind.x, wind.z) + Math.PI; wheel.rotation.z -= dt * (0.6 + wind.mph * 0.25); });
 }
 
-function birdMesh(color, span) {
-  const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9, side: THREE.DoubleSide });
-  const body = new THREE.Mesh(new THREE.ConeGeometry(span * 0.09, span * 0.5, 6), mat); body.rotation.x = -Math.PI / 2; g.add(body);
-  const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -span * 0.12, span * 0.5, 0, 0.02, 0, 0, span * 0.14, 0, 0, -span * 0.12, span * 0.5, 0, 0.02, 0, 0, span * 0.14].slice(0, 9), 3)); wg.computeVertexNormals();
-  const L = new THREE.Mesh(wg, mat), Rw = new THREE.Mesh(wg, mat); Rw.scale.x = -1; g.add(L, Rw);
-  g.userData.wings = [L, Rw];
-  return g;
-}
+// A flock is one mesh: every bird's body (a cone) and two wings written into one geometry each frame, so ten
+// swallows cost one draw, not thirty. Flat-shaded, so no normals to keep.
 function birds(p, y, ctx, kind) {
   // kestrels hover and stoop, swallows dart, ravens wheel in a pair, a red-tailed hawk soars wide and high
   const SPEC = { kestrels: [3, 0x8a5a3a, 0.9, 18, 26, 0.12, 0.08, 14], swallows: [9, 0x2a2a35, 0.35, 10, 30, 0.5, 0.5, 18],
     ravens: [2, 0x141418, 1.15, 28, 20, 0.16, 0.04, 8], hawk: [1, 0x6a4a32, 1.3, 70, 30, 0.07, 0.02, 6] }[kind];
   const [n, col, span, r0, r1, s0, s1, dy] = SPEC, R = rng(n * 17 + span * 10);
-  for (let i = 0; i < n; i++) {
-    const b = birdMesh(col, span); ctx.group.add(b);
-    const rad = r0 + R() * r1, sp = s0 + R() * s1, ph = kind === 'ravens' ? i * 0.5 : R() * 6.28, hy = y + (R() - 0.5) * dy;
-    ctx.anims.push((dt, t) => {
-      const a = ph + t * sp * (i % 2 ? 1 : -1), x = p.x + Math.cos(a) * rad + (kind === 'swallows' ? Math.sin(t * 2.1 + ph) * 6 : 0), z = p.z + Math.sin(a) * rad * 0.7;
-      const yy = hy + Math.sin(t * 0.4 + ph) * 3;
-      b.position.set(x, yy, z); b.rotation.y = -a + (i % 2 ? 0 : Math.PI);
-      const flap = kind === 'kestrels' ? (Math.sin(t * 1.3 + ph) > 0.6 ? Math.sin(t * 16) * 0.6 : 0.12)
-        : kind === 'hawk' ? 0.08 + (Math.sin(t * 0.21 + ph) > 0.93 ? Math.sin(t * 9) * 0.45 : 0)       // soars; a few slow beats now and then
-        : kind === 'ravens' ? (Math.sin(t * 0.7 + ph) > 0.2 ? Math.sin(t * 8 + ph) * 0.6 : 0.1)
-        : Math.sin(t * 22 + ph) * 0.8;
-      b.userData.wings[0].rotation.z = flap; b.userData.wings[1].rotation.z = -flap;
+  const cone = new THREE.ConeGeometry(span * 0.09, span * 0.5, 6).rotateX(-Math.PI / 2).toNonIndexed(), body = cone.attributes.position.array; cone.dispose();
+  const wing = [0, 0, -span * 0.12, span * 0.5, 0, 0.02, 0, 0, span * 0.14], per = body.length / 3 + 6;
+  const geo = new THREE.BufferGeometry(), pos = new Float32Array(n * per * 3); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, side: THREE.DoubleSide, flatShading: true }));
+  mesh.frustumCulled = false; ctx.group.add(mesh);
+  const flock = [];
+  for (let i = 0; i < n; i++) flock.push({ rad: r0 + R() * r1, sp: s0 + R() * s1, ph: kind === 'ravens' ? i * 0.5 : R() * 6.28, hy: y + (R() - 0.5) * dy });
+  ctx.anims.push((dt, t) => {
+    let k = 0;
+    const put = (lx, ly, lz, x, yy, z, c, s) => { pos[k++] = x + lx * c + lz * s; pos[k++] = yy + ly; pos[k++] = z - lx * s + lz * c; };
+    flock.forEach((f, i) => {
+      const a = f.ph + t * f.sp * (i % 2 ? 1 : -1), x = p.x + Math.cos(a) * f.rad + (kind === 'swallows' ? Math.sin(t * 2.1 + f.ph) * 6 : 0), z = p.z + Math.sin(a) * f.rad * 0.7;
+      const yy = f.hy + Math.sin(t * 0.4 + f.ph) * 3, ry = -a + (i % 2 ? 0 : Math.PI), c = Math.cos(ry), s = Math.sin(ry);
+      const flap = kind === 'kestrels' ? (Math.sin(t * 1.3 + f.ph) > 0.6 ? Math.sin(t * 16) * 0.6 : 0.12)
+        : kind === 'hawk' ? 0.08 + (Math.sin(t * 0.21 + f.ph) > 0.93 ? Math.sin(t * 9) * 0.45 : 0)       // soars; a few slow beats now and then
+        : kind === 'ravens' ? (Math.sin(t * 0.7 + f.ph) > 0.2 ? Math.sin(t * 8 + f.ph) * 0.6 : 0.1)
+        : Math.sin(t * 22 + f.ph) * 0.8;
+      for (let j = 0; j < body.length; j += 3) put(body[j], body[j + 1], body[j + 2], x, yy, z, c, s);
+      const fc = Math.cos(flap), fs = Math.sin(flap);
+      for (const m of [1, -1]) for (let j = 0; j < 9; j += 3) { const wx = wing[j] * m; put(wx * fc, wing[j] * fs, wing[j + 2], x, yy, z, c, s); } // each wing rises about the body's axis
     });
-  }
+    geo.attributes.position.needsUpdate = true;
+  });
 }
 
 function boulders(p, T, ctx) {
