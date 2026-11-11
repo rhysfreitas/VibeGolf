@@ -134,8 +134,20 @@ diffuseColor.rgb = c;
 
   /* ---------------- houses ---------------- */
   const PALETTE = [0xd8cfc0, 0xb7c4c9, 0xc9b39a, 0x9fae98, 0xe2dccf, 0xb9a9b8, 0xa7b3c4, 0xcdb48e];
-  const roofMats = [std(0x3b3634), std(0x4a3c34), std(0x34383e), std(0x5a4a3c)];
-  const litWin = [], darkWin = [];
+  // art pass 1: lap siding (a board every 20 cm, a shadow line under each) and asphalt shingles (rows of tabs),
+  // laid out in world space so every house shares the same scale; each material keeps its own colour
+  const worldPat = (m, kind) => { m.customProgramCacheKey = () => kind; m.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;' + GLSL_NOISE).replace('#include <map_fragment>', kind === 'siding' ? `
+float camD = length(cameraPosition - vWPos), aa = clamp(camD * 0.002, 0.0, 0.6);
+float lap = fract(vWPos.y / 0.2); diffuseColor.rgb *= mix(0.78 + 0.26 * smoothstep(0.0, 0.25, lap), 0.93, aa) * (0.94 + 0.12 * fb(vWPos.xz * 0.6 + vWPos.y));` : `
+float camD = length(cameraPosition - vWPos), aa = clamp(camD * 0.003, 0.0, 0.7);
+float row = fract(vWPos.y / 0.24), tab = fract((vWPos.x + vWPos.z) / 0.9 + floor(vWPos.y / 0.24) * 0.5);
+float sh2 = (0.75 + 0.3 * smoothstep(0.0, 0.3, row)) * (1.0 - 0.18 * step(0.94, tab));
+diffuseColor.rgb *= mix(sh2, 0.9, aa) * (0.85 + 0.3 * h21(floor(vec2((vWPos.x + vWPos.z) / 0.9, vWPos.y / 0.24))));`);
+  }; return m; };
+  const roofMats = [0x3b3634, 0x4a3c34, 0x34383e, 0x5a4a3c].map(c => worldPat(std(c), 'shingle'));
+  const litWin = [], darkWin = [], porchPools = [], hedges = [];
   const houseObjs = [];
   let tvWin = null;
   const win = new THREE.PlaneGeometry(1.5, 1.35);
@@ -145,7 +157,7 @@ diffuseColor.rgb = c;
     g.rotation.y = Math.atan2(faceTo[0] - x, faceTo[1] - z);   // local +z faces the street
     const w = 14 + R() * 4, h = 6 + R() * 1.4, d = 11, two = R() < 0.65;
     const bodyH = two ? h : 3.6;
-    const body = new THREE.Mesh(B(w, bodyH, d), std(PALETTE[i % PALETTE.length])); body.position.y = bodyH / 2; body.castShadow = body.receiveShadow = true; g.add(body);
+    const body = new THREE.Mesh(B(w, bodyH, d), worldPat(std(PALETTE[i % PALETTE.length]), 'siding')); body.position.y = bodyH / 2; body.castShadow = body.receiveShadow = true; g.add(body);
     const sh = new THREE.Shape(); const rw = w / 2 + 0.7, rh = 2.6 + R() * 1.4;
     sh.moveTo(-rw, 0); sh.lineTo(0, rh); sh.lineTo(rw, 0); sh.lineTo(-rw, 0);
     const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: d + 1.2, bevelEnabled: false }), roofMats[i % roofMats.length]);
@@ -158,6 +170,10 @@ diffuseColor.rgb = c;
     const porch = new THREE.Mesh(B(3.4, 0.2, 2.0), trim); porch.position.set(door.position.x, 0.1, d / 2 + 1.0); porch.receiveShadow = true; g.add(porch);
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), emis(0xffd59a)); lamp.position.set(door.position.x + 0.9, 2.2, d / 2 + 0.15); g.add(lamp);
     const pg = new THREE.Sprite(glowMat(0xffc27a)); pg.scale.setScalar(2.2); pg.position.copy(lamp.position); g.add(pg); porchGlows.push(pg);
+    porchPools.push([door.position.x + 0.4, d / 2 + 2.2, g]);                       // a warm pool on the walk and lawn
+    // a hedge along the lawn's edge beside the driveway, and a flower bed under the front windows
+    hedges.push([g, -gs * (w / 2 - 0.2), d / 2 + 6.5, 0.9, 1.1, 9]);
+    hedges.push([g, -gs * 3.4, d / 2 + 0.7, 3.2, 0.55, 0.9, true]);
     // driveway out to the sidewalk
     g.updateMatrixWorld(true);
     const dw = new THREE.Mesh(new THREE.PlaneGeometry(6, 14), std(0x8d8a84, { roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1 }));
@@ -208,6 +224,26 @@ diffuseColor.rgb = c;
   scene.add(lit);
   const dark = new THREE.InstancedMesh(win, std(0x1a2230, { roughness: 0.2, metalness: 0.5 }), Math.max(1, darkWin.length));
   darkWin.forEach((mw, i) => dark.setMatrixAt(i, mw)); dark.count = darkWin.length; scene.add(dark);
+  // white frames round every window and a cross of glazing bars over each, so they read as windows, not stickers
+  { const all = [...litWin, ...darkWin, ...(tvWin ? [tvWin] : [])], fm = new THREE.Matrix4().makeTranslation(0, 0, -0.012);
+    const frames = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.78, 1.62), std(0xf0ece4, { roughness: 0.6 }), all.length);
+    all.forEach((mw, i) => frames.setMatrixAt(i, mw.clone().multiply(fm))); scene.add(frames);
+    const barG = new THREE.BufferGeometry(); { const a = new THREE.PlaneGeometry(1.5, 0.06).toNonIndexed(), b = new THREE.PlaneGeometry(0.06, 1.35).toNonIndexed(); barG.setAttribute('position', new THREE.Float32BufferAttribute([...a.attributes.position.array, ...b.attributes.position.array], 3)); barG.setAttribute('normal', new THREE.Float32BufferAttribute([...a.attributes.normal.array, ...b.attributes.normal.array], 3)); }
+    const bars = new THREE.InstancedMesh(barG, std(0xece8df, { roughness: 0.6 }), all.length), bm = new THREE.Matrix4().makeTranslation(0, 0, 0.008);
+    all.forEach((mw, i) => bars.setMatrixAt(i, mw.clone().multiply(bm))); scene.add(bars); }
+  // warm porch-light pools on the walks and lawns
+  { const pt = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d'); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,190,120,0.5)'); gr.addColorStop(0.45, 'rgba(255,170,100,0.16)'); gr.addColorStop(1, 'rgba(255,160,90,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(cv); })();
+    const pm = new THREE.MeshBasicMaterial({ map: pt, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3 });
+    const pools = new THREE.InstancedMesh(new THREE.PlaneGeometry(8, 8).rotateX(-Math.PI / 2), pm, porchPools.length), v = new THREE.Vector3();
+    porchPools.forEach(([lx, lz, g], i) => { v.set(lx, 0.04, lz).applyMatrix4(g.matrixWorld); pools.setMatrixAt(i, m4.makeTranslation(v.x, v.y, v.z)); }); scene.add(pools); }
+  // hedges and flower beds (one instanced mesh each)
+  { const hg = new THREE.IcosahedronGeometry(1, 1); { const p = hg.attributes.position; for (let i = 0; i < p.count; i++) { const n = 1 + (hash2(Math.round(p.getX(i) * 30), Math.round(p.getY(i) * 30 + p.getZ(i) * 17)) - 0.5) * 0.35; p.setXYZ(i, p.getX(i) * n, p.getY(i) * n, p.getZ(i) * n); } hg.computeVertexNormals(); }
+    const parts = [];
+    for (const [g, lx, lz, len, ht, dep, bed] of hedges) { const n = Math.max(1, Math.round((bed ? len : dep) / 0.9)); for (let k = 0; k < n; k++) { const t = (k + 0.5) / n - 0.5; parts.push([g, bed ? lx + t * len : lx, bed ? lz : lz + t * dep, bed ? 0.55 : 0.75, ht, bed]); } }
+    const hm = new THREE.InstancedMesh(hg, new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true }), parts.length), v = new THREE.Vector3();
+    parts.forEach(([g, lx, lz, r, ht, bed], i) => { v.set(lx, ht * 0.5, lz).applyMatrix4(g.matrixWorld); m4.compose(v, q.identity(), sc.set(r, ht * 0.6, r)); hm.setMatrixAt(i, m4);
+      hm.setColorAt(i, bed ? col.set([0xc04a5a, 0xe0b040, 0x9a5ac0, 0xe07a3a][i % 4]).multiplyScalar(0.7) : col.setRGB(0.07, 0.15, 0.05).offsetHSL(0, 0, (R() - 0.5) * 0.03)); });
+    hm.castShadow = hm.receiveShadow = true; scene.add(hm); }
   const tvMat = new THREE.MeshBasicMaterial({ color: 0x6aa8ff, toneMapped: false });
   const tv = new THREE.Mesh(win, tvMat); if (tvWin) { tv.applyMatrix4(tvWin); scene.add(tv); }
 
@@ -223,17 +259,21 @@ diffuseColor.rgb = c;
     if (gap < 14 && R() < 0.75) continue; // keep front lawns mostly open
     trees.push([x, z, 3.2 + R() * 2.8]);
   }
+  // art pass 1: a crown of five lumpy clumps a tree (maples and oaks), not two balls
   const canopyGeo = new THREE.IcosahedronGeometry(1, 1), trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 1, 6); trunkGeo.translate(0, 0.5, 0);
-  const canopy = new THREE.InstancedMesh(canopyGeo, new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true }), trees.length * 2);
+  { const p = canopyGeo.attributes.position; for (let i = 0; i < p.count; i++) { const n = 1 + (hash2(Math.round(p.getX(i) * 40 + 5), Math.round(p.getY(i) * 40 + p.getZ(i) * 23)) - 0.5) * 0.4; p.setXYZ(i, p.getX(i) * n, p.getY(i) * n * 0.85, p.getZ(i) * n); } canopyGeo.computeVertexNormals(); }
+  const NC = 5, canopy = new THREE.InstancedMesh(canopyGeo, new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true }), trees.length * NC);
   const trunk = new THREE.InstancedMesh(trunkGeo, std(0x3a2e24), trees.length);
   trees.forEach(([x, z, s], i) => {
     const y = streetAt(x, z), th = s * (0.9 + R() * 0.5);
     m4.compose(ps.set(x, y, z), q.identity(), sc.set(s * 0.6, th, s * 0.6)); trunk.setMatrixAt(i, m4);
-    for (let k = 0; k < 2; k++) {
+    const base = [0x2c4a22, 0x35522a, 0x3e5a2c, 0x4a5a2a][Math.floor(R() * 4)];
+    for (let k = 0; k < NC; k++) {
+      const a = k / (NC - 1) * 6.28 + R(), rr = k === 0 ? 0 : s * 0.55, cs = s * (k === 0 ? 0.85 : 0.6 + R() * 0.15);
       q.setFromEuler(new THREE.Euler(R(), R() * 6, R()));
-      m4.compose(ps.set(x + (R() - 0.5) * s * 0.6, y + th + s * (0.5 + k * 0.55), z + (R() - 0.5) * s * 0.6), q, sc.set(s * (1 - k * 0.25), s * (0.85 - k * 0.2), s * (1 - k * 0.25)));
-      canopy.setMatrixAt(i * 2 + k, m4);
-      col.setRGB(0.14, 0.24, 0.1).offsetHSL((R() - 0.5) * 0.04, 0, (R() - 0.5) * 0.06); canopy.setColorAt(i * 2 + k, col);
+      m4.compose(ps.set(x + Math.cos(a) * rr, y + th + s * (k === 0 ? 0.9 : 0.45 + R() * 0.5), z + Math.sin(a) * rr), q, sc.set(cs, cs * 0.9, cs));
+      canopy.setMatrixAt(i * NC + k, m4);
+      col.set(base).offsetHSL((R() - 0.5) * 0.03, (R() - 0.5) * 0.08, (R() - 0.5) * 0.06 + (k === 0 ? 0.02 : 0)); canopy.setColorAt(i * NC + k, col);
     }
   });
   canopy.castShadow = trunk.castShadow = true; scene.add(canopy, trunk);
@@ -259,7 +299,7 @@ diffuseColor.rgb = c;
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     uniforms: { uC: { value: new THREE.Color(0xcfe0ff) } },
     vertexShader: 'varying float vY; void main(){ vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: 'varying float vY; uniform vec3 uC; void main(){ gl_FragColor = vec4(uC * 0.05 * pow(vY, 1.6), 1.0); }',
+    fragmentShader: 'varying float vY; uniform vec3 uC; void main(){ gl_FragColor = vec4(uC * 0.035 * pow(vY, 1.6), 1.0); }', // softer (art pass 1)
   });
   const floodAt = (x, z, aim, real) => {
     const H = 24, y = Y0 + H;
@@ -267,7 +307,7 @@ diffuseColor.rgb = c;
     const head = new THREE.Group(); head.position.set(x, y, z); head.lookAt(aim[0], Y0, aim[1]); scene.add(head);
     const frame = new THREE.Mesh(B(4.2, 2.2, 0.3), poleMat); head.add(frame);
     for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) { const p = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.85), emis(0xf4f8ff)); p.position.set(-1.35 + c * 1.35, 0.5 - r * 1.0, 0.16); head.add(p); }
-    const gl = new THREE.Sprite(glowMat(0xdfe9ff)); gl.scale.setScalar(16); gl.position.set(x, y, z); scene.add(gl);
+    const gl = new THREE.Sprite(glowMat(0xdfe9ff)); gl.scale.setScalar(9); gl.position.set(x, y, z); scene.add(gl);
     // a faint beam in the dusk haze
     const dir = new THREE.Vector3(aim[0] - x, Y0 - y, aim[1] - z), len = dir.length();
     const cone = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 15, len, 20, 1, true), coneMat);
