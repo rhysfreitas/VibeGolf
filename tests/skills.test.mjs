@@ -19,8 +19,8 @@ function coachFor(skill, option, club) {
 const inside = (c, shot) => c.addShot(shot, c.club).find(e => e.type === 'tick').inside;
 const readAfter = (c, shot) => { let ev = []; for (let i = 0; i < 4; i++) ev = c.addShot(shot, c.club); return ev.find(e => e.type === 'read' || e.type === 'learned'); };
 
-test('nine skills, each with keys, goals and blockers that have lessons', () => {
-  assert.equal(SKILL_ORDER.length, 9);
+test('ten skills, each with keys, goals and blockers that have lessons', () => {
+  assert.equal(SKILL_ORDER.length, 10);
   for (const id of SKILL_ORDER) {
     const S = SKILLS[id];
     for (const o of S.options || [{ id: null }]) {
@@ -39,6 +39,20 @@ test('Shape it: a draw swing draws, a fade swing fades; a straight one is told t
   assert.equal(readAfter(coachFor('shape', 'fade', '7i'), as('7i', 'stuck')).blocker.id, 'pathRight');
   // the path is out to the right but the face matches it: a push
   assert.equal(readAfter(coachFor('shape', 'draw', '7i'), as('7i', 'aimedOff')).blocker.id, 'faceOpen');
+});
+
+test('Take the curve out: measured against your own slice or hook', () => {
+  const after = (option, stock) => { const c = createSkillCoach({ skill: 'straight', option, club: '7i' }); for (let i = 0; i < 4; i++) c.addShot(as('7i', stock), '7i'); return c; };
+  assert.equal(createSkillCoach({ skill: 'straight', option: 'slice', club: '7i' }).phase, 'baseline');
+  // a third of the slice, starting near the line, is in the goal; the full slice isn't
+  assert.ok(inside(after('slice', 'overTheTop'), applyFault(tour('7i'), 'overTheTop', '7i', Math.random, 0.35)));
+  assert.ok(!inside(after('slice', 'overTheTop'), as('7i', 'overTheTop')));
+  assert.equal(readAfter(after('slice', 'overTheTop'), as('7i', 'overTheTop')).blocker.id, 'pathLeft');
+  // the hook side: still aimed right for it
+  assert.ok(inside(after('hook', 'stuck'), applyFault(tour('7i'), 'stuck', '7i', Math.random, 0.35)));
+  assert.equal(readAfter(after('hook', 'stuck'), as('7i', 'stuck')).blocker.id, 'aimed');
+  // a slicer who over-does it into a hook is told so
+  assert.equal(readAfter(after('slice', 'overTheTop'), as('7i', 'closedFace')).blocker.id, 'overdone');
 });
 
 test('Compress your irons: a flip adds loft; a compressed strike is in the goal', () => {

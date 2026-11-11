@@ -2,6 +2,9 @@
 // live in coach-logic.js under the same id; the mannequin lessons named here live in
 // lessons.js. Keep the wording short: a headline, one line, a cue of a few words.
 //
+// A cause marked `strong` (ball position) is listed only when its data hint holds, and then
+// first; so a readout never shows more than three.
+//
 // cause.check: { type: 'data' } (the hint in coach-logic decides), { type: 'ask', q } (a quick
 // yes/no, only when the data can't separate causes), or { type: 'test', text } (a feel to try).
 
@@ -15,23 +18,7 @@ export const CONDITIONS = {
     causes: [
       { id: 'aimBody', title: 'Body lined up off target', hint: null, check: { type: 'test', text: 'Lay a club along your toes and look behind you: where does it point?' }, lesson: 'aim-body', drill: D('Two-stick setup', 'One stick at the target, one along your toes.', 'Set the face first, then square your feet to the stick.', 'Hit five, re-checking each time.') },
       { id: 'aimFace', title: 'Face set first, body follows it', hint: null, check: { type: 'test', text: 'Pick a spot a foot in front of the ball and aim the face at it.' }, lesson: 'aim-body', drill: D('Spot aim', 'Pick a mark a foot ahead on the target line.', 'Aim the face at the mark, then set your feet.', 'Hit five.') },
-    ],
-  },
-  ballBack: {
-    id: 'ballBack', group: 'setup', name: 'Ball too far back',
-    headline: 'The ball is too far back', sub: 'You hit down steeply and push it right before the club squares.',
-    cue: 'Ball forward a ball width', evidence: ['aoa', 'path', 'dir'],
-    causes: [
-      { id: 'ballPosBack', title: 'Ball position', hint: null, check: { type: 'test', text: 'Move the ball forward one ball width and hit three.' }, lesson: 'ballpos-back', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
-      { id: 'backWeight', title: 'Weight set on the trail side', hint: 'steepAttack', check: { type: 'ask', q: 'Does your weight start more on your back foot?' }, lesson: 'setup-weight', drill: D('Even setup', 'Feel equal pressure in both feet at address.', 'Hit five.') },
-    ],
-  },
-  ballForward: {
-    id: 'ballForward', group: 'setup', name: 'Ball too far forward',
-    headline: 'The ball is too far forward', sub: 'The club bottoms out before it, so contact suffers and it pulls.',
-    cue: 'Ball back a little', evidence: ['aoa', 'path', 'smash'],
-    causes: [
-      { id: 'ballPosFwd', title: 'Ball position', hint: null, check: { type: 'test', text: 'Move the ball back a ball width and hit three.' }, lesson: 'ballpos-fwd', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'Irons: just ahead of centre. Driver: off the lead heel.', 'Hit five.') },
+      { id: 'aimBall', title: 'Ball position: too far back starts it right, too far forward left', hint: 'ballPos', strong: true, check: { type: 'test', text: 'Move the ball a ball width (forward if it starts right, back if it starts left) and hit three.' }, lesson: null, drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
     ],
   },
   overTheTop: {
@@ -42,6 +29,7 @@ export const CONDITIONS = {
       { id: 'ottShoulders', title: 'Shoulders start the downswing', hint: 'steepAttack', check: { type: 'ask', q: 'Do your divots point left of the target?' }, lesson: 'ott-shoulders', drill: D('Pump drill', 'Swing to the top.', 'Drop the hands to hip height with your back still to the target, three times.', 'On the third, swing through and hit.') },
       { id: 'ottInside', title: 'Takeaway too far inside, then it re-routes', hint: null, check: { type: 'ask', q: 'Does the club go behind you early in the backswing?' }, lesson: 'ott-inside', drill: D('Clubhead outside the hands', 'Take it back to hip height.', 'Check the clubhead is outside your hands, toe up.', 'Hit five with that takeaway.') },
       { id: 'ottWeight', title: 'Weight stays on the trail side', hint: 'strikeMix', check: { type: 'data' }, lesson: 'ott-weight', drill: D('Step drill', 'Start with your feet together.', 'Step toward the target with the lead foot as you start down.', 'Hit five.') },
+      { id: 'ottBall', title: 'Ball too far forward', hint: 'ballFwd', strong: true, check: { type: 'test', text: 'Move the ball back a ball width and hit three.' }, lesson: 'ballpos-fwd', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
     ],
   },
   stuck: {
@@ -51,6 +39,7 @@ export const CONDITIONS = {
     causes: [
       { id: 'stuckHips', title: 'Hips stall, arms pass the body', hint: 'pushHook', check: { type: 'data' }, lesson: 'stuck-hips', drill: D('Belt buckle finish', 'Swing at 70%.', 'Finish with your belt buckle facing the target.', 'Hit five.') },
       { id: 'stuckShoulder', title: 'Trail shoulder drops under', hint: 'shallowAttack', check: { type: 'data' }, lesson: 'stuck-shoulder', drill: D('Level shoulders', 'Hold a stick across your chest.', 'Make practice swings keeping it turning level.', 'Hit five with that feel.') },
+      { id: 'stuckBall', title: 'Ball too far back', hint: 'ballBack', strong: true, check: { type: 'test', text: 'Move the ball forward one ball width and hit three.' }, lesson: 'ballpos-back', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
     ],
   },
   openFace: {
@@ -81,6 +70,16 @@ export const CONDITIONS = {
       { id: 'twoGrip', title: 'Grip pressure changes', hint: null, check: { type: 'test', text: 'Hold the club at 4 out of 10 pressure and keep it the same all swing.' }, lesson: null, drill: D('Light grip', 'Grip at 4 out of 10.', 'Hit five, keeping the pressure the same.') },
     ],
   },
+  distance: {
+    id: 'distance', group: 'control', name: 'Distance spread',
+    headline: 'Your distances are all over', sub: 'Same club, same swing, but the carry changes by more than it should from shot to shot.',
+    cue: 'Same strike, same length, every swing', evidence: ['carryGap', 'smashSd', 'launchSd', 'speedSd'],
+    causes: [
+      { id: 'distStrike', title: 'The strike moves around the face', hint: 'strikeSpread', check: { type: 'data' }, lesson: null, drill: D('Gate drill', 'Two tees just wider than the clubhead, the ball between them.', 'Swing through without touching either.', 'Hit five, then spray the face to see where they landed.') },
+      { id: 'distLow', title: 'The low point moves: a heavy one, then a thin one', hint: 'lowPointSpread', check: { type: 'data' }, lesson: 'flip-weight', drill: D('Line drill', 'Draw a line (or lay a towel edge) across the mat where the ball sits.', 'Make swings that brush the mat just after the line.', 'Hit five with the ball on the line.') },
+      { id: 'distSpeed', title: 'Swing length and speed change', hint: 'speedSpread', check: { type: 'data' }, lesson: null, drill: D('Same count', 'Say "one" going back, "two" coming down.', 'Keep the same count and the same finish for five balls.') },
+    ],
+  },
   flip: {
     id: 'flip', group: 'lowPoint', name: 'Flip / adding loft',
     headline: 'Your hands are flipping through impact', sub: 'Extra loft at the ball: higher, spinnier, shorter, and it leaks right.',
@@ -88,7 +87,7 @@ export const CONDITIONS = {
     causes: [
       { id: 'flipWeight', title: 'Weight hangs back', hint: 'strikeMix', check: { type: 'data' }, lesson: 'flip-weight', drill: D('Lead-side finish', 'Swing at 70%.', 'Finish on the lead foot with only the trail toe down.', 'Hit five.') },
       { id: 'flipCast', title: 'Casting from the top', hint: 'lowSmash', check: { type: 'data' }, lesson: 'flip-cast', drill: D('Impact hold', 'Half swing back, hands to hip high.', 'Swing down slowly and freeze at the ball: hands over the lead thigh.', 'Hold for two, then hit three half shots with that feel.') },
-      { id: 'flipBall', title: 'Ball too far forward', hint: null, check: { type: 'ask', q: 'Is the ball forward of centre in your stance?' }, lesson: 'ballpos-fwd', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'Move the ball to just ahead of centre.', 'Hit five.') },
+      { id: 'flipBall', title: 'Ball too far forward', hint: 'ballFwd', strong: true, check: { type: 'ask', q: 'Is the ball forward of centre in your stance?' }, lesson: 'ballpos-fwd', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'Move the ball to just ahead of centre.', 'Hit five.') },
     ],
   },
   steep: {
@@ -98,6 +97,7 @@ export const CONDITIONS = {
     causes: [
       { id: 'steepDive', title: 'Upper body dives at the ball', hint: null, check: { type: 'ask', q: 'Does your head drop toward the ball as you swing down?' }, lesson: 'steep-dive', drill: D('Hold your height', 'Make practice swings keeping your head at the same height.', 'Hit five with that feel.') },
       { id: 'steepOtt', title: 'Coming over the top', hint: 'pathLeft', check: { type: 'data' }, lesson: 'ott-shoulders', drill: D('Pump drill', 'Swing to the top.', 'Drop the hands to hip height three times.', 'Swing through and hit.') },
+      { id: 'steepBall', title: 'Ball too far back', hint: 'ballBack', strong: true, check: { type: 'test', text: 'Move the ball forward one ball width and hit three.' }, lesson: 'ballpos-back', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
     ],
   },
   fat: {
@@ -108,6 +108,7 @@ export const CONDITIONS = {
       { id: 'fatWeight', title: 'Weight hangs back', hint: 'strikeMix', check: { type: 'data' }, lesson: 'flip-weight', drill: D('Towel drill', 'Lay a towel a hand-width behind the ball.', 'Hit the ball without touching the towel.', 'Hit five.') },
       { id: 'fatCast', title: 'Casting', hint: 'highLaunch', check: { type: 'data' }, lesson: 'flip-cast', drill: D('Impact hold', 'Half swing, freeze at the ball with the hands ahead.', 'Hit three half shots with that feel.') },
       { id: 'fatSink', title: 'Sinking in the downswing', hint: null, check: { type: 'ask', q: 'Do you feel yourself drop down as you swing through?' }, lesson: 'steep-dive', drill: D('Hold your height', 'Practice swings keeping your head level.', 'Hit five.') },
+      { id: 'fatBall', title: 'Ball too far forward', hint: 'ballFwd', strong: true, check: { type: 'test', text: 'Move the ball back a ball width and hit three.' }, lesson: 'ballpos-fwd', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
     ],
   },
   driverDown: {
@@ -120,12 +121,13 @@ export const CONDITIONS = {
     ],
   },
   thin: {
-    id: 'thin', group: 'strike', name: 'Thin',
-    headline: "You're catching it thin", sub: 'Low launch and low spin: the leading edge meets the ball.',
+    id: 'thin', group: 'strike', name: 'Thin or topped',
+    headline: "You're catching it thin", sub: 'Low launch and low spin: the leading edge meets the ball, or it catches the top of it.',
     cue: 'Stay in your posture', evidence: ['launch', 'spin', 'smash'],
     causes: [
       { id: 'thinExtend', title: 'Hips move toward the ball (early extension)', hint: null, check: { type: 'ask', q: 'Do you sometimes hit it off the heel or shank it too?' }, lesson: 'thin-extension', drill: D('Chair drill', 'Set up with a chair or bag just touching your backside.', 'Keep touching it through impact.', 'Hit five.') },
       { id: 'thinStand', title: 'Standing up, arms pull in', hint: 'startLeft', check: { type: 'data' }, lesson: 'thin-standup', drill: D('Stay down', 'Keep your chest over the ball until halfway through.', 'Hit five.') },
+      { id: 'thinBall', title: 'Ball too far forward', hint: 'ballFwd', strong: true, check: { type: 'test', text: 'Move the ball back a ball width and hit three.' }, lesson: 'ballpos-fwd', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
     ],
   },
   offCentre: {
@@ -135,22 +137,7 @@ export const CONDITIONS = {
     causes: [
       { id: 'offToe', title: 'Standing too far, arms pull in (toe)', hint: 'startLeft', check: { type: 'test', text: 'Spray the face or use impact tape: is the mark toward the toe?' }, lesson: 'thin-standup', drill: D('Two tees', 'Two tees just wider than the clubhead, ball between.', 'Swing through without touching either.', 'Hit five.') },
       { id: 'offHeel', title: 'Weight to the toes, hips toward the ball (heel)', hint: null, check: { type: 'test', text: 'Spray the face: is the mark toward the heel?' }, lesson: 'thin-extension', drill: D('Heels down', 'Feel your weight in your heels at address and through impact.', 'Hit five.') },
-    ],
-  },
-  toeHeel: {
-    id: 'toeHeel', group: 'strike', name: 'Toe or heel strike',
-    headline: "You're striking it off the toe or heel", sub: 'The curve disagrees with your face and path: gear effect from an off-centre hit.',
-    cue: 'Find the middle: tee height and distance from the ball', evidence: ['ftp', 'dir', 'smash'],
-    causes: [
-      { id: 'thSetup', title: 'Distance from the ball', hint: null, check: { type: 'test', text: 'Spray the face for three shots and look where they land.' }, lesson: null, drill: D('Face spray', 'Spray the face, hit one, look.', 'Toe marks: stand closer. Heel marks: stand back.', 'Hit five.') },
-    ],
-  },
-  top: {
-    id: 'top', group: 'strike', name: 'Topped',
-    headline: "You're topping it", sub: 'The club catches the top of the ball: it barely gets airborne.',
-    cue: 'Stay down through the ball', evidence: ['launch', 'spin', 'smash'],
-    causes: [
-      { id: 'topStand', title: 'Standing up through impact', hint: null, check: { type: 'data' }, lesson: 'thin-standup', drill: D('Stay down', 'Keep your eyes on the back of the ball past impact.', 'Hit five half shots.') },
+      { id: 'offBall', title: 'Ball too far forward', hint: 'ballFwd', strong: true, check: { type: 'test', text: 'Move the ball back a ball width and hit three.' }, lesson: 'ballpos-fwd', drill: D('Ball position stick', 'Lay a stick from the ball to between your feet.', 'For a 7 iron, the ball sits just ahead of centre.', 'Hit five, checking the stick each time.') },
     ],
   },
   shank: {

@@ -43,6 +43,7 @@ export const LESSONS = {
     goal: { impact: [8, 0] },
   },
   'setup-weight': { title: 'Weight set on the trail side', caption: 'Starting on the back foot, the weight never gets forward to the lead side.', cam: 'panel', mode: 'setup', highlight: 'hips', readout: 'attack', you: { over: { shift: [-0.04, -0.05, -0.05, -0.05, 0, 0.03, 0.04, 0.07, 0.1, 0.12], side: [10, 8, 5, 2, 10, 13, 17, 14, 12, 9] }, impact: [4, 0] }, goal: {} },
+  'aim-left': { title: 'Lined up left for the slice', caption: 'The body aims left to allow for the slice, which swings the path further left still.', cam: 'top', mode: 'setup', highlight: 'feet', readout: 'path', you: { yaw: 6 }, goal: {} },
   'aim-body': { title: 'Lined up off target', caption: 'The swing is fine. The body is aimed right, so the whole swing goes right.', cam: 'top', mode: 'setup', highlight: 'feet', readout: 'path', you: { yaw: -6 }, goal: {} },
   'ott-shoulders': { title: 'Shoulders start the downswing', caption: 'The shoulders spin open first and throw the club outside the plane, then across the ball.', cam: 'dtlPanel', mode: 'down', highlight: 'shoulders', readout: 'path', plane: true, you: { over: { chest: OTT_CHEST }, impact: [6, 3], keys: OTT_DOWN }, goal: { impact: [6, 0] } },
   'ott-inside': {
@@ -100,6 +101,7 @@ Object.assign(LESSONS, {
   'skill-high-impact': sk('Let the club release', 'Less forward shaft lean: the clubhead catches up to the hands and adds loft.', {}, HIGH, { mode: 'impact', highlight: 'wrists', readout: 'loft' }),
   'skill-high-finish': sk('Full, high finish', 'Keep the speed through the ball all the way to a high, balanced finish.', {}, HIGH, { mode: 'full', highlight: 'arms', readout: null }),
   'skill-line-aim': sk('Aim the face first', 'Set the face at the target, then set your feet and body square to it.', LESSONS['aim-body'].you, {}, { cam: 'top', mode: 'setup', highlight: 'feet', readout: 'path' }),
+  'skill-straight-aim': sk('Aim at the target', 'Square the feet and body to the target: no more aiming left to allow for the slice.', LESSONS['aim-left'].you, {}, { cam: 'top', mode: 'setup', highlight: 'feet', readout: 'path' }),
   'skill-line-top': sk('Square at the top', 'A flat lead wrist at the top keeps the face square, so it needs no fixing on the way down.', LESSONS['open-wrist'].you, {}, { cam: 'dtlPanel', mode: 'top', highlight: 'wrists', readout: 'face' }),
   'skill-line-body': sk('The body squares it', 'Keep turning through the ball: the body brings the face back square, not the hands.', LESSONS['closed-body'].you, {}, { mode: 'impact', highlight: 'hips', readout: 'face' }),
   'skill-centre-posture': sk('Keep your posture', 'The hips stay back and the chest stays over the ball until it has gone.', LESSONS['thin-extension'].you, {}, { cam: 'dtlPanel', mode: 'impact', highlight: 'hips', readout: null }),

@@ -46,13 +46,21 @@ const B = (id, headline, sub, cue, lesson, test) => ({ id, headline, sub, cue, l
 // stock flight for the club: your own normal shots when there are four, else the club's window
 function stockOf(ctx) {
   const ms = ctx.stockMs || [];
-  if (ms.length >= 4) return { launch: median(ms.map(m => m.launch)), peak: median(ms.map(m => m.peak)), spin: median(ms.map(m => m.spin)), carry: median(ms.map(m => m.carry)), clubSpeed: median(ms.map(m => m.clubSpeed)), own: true };
+  if (ms.length >= 4) return { launch: median(ms.map(m => m.launch)), peak: median(ms.map(m => m.peak)), spin: median(ms.map(m => m.spin)), carry: median(ms.map(m => m.carry)), clubSpeed: median(ms.map(m => m.clubSpeed)), axis: median(ms.map(m => m.axis)), dir: median(ms.map(m => m.dir)), own: true };
   const w = ctx.w, f = flightOf({ Speed: w.clubSpeed * w.smashRef, VLA: w.launchC, TotalSpin: w.spinC });
-  return { launch: w.launchC, peak: f.peak, spin: w.spinC, carry: f.carry, clubSpeed: w.clubSpeed, own: false };
+  return { launch: w.launchC, peak: f.peak, spin: w.spinC, carry: f.carry, clubSpeed: w.clubSpeed, axis: 0, dir: 0, own: false };
 }
 // the middle of your recent pattern (for Tighten your pattern)
 const centreOf = (ms, key) => (ms.length >= 4 ? median(ms.slice(-8).map(m => m[key])) : 0);
 const WEDGE_LEN = { nine: 0.7, ten30: 0.85, full: 1 };
+// Take the curve out: how much curve is allowed on the side you curve it (70% of your usual,
+// at least 5°) and over on the other side (7°). Shot to shot the curve scatters about ±6° even
+// when the average is right, so a goal of half the curve couldn't be met 3 times in 4: one
+// that's met 3 times in 4 means the average has come down to about a third.
+// +1 = the slice side (spin axis right).
+const curveSide = o => (o === 'slice' ? 1 : -1);
+const curveLim = (o, ctx) => Math.max(5, curveSide(o) * stockOf(ctx).axis * 0.7);
+export const CURVE_OVER = 7;
 
 export const SKILLS = {
   shape: {
@@ -170,6 +178,34 @@ export const SKILLS = {
       B('short', "They're coming up short", 'The club slows into the ball: it should speed up through it.', 'Accelerate through the ball', 'skill-wedge-through', (ms, ctx) => mean(ms.map(m => m.carry)) < stockOf(ctx).carry * WEDGE_LEN[o] - 4),
     ],
   },
+  straight: {
+    id: 'straight', name: 'Take the curve out', blurb: 'Less of your usual slice or hook, starting on the target line.',
+    options: [{ id: 'slice', name: 'Less slice' }, { id: 'hook', name: 'Less hook' }],
+    clubs: null, defaultClub: '7i', needsStock: true,
+    title: o => (o === 'slice' ? 'Take the slice out' : 'Take the hook out'),
+    sub: o => (o === 'slice'
+      ? 'A slice is a path across the ball to the left with the face open to it. Swing more from the inside and let the face close, and the curve comes down: aim at the target, not left of it.'
+      : 'A hook is a path out to the right with the face shut to it. Turn through so the arms stop racing past the body and hold the face, and the curve comes down: aim at the target, not right of it.'),
+    cue: o => (o === 'slice' ? 'Arms drop first, toe up after impact' : 'Chest keeps turning, quiet hands'),
+    keys: o => (o === 'slice'
+      ? [{ title: 'Aim at the target', lesson: 'skill-straight-aim' }, { title: 'Arms drop first', lesson: 'ott-shoulders' }, { title: 'Let the face close', lesson: 'open-rotation' }]
+      : [{ title: 'Aim at the target', lesson: 'skill-line-aim' }, { title: 'Keep turning through', lesson: 'stuck-hips' }, { title: 'Hold the face', lesson: 'closed-body' }]),
+    hints: () => [['Curve', 'well under your usual'], ['Start line', 'within 3° of the target']],
+    goals: (o, ctx) => { const L = curveLim(o, ctx), k = curveSide(o), lo = k > 0 ? -CURVE_OVER : -L, hi = k > 0 ? L : CURVE_OVER;
+      return [G('axis', 'Curve (spin axis)', '°', lo, hi, 4), G('dir', 'Start line', '°', -3, 3, 3), soft(G('ftp', 'Face to path', '°', lo / 1.9, hi / 1.9, 2.5))]; },
+    // over-doing it comes first: a hook that starts left isn't "still aiming left"
+    blockers: o => (o === 'slice' ? [
+      B('overdone', "It's hooking now", 'Too much: the face is closing past the path. Ease off the rotation a little.', 'Body turns, hands stay quiet', 'closed-body', ms => mean(ms.map(m => m.axis)) <= -6),
+      B('aimed', "You're still aiming left for it", 'The ball starts left because the setup allows for the slice. Aim at the target and let the new swing straighten it.', 'Face and feet at the target', 'aim-left', ms => mean(ms.map(m => m.dir)) <= -2.5),
+      B('pathLeft', 'The path is still across the ball', 'The club comes from outside the line, so even a square face curves right.', 'Arms drop first, shoulders stay closed', 'ott-shoulders', ms => mean(ms.map(m => m.path)) <= -3),
+      B('faceOpen', 'The face is still open to the path', 'The path is better, but the face arrives open to it, so it still curves right.', 'Toe up after impact', 'open-rotation', ms => mean(ms.map(m => m.ftp)) >= 3),
+    ] : [
+      B('overdone', "It's slicing now", 'Too much: the face is staying open past the path. Let it release a little.', 'Toe up after impact', 'open-rotation', ms => mean(ms.map(m => m.axis)) >= 6),
+      B('aimed', "You're still aiming right for it", 'The ball starts right because the setup allows for the hook. Aim at the target and let the new swing straighten it.', 'Face and feet at the target', 'aim-body', ms => mean(ms.map(m => m.dir)) >= 2.5),
+      B('pathRight', 'The path is still out to the right', 'The arms race past a stalled body, so the club swings out and the face shuts.', 'Chest keeps turning to the target', 'stuck-hips', ms => mean(ms.map(m => m.path)) >= 3.5),
+      B('faceClosed', 'The face is still shut to the path', 'The path is better, but the hands roll the face over, so it still curves left.', 'Quiet hands, body turns', 'closed-body', ms => mean(ms.map(m => m.ftp)) <= -3),
+    ]),
+  },
   pattern: {
     id: 'pattern', name: 'Tighten your pattern', blurb: 'One shape, one miss: the same face to path and start line shot after shot.',
     options: null, clubs: null, defaultClub: '7i',
@@ -197,7 +233,7 @@ export const SKILLS = {
     ],
   },
 };
-export const SKILL_ORDER = ['shape', 'compress', 'driverUp', 'flight', 'line', 'centre', 'wedges', 'pattern', 'speed'];
+export const SKILL_ORDER = ['shape', 'straight', 'compress', 'driverUp', 'flight', 'line', 'centre', 'wedges', 'pattern', 'speed'];
 export const skillKey = (skill, option) => (option ? `${skill}.${option}` : skill);
 
 // how close one shot is to the goals: 1 inside every window, less the further out it is

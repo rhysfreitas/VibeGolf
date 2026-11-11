@@ -12,16 +12,16 @@ The range opens on a practice menu: **Range** (free hitting), **Coaching** and *
 
 ## Learn a skill
 
-Coaching opens on a choice: **Watch my swing** (the loop above) or **Learn a skill**. Nine skills: Shape it (draw or fade), Compress your irons, Hit up on the driver, Flight it high or low, Start it on your line, Find the centre, Wedge distance control (9 o'clock, 10:30, full), Tighten your pattern and Add speed.
+Coaching opens on a choice: **Watch my swing** (the loop above) or **Learn a skill**. Ten skills: Shape it (draw or fade), Take the curve out (less slice or less hook), Compress your irons, Hit up on the driver, Flight it high or low, Start it on your line, Find the centre, Wedge distance control (9 o'clock, 10:30, full), Tighten your pattern and Add speed.
 
 1. **Pick.** The skill and its option. A skill that needs a club (driver, an iron, a wedge) switches to it.
 2. **Keys.** The intro shows the skill's two or three keys on the mannequin (your normal swing against the skill's swing as the green goal), the goal numbers and the cue.
-3. **Baseline.** Skills measured against your own shot (Flight it, Wedges, Add speed) start with four normal swings, unless the session already has four with that club.
+3. **Baseline.** Skills measured against your own shot (Take the curve out, Flight it, Wedges, Add speed) start with four normal swings, unless the session already has four with that club.
 4. **Hit in fours.** Every shot is scored against the goal windows (1 inside every window, less the further out). After each four, the first of the skill's blockers that holds is shown with its lesson, your numbers against the goal, the meter and the shot-by-shot chart. With nothing in the way, a toast says how close you are.
 5. **Learned, then the test.** 3 of 4 in the goal starts the test: 5 of the next 8. Passing saves the skill (`localStorage` `vibegolf.skills.v1`, a tick on its card); missing goes back to learning. After passing it stays open-ended: the meter keeps tracking and the reads go on.
 6. **Focus.** Only a shank or a run of fat shots interrupts a lesson. Other faults wait for Watch mode.
 
-`range.html?mode=coach&skill=shape.draw` opens a lesson directly. The shot tool's *Swing fault* list has skill attempts (draw swing, fade swing, compressed, hitting up, knockdown, high shot, faster swing) so every lesson can be tried without an R10.
+`range.html?mode=coach&skill=shape.draw` opens a lesson directly. The shot tool's *Swing fault* list has skill attempts (draw swing, fade swing, compressed, hitting up, knockdown, high shot, faster swing) so every lesson can be tried without an R10 (for Take the curve out, play the baseline with Over the top or Stuck, then the lesson with a milder one).
 
 ## Trust checks
 
@@ -37,13 +37,23 @@ The coach believes what the R10 measures well (ball speed, launch, start line) a
 - Path and face reads need the ball to agree: over the top or stuck needs the start line or the curve on the same side; open or closed face needs the curve.
 - Aimed off is read from the ball: starting off line by 3° or more with little curve (spin axis within 3.5°).
 - Two-way is read from the ball: start lines both sides (spread over 2.8°) or curves both ways (spin axis spread over 9.5°). The R10's path scatter alone used to trip it.
-- Ball back, ball forward, off-centre, driver down and toe/heel are judged on the window's average. Ball forward also covers aimed off and off-centre.
+- Off-centre and driver down are judged on the window's average.
 - Steep is for irons and woods; the driver's version is driver down (attack 1.5° below its window, spin at or above the centre).
 - Thin needs 3° less launch (was 4°) and 18% less spin. A shank needs ball speed under 82% of the club's smash, so a driver shank counts.
 - Club speed is kept when the face and path weren't tracked but the speed is believable, so strike reads still work.
 - Skills: shaping, start line and pattern are scored on the ball (start line and curve); path, face and face to path still score but don't decide "in the goal". Compress needs spin loft at least 1.5° under normal.
 
-Result with R10 error (mean of 7 iron, PW and driver): faults read right 62% → 83%; clean swings flagged 57–63% → 23–28% (with perfect data 13–16%). The shaping skills went from about 10% learned in 12 shots to 81–89%. `tests/coach-sim.test.mjs` holds the line. Weakest now: toe/heel (68%; the R10 has no impact location, so it's read from curve the face doesn't explain) and mild faults (at 70% size about half are read in 8 shots; they take longer).
+Result with R10 error (mean of 7 iron, PW and driver): faults read right 62% → 83%; clean swings flagged 57–63% → 23–28% (with perfect data 13–16%). The shaping skills went from about 10% learned in 12 shots to 81–89%. `tests/coach-sim.test.mjs` holds the line. Mild faults are slower (at 70% size about half are read in 8 shots).
+
+A caveat: each fault preset is built the way its rule expects to see it, so these numbers show the rules are consistent with the model, not that real swings look like the model. The setup reads were the most circular, which is part of why they changed (below). Real sessions replace the model when they arrive.
+
+### Reads added and retired (11 November, second pass)
+
+- **Retired: Toe or heel strike.** The weakest read (68%): the R10 has no impact location, so it rested on curve the face to path doesn't explain, the two noisiest numbers. The Toe and Heel feel tags stay.
+- **Merged: Topped into Thin.** One read, "Thin or topped", with the same drills.
+- **Ball position is a cause, not a read.** Ball back and ball forward were guesses from a mix of attack, path and strike. Now "Ball too far back" or "forward" is a cause inside the read it produces (aimed off, stuck, over the top, steep, flip, fat, thin, off-centre), listed only when the data points at it (steep and swinging right = back; shallow and swinging left = forward) and then first (`strong` causes in `conditions.js`; `HINTS.ballBack`, `ballFwd`, `ballPos`). The fault presets stay; the simulation counts them right when the read's first cause is ball position (84% back, 81–84% forward).
+- **Added: Distance spread** (group control). The front-to-back miss: carry changing too much over 4 shots with one club (sd 3.5% of the club's stock carry and 9% shortest to longest; ×1.3 for the driver, whose carry moves more with launch). Carry is estimated from ball speed, launch and spin, linear about the club's window (`windows.js` `w.carry`, `carryOf`). Not for the sand wedge, nor when club speed swings 6% or more (changing length on purpose). Causes, ranked by which number moves with it: the strike (smash spread), the low point (launch or attack spread), swing length and speed. The readout shows shortest to longest in yards and the spreads. Fat, thin, flip and two-way explain it; it explains off-centre, which now needs a steady strike (smash spread under 0.025). Into a net you never see carry, so this is the one read about distance. Reads right 65–69% with irons, 60% with the driver (the rest mostly read as off-centre, the same strike problem); clean swings almost never trip it.
+- **Added skill: Take the curve out** (Less slice, Less hook). Four swings of your stock shot first; the goal is a curve under 70% of your usual on that side (at least 5°), no more than 7° the other way, starting within 3° of the line. The curve scatters about ±6° shot to shot, so meeting that 3 times in 4 means the average has come down to about a third. Blockers: overdone (curving the other way now), still aimed off for it, the path, the face. In simulation a slicer who cuts his curve to a third learns it in 12 shots 77–82% of the time, a hooker 70%; the usual slice or hook passes 1–13%.
 
 ## Session record and My game
 

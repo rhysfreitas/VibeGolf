@@ -2,7 +2,7 @@
 // confidence, the focus loop, and the fault presets that let it be tested without an R10.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCoach, evaluate, pick, shotMetrics, isGoodShot, rankCauses, progressOf, RULES, READ_WINDOW, FOCUS_SHOTS } from '../src/coach/coach-logic.js';
+import { createCoach, evaluate, pick, shotMetrics, isGoodShot, rankCauses, progressOf, carryOf, RULES, DIST, READ_WINDOW, FOCUS_SHOTS } from '../src/coach/coach-logic.js';
 import { windowsFor, CLUB_REF, tourClubSpeed } from '../src/coach/windows.js';
 import { CONDITIONS } from '../src/coach/conditions.js';
 import { FAULTS, applyFault } from '../src/coach/faults.js';
@@ -40,7 +40,7 @@ test('club data is used when it comes; otherwise the ball is read backwards', ()
 });
 
 /* ---------- every condition ---------- */
-const PRESET_FOR = { flip: 'flip', overTheTop: 'overTheTop', openFace: 'openFace', closedFace: 'closedFace', stuck: 'stuck', steep: 'steep', fat: 'fat', thin: 'thin', twoWay: 'twoWay', aimedOff: 'aimedOff', ballBack: 'ballBack' };
+const PRESET_FOR = { flip: 'flip', overTheTop: 'overTheTop', openFace: 'openFace', closedFace: 'closedFace', stuck: 'stuck', steep: 'steep', fat: 'fat', thin: 'thin', twoWay: 'twoWay', aimedOff: 'aimedOff' };
 test('each fault preset raises its own condition, and only that one', () => {
   for (const club of ['7i', 'PW']) for (const [fault, cond] of Object.entries(PRESET_FOR)) {
     const { rd } = readAfter(faulted(fault, club), club);
@@ -57,11 +57,10 @@ test('the conditions without a preset are detected from their signatures', () =>
   const w7 = windowsFor('7i', tourClubSpeed('7i')), wD = windowsFor('DR', tourClubSpeed('DR'));
   const m = (o, club = '7i') => ({ ...shotMetrics(base(club), club), ...o });
   const four = o => [0, 1, 2, 3].map(() => o);
-  assert.equal(pick(evaluate(four(m({ aoa: -1, path: -3, smash: 1.25 })), w7)).id, 'ballForward');
   assert.equal(pick(evaluate(four(m({ aoa: -4, spin: 3400 }, 'DR')), wD)).id, 'driverDown');
   assert.equal(pick(evaluate(four(m({ smash: 1.24 })), w7)).id, 'offCentre');
-  assert.equal(pick(evaluate(four(m({ axis: -9, ftp: 0 }, 'DR')), wD)).id, 'toeHeel');
-  assert.equal(pick(evaluate(four(m({ launch: 2, spin: 1500, smash: 1.1 })), w7)).id, 'top');
+  // a topped ball reads as thin (one read for both)
+  assert.equal(pick(evaluate(four(m({ launch: 2, spin: 1500, smash: 1.1 })), w7)).id, 'thin');
   // a shank is raised on the first one
   const c = createCoach(), ev = c.addShot({ ...base('7i'), HLA: 14, Speed: 70 }, '7i');
   assert.ok(ev.some(e => e.type === 'shank'));
@@ -77,9 +76,10 @@ test('fatigue: club speed fading and strike worsening over a long block', () => 
 });
 test('every condition has a rule, a cue, evidence and causes with drills', () => {
   for (const [id, C] of Object.entries(CONDITIONS)) {
-    assert.ok(RULES[id] || id === 'twoWay' || id === 'fatigue', `${id} has a rule`);
+    assert.ok(RULES[id] || ['twoWay', 'distance', 'fatigue'].includes(id), `${id} has a rule`);
     assert.ok(C.headline && C.cue && C.evidence.length && C.causes.length, id);
-    assert.ok(C.causes.length <= 3, `${id}: at most 3 causes`);
+    assert.ok(C.causes.filter(k => !k.strong).length <= 3, `${id}: at most 3 causes besides ball position`);
+    assert.ok(rankCauses(id, [], windowsFor('7i', tourClubSpeed('7i'))).length <= 3, `${id}: at most 3 on the readout`);
     for (const k of C.causes) assert.ok(k.title && k.check && k.drill && k.drill.steps.length, `${id}.${k.id}`);
   }
 });
@@ -101,8 +101,37 @@ test('one fault at a time: the root cause wins', () => {
   assert.equal(pick(evaluate(four({ path: -6, ftp: 4.5, aoa: -9, spin: 8000, dir: -2, axis: 8 }), w)).id, 'overTheTop');
   // a flip leaves the face open: the flip is the one to fix
   assert.equal(pick(evaluate(four({ spinLoft: w.spinLoft + 6, smash: 1.26, ftp: 3.5 }), w)).id, 'flip');
-  // setup comes before swing faults
-  assert.equal(readAfter(faulted('ballBack'), '7i').rd.id, 'ballBack');
+});
+test('ball position is a cause, ranked first when the attack and path point at it', () => {
+  // ball back: steep and swinging right, so it starts right
+  const back = readAfter(faulted('ballBack'), '7i').rd;
+  assert.ok(['aimedOff', 'stuck', 'steep'].includes(back.id), back.id);
+  assert.match(back.causes[0].id, /Ball$/, `ball back: ${back.causes[0].id} first`);
+  // ball forward: shallow and swinging left
+  const w7 = windowsFor('7i', tourClubSpeed('7i')), m = shotMetrics(base('7i'), '7i'), four = o => [0, 1, 2, 3].map(() => ({ ...m, ...o }));
+  assert.equal(rankCauses('flip', four({ aoa: -1.5, path: -3 }), w7)[0].id, 'flipBall');
+  assert.equal(rankCauses('thin', four({ aoa: -1.5, path: -3 }), w7)[0].id, 'thinBall');
+  // with a normal attack it isn't the likely cause
+  assert.notEqual(rankCauses('thin', four({}), w7)[0].id, 'thinBall');
+});
+test('distance spread: the carry changes too much shot to shot', () => {
+  const w = windowsFor('7i', tourClubSpeed('7i')), m = shotMetrics(base('7i'), '7i');
+  const at = (k, club = '7i') => { const b = base(club); b.Speed *= k; return b; };
+  // four shots between 92% and 100% ball speed: about 17 yards shortest to longest
+  const spread = [1, 0.92, 0.97, 0.94].map(k => at(k));
+  const { rd } = readAfter(spread, '7i');
+  assert.equal(rd && rd.id, 'distance');
+  assert.equal(rd.causes[0].id, 'distStrike', 'the strike moved (smash changed), so it comes first');
+  const gap = rd.evidence.find(e => e.key === 'carryGap').value;
+  assert.ok(gap > 12 && gap < 22, `gap ${gap.toFixed(1)} yd`);
+  // a steady swing doesn't, nor does the sand wedge (hit at all lengths)
+  assert.equal(readAfter([1, 0.99, 1, 0.995].map(k => at(k)), '7i').rd, null);
+  assert.ok(!evaluate([1, 0.92, 0.97, 0.94].map(k => shotMetrics(at(k, 'SW'), 'SW')), windowsFor('SW', tourClubSpeed('SW'))).some(f => f.id === 'distance'));
+  // changing swing length on purpose (club speed swinging 10%) isn't a spread to coach
+  const lengths = [1, 0.85, 0.95, 0.8].map(k => { const b = base('7i'); b.Speed *= k; b.Club.Speed *= k; return b; });
+  assert.ok(!evaluate(lengths.map(s => shotMetrics(s, '7i')), w).some(f => f.id === 'distance'));
+  // the carry estimate follows the flight model near the window's centre
+  assert.ok(Math.abs(carryOf(m, w) - w.carry.c) < 3 && DIST.sd > 0);
 });
 test('confidence is medium when the ball data alone shows it', () => {
   const noClub = faulted('overTheTop').map(s => { const { Club, ...b } = s; return b; });
@@ -187,7 +216,7 @@ test('with natural swing noise, each preset is still read correctly most of the 
       if (got) any++; if (got === (PRESET_FOR[fault] || null)) hit++; }
     return { hit: hit / T, any: any / T }; };
   // a two-way miss that goes the same way three times in four reads as that miss (pull, push, aimed off)
-  for (const f of Object.keys(PRESET_FOR)) { const r = rate(f); assert.ok(r.hit >= (f === 'ballBack' ? 0.5 : f === 'twoWay' ? 0.6 : 0.7), `${f} read correctly ${(r.hit * 100).toFixed(0)}%`); }
+  for (const f of Object.keys(PRESET_FOR)) { const r = rate(f); assert.ok(r.hit >= (f === 'twoWay' ? 0.6 : 0.7), `${f} read correctly ${(r.hit * 100).toFixed(0)}%`); }
   assert.ok(rate('none').any <= 0.2, 'a clean swing is rarely flagged');
 });
 test('fault presets are listed and leave the shot alone on None', () => {

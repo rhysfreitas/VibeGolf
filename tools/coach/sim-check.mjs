@@ -10,28 +10,36 @@
 import { createCoach } from '../../src/coach/coach-logic.js';
 import { rngOf, swingWith } from './model.mjs';
 
+// the read each fault should give (any of a list). Ball position has no read of its own: it
+// should show as the first cause of the read it causes (CAUSE).
 export const EXPECT = {
   clean: null, flip: 'flip', overTheTop: 'overTheTop', openFace: 'openFace', closedFace: 'closedFace', stuck: 'stuck',
-  steep: 'steep', fat: 'fat', thin: 'thin', twoWay: 'twoWay', aimedOff: 'aimedOff', ballBack: 'ballBack',
-  ballForward: 'ballForward', offCentre: 'offCentre', top: 'top', driverDown: 'driverDown', toe: 'toeHeel', shank: 'shank',
+  steep: 'steep', fat: 'fat', thin: 'thin', twoWay: 'twoWay', aimedOff: 'aimedOff', ballBack: ['stuck', 'steep', 'aimedOff'],
+  ballForward: ['overTheTop', 'flip', 'thin', 'fat', 'aimedOff', 'offCentre'], offCentre: 'offCentre', top: 'thin', driverDown: 'driverDown',
+  distance: 'distance', shank: 'shank',
 };
+export const CAUSE = { ballBack: ['stuckBall', 'steepBall', 'aimBall'], ballForward: ['ottBall', 'flipBall', 'thinBall', 'fatBall', 'aimBall', 'offBall'] };
+const ok = (want, id) => (Array.isArray(want) ? want.includes(id) : want === id);
 // faults that only make sense with some clubs
-const ONLY = { driverDown: ['DR'], toe: ['DR', '3W', 'HY'], ballBack: ['5i', '7i', '9i', 'PW', 'SW', '3W', 'HY'], ballForward: ['5i', '7i', '9i', 'PW', 'SW'], fat: ['5i', '7i', '9i', 'PW', 'SW'], offCentre: ['5i', '7i', '9i', 'PW', 'SW'], flip: ['5i', '7i', '9i', 'PW', 'SW'], steep: ['5i', '7i', '9i', 'PW', 'SW'] };
+const ONLY = { driverDown: ['DR'], distance: ['5i', '7i', '9i', 'PW', 'DR', '3W', 'HY'], ballBack: ['5i', '7i', '9i', 'PW', 'SW', '3W', 'HY'], ballForward: ['5i', '7i', '9i', 'PW', 'SW'], fat: ['5i', '7i', '9i', 'PW', 'SW'], offCentre: ['5i', '7i', '9i', 'PW', 'SW'], flip: ['5i', '7i', '9i', 'PW', 'SW'], steep: ['5i', '7i', '9i', 'PW', 'SW'] };
 
 export function readRate(fault, club, { trials = 300, shots = 8, mode = 'r10', speed = 0.87, scale = 1, seed = 11 } = {}) {
   const rng = rngOf(seed + club.charCodeAt(0) * 131 + fault.length * 977 + Math.round(scale * 100));
   const got = {};
   for (let t = 0; t < trials; t++) {
-    const c = createCoach(); let first = 'none';
+    const c = createCoach(); let first = 'none', cause = null;
     for (let i = 0; i < shots && first === 'none'; i++)
       for (const e of c.addShot(swingWith(fault === 'clean' ? 'none' : fault, club, { speed, scale, mode, rng }), club)) {
-        if (e.type === 'read') first = e.id; else if (e.type === 'shank') first = 'shank';
+        if (e.type === 'read') { first = e.id; cause = e.causes[0].id; } else if (e.type === 'shank') first = 'shank';
         if (first !== 'none') break;
       }
+    // a read with the wrong first cause counts as read as something else
+    if (CAUSE[fault] && ok(EXPECT[fault], first) && !CAUSE[fault].includes(cause)) first = `${first} (${cause})`;
     got[first] = (got[first] || 0) + 1;
   }
-  const want = EXPECT[fault], n = trials, hit = want ? (got[want] || 0) / n : (got.none || 0) / n;
-  const wrong = Object.entries(got).filter(([k]) => k !== 'none' && k !== want).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v / n]);
+  const want = EXPECT[fault], n = trials;
+  const hit = want ? Object.entries(got).filter(([k]) => ok(want, k)).reduce((s, [, v]) => s + v, 0) / n : (got.none || 0) / n;
+  const wrong = Object.entries(got).filter(([k]) => k !== 'none' && !ok(want, k)).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v / n]);
   return { fault, club, hit, none: want ? (got.none || 0) / n : 0, wrong, got };
 }
 

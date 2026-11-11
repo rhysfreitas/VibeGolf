@@ -117,7 +117,7 @@ export function createCoachUI({ clubName = id => id, setClub = null, currentClub
   function barsHTML(ev) {
     return `<div class="co-bars">${ev.map(e => {
       const [lo, hi] = e.window, span = Math.max(hi - lo, 1e-6), min = Math.min(lo, e.value) - span * 0.6, max = Math.max(hi, e.value) + span * 0.6, P = v => ((v - min) / (max - min) * 100).toFixed(1);
-      const goal = e.unit === 'rpm' ? `${Math.round(lo / 100) * 100 / 1000}k–${Math.round(hi / 100) * 100 / 1000}k` : `${fmtUnit(lo, e.unit)} to ${fmtUnit(hi, e.unit)}`;
+      const goal = e.unit === 'rpm' ? `${Math.round(lo / 100) * 100 / 1000}k–${Math.round(hi / 100) * 100 / 1000}k` : lo === 0 ? `under ${fmtUnit(hi, e.unit)}` : `${fmtUnit(lo, e.unit)} to ${fmtUnit(hi, e.unit)}`;
       return `<div class="co-bar"><div class="co-lab"><span>${esc(e.label)}</span><span><b>${fmtUnit(e.value, e.unit)}${unitLabel(e.unit)}</b> <span>goal ${goal}</span></span></div><div class="co-track"><div class="co-band" style="left:${P(lo)}%;width:${(P(hi) - P(lo)).toFixed(1)}%"></div><div class="co-mark" style="left:${P(e.value)}%"></div></div></div>`;
     }).join('')}</div>`;
   }

@@ -71,6 +71,12 @@ export function windowsFor(id, clubSpeed, { sim = defaultSim } = {}) {
     aoa: fx.aoa.slice(), smashMin: fx.smashMin, smashRef: ref.smash,
     spinLoft: launchC / ratio - ref.aoa,
   };
+  // stock carry (yd) and how it moves with ball speed (per mph), launch (per °) and spin (per
+  // rpm), for the coach's distance spread (a linear carry is plenty for a spread)
+  const bs = v * ref.smash, cy = (sp, l, s) => flight({ Speed: sp, VLA: l, TotalSpin: s }, sim).carry;
+  const c0 = cy(bs, launchC, spinC);
+  if (isFinite(c0)) w.carry = { c: c0, v: bs, dv: (cy(bs + 2, launchC, spinC) - cy(bs - 2, launchC, spinC)) / 4,
+    dl: (cy(bs, launchC + 1, spinC) - cy(bs, launchC - 1, spinC)) / 2, ds: (cy(bs, launchC, spinC * 1.1) - cy(bs, launchC, spinC * 0.9)) / (0.2 * spinC) };
   cache.set(key, w);
   return w;
 }

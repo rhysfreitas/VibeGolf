@@ -64,17 +64,16 @@ const isTop = (m, w) => m.launch <= 3 && m.spin < w.spin[0] * 0.4;
 // heavy contact: slow off the face without the extra spin a flip adds
 const isFat = (m, w) => m.smash <= 0.92 * w.smashRef && m.spin <= w.spin[1] && !isThin(m, w) && !isTop(m, w);
 const iron = m => m.kind === 'iron' || m.kind === 'wedge';
-const wood = m => m.kind === 'wood' || m.kind === 'driver';
 // The R10 measures the ball (speed, launch, start line) better than the club (face and path
 // within about 2–4°), so a path or face read must also show in the ball: the start line or the
 // curve on the same side. Rules tuned with tools/coach/sim-check.mjs (an amateur's swing plus
 // R10-sized error); see docs/COACHING.md.
 export const RULES = {
-  // setup faults are judged on the window's averages (swing noise hides them shot by shot)
-  // aimed off: face and path both off the same way, so the ball starts off line and barely curves
+  // aimed off is judged on the window's averages (swing noise hides it shot by shot): face and
+  // path both off the same way, so the ball starts off line and barely curves. Ball position
+  // isn't a read of its own: it's a cause inside stuck, over the top, steep, flip, fat and thin,
+  // ranked first when the attack and path point at it (HINTS ballBack, ballFwd).
   aimedOff: { test: (m) => (Math.abs(m.dir) >= 3 && Math.abs(m.axis) <= 3.5 ? Math.sign(m.dir) : 0), sided: true, onMean: true },
-  ballBack: { test: (m, w) => (m.kind !== 'driver' && m.aoa <= w.aoa[0] - 1 && m.path >= 2.5 && m.dir > 1 ? 1 : 0), onMean: true },
-  ballForward: { test: (m, w) => (iron(m) && m.aoa >= w.aoa[1] - 0.5 && m.path <= -2 && (!m.hasSpeed || m.smash < w.smashMin + 0.01) ? 1 : 0), onMean: true },
   overTheTop: { test: m => (m.path <= -3 && (m.dir < 0 || m.axis > 1.5) ? 1 : 0), opp: m => m.path >= 3, agree: m => m.dir < -1 || m.axis > 2.5 },
   stuck: { test: m => (m.path >= 4 && (m.dir > 0 || m.axis < -1.5) ? 1 : 0), opp: m => m.path <= -3, agree: m => m.dir > 1 || m.axis < -2.5 },
   openFace: { test: m => (m.ftp >= 3 && m.axis > 2 ? 1 : 0), opp: m => m.ftp <= -3 && m.axis < -2, agree: m => m.axis > 2.5 },
@@ -84,25 +83,34 @@ export const RULES = {
   steep: { test: (m, w) => (m.kind !== 'driver' && m.aoa <= w.aoa[0] - 2 && (m.spin >= w.spinC || m.launch <= w.launchC - 1) ? 1 : 0), opp: (m, w) => m.aoa >= w.aoa[1] },
   fat: { test: (m, w) => (m.hasSpeed && isFat(m, w) ? 1 : 0) },
   driverDown: { test: (m, w) => (m.kind === 'driver' && m.aoa <= w.aoa[0] - 1.5 && m.spin >= w.spinC ? 1 : 0), onMean: true },
-  thin: { test: (m, w) => (isThin(m, w) ? 1 : 0) },
+  // thin or topped: one read (a topped ball is a thin one caught higher up)
+  thin: { test: (m, w) => (isThin(m, w) || isTop(m, w) ? 1 : 0) },
   // a strike that loses ball speed without the launch and spin of a fat or thin one
-  offCentre: { test: (m, w) => (iron(m) && m.hasSpeed && m.smash <= 0.965 * w.smashRef && m.smash > 0.92 * w.smashRef && m.launch >= w.launch[0] - 1 && m.launch <= w.launch[1] + 1 && m.spin >= w.spin[0] * 0.85 && m.spin <= w.spin[1] * 1.15 ? 1 : 0), onMean: true },
-  // gear effect on a wood: curve the face to path doesn't explain, judged on the window's mean
-  toeHeel: { test: m => { if (!wood(m) || !m.hasClub) return 0; const d = m.axis - 1.8 * m.ftp; return Math.abs(d) >= 7.5 ? Math.sign(d) : 0; }, sided: true, onMean: true, need: (m, side) => side * (m.axis - 1.8 * m.ftp) >= 3 },
-  top: { test: (m, w) => (isTop(m, w) ? 1 : 0) },
+  offCentre: { test: (m, w) => (iron(m) && m.hasSpeed && m.smash <= 0.965 * w.smashRef && m.smash > 0.92 * w.smashRef && m.launch >= w.launch[0] - 1 && m.launch <= w.launch[1] + 1 && m.spin >= w.spin[0] * 0.85 && m.spin <= w.spin[1] * 1.15 ? 1 : 0), onMean: true,
+    // the same miss every time: a strike that wanders reads as distance spread instead
+    steady: ms => sd(ms.map(m => m.smash)) < 0.025 },
   shank: { test: (m, w) => (m.dir >= 10 && (m.hasSpeed ? m.smash < 0.82 * w.smashRef : m.ballSpeed < 0.8 * w.clubSpeed * w.smashRef) ? 1 : 0), single: true },
 };
 // a firing condition removes the ones it explains (its root cause covers them)
 export const EXPLAINS = {
-  ballBack: ['steep', 'stuck', 'closedFace', 'aimedOff'], ballForward: ['overTheTop', 'thin', 'fat', 'openFace', 'aimedOff', 'offCentre'],
-  aimedOff: ['overTheTop', 'stuck'], overTheTop: ['steep', 'openFace'], stuck: ['closedFace'],
-  flip: ['openFace', 'fat', 'thin'], steep: ['fat'], driverDown: ['steep'], fat: ['offCentre'], thin: ['offCentre'],
+  aimedOff: ['overTheTop', 'stuck'], overTheTop: ['steep', 'openFace'], stuck: ['closedFace'], twoWay: ['distance'],
+  flip: ['openFace', 'fat', 'thin', 'distance'], steep: ['fat'], driverDown: ['steep'],
+  fat: ['offCentre', 'distance'], thin: ['offCentre', 'distance'], distance: ['offCentre'],
 };
 export const GROUP_ORDER = ['urgent', 'setup', 'path', 'face', 'control', 'lowPoint', 'strike', 'session'];
 
 /* ---------------- the window: which conditions hold ---------------- */
 // two-way: [metric, spread (sd) over, both sides past]
 export const TWO_WAY = [['dir', 2.8, 2.5], ['axis', 9.5, 7]];
+// distance spread: carry sd and range over the window, as shares of the club's stock carry.
+// Not for the sand wedge (hit at all lengths), nor when club speed swings this much (the
+// player is changing swing length on purpose).
+// The driver's carry moves more with launch, so it gets a wider allowance.
+export const DIST = { sd: 0.035, range: 0.09, speedSd: 0.06, driver: 1.3 };
+const distK = w => (w.kind === 'driver' ? DIST.driver : 1) * (w.carry ? w.carry.c : 0);
+// carry from the ball, linear about the window's centre (windows.js works out the slopes)
+export const carryOf = (m, w) => { const c = w.carry; return c ? c.c + c.dv * (m.ballSpeed - c.v) + c.dl * (m.launch - w.launchC) + c.ds * (m.spin - w.spinC) : NaN; };
+const spreadOf = (ms, w) => sd(ms.map(m => carryOf(m, w)));
 const METRIC_KEYS = ['ballSpeed', 'clubSpeed', 'smash', 'launch', 'dir', 'spin', 'axis', 'face', 'path', 'ftp', 'aoa', 'dynLoft', 'spinLoft'];
 function meanOf(ms) { const o = { ...ms[ms.length - 1] }; for (const k of METRIC_KEYS) o[k] = mean(ms.map(m => m[k])); o.hasClub = ms.every(m => m.hasClub); o.hasSpeed = ms.every(m => m.hasSpeed); return o; }
 // ms: the last READ_WINDOW metrics with one club; w: that club's windows
@@ -113,11 +121,9 @@ export function evaluate(ms, w) {
   for (const [id, r] of Object.entries(RULES)) {
     if (r.single) continue;
     if (r.onMean) {
-      const side = r.test(meanOf(win), w); if (!side) continue;
-      if (r.need && win.filter(m => r.need(m, side)).length < READ_WINDOW - 1) continue;
+      const side = r.test(meanOf(win), w); if (!side || (r.steady && !r.steady(win))) continue;
       const n = win.filter(m => r.test(m, w) === side).length;
-      // club-data reads need the club data on every shot for high confidence
-      const conf = n >= READ_WINDOW - 1 && (!r.need || win.every(m => m.hasClub)) ? 'high' : 'medium';
+      const conf = n >= READ_WINDOW - 1 ? 'high' : 'medium';
       fired.push({ id, side, matches: n, confidence: conf });
       continue;
     }
@@ -136,6 +142,12 @@ export function evaluate(ms, w) {
   for (const [k, spread, edge] of TWO_WAY) {
     const v = win.map(m => m[k]), s = sd(v);
     if (s > spread && Math.abs(mean(v)) < s && Math.max(...v) >= edge && Math.min(...v) <= -edge) { fired.push({ id: 'twoWay', side: 1, matches: READ_WINDOW, confidence: 'medium', key: k }); break; }
+  }
+  // distance spread: the front-to-back miss
+  if (w.carry && w.club !== 'SW' && !win.some(m => RULES.shank.test(m, w))) {
+    const c = win.map(m => carryOf(m, w)), s = sd(c), sp = sd(win.map(m => m.clubSpeed)) / mean(win.map(m => m.clubSpeed));
+    if (s >= DIST.sd * distK(w) && Math.max(...c) - Math.min(...c) >= DIST.range * distK(w) && sp < DIST.speedSd)
+      fired.push({ id: 'distance', side: 1, matches: READ_WINDOW, confidence: s >= 1.4 * DIST.sd * distK(w) ? 'high' : 'medium' });
   }
   return fired;
 }
@@ -157,11 +169,17 @@ const EVID = {
   path: { label: 'Path', unit: '°', win: () => [-3, 3] }, face: { label: 'Face', unit: '°', win: () => [-2, 2] },
   ftp: { label: 'Face to path', unit: '°', win: () => [-2, 2] }, dir: { label: 'Start line', unit: '°', win: () => [-2, 2] },
   spinLoft: { label: 'Spin loft', unit: '°', win: w => [w.spinLoft - 2, w.spinLoft + 2] }, clubSpeed: { label: 'Club speed', unit: 'mph', win: w => [w.clubSpeed * 0.97, w.clubSpeed * 1.05] },
+  // spreads (shot to shot) rather than averages
+  carryGap: { label: 'Shortest to longest', unit: 'yd', val: (ms, w) => { const c = ms.map(m => carryOf(m, w)); return Math.max(...c) - Math.min(...c); }, win: w => [0, DIST.range * distK(w) * 0.6] },
+  smashSd: { label: 'Smash spread', unit: '', val: ms => sd(ms.map(m => m.smash)), win: () => [0, 0.02] },
+  launchSd: { label: 'Launch spread', unit: '°', val: ms => sd(ms.map(m => m.launch)), win: () => [0, 1.2] },
+  speedSd: { label: 'Club speed spread', unit: 'mph', val: ms => sd(ms.map(m => m.clubSpeed)), win: w => [0, w.clubSpeed * 0.02] },
 };
 export function evidence(id, ms, w) {
-  return (CONDITIONS[id].evidence || []).map(k => ({ key: k, ...EVID[k], value: mean(ms.map(m => m[k])), window: EVID[k].win(w) }));
+  return (CONDITIONS[id].evidence || []).map(k => ({ key: k, ...EVID[k], value: EVID[k].val ? EVID[k].val(ms, w) : mean(ms.map(m => m[k])), window: EVID[k].win(w) }));
 }
-// rank a condition's causes: a data hint that holds puts its cause first
+// rank a condition's causes: a data hint that holds puts its cause first, a `strong` one
+// (a hint that only one cause explains, like ball position) ahead of the rest
 export const HINTS = {
   steepAttack: (ms, w) => mean(ms.map(m => m.aoa)) <= w.aoa[0],
   shallowAttack: (ms, w) => mean(ms.map(m => m.aoa)) >= w.aoa[1] - 1,
@@ -174,31 +192,40 @@ export const HINTS = {
   goodContact: (ms, w) => mean(ms.map(m => m.smash)) >= w.smashMin - 0.02,
   startLeft: ms => mean(ms.map(m => m.dir)) <= -1.5,
   faceWider: ms => sd(ms.map(m => m.face)) > sd(ms.map(m => m.path)),
+  // ball position: steep and swinging right = too far back; shallow and swinging left = too far forward
+  ballBack: (ms, w) => mean(ms.map(m => m.aoa)) <= w.aoa[0] - 0.5 && mean(ms.map(m => m.path)) >= 2,
+  ballFwd: (ms, w) => mean(ms.map(m => m.aoa)) >= w.aoa[1] - 1 && mean(ms.map(m => m.path)) <= -1.5,
+  ballPos: (ms, w) => HINTS.ballBack(ms, w) || HINTS.ballFwd(ms, w),
+  // distance spread: which number moves with the carry
+  strikeSpread: ms => sd(ms.map(m => m.smash)) > 0.025,
+  lowPointSpread: ms => sd(ms.map(m => m.launch)) > 1.5 || (ms.every(m => m.hasClub) && sd(ms.map(m => m.aoa)) > 2),
+  speedSpread: ms => sd(ms.map(m => m.clubSpeed)) / mean(ms.map(m => m.clubSpeed)) > 0.025,
 };
 export function rankCauses(id, ms, w) {
   const causes = CONDITIONS[id].causes.map((c, i) => ({ ...c, i, hinted: !!(c.hint && HINTS[c.hint] && HINTS[c.hint](ms, w)) }));
-  causes.sort((a, b) => (b.hinted - a.hinted) || a.i - b.i);
-  return causes.map((c, i) => ({ ...c, likely: i === 0 }));
+  const k = c => (c.hinted ? (c.strong ? 2 : 1) : 0);
+  causes.sort((a, b) => (k(b) - k(a)) || a.i - b.i);
+  // a strong cause whose hint doesn't hold isn't shown (at most three on the readout)
+  return causes.filter(c => !c.strong || c.hinted).slice(0, 3).map((c, i) => ({ ...c, likely: i === 0 }));
 }
 
 /* ---------------- progress on a condition ---------------- */
 // the number that has to move, and where it's heading (0 = where you started, 1 = there)
 const avg = k => ms => mean(ms.map(m => m[k]));
+// value(ms, w): the number now; target(w): where it should get to
 export const PROGRESS = {
   aimedOff: { value: ms => Math.abs(avg('dir')(ms)), target: () => 1.5 },
-  ballBack: { value: avg('aoa'), target: w => w.aoa[0] }, ballForward: { value: avg('aoa'), target: w => w.aoa[1] },
+  distance: { value: spreadOf, target: w => DIST.sd * distK(w) * 0.6 },
   overTheTop: { value: avg('path'), target: () => -1 }, stuck: { value: avg('path'), target: () => 2 },
   openFace: { value: avg('ftp'), target: () => 1 }, closedFace: { value: avg('ftp'), target: () => -1 },
   twoWay: { value: ms => Math.max(sd(ms.map(m => m.dir)), sd(ms.map(m => m.axis)) / 3), target: () => 1.5 },
   flip: { value: avg('spinLoft'), target: w => w.spinLoft + 1 }, steep: { value: avg('aoa'), target: w => w.aoa[0] },
   fat: { value: avg('smash'), target: w => w.smashMin }, driverDown: { value: avg('aoa'), target: () => 0 },
   thin: { value: avg('launch'), target: w => w.launch[0] }, offCentre: { value: avg('smash'), target: w => w.smashMin },
-  toeHeel: { value: ms => mean(ms.map(m => Math.abs(m.axis - 1.8 * m.ftp))), target: () => 2 },
-  top: { value: avg('launch'), target: w => w.launch[0] },
 };
 export function progressOf(id, baseMs, nowMs, w) {
   const P = PROGRESS[id]; if (!P) return { progress: 0, before: 0, now: 0, target: 0 };
-  const before = P.value(baseMs), now = P.value(nowMs), target = P.target(w);
+  const before = P.value(baseMs, w), now = P.value(nowMs, w), target = P.target(w);
   const span = target - before;
   return { before, now, target, progress: Math.abs(span) < 1e-6 ? 1 : clamp01((now - before) / span) };
 }
@@ -261,7 +288,7 @@ export function createCoach({ windowsFor = physicsWindows, history = null } = {}
   }
   function worseThanLast(id, club, win, w) {
     const h = st.hist.clubs[club] && st.hist.clubs[club][id]; if (!h || !PROGRESS[id]) return false;
-    const P = PROGRESS[id], now = P.value(win), target = P.target(w);
+    const P = PROGRESS[id], now = P.value(win, w), target = P.target(w);
     return Math.abs(now - target) > Math.abs(h.before - target) + 1e-9;
   }
   function review(early) {
@@ -284,7 +311,7 @@ export function createCoach({ windowsFor = physicsWindows, history = null } = {}
       const cause = R.causes.find(c => c.id === causeId) || R.causes[0];
       st.focus = { id: R.id, club: R.club, cause, causes: R.causes, baseMs: R.baseMs, ms: [], good: 0, blocks: 0, tried: [cause.id] };
       st.phase = 'focus'; st.read = null; st.quiet[R.id] = st.n + QUIET_SHOTS;
-      save(R.club, R.id, { before: PROGRESS[R.id] ? PROGRESS[R.id].value(R.baseMs) : 0, cause: cause.id, n: st.n });
+      save(R.club, R.id, { before: PROGRESS[R.id] ? PROGRESS[R.id].value(R.baseMs, R.w) : 0, cause: cause.id, n: st.n });
       return st.focus;
     },
     // closed the readout without taking the cue

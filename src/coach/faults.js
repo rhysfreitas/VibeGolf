@@ -21,7 +21,7 @@ export const FAULTS = [
   { id: 'ballForward', name: 'Ball forward' },
   { id: 'driverDown', name: 'Driver hitting down' },
   { id: 'offCentre', name: 'Off-centre' },
-  { id: 'toe', name: 'Toe strike' },
+  { id: 'distance', name: 'Distance spread' },
   { id: 'top', name: 'Topped' },
   { id: 'shank', name: 'Shank' },
   // skill attempts (Learn a skill): the swing doing what the lesson asks
@@ -49,7 +49,6 @@ const DELTA = {
   ballForward: { aoa: 3.5, path: -3.5, face: -2.5, loft: 1, smash: 0.96 },
   driverDown: { aoa: -5, loft: -1 },
   offCentre: { smash: 0.935 },
-  toe: { axis: -8, smash: 0.96 },          // gear effect: a draw axis with no face-to-path to explain it
   top: { launch: -40, spinMul: 0.3, smash: 0.82 },
   shank: { face: 14, smash: 0.7, spinMul: 0.8 },
   draw: { face: 1.5, path: 5 },
@@ -69,6 +68,8 @@ export function applyFault(shot, id, clubId, rnd = Math.random, scale = 1) {
   const ref = CLUB_REF[clubId] || CLUB_REF['7i'];
   let d = DELTA[id];
   if (id === 'twoWay') { const s = rnd() < 0.5 ? -1 : 1; d = { path: s * 6, face: s * 3.5 }; }
+  // distance spread: strike, low point and swing length all wander from shot to shot
+  if (id === 'distance') { const u = () => rnd() - 0.5; d = { smash: 1 - 0.09 * rnd(), loft: 6 * u(), aoa: 3 * u(), speed: 1 + 0.05 * u() }; }
   if (!d) return shot;
   if (scale !== 1) { const k = scale, m = v => (v === undefined ? v : 1 + (v - 1) * k); d = { ...d, smash: m(d.smash), spinMul: m(d.spinMul), speed: m(d.speed) };
     for (const f of ['face', 'path', 'aoa', 'loft', 'launch', 'axis']) if (d[f] !== undefined) d[f] *= k; }

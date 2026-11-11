@@ -23,8 +23,8 @@ test('with perfect club data the reads are better still', () => {
 
 test('with R10 error, the swing each skill teaches still gets learned, and a normal swing rarely passes', async () => {
   const { CASES, learnRate } = await import('../tools/coach/skill-check.mjs');
-  for (const [s, o, club, a] of CASES) {
-    const r = learnRate(s, o, club, a, { trials: 60, mode: 'r10' });
+  for (const [s, o, club, a, x] of CASES) {
+    const r = learnRate(s, o, club, a, { trials: 60, mode: 'r10', ...x });
     assert.ok(r.learned >= 0.65, `${r.skill}/${club} learned ${(r.learned * 100).toFixed(0)}%`);
     assert.ok(r.falsePass <= 0.2, `${r.skill}/${club}: a normal swing passed ${(r.falsePass * 100).toFixed(0)}%`);
   }
