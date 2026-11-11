@@ -144,7 +144,7 @@ function applySky(heading = 0) {
   renderer.toneMappingExposure = P.exp;
   FOG_COLOR.set(P.fog); scene.fog.near = P.near; scene.fog.far = P.far;
   scene.fog.color.copy(FOG_COLOR); // THREE.Fog copies its colour when it's made, so FOG_COLOR alone never reached it (every course played under the default pale fog until the art passes)
-  if (ICE) { sky.visible = !T0.night; scene.background = T0.night ? FOG_COLOR : null; }
+  if (ICE) { sky.visible = !T0.night; scene.background = T0.night ? FOG_COLOR : null; iceU.uMoon.value.copy(sunDir); }
   if (CAVE) { sky.visible = false; scene.background = FOG_COLOR; sun.castShadow = false; stars.visible = false; scene.environment = null; ball.material.emissive.set(0xa8c4d0); ball.material.emissiveIntensity = 0.35; return; }
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
@@ -237,12 +237,15 @@ const cityClouds = CITY ? (() => {
 const islandMat = new THREE.MeshStandardMaterial({ roughness: 0.93, metalness: 0, envMapIntensity: 0.6 });
 const holeDirU = { value: new THREE.Vector2(0, -1) };
 const surf2U = { value: null };
+// Rimeholm: the moon's direction, the wind (for the sastrugi), and warm pools of light from the braziers and
+// cairns, drawn in the ground shader (no real lights)
+const iceU = { uMoon: { value: new THREE.Vector3(0.5, 0.6, 0.5) }, uWind: { value: new THREE.Vector2(0.6, 0.8) }, uPools: { value: Array.from({ length: 24 }, () => new THREE.Vector4()) }, uPoolN: { value: 0 } };
 const surfU = { uSurf: { value: null }, uSurfMin: { value: new THREE.Vector2() }, uSurfSize: { value: new THREE.Vector2(1, 1) }, uFloorY: { value: -1e4 } };
 islandMat.onBeforeCompile = sh => {
   sh.uniforms.uDir = holeDirU; Object.assign(sh.uniforms, surfU);
   if (MESA) sh.defines = { ...(sh.defines || {}), MESA: '' };
   if (CITY) sh.defines = { ...(sh.defines || {}), CITY: '' };
-  if (ICE) { sh.defines = { ...(sh.defines || {}), ICE: '' }; sh.uniforms.uSurf2 = surf2U; }
+  if (ICE) { sh.defines = { ...(sh.defines || {}), ICE: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, iceU); }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -253,13 +256,17 @@ islandMat.onBeforeCompile = sh => {
 varying vec4 vW4; varying float vDepth; varying vec3 vWPos; varying vec3 vWN; uniform vec2 uDir;
 uniform sampler2D uSurf; uniform vec2 uSurfMin, uSurfSize; uniform float uFloorY;
 #ifdef ICE
-uniform sampler2D uSurf2;
+uniform sampler2D uSurf2; uniform vec3 uMoon; uniform vec2 uWind; uniform vec4 uPools[24]; uniform int uPoolN;
 #endif
 float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
 float fb(vec2 p){ return vn(p)*0.5 + vn(p*2.07+3.1)*0.25 + vn(p*4.13+7.7)*0.125 + vn(p*8.4+1.3)*0.0625; }
 vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
 float strataLine(float y){ return smoothstep(0.0, 0.25, abs(fract(y*0.11) - 0.5)); }`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+#ifdef ICE
+for (int i = 0; i < 24; i++) { if (i >= uPoolN) break; vec4 L = uPools[i]; float d = length(vWPos.xz - L.xy); float f = 1.0 - smoothstep(0.0, L.z, d); totalEmissiveRadiance += vec3(1.0, 0.6, 0.28) * f * f * L.w * diffuseColor.rgb; }
+#endif`)
     .replace('#include <map_fragment>', `
 vec3 p = vWPos;
 float camD = length(cameraPosition - p);
@@ -285,6 +292,7 @@ vec3 sand = lin(vec3(0.86,0.79,0.62)) * (0.92 + 0.12*fine);
 vec2 st = (p.xz - uSurfMin) / uSurfSize;
 float inTex = step(0.0, st.x) * step(st.x, 1.0) * step(0.0, st.y) * step(st.y, 1.0);
 vec4 sf = mix(vec4(0.0), texture2D(uSurf, clamp(st, 0.0, 1.0)), inTex);
+#ifndef ICE
 // native ground: scrub and red earth on the mesa tops, bare red earth on the canyon floor
 vec3 scrub = mix(lin(vec3(0.5,0.42,0.28)), lin(vec3(0.6,0.47,0.31)), mid) * (0.8 + 0.4*fine);
 scrub = mix(scrub, lin(vec3(0.68,0.42,0.27)), smoothstep(0.45, 0.75, fb(p.xz*0.06)) * 0.7);
@@ -313,13 +321,30 @@ scrub = mix(scrub, lin(vec3(0.28,0.37,0.18)), max(crack, crack2) * 0.85);
 scrub = mix(scrub, lin(vec3(0.3,0.4,0.2)), smoothstep(0.5, 0.78, fb(p.xz*0.05)) * 0.7);
 dirt = scrub;
 #endif
+#endif
 #ifdef ICE
 // Rimeholm: snow and ice. uSurf: R packed snow (fairways, tees), G grass (green 1, its collar 0.5), B black sand,
 // A rough (powder, 0.55); uSurf2: R lake ice, G bare rock, B powder bunker, A travertine
 vec4 s2 = mix(vec4(0.0), texture2D(uSurf2, clamp(st, 0.0, 1.0)), inTex);
-float drift = fb(p.xz*0.045 + 3.0), sast = vn(vec2(dot(p.xz, vec2(0.8,0.6))*0.9, dot(p.xz, vec2(-0.6,0.8))*0.08));
-vec3 snow = mix(lin(vec3(0.84,0.88,0.95)), lin(vec3(0.93,0.95,0.99)), drift) * (0.9 + 0.1*sast) * (0.95 + 0.07*fine);
-snow = mix(snow, lin(vec3(0.72,0.8,0.9)), smoothstep(0.55, 0.85, fb(p.xz*0.012)) * 0.35);              // wind-scoured blue patches
+// the snow's shape: drifts tens of metres across and sastrugi (wind-carved ridges a few metres long, lined up
+// with the wind), each with a face lit by the moon and a blue shadow behind it; glints close by
+vec2 wd = normalize(uWind + vec2(1e-4)), mz = normalize(uMoon.xz + vec2(1e-4));
+vec2 wp = vec2(dot(p.xz, wd), dot(p.xz, vec2(-wd.y, wd.x)));
+float drift = fb(p.xz*0.045 + 3.0), dA = fb(p.xz*0.022 + 1.7), dB = fb((p.xz + mz*4.0)*0.022 + 1.7);
+vec3 snowLit = lin(vec3(0.86,0.9,0.96)), snowShade = lin(vec3(0.5,0.6,0.78));
+vec3 snow = mix(lin(vec3(0.8,0.85,0.93)), snowLit, drift) * (0.95 + 0.07*fine);
+snow = mix(snow, snowShade, clamp((dA - dB)*9.0, 0.0, 1.0) * 0.55);                                      // the lee of each drift
+snow = mix(snow, snowLit * 1.06, clamp((dB - dA)*9.0, 0.0, 1.0) * 0.35);
+float nearS = 1.0 - smoothstep(30.0, 110.0, camD);
+if (nearS > 0.0) {   // sastrugi only close by
+float sa = vn(vec2(wp.x*0.3, wp.y*1.6)) + 0.5*vn(vec2(wp.x*0.7 + 3.0, wp.y*3.4)), sb = vn(vec2((wp.x*0.3) + dot(mz, wd)*0.12, wp.y*1.6 + dot(mz, vec2(-wd.y, wd.x))*0.9)) + 0.5*vn(vec2(wp.x*0.7 + 3.0 + dot(mz, wd)*0.28, wp.y*3.4 + dot(mz, vec2(-wd.y, wd.x))*1.9));
+float ridge = smoothstep(0.55, 1.05, sa);
+snow = mix(snow, snowShade, clamp((sa - sb)*2.2, 0.0, 1.0) * ridge * nearS * 0.75);                   // sastrugi
+snow = mix(snow, snowLit * 1.1, clamp((sb - sa)*2.2, 0.0, 1.0) * ridge * nearS * 0.45);
+}
+snow = mix(snow, lin(vec3(0.68,0.77,0.9)), smoothstep(0.55, 0.85, fb(p.xz*0.012)) * 0.3);               // wind-scoured blue patches
+float glint = step(0.9965, h21(floor(p.xz*9.0) + floor(dot(normalize(cameraPosition - p), vec3(3.1, 1.7, 2.3))*4.0))) * (1.0 - smoothstep(6.0, 28.0, camD));
+snow += vec3(glint) * 0.9;
 vec3 powderR = mix(lin(vec3(0.9,0.93,0.98)), lin(vec3(0.97,0.98,1.0)), mid) * (0.9 + 0.12*fine);         // soft rough: brighter, lumpier
 vec3 packed = mix(lin(vec3(0.78,0.84,0.92)), lin(vec3(0.84,0.89,0.96)), stripe) * (0.95 + 0.06*mid);    // groomed fairway, mown in stripes
 packed *= 0.96 + 0.05*step(0.5, fract(dot(p.xz, vec2(-uDir.y, uDir.x))*1.4));                            // the groomer's corduroy
@@ -328,7 +353,11 @@ col = mix(col, powderR, smoothstep(0.12, 0.5, sf.a) * (1.0 - smoothstep(0.75, 1.
 col = mix(col, packed, sf.r);
 vec3 collar = mix(lin(vec3(0.3,0.5,0.22)), lin(vec3(0.34,0.55,0.25)), mid) * (0.9 + 0.12*fine);
 vec3 putt = lin(vec3(0.33,0.6,0.27)) * (0.95 + 0.1*vn(p.xz*0.8)) * (0.97 + 0.06*fine);
-col = mix(col, collar, smoothstep(0.2, 0.55, sf.g)); col = mix(col, putt, smoothstep(0.6, 0.95, sf.g));
+if (sf.g > 0.04 && sf.g < 0.47) {
+vec3 moss = mix(lin(vec3(0.42,0.5,0.26)), lin(vec3(0.6,0.52,0.3)), fb(p.xz*0.4)) * (0.85 + 0.2*fine);   // warm moss round the greens and pools
+col = mix(col, moss, smoothstep(0.08, 0.26, sf.g) * (1.0 - smoothstep(0.38, 0.46, sf.g)) * smoothstep(0.3, 0.6, fb(p.xz*0.9 + 4.0) + 0.25));
+}
+col = mix(col, collar, smoothstep(0.33, 0.46, sf.g)); col = mix(col, putt, smoothstep(0.6, 0.95, sf.g));
 vec3 blacks = lin(vec3(0.13,0.12,0.12)) * (0.85 + 0.25*fine) * (0.95 + 0.05*sin(p.x*3.0 + p.z*1.7));
 col = mix(col, blacks, smoothstep(0.35, 0.75, sf.b));
 vec3 pwd = lin(vec3(0.97,0.98,1.0)) * (0.92 + 0.1*fine) * (0.96 + 0.04*sin(p.x*2.1 - p.z*2.7));
@@ -341,15 +370,23 @@ vec3 trav = mix(lin(vec3(0.82,0.75,0.6)), lin(vec3(0.9,0.84,0.7)), mid) * (0.85 
 col = mix(col, trav, s2.a);
 vec3 bare = mix(lin(vec3(0.2,0.2,0.22)), lin(vec3(0.3,0.3,0.32)), mid) * (0.8 + 0.3*fine);
 col = mix(col, bare, s2.g);
-// steep faces: blue glacial ice (or dark rock where the paint says rock), banded, snow on the ledges
-float band = fb(vec2(p.y*0.22, (p.x+p.z)*0.004));
-vec3 rock = mix(lin(vec3(0.42,0.6,0.74)), lin(vec3(0.62,0.78,0.88)), band);
-rock = mix(rock, lin(vec3(0.16,0.3,0.46)), smoothstep(0.5, 0.8, fb(vec2((p.x+p.z)*0.2, p.y*0.05))) * 0.6);
-vec3 dark = mix(lin(vec3(0.12,0.12,0.13)), lin(vec3(0.24,0.24,0.26)), band) * (0.8 + 0.3*fine);
+// steep faces: blue glacial ice in layers half a metre to two metres thick, white near the top, deepening below;
+// or black basalt in columns where the paint says rock (Svartifoss), snow on the ledges
+float rw = max(vW4.w, 1.0 - smoothstep(0.5, 0.68, vWN.y));
+if (rw > 0.003) {   // faces only: the column pattern is the costly part, so flat ground skips it
+float band = fb(vec2(p.y*0.22, (p.x+p.z)*0.004)), layer = smoothstep(0.35, 0.5, abs(fract(p.y*0.55 + fb(p.xz*0.05)*1.5) - 0.5));
+vec3 rock = mix(lin(vec3(0.3,0.5,0.68)), lin(vec3(0.6,0.76,0.86)), band) * (0.88 + 0.16*layer);
+rock = mix(rock, lin(vec3(0.12,0.26,0.42)), smoothstep(0.5, 0.8, fb(vec2((p.x+p.z)*0.2, p.y*0.05))) * 0.6);
+vec2 cq = p.xz*1.25, ci = floor(cq), cf = fract(cq); float c1 = 8.0, c2 = 8.0; vec2 cid = ci;
+for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) { vec2 g = vec2(float(i), float(j)), o = vec2(h21(ci + g), h21(ci + g + 17.0)); float d = length(g + o - cf); if (d < c1) { c2 = c1; c1 = d; cid = ci + g; } else if (d < c2) c2 = d; }
+float joint = 1.0 - smoothstep(0.02, 0.09, c2 - c1);
+vec3 dark = mix(lin(vec3(0.1,0.1,0.11)), lin(vec3(0.2,0.2,0.22)), h21(cid)) * (0.85 + 0.25*fine);
+dark *= 1.0 - 0.6*joint;
+dark *= 0.9 + 0.12*step(0.93, fract(p.y*0.7 + h21(cid)*3.0));
 rock = mix(rock, dark, smoothstep(0.25, 0.6, s2.g));
 rock *= (0.85 + 0.2*fine);
-float rw = max(vW4.w, 1.0 - smoothstep(0.5, 0.68, vWN.y));
 col = mix(col, rock, rw);
+}
 diffuseColor.rgb = col;
 #else
 vec3 col = mix(scrub, dirt, 1.0 - step(uFloorY + 4.0, p.y));
@@ -687,7 +724,7 @@ function buildTrees(list, group) {
   list = list.filter(t => t.type !== 'mushroom'); // cave-world.js draws the giant mushrooms (they still play)
   if (!MESA) return buildSkyPines(list, group);
   const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type !== 'pine');
-  const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * 3);
+  const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * (ICE ? 6 : 3));
   const NB = REDROCK ? 6 : 4, blobs = new THREE.InstancedMesh(REDROCK ? clumpGeo : blobGeo, REDROCK ? clumpMat : foliageMat, oaks.length * NB);
   const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, list.length);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), c = new THREE.Color();
@@ -701,6 +738,7 @@ function buildTrees(list, group) {
       q.setFromEuler(new THREE.Euler(0, R() * 6, 0));
       m.compose(ps.set(t.x, y0, t.z), q, sc.set(w, h, w)); cones.setMatrixAt(k, m);
       c.set(0x2c4a2a).offsetHSL((R() - 0.5) * 0.03, (R() - 0.5) * 0.08, (R() - 0.5) * 0.06 + i * 0.015); cones.setColorAt(k, c); k++;
+      if (ICE) { m.compose(ps.set(t.x, y0 + h * 0.3, t.z), q, sc.set(w * 0.78, h * 0.55, w * 0.78)); cones.setMatrixAt(k, m); c.set(0xe4ebf4).offsetHSL(0, 0, (R() - 0.5) * 0.04); cones.setColorAt(k, c); k++; }   // snow on the boughs
     }
   }
   k = 0;
@@ -796,7 +834,7 @@ function buildHole(h) {
   const box = holeBox(h); playBox = MESA ? box : null;
   if (surf2U.value) { surf2U.value.dispose(); surf2U.value = null; }
   if (MESA || SHAPED) { // paint texture first: the island shader reads it
-    const tex = ICE ? (() => { const [a, b] = IW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
+    const tex = ICE ? (() => { const [a, b] = IW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75, COURSE.ice); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
     surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
   }
   for (const I of ISL) buildIsland(I, { seg: MESA ? Math.min(coarse ? 200 : 280, Math.max(96, Math.round(Math.max(I.rx, I.rz) * 1.6))) : coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
@@ -810,7 +848,9 @@ function buildHole(h) {
     MW.buildWater(T, holeGroup);
     if (!ICE) MW.buildRocks(T, h, islandMat, holeGroup);   // ice-world.js draws Rimeholm's seracs and boulders
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
-    else if (ICE) { mesaCtx = IW.buildIce(h, T, box, COURSE.ice, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir, night: !!TIMES[cond.time]?.night }); trees.push(...mesaCtx.trees); }
+    else if (ICE) { mesaCtx = IW.buildIce(h, T, box, COURSE.ice, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir, night: !!TIMES[cond.time]?.night }); trees.push(...mesaCtx.trees);
+      iceU.uWind.value.set(windVec.x, windVec.z); if (iceU.uWind.value.lengthSq() < 1e-4) iceU.uWind.value.set(0.6, 0.8);
+      iceU.uPoolN.value = Math.min(24, mesaCtx.pools.length); mesaCtx.pools.slice(0, 24).forEach((q, i) => iceU.uPools.value[i].set(...q)); }
     else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
     else {
       MW.talus(talusPts, coarse, holeGroup); talusPts = null;
@@ -890,7 +930,8 @@ function buildHole(h) {
   for (const set of TEE_SETS) {
     const P = T.features.tees[teeKeys.indexOf(h.tees ? set.id : 'tee')]; if (!P) continue;
     for (const du of [-3.2, 3.2]) {
-      const tm = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 8), new THREE.MeshStandardMaterial({ color: set.color, roughness: 0.4 }));
+      const tm = ICE ? new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, 0.34, 6).translate(0, 0.09, 0), new THREE.MeshStandardMaterial({ color: new THREE.Color(set.color).lerp(new THREE.Color(0x4a3a2c), 0.55), roughness: 0.85 }))   // a carved wooden post, stained the set's colour
+        : new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 8), new THREE.MeshStandardMaterial({ color: set.color, roughness: 0.4 }));
       const tx = P.x + du * P.c + 2.2 * P.s, tz = P.z + du * P.s - 2.2 * P.c, gy = groundAt(tx, tz); if (gy === null) continue;
       tm.position.set(tx, gy + 0.08, tz); holeGroup.add(tm);
     }
