@@ -161,7 +161,7 @@ export function buildIce(hole, T, box, ICE, hi, { group, coarse, groundMat, rock
   const far = coarse ? 1500 : 2200;
   const vc = (o = {}) => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, ...o });
   const iceMat = vc({ roughness: 0.3, envMapIntensity: 1.3 }), snowMat = vc({ roughness: 0.95 }), stoneMat = vc({ roughness: 0.95 });
-  const Bi = batch(), Bs = batch(), Br = batch();   // ice, snow (ground and caps), rock and timber
+  const Bi = batch(), Bs = batch(), Br = batch(), Bw = batch();   // ice, snow (ground and caps), rock and timber, the longship's timber
 
   // ---- the far glacier, from the height map: this hole's field where it has one (so the edges meet the playfield)
   const WM = ICE.world; if (!WM.hDec) { WM.hDec = dec(WM.h, Int16Array); WM.mDec = dec(WM.m, Uint8Array); }
@@ -354,17 +354,86 @@ export function buildIce(hole, T, box, ICE, hi, { group, coarse, groundMat, rock
     for (const i of [0, 1, 2]) smoke.push([c[0] + (P[1][0] - P[0][0]) * (i - 1) * 0.25, c[1] + (P[1][1] - P[0][1]) * (i - 1) * 0.25, yr - 0.5, 1.2]);   // smoke from the roof
   }
 
-  // ---- the longship under the lake: a dark shape seen through the ice
-  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x050a10, transparent: true, opacity: 0.5, depthWrite: false });
+  // ---- the longship: its stern under the lake ice (a dark shape seen through it), its bow rising out of the ice at
+  // `rise` degrees for `out` metres: a clinker hull, the dragon prow, a broken mast with a scrap of frozen sail,
+  // shields along the gunwales, snow and icicles, the ice heaved up in plates where it broke through
+  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x03070c, transparent: true, opacity: 0.62, depthWrite: false });
   for (const S of ICE.longships) {
     const [x, z] = L(S.x, S.z); if (!near(x, z, far)) continue;
-    const y = (T.groundAt(x, z) ?? LY(S.y)) + 0.03, r = LR(S.rot), c = Math.cos(r), s = Math.sin(r), shp = new THREE.Shape(), n = 24;
-    for (let i = 0; i <= n; i++) { const t = i / n, u = (t - 0.5) * S.len, w = S.beam / 2 * Math.sin(Math.PI * t) ** 0.6; (i ? shp.lineTo(u, w) : shp.moveTo(u, w)); }
-    for (let i = n; i >= 0; i--) { const t = i / n, u = (t - 0.5) * S.len, w = -S.beam / 2 * Math.sin(Math.PI * t) ** 0.6; shp.lineTo(u, w); }
-    const g = new THREE.ShapeGeometry(shp); g.rotateX(Math.PI / 2);
-    const m = new THREE.Mesh(g, shadowMat); m.position.set(x, y, z); m.rotation.y = -r; m.renderOrder = 2; group.add(m);
-    // the mast lying along it, and the curled prow and stern
-    const mg = new THREE.PlaneGeometry(S.len * 0.7, 0.5).rotateX(-Math.PI / 2), mm = new THREE.Mesh(mg, shadowMat); mm.position.set(x + s * 0.8, y + 0.005, z - c * 0.8); mm.rotation.y = -r + 0.06; mm.renderOrder = 2; group.add(mm);
+    const r = LR(S.rot), d = [Math.cos(r), Math.sin(r)], nl = [-d[1], d[0]], ph = (S.rise || 0) * Math.PI / 180, out = S.out || 0;
+    const yI = (T.groundAt(x, z) ?? LY(S.y + 0.6)), bu = S.len / 2 - out * Math.cos(ph);   // the break, from the centre along the keel
+    { // the submerged part, stern to the break
+      const shp = new THREE.Shape(), n = 20, tB = (bu + S.len / 2) / S.len, W = t => S.beam / 2 * Math.sin(Math.PI * t) ** 0.6;
+      const pts = []; for (let i = 0; i <= n; i++) { const t = tB * i / n; pts.push([(t - 0.5) * S.len, W(t)]); }
+      pts.forEach(([u, w], i) => (i ? shp.lineTo(u, w) : shp.moveTo(u, w))); for (let i = n; i >= 0; i--) shp.lineTo(pts[i][0], -pts[i][1]);
+      const g = new THREE.ShapeGeometry(shp); g.rotateX(Math.PI / 2);
+      const m = new THREE.Mesh(g, shadowMat); m.position.set(x, yI + 0.03, z); m.rotation.y = -r; m.renderOrder = 2; group.add(m);
+    }
+    if (!out) continue;
+    const bx = x + d[0] * bu, bz = z + d[1] * bu, sp = Math.sin(ph), cp = Math.cos(ph);
+    // a point on the hull: u along the keel from the break (rising), lat across, v up off the keel line
+    const H = (u, lat, v) => [bx + d[0] * (u * cp - v * sp) + nl[0] * lat, yI + u * sp + v * cp, bz + d[1] * (u * cp - v * sp) + nl[1] * lat];
+    const both = (B, a, b, c, e, k) => { B.quad(a, b, c, e, k); B.quad(e, c, b, a, k); };
+    const Rw = rng(Math.round(S.x * 7 + S.z * 3));
+    const wood = [lin([132, 122, 108]), lin([112, 102, 90]), lin([146, 136, 120]), lin([100, 92, 82])], inner = lin([64, 58, 50]);   // old timber weathered silver-grey, frosted
+    const hw = u => S.beam / 2 * (1 - Math.pow(Math.max(0, u) / out, 2.4) * 0.93), dp = u => 2.3 * (1 - 0.55 * Math.pow(Math.max(0, u) / out, 2)), gw = u => 0.5 + 1.7 * Math.pow(Math.max(0, u) / out, 3);
+    const sec = (u, k, K) => { const ps = -Math.PI / 2 + Math.PI * k / K; return [hw(u) * Math.sin(ps), -dp(u) * Math.cos(ps) + gw(u) * Math.sin(ps) ** 2]; };
+    const NU = coarse ? 10 : 18, K = 14;
+    for (let i = 0; i < NU; i++) {
+      const u0 = -0.8 + (out + 0.8) * i / NU, u1 = -0.8 + (out + 0.8) * (i + 1) / NU;
+      for (let k = 0; k < K; k++) {
+        const [l00, v00] = sec(u0, k, K), [l01, v01] = sec(u0, k + 1, K), [l10, v10] = sec(u1, k, K), [l11, v11] = sec(u1, k + 1, K);
+        const lap = 0.05 * (k % 2 ? 1 : -1), col = wood[(k + (i > NU * 0.6 && k % 3 === 0 ? 1 : 0)) % 4];   // clinker strakes, lapped
+        both(Bw, H(u0, l00 * (1 + lap), v00), H(u1, l10 * (1 + lap), v10), H(u1, l11, v11), H(u0, l01, v01), col);
+        // the inside, darker, a little in
+        Bw.quad(H(u0, l01 * 0.92, v01 + 0.1), H(u1, l11 * 0.92, v11 + 0.1), H(u1, l10 * 0.92, v10 + 0.1), H(u0, l00 * 0.92, v00 + 0.1), inner);
+      }
+      // snow along both gunwales and drifted along the bottom inside
+      for (const sd of [-1, 1]) { const g0 = sec(u0, sd < 0 ? 0 : K, K), g1 = sec(u1, sd < 0 ? 0 : K, K);
+        both(Bs, H(u0, g0[0], g0[1] + 0.02), H(u1, g1[0], g1[1] + 0.02), H(u1, g1[0] * 0.86, g1[1] + 0.16), H(u0, g0[0] * 0.86, g0[1] + 0.16), lin([228, 234, 244]));
+        // icicles off the gunwale, hanging straight down
+        if (!coarse && Rw() < 0.7) { const t = Rw(), uu = u0 + (u1 - u0) * t, gg = sec(uu, sd < 0 ? 0 : K, K), p = H(uu, gg[0] * 1.02, gg[1] - 0.05), ln = 0.25 + Rw() * 0.9;
+          for (let q = 0; q < 3; q++) { const a0 = q / 3 * Math.PI * 2, a1 = (q + 1) / 3 * Math.PI * 2, rr = 0.06 + ln * 0.05; Bi.tri([p[0] + Math.cos(a0) * rr, p[1], p[2] + Math.sin(a0) * rr], [p[0] + Math.cos(a1) * rr, p[1], p[2] + Math.sin(a1) * rr], [p[0], p[1] - ln, p[2]], lin([200, 228, 246])); } } }
+      const kb = sec(u0, K / 2, K), kc = sec(u1, K / 2, K);
+      if (u0 < out * 0.7) both(Bs, H(u0, -hw(u0) * 0.45, kb[1] + 0.35), H(u1, -hw(u1) * 0.45, kc[1] + 0.35), H(u1, hw(u1) * 0.45, kc[1] + 0.35), H(u0, hw(u0) * 0.45, kb[1] + 0.35), lin([222, 230, 242]));
+    }
+    // the stem curling up into the dragon's neck and head (square section, tapering)
+    const g0 = gw(out), stem = [[out, -0.6], [out + 0.5, g0 * 0.6], [out + 0.75, g0 + 0.9], [out + 0.55, g0 + 2.2], [out + 0.1, g0 + 3.0], [out + 0.35, g0 + 3.55]];
+    const tube = (P, r0, r1, k) => { for (let i = 0; i < P.length - 1; i++) { const ra = r0 + (r1 - r0) * i / (P.length - 1), rb = r0 + (r1 - r0) * (i + 1) / (P.length - 1), [ua, va] = P[i], [ub, vb] = P[i + 1];
+      const C = (u, v, rr, sa, sb) => H(u + sb * rr * 0.7, sa * rr, v); for (const [sa, sb, sa2, sb2] of [[-1, -1, 1, -1], [1, -1, 1, 1], [1, 1, -1, 1], [-1, 1, -1, -1]]) both(Bw, C(ua, va, ra, sa, sb), C(ub, vb, rb, sa, sb), C(ub, vb, rb, sa2, sb2), C(ua, va, ra, sa2, sb2), k); } };
+    tube(stem, 0.34, 0.2, wood[0]);
+    { // the head: a long snout, open jaw, two horns, looking out over the lake
+      const hu = out + 0.35, hv = g0 + 3.55, k = wood[2], kd = lin([40, 34, 28]);
+      const box = (u0, v0, u1, v1, w, kk) => { const P = (u, v, l) => H(u, l, v), q = [[u0, v0], [u1, v1]]; const c = (i, sa, sb) => P(q[i][0], q[i][1] + sb * w * 0.5, sa * w * 0.5);
+        for (const [a, b] of [[[-1, -1], [1, -1]], [[1, -1], [1, 1]], [[1, 1], [-1, 1]], [[-1, 1], [-1, -1]]]) both(Bw, c(0, ...a), c(1, ...a), c(1, ...b), c(0, ...b), kk); };
+      box(hu - 0.2, hv, hu + 1.25, hv + 0.15, 0.42, k);            // upper jaw
+      box(hu - 0.1, hv - 0.32, hu + 1.0, hv - 0.5, 0.32, k);        // lower jaw, dropped open
+      both(Bw, H(hu - 0.15, -0.08, hv + 0.2), H(hu - 0.55, -0.05, hv + 0.75), H(hu - 0.45, -0.02, hv + 0.75), H(hu - 0.05, -0.02, hv + 0.2), k);   // horns
+      both(Bw, H(hu - 0.15, 0.08, hv + 0.2), H(hu - 0.55, 0.05, hv + 0.75), H(hu - 0.45, 0.02, hv + 0.75), H(hu - 0.05, 0.02, hv + 0.2), k);
+      both(Bw, H(hu + 0.6, -0.22, hv + 0.02), H(hu + 0.75, -0.22, hv + 0.02), H(hu + 0.75, -0.22, hv + 0.13), H(hu + 0.6, -0.22, hv + 0.13), kd);  // eyes
+      both(Bw, H(hu + 0.6, 0.22, hv + 0.02), H(hu + 0.75, 0.22, hv + 0.02), H(hu + 0.75, 0.22, hv + 0.13), H(hu + 0.6, 0.22, hv + 0.13), kd);
+      both(Bs, H(hu - 0.2, -0.2, hv + 0.17), H(hu + 1.2, -0.2, hv + 0.17), H(hu + 1.2, 0.2, hv + 0.17), H(hu - 0.2, 0.2, hv + 0.17), lin([232, 238, 246]));   // snow on its snout
+    }
+    // shields along the gunwales: round, painted halves, some lost
+    for (const sd of [-1, 1]) for (let q = 0; q < 6; q++) { if (Rw() < 0.3) continue; const uu = out * (0.08 + q * 0.12), gg = sec(uu, sd < 0 ? 0 : K, K), c0 = H(uu, gg[0] * 1.04, gg[1] - 0.35), rr = 0.42;
+      const kA = q % 2 ? lin([150, 54, 40]) : lin([210, 196, 160]), kB = q % 2 ? lin([210, 196, 160]) : lin([40, 60, 90]);
+      for (let e = 0; e < 8; e++) { const a0 = e / 8 * Math.PI * 2, a1 = (e + 1) / 8 * Math.PI * 2, P = a => H(uu + Math.cos(a) * rr, gg[0] * 1.06, gg[1] - 0.35 + Math.sin(a) * rr);
+        const kk = e < 4 ? kA : kB; Bw.tri(c0, P(a0), P(a1), kk); Bw.tri(c0, P(a1), P(a0), kk); } }
+    // the mast, snapped, raking back with the hull; a stub of yard and a scrap of striped sail frozen stiff
+    const mu = out * 0.32, mv0 = -dp(mu) + 0.3, ml = 4.6;
+    slab(Bw, H(mu, 0, mv0), H(mu, 0, mv0 + ml), 0.3, 0.3, wood[3]);
+    for (let q = 0; q < 3; q++) Bw.tri(H(mu - 0.15, -0.15 + q * 0.15, mv0 + ml), H(mu + 0.15, -0.15 + q * 0.15, mv0 + ml), H(mu + (q - 1) * 0.08, -0.1 + q * 0.12, mv0 + ml + 0.5 + q * 0.25), wood[3]);
+    const ya = H(mu, 0.2, mv0 + ml - 0.7), yb = H(mu, 3.1, mv0 + ml - 0.55); slab(Bw, ya, yb, 0.18, 0.18, wood[1]);
+    { const NS = 6, NV = 4, drop = 2.4;
+      for (let a2 = 0; a2 < NS; a2++) for (let b2 = 0; b2 < NV; b2++) {
+        const P = (i, j) => { const t = i / NS, f = j / NV, tear = j === NV ? 0.55 + 0.45 * Math.sin(i * 2.7 + 1) * Math.sin(i * 1.3) : 1; return [ya[0] + (yb[0] - ya[0]) * t * 0.92 + d[0] * 0.25 * Math.sin(f * 2.2), ya[1] + (yb[1] - ya[1]) * t - drop * f * tear * (1 - 0.35 * t), ya[2] + (yb[2] - ya[2]) * t * 0.92 + d[1] * 0.25 * Math.sin(f * 2.2)]; };
+        const red = a2 % 2 === 0, k = (red ? lin([150, 70, 62]) : lin([214, 206, 190])).map((v, i) => v * 0.8 + 0.18 * [0.8, 0.86, 0.92][i] * (b2 / NV));   // frosted toward the hem
+        both(Bw, P(a2, b2), P(a2 + 1, b2), P(a2 + 1, b2 + 1), P(a2, b2 + 1), k); } }
+    // where it broke through: the ice heaved up in plates round the hull, snow drifted against it
+    for (let q = 0; q < (coarse ? 8 : 14); q++) { const a2 = Rw() * Math.PI * 2, rr = S.beam * 0.55 + Rw() * 3.5, px = bx + Math.cos(a2) * rr, pz = bz + Math.sin(a2) * rr, len = 1.2 + Rw() * 2.2, tilt = 0.25 + Rw() * 0.6;
+      const ox = Math.cos(a2), oz = Math.sin(a2); slab(Bi, [px - ox * len * 0.5, yI - 0.1, pz - oz * len * 0.5], [px + ox * len * 0.5 * Math.cos(tilt), yI - 0.1 + len * Math.sin(tilt), pz + oz * len * 0.5 * Math.cos(tilt)], 1 + Rw() * 1.6, 0.35, lin([168, 204, 228])); }
+    for (let q = 0; q < 6; q++) { const a2 = q / 6 * Math.PI * 2 + Rw(), rr = S.beam * 0.45; blob(Bs, bx + Math.cos(a2) * rr, yI, bz + Math.sin(a2) * rr, 1.6 + Rw(), 0.6 + Rw() * 0.4, 1.2, lin([224, 232, 244]), null, 7, 3); }
+    pools.push([bx + d[0] * 3, bz + d[1] * 3, 9, 0.75, 0]);   // a faint warm glow on it, so it reads at night
   }
   // ---- the mammoth in the valley wall: a dark bulk behind clear ice
   for (const Mm of ICE.mammoths) {
@@ -511,7 +580,7 @@ export function buildIce(hole, T, box, ICE, hi, { group, coarse, groundMat, rock
     step(0, null); anims.push((dt, t, wv) => step(Math.min(dt, 0.1), wv));
   }
 
-  for (const [B, mat] of [[Bi, iceMat], [Bs, snowMat], [Br, stoneMat]]) { const m = B.mesh(mat); if (m) group.add(m); }
+  for (const [B, mat] of [[Bi, iceMat], [Bs, snowMat], [Br, stoneMat], [Bw, vc({ roughness: 0.85, emissive: 0x2a1c10 })]]) { const m = B.mesh(mat); if (m) group.add(m); }   // (the wreck's timber catches a little warm light from below)
   if (night) {
     const dome = new THREE.Mesh(new THREE.SphereGeometry(11000, 32, 16), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false,
       vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,

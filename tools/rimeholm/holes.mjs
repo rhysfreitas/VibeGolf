@@ -104,14 +104,14 @@ export const HOLES = [
       corridor: 10, steep: 'rock',
       lake: { at: P(90, 12), rx: 50, rz: 40, y: -14.2, label: 'the frozen lake' },
       openWater: { at: P(117, 6), rx: 18, rz: 6.5, rot: 0.08, label: 'open water' },
-      longship: { at: P(90, 8), len: 28, beam: 6, rot: 0.55, label: 'the longship (under the ice)' },
+      longship: { at: P(104, 38), toward: P(96, 58), len: 28, beam: 6, rise: 34, out: 17, label: 'the longship (its bow up out of the ice)' },   // off the right of the line, framing the shot (far enough out that its bow shows over the bluff from the tee); solid, but only a big slice or a skating ball reaches it
       green: { lobes: [[-12, -3, 8, 7, -30], [12, -3, 8, 7, 30], [0, 3, 10, 8, 0]], raise: 1.6, falseFront: true, style: 'A crescent across the line, its horns reaching toward the tee round a pot bunker; raised 1.6 m with a false front down to the ice' },
       extraFw: [{ at: P(108, -56), rx: 14, rz: 26 }],
       bunkers: [{ at: P(162, -18), rx: 7, rz: 5 }, { at: P(145, 0), rx: 5, rz: 3.5 }],
       boulders: [...erratics(P(20, -40), 16, 5, 31), ...erratics(P(40, 44), 14, 4, 32)],
       targets: [],
       words: {
-        plays: 'From a bluff of moraine 14 m above the lake. Under the clear ice of the line lies a Viking longship, lit faintly from below. The ice is fast: a ball that lands on it skates on toward the shore. Short of the green a hole of open black water lies in the ice, about 20 m before the front: a topped or thin shot that would have skated up to the shore can run into it. The green sits up on the far shore with a false front, so a shot that comes up short rolls back onto the ice.',
+        plays: 'From a bluff of moraine 14 m above the lake. Off to the right a Viking longship rears its dragon prow out of the ice, its stern still frozen in below. The ice is fast: a ball that lands on it skates on toward the shore. Short of the green a hole of open black water lies in the ice, about 20 m before the front: a topped or thin shot that would have skated up to the shore can run into it. The green sits up on the far shore with a false front, so a shot that comes up short rolls back onto the ice.',
         safe: 'Play to the left shore, on the short grass round the lake, and chip on.',
         bold: 'Carry it all the way to the green, over the open water.',
         miss: 'Into the open water is a stroke and a drop. A ball that lands short on the ice skates on, past the hole if it is lucky, and a ball that reaches the false front rolls back.',

@@ -335,11 +335,17 @@ function renderView(hi, view) {
         for (let i = 0; i <= 30; i++) { const t = -1 + 2 * i / 30; P.push([t * o.len / 2, o.beam / 2 * (1 - t * t) ** 0.7]); }
         for (let i = 30; i >= 0; i--) { const t = -1 + 2 * i / 30; P.push([t * o.len / 2, -o.beam / 2 * (1 - t * t) ** 0.7]); }
         const p = proj(P.map(([u, v]) => [x + u * c - v * s, o.y + yoff + 0.4, z + u * s + v * c]));
-        const mast = projLine([[x, o.y + yoff + 0.4, z], [x - s * 6, o.y + yoff + 0.4, z + c * 6]]);
+        const mast = o.out ? null : projLine([[x, o.y + yoff + 0.4, z], [x - s * 6, o.y + yoff + 0.4, z + c * 6]]);
         if (p) add(d - 0.04, `<polygon points="${fmt(p)}" fill="#5a4636" fill-opacity="0.5" stroke="#4a3626" stroke-opacity="0.7" stroke-width="1.2"/>` +
           (mast ? `<polyline points="${fmt(mast)}" stroke="#4a3626" stroke-opacity="0.6" stroke-width="1.4"/>` : ''));
         // the light under the ice
         if (p) add(d - 0.03, `<polygon points="${fmt(p)}" fill="#9fe0ff" fill-opacity="0.18"/>`);
+        if (o.out) {   // the bow rising out of the ice, the dragon's neck curling up off it
+          const ph = o.rise * Math.PI / 180, bu = o.len / 2 - o.out * Math.cos(ph), y0 = o.y + yoff + 0.6;
+          const H = (u, v, l = 0) => [x + c * (bu + u * Math.cos(ph) - v * Math.sin(ph)) - s * l, y0 + u * Math.sin(ph) + v * Math.cos(ph), z + s * (bu + u * Math.cos(ph) - v * Math.sin(ph)) + c * l];
+          const side = proj([H(0, -1.5), H(o.out, 0.4), H(o.out, 2.2), H(o.out * 0.5, 1.0), H(0, 0.6)]), neck = projLine([H(o.out, 2.2), H(o.out + 0.75, 3.1), H(o.out + 0.55, 4.4), H(o.out + 0.1, 5.2), H(o.out + 1.4, 5.7)]);
+          if (side) add(d - 0.05, `<polygon points="${fmt(side)}" fill="#6a5440" stroke="#3a2a1c" stroke-width="1.2"/>` + (neck ? `<polyline points="${fmt(neck)}" fill="none" stroke="#3a2a1c" stroke-width="2"/>` : ''));
+        }
       } else if (o.kind === 'mammoth') {
         // in the ice of the valley wall, its side to the hole: body, head, a curl of tusk breaking out
         const [x, z] = tr([o.x, o.z]), y = o.base + yoff + 6, ux = Math.sin(o.dir), uz = -Math.cos(o.dir), nx = -uz, nz = ux, col = [120, 92, 70];

@@ -215,7 +215,7 @@ export function buildHole(h) {
   }
   if (h.arch) { const A = h.arch; objs.push({ kind: 'arch', a: [A.a[0], A.a[1], gAt(A.a[0], A.a[1]) ?? 0], b: [A.b[0], A.b[1], gAt(A.b[0], A.b[1]) ?? 0], h: A.h, w: A.w, t: A.t, label: A.label }); }
   if (h.hall) objs.push({ kind: 'hall', pts: hallPts, base: Math.min(...hallPts.map(p => gAt(...p))) - 0.5, h: h.hall.h, roof: h.hall.roof, at: h.hall.at, rot: endHead, label: h.hall.label });
-  if (h.longship) objs.push({ kind: 'longship', ...h.longship, x: h.longship.at[0], z: h.longship.at[1], y: lake.y - 0.6 });
+  if (h.longship) { const S = h.longship, rot = S.toward ? Math.atan2(S.toward[1] - S.at[1], S.toward[0] - S.at[0]) : S.rot || 0; objs.push({ kind: 'longship', ...S, rot, x: S.at[0], z: S.at[1], y: lake.y - 0.6 }); }
   if (h.mammoth) { const M = h.mammoth, pr = project(h.line, ...M.at); objs.push({ kind: 'mammoth', x: M.at[0], z: M.at[1], base: gAt(...M.at), dir: headingAt(h.line, pr.s), label: M.label }); }
   if (h.falls) {
     // the frozen falls: columns of ice standing the full height of the face in front, flows hanging from the lip

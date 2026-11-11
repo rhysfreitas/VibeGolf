@@ -63,7 +63,7 @@ for (const [k, B] of BUILT.entries()) {
     else if (o.kind === 'hall') ICE.halls.push({ p: o.pts.map(q => P(...q)), y: Y(o.base), h: o.h, roof: o.roof, rot: r2(o.rot + a) });
     else if (o.kind === 'roof') ICE.roofs.push({ p: o.pts.map(q => P(...q)), y: Y(o.y), t: o.t });
     else if (o.kind === 'arch') ICE.arches.push({ a: [...P(o.a[0], o.a[1]), Y(o.a[2])], b: [...P(o.b[0], o.b[1]), Y(o.b[2])], h: o.h, w: o.w, t: o.t });
-    else if (o.kind === 'longship') ICE.longships.push({ x: P(o.x, o.z)[0], z: P(o.x, o.z)[1], y: Y(o.y), len: o.len, beam: o.beam, rot: r2((o.rot || 0) + a) });
+    else if (o.kind === 'longship') ICE.longships.push({ x: P(o.x, o.z)[0], z: P(o.x, o.z)[1], y: Y(o.y), len: o.len, beam: o.beam, rot: r2((o.rot || 0) + a), rise: o.rise || 0, out: o.out || 0 });
     else if (o.kind === 'mammoth') ICE.mammoths.push({ x: P(o.x, o.z)[0], z: P(o.x, o.z)[1], y: Y(o.base), rot: r2(o.dir + a) });
   }
 }
@@ -121,6 +121,14 @@ function holeOut(hi) {
   for (const A of ICE.arches) { const a = here(A.a[0], A.a[1]), b = here(A.b[0], A.b[1]); if (!inBox(a[0], a[1], 40)) continue;
     const n = 8; for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, P3 = t => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, A.a[2] + (A.b[2] - A.a[2]) * t + A.h * Math.sin(Math.PI * t) - base];
       const p = P3(t0), q = P3(t1); rocks.push({ type: 'wedge', from: [r1(p[0]), r1(p[1]), r1(p[2])], to: [r1(q[0]), r1(q[1]), r1(q[2])], w: [A.w, A.w], h: [A.t, A.t] }); } }
+  // the longship's bow out of the ice: the hull, the dragon's neck and the mast stub (the sail is scenery)
+  for (const S of ICE.longships) { if (!S.out) continue; const [cx, cz] = here(S.x, S.z); if (!inBox(cx, cz, 40)) continue;
+    const r = S.rot - h.place.heading * Math.PI / 180, d = [Math.cos(r), Math.sin(r)], ph = S.rise * Math.PI / 180, yI = S.y + 0.6 - base, bu = S.len / 2 - S.out * Math.cos(ph);
+    const Hp = (u, v) => [cx + d[0] * (bu + u * Math.cos(ph) - v * Math.sin(ph)), cz + d[1] * (bu + u * Math.cos(ph) - v * Math.sin(ph)), yI + u * Math.sin(ph) + v * Math.cos(ph)];
+    const wedge = (a3, b3, w, t) => rocks.push({ type: 'wedge', from: a3.map(r1), to: b3.map(r1), w: [r1(w[0]), r1(w[1])], h: [r1(t[0]), r1(t[1])] });
+    wedge(Hp(-1, 0), Hp(S.out, 1.2), [S.beam * 0.92, 1.0], [2.8, 1.6]);
+    wedge(Hp(S.out, 1.6), Hp(S.out + 0.6, 5.6), [0.6, 0.5], [0.6, 0.5]);
+    wedge(Hp(S.out * 0.32, -1.6), Hp(S.out * 0.32, 3.4), [0.4, 0.3], [0.4, 0.3]); }
   for (const [X, Z, y, r, hh, kk] of ICE.trees) { const [x, z] = here(X, Z); if (inBox(x, z)) plants.push({ x: r1(x), z: r1(z), s: r2(hh / 9), type: 'pine', r: r2(((X * 7.3 + Z * 3.1) % 1 + 1) % 1) }); }
 
   const heading = Math.round((h.place.heading + Math.atan2(h.pin[0], -h.pin[1]) * 180 / Math.PI + 360) % 360);

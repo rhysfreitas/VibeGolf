@@ -88,3 +88,10 @@ fairway stripes and corduroy, crevasse walls with a cornice, firn, a dirt band a
 Voronoi columns on rock faces, braziers and lantern cairns as warm light pools painted into the ground (baked, not
 real lights), moss painted round the greens and hot pools with tufts and willow on it, the night sky dome with
 stars and the moon, the aurora, spindrift streaks, the animals, runestones and stained tee posts.
+
+**Follow-up (11 November):** Rhys couldn't see the longship (a shadow under the ice, hidden by the 3rd's bluff). It is
+now a wreck: the stern frozen in below, the bow rearing out of the ice at 34° for 17 m about 40 m right of the line,
+far enough out that the dragon prow shows over the bluff from the tee. Clinker hull in weathered timber, the dragon
+head with an open jaw, a snapped mast with a scrap of red-and-cream sail frozen stiff, painted shields along the
+gunwales, snow and icicles, the ice heaved up in plates where it broke through, a faint warm glow on it. Solid for
+the ball; only a big slice or a ball skating across the ice reaches it.

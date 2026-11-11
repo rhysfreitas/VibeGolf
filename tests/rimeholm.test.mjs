@@ -98,3 +98,19 @@ test('lake ice runs: a ball rolls a long way on it', () => {
   const roll2 = Math.hypot(pts2.at(-1).x - from[0], pts2.at(-1).z - from[1]);
   assert.ok(roll > roll2 * 1.5, `ice ${roll.toFixed(1)} m vs fairway ${roll2.toFixed(1)} m`);
 });
+
+test("the longship's bow stands out of the ice off the right of the 3rd: solid, clear of the shot", () => {
+  const i3 = HOLES.findIndex(h => h.name === 'The Longship'), h = HOLES[i3], t3 = T[i3], S = COURSE.ice.longships[0];
+  assert.ok(S.out > 0 && S.rise > 0, 'the bow rises out of the ice');
+  const hull = h.rocks.find(r => r.type === 'wedge' && r.w[0] > 4); assert.ok(hull, 'the hull is rock for the ball');
+  const [bx, bz, by] = hull.from, [tx, tz, ty] = hull.to, mid = [(bx + tx) / 2, (by + ty) / 2, (bz + tz) / 2];
+  assert.ok(ty - t3.groundAt(bx, bz) > 6, `the bow stands ${(ty - t3.groundAt(bx, bz)).toFixed(1)} m out of the ice`);
+  assert.ok(t3.solidAt(...mid), 'solid amidships');
+  assert.ok(Math.min(Math.abs(bx), Math.abs(tx)) > 30, 'well right of the line');
+  // a 7-iron at the pin from every tee hits nothing in the air
+  for (const tee of Object.values(h.tees)) assert.ok(!flown(shoot(t3, tee, h.pin, { Speed: 120, VLA: 16.3, TotalSpin: 7097 })).some(p => p.hit), 'a 7-iron clears it');
+  // a ball skating across the ice at it runs into the hull
+  const from = [bx - 20, bz], pts = shoot(t3, from, [bx + 20, bz], { Speed: 30, VLA: 3, TotalSpin: 300 }, () => 'ice'), end = pts.at(-1);
+  const free = shoot(createTerrain({ ...h, rocks: h.rocks.filter(r => r !== hull) }), from, [bx + 20, bz], { Speed: 30, VLA: 3, TotalSpin: 300 }, () => 'ice').at(-1);
+  assert.ok(end.x < bx + 1 && free.x > bx + 4, `a skating ball stops at the hull (ends ${(end.x - bx).toFixed(1)} m past its foot; ${(free.x - bx).toFixed(1)} m without it)`);
+});
