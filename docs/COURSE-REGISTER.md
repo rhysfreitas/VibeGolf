@@ -31,7 +31,26 @@ What repeats (11 November 2026):
   cenote's light, The Reclaim +28, Rimeholm +38, Emberfell +17, the Lost Valley +30).
 - Four open with a drop off a ledge (Hollowmere −32 m, The Reclaim −12, Rimeholm −30, the Lost Valley −27).
 
-**Not yet used, so open to the next course:** par 35 or 37; one or three par 3s or par 5s; a par 3 or par 5
+### Assigned on 11 November 2026 (Rhys's picks; not yet drawn)
+
+Emberfell and the Lost Valley are being re-laid to new skeletons, each in its own chat
+(`claude/brief-emberfell-skeleton.md` and `claude/brief-lost-valley-skeleton.md` in the project). Check a new
+course against these two rows as well; replace them with the measured rows when the plan books are approved.
+
+| Course | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | Par |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Emberfell | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
+| The Lost Valley | 4 Cycad Grove | 5 Floodplain | 4 Bone Bed | 3 Tar Pit | 5 Swamp | 4 ↑ The Nest | 3 ↓ The Overlook | 4 d Strangler | 5 Plunge Pool | 37 |
+
+- Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
+  island finish stays. Same par as another course on four holes at most (Rimeholm).
+- The Lost Valley: starts on the valley floor; the climb to the ledge is the 6th and the drop off it the 7th (the
+  first view of the valley from above); the drivable par 4 is the 8th; a reachable par 5 finishes at the shelf
+  green under the Great Falls. First par 37, first with three par 5s, first not to finish with a climb. Same par
+  as another course on four holes at most (Red Mesa).
+- Against each other they share a par on two holes.
+
+**Not yet used, so open to the next course (after those two):** par 35; one or three par 3s; one par 5; a par 3
 opener; a par 3 or par 5 at the 2nd, 8th or 9th beyond what's above; back-to-back par 3s or par 5s as a set piece;
 a finish that goes downhill, to water, to an island or under the landmark; a course whose biggest climb is in the
 middle; a long par 3 early.
@@ -53,10 +72,12 @@ Dell.** A punchbowl is on six of seven courses: give it a rest.
 
 ## Audit of all seven courses against the rules, 11 November 2026
 
-How to read it. *Measured* means `node tools/review/design.mjs` (6 seeds for the gate, 12 for the decisions). Its
+How to read it. *Measured* means `node tools/review/design.mjs` (8 seeds for the gate, 12 for the decisions). Its
 player is a decent amateur's scatter with tour-length clubs, no lie costs, stances, branches or wind, so it
-flags a hole for a look; it doesn't prove one broken. Rimeholm's 8th fails the gate but finished in the game's own
-play-through on 10 November: one of the two is wrong, and that is the thing to find out. *Read* means taken from
+flags a hole for a look; it doesn't prove one broken. **The gate lines below were re-measured later the same day**
+after the tool's player was found to aim differently from the game (it read a green up a climb as blocked): the
+first run had flagged seven holes, and four of those were the tool. The decision lines are from the first run
+and want re-running (`--only=decisions --seeds=24`) before anyone acts on them. *Read* means taken from
 the course's data and cards. *Not audited* means nobody has written it down yet: the miss maps, the helper
 features and the landmark tables don't exist for any course, so those rules start with the next round of each.
 The tool measures a bold line only from the tee; a choice on the second shot shows as "out of reach".
@@ -88,8 +109,8 @@ The tool measures a bold line only from the tee; a choice on the second shot sho
 
 ### Red Mesa
 
-- **Gate:** two holes flagged. The 1st (Rimrock) didn't finish on one of six from the back tees (the known
-  sand-to-canyon trap). The 7th (Hoodoos) from the forward tees: +3.0, didn't finish on two of six.
+- **Gate:** one hole flagged. The 1st (Rimrock) didn't finish on one of eight from the back tees (the known
+  sand-to-canyon trap).
 - **View:** three blind tee shots, one over the limit: the 2nd (the drop off the lip hides the landing area by
   4.7 m), the 6th and the 8th. The 2nd is the one to look at in a tee render.
 - **Decisions:** four by name. Rimrock's corner pays the short hitter 0.75 and the long hitter nothing. Needle's
@@ -102,8 +123,9 @@ The tool measures a bold line only from the tee; a choice on the second shot sho
 
 ### Hollowmere
 
-- **Gate:** the 6th (The Falls) from the forward tees: +1.8, 1.2 penalties a hole, didn't finish on one of six
-  (already known from the Wren tee). Everything else passes.
+- **Gate:** the 6th (The Falls) fails from both ends: +1.9 from the back tees with a penalty every other time,
+  +2.4 from the forward tees with 1.3 penalties a hole, and it didn't finish on one of eight. Everything else
+  passes.
 - **Forced carries:** none over the limit on a par 4 or 5.
 - **View:** two blind tee shots (the Geode by design, the Grotto). At the limit.
 - **Decisions:** four by name. The Rim's corner (4th) pays both players a quarter of a stroke at no risk, so it
@@ -115,8 +137,7 @@ The tool measures a bold line only from the tee; a choice on the second shot sho
 
 ### The Reclaim
 
-- **Gate:** the 2nd (The Atrium) plays +1.7 from the back tees, over the +1.5 line; the 9th +1.3. No hole fails
-  to finish.
+- **Gate:** passes. No hole over +1.5 and none fails to finish.
 - **Forced carries:** the Stadium (5th, par 3) from the forward tees: 98 yd against a 150 yd drive.
 - **View:** no blind tee shots.
 - **Decisions:** four by name. Through the Atrium costs the long hitter nearly a stroke and pays the short one:
@@ -127,10 +148,10 @@ The tool measures a bold line only from the tee; a choice on the second shot sho
 
 ### Rimeholm
 
-- **Gate:** three holes flagged. The 8th (The Mammoth): +3.0 from the back tees, didn't finish on three of six;
-  from the forward tees never finished. The 4th (The Crevasse Field): +1.3 and +2.0, didn't finish on one and two
-  of six. The 9th from the forward tees: +2.3, didn't finish on one of six. All three finished in the game's
-  play-through on 10 November, so check the tool's targets against the game's on these first.
+- **Gate:** one hole flagged. The 9th (The Aurora Hall) from the forward tees: +2.1, didn't finish on one of
+  eight (the 38 m climb is a lot for a short hitter). The 4th and 8th, flagged in the first run, were the tool.
+  On the 4th the first target (The trough) sits at the foot of a 23% ramp, so a driver off the deck from there
+  flies into the slope: worth moving the target a few metres back.
 - **View:** four blind tee shots, two over the limit: the 1st and 5th (both off a lip, the ledge hides the
   landing area by about 2 m), the 6th (blind by design) and the 9th (the climb).
 - **Decisions:** two marked. Over the moulin (7th) is a real choice: 69 yd less, pays the short hitter a quarter
@@ -162,10 +183,10 @@ The tool measures a bold line only from the tee; a choice on the second shot sho
 
 ### What I'd do first
 
-1. Find out why the tool and the game disagree on Rimeholm's 4th, 8th and 9th, since the gate is only worth
-   having if it is right.
+1. Done 11 November: the tool and the game disagreed on Rimeholm because the tool's player aimed differently
+   (fixed in `tools/review/play.mjs`), and a topped shot ran for ever (fixed in `src/physics.js`).
 2. Mark `bold: true` in the four courses that lack it, then fix the choices that measure backwards or as traps:
    The Reclaim's 2nd and 8th, Red Mesa's 4th and 7th.
 3. Look at the drop-off-a-lip tee views (Red Mesa 2, Rimeholm 1 and 5) in a render.
-4. Ask Rhys about Emberfell's par order and the Lost Valley's opener, finish and fifth decision.
+4. Done 11 November: Rhys picked new skeletons for Emberfell and the Lost Valley (see "Assigned" above).
 5. Write hole cards (feature job, miss map, tee view) for the playable courses as each next gets touched.
