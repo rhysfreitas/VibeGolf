@@ -104,7 +104,32 @@ diffuseColor.rgb = c;
   }
 
   /* ---------- the hangar: walls, ribs, ceiling light strips, stern wall with the open door ---------- */
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x3a3f48, metalness: 0.45, roughness: 0.6, envMapIntensity: 0.7 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x485060, metalness: 0.45, roughness: 0.6, envMapIntensity: 0.7 });
+  const LAMPS = [18, 6, -18, -30].flatMap(z => [-1, 1].map(sx => new THREE.Vector3(sx * (34 - 0.4), 13, z + 3))); // the amber work lamps (below)
+  // hull plating on the walls and ceiling (art pass 1): 3 x 2 m panels with seams, tone changes, vent grilles,
+  // grime running down from the seams and a few lit status dots, laid out on whichever plane the face lies in
+  wallMat.onBeforeCompile = sh => {
+    sh.uniforms.uT = { value: 0 }; sh.uniforms.uLamp = { value: LAMPS }; wallMat.userData.sh = sh;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos; varying vec3 vWN;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos; varying vec3 vWN; uniform float uT; uniform vec3 uLamp[8];' + GLSL_NOISE)
+      .replace('#include <map_fragment>', `
+vec3 an = abs(vWN); vec2 pp = an.x > 0.5 ? vWPos.zy : an.y > 0.5 ? vWPos.xz : vWPos.xy;
+vec2 cell = pp / vec2(3.0, 2.0), f = abs(fract(cell) - 0.5); float pid = h21(floor(cell));
+float seam = smoothstep(0.47, 0.5, max(f.x * 1.0, f.y));
+vec3 c = diffuseColor.rgb * (0.78 + 0.36 * pid) * (0.92 + 0.16 * fb(pp * 0.9));
+c *= 1.0 - 0.5 * seam;
+float vent = step(0.86, pid) * step(abs(fract(cell.y) - 0.5), 0.28) * step(abs(fract(cell.x) - 0.5), 0.36) * step(0.5, fract(pp.y * 6.0));
+c *= 1.0 - 0.6 * vent;
+float grime = smoothstep(0.55, 0.85, fb(vec2(pp.x * 1.4, pp.y * 0.15))) * (an.y > 0.5 ? 0.0 : 1.0);
+c *= 1.0 - 0.28 * grime;
+diffuseColor.rgb = c;`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+float dotA = step(0.93, h21(floor(cell) + 7.0)) * (1.0 - smoothstep(0.035, 0.05, length(fract(cell) - vec2(0.85, 0.82)) )) * (an.y > 0.5 ? 0.0 : 1.0);
+float blink = 0.6 + 0.4 * step(0.0, sin(uT * (1.5 + 3.0 * h21(floor(cell))) + pid * 20.0));
+totalEmissiveRadiance += mix(vec3(0.2, 1.0, 0.4), vec3(1.0, 0.55, 0.15), step(0.5, h21(floor(cell) + 3.0))) * dotA * blink * 2.0;
+for (int i = 0; i < 8; i++){ vec3 dl = vWPos - uLamp[i]; dl.y *= dl.y < 0.0 ? 0.45 : 1.6; totalEmissiveRadiance += diffuseColor.rgb * vec3(1.0, 0.55, 0.22) * 1.6 * exp(-dot(dl, dl) / 14.0); } // each lamp's warm wash, mostly down the wall`);
+  };
   const darkMat = new THREE.MeshStandardMaterial({ color: 0x23272e, metalness: 0.55, roughness: 0.55 });
   const box = (w, h, d, x, y, z, mat = wallMat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; scene.add(m); return m; };
   const L = B.back - B.door, zc = (B.back + B.door) / 2, H = B.height;
@@ -169,6 +194,47 @@ diffuseColor.rgb = c;
   const laneZ = [];
   { let k = 0; for (let z = 4; z > B.door + 2; z -= 3.2) for (const sx of [-1, 1]) { m4.compose(ps.set(sx * 7.2, 0.03, z), q.identity(), sc.set(1, 1, 1)); laneLights.setMatrixAt(k, m4); laneZ.push(z); k++; } laneLights.count = k; }
   scene.add(laneLights);
+
+  /* ---------- warm practicals and light in the air (art pass 1) ---------- */
+  // amber work lamps on the walls between the ribs, so the bay isn't all one blue
+  {
+    const lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.0, 0.62, 0.3).multiplyScalar(2.2), toneMapped: false });
+    const hood = new THREE.MeshStandardMaterial({ color: 0x1e2228, metalness: 0.6, roughness: 0.5 });
+    const n = 8, lamps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 0.35, 0.35), lampMat, n), hoods = new THREE.InstancedMesh(new THREE.BoxGeometry(1.3, 0.25, 0.8), hood, n);
+    const pools = [];
+    let k = 0;
+    for (const z of [18, 6, -18, -30]) for (const sx of [-1, 1]) {
+      m4.compose(ps.set(sx * (B.half - 0.35), 13, z + 3), q.identity(), sc.set(1, 1, 1)); lamps.setMatrixAt(k, m4);
+      m4.compose(ps.set(sx * (B.half - 0.5), 13.3, z + 3), q.identity(), sc.set(1, 1, 1)); hoods.setMatrixAt(k++, m4);
+      pools.push([sx * (B.half - 0.4), 13, z + 3]);
+    }
+    scene.add(lamps, hoods);
+    const gp = new Float32Array(pools.flat()), gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.BufferAttribute(gp, 3));
+    scene.add(new THREE.Points(gg, new THREE.PointsMaterial({ map: (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'); const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.3, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); })(), color: 0xffa060, size: 12, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })));
+  }
+  // light shafts falling from the ceiling strips through a thin haze: faint double-sided wedges, soft at the edges
+  const shaftMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+    uniforms: { uT: { value: 0 } },
+    vertexShader: 'varying vec2 vUv; varying vec3 vW; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `varying vec2 vUv; varying vec3 vW; uniform float uT;
+      ${GLSL_NOISE}
+      void main(){ float edge = smoothstep(0.0, 0.35, vUv.x) * smoothstep(1.0, 0.65, vUv.x); float down = pow(vUv.y, 1.6);
+        float dust = 0.65 + 0.7 * fb(vW.zy * vec2(0.12, 0.2) + vec2(uT * 0.02, -uT * 0.03));
+        gl_FragColor = vec4(vec3(0.55, 0.65, 0.85) * 0.045 * edge * down * dust, 1.0); }`,
+  });
+  {
+    const pos = [], uv = [], idx = [];
+    for (const x of [-20, -8, 8, 20]) for (const tilt of [-1, 1]) {
+      const k = pos.length / 3, top = H - 0.3, bot = 0.5, w0 = 0.6, w1 = 4.5, z0 = B.back - 4, z1 = B.door + 4, dx = tilt * 0.5;
+      // a long wedge under the strip, widening as it falls; two planes crossed so it reads from the tee
+      pos.push(x - w0 * tilt * 0, top, z0, x + dx * w1 * 0.9, bot, z0, x + dx * w1 * 0.9, bot, z1, x, top, z1);
+      uv.push(0.5, 1, tilt < 0 ? 0 : 1, 0, tilt < 0 ? 0 : 1, 0, 0.5, 1);
+      idx.push(k, k + 1, k + 2, k, k + 2, k + 3);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+    const shafts = new THREE.Mesh(g, shaftMat); shafts.renderOrder = 3; shafts.frustumCulled = false; scene.add(shafts);
+  }
 
   /* ---------- the force field across the door ---------- */
   const field = new THREE.Mesh(new THREE.PlaneGeometry(B.doorHalf * 2, B.doorTop), new THREE.ShaderMaterial({
@@ -283,6 +349,11 @@ diffuseColor.rgb = c;
           c -= vec3(0.05) * b * smoothstep(0.55, 0.75, n2);                         // dust lanes
           float neb = smoothstep(0.52, 0.8, n) * smoothstep(-0.2, 0.5, d.y + 0.2);
           c += mix(vec3(0.05, 0.02, 0.09), vec3(0.0, 0.07, 0.09), fb3(d * 2.0 + 9.0)) * neb * 1.5;
+          // art pass 1: a big soft nebula out past the door (left of the planet), violet and teal with dark lanes
+          vec3 nc = normalize(vec3(-0.42, 0.2, -0.88)); float nd = dot(d, nc);
+          float cloud = smoothstep(0.55, 1.0, nd) * (0.35 + 0.9 * fb3(d * 4.5 + 2.0)) * (1.0 - 0.75 * smoothstep(0.58, 0.72, fb3(d * 9.0 + 7.0)));
+          vec3 ncol = mix(vec3(0.42, 0.16, 0.62), vec3(0.08, 0.42, 0.55), smoothstep(0.35, 0.7, fb3(d * 3.0 + 5.0)));
+          c += ncol * cloud * 0.42 + vec3(0.9, 0.7, 0.85) * pow(max(0.0, nd), 60.0) * 0.12;
           gl_FragColor = vec4(c, 1.0);
         }` }));
     neb.renderOrder = -3; scene.add(neb);
@@ -331,7 +402,7 @@ diffuseColor.rgb = c;
   const rockGeo = new THREE.IcosahedronGeometry(1, 1);
   { const p = rockGeo.attributes.position; for (let i = 0; i < p.count; i++) { const v = new THREE.Vector3().fromBufferAttribute(p, i), n = 1 + (hash2(Math.round(v.x * 37 + 3), Math.round(v.y * 37 + v.z * 23)) - 0.5) * 0.55; p.setXYZ(i, v.x * n, v.y * n * 0.8, v.z * n); } rockGeo.computeVertexNormals(); }
   const rockMat = new THREE.MeshStandardMaterial({ color: 0x6d6158, roughness: 0.95, metalness: 0.05, envMapIntensity: 0.05, flatShading: true });
-  const beltMat = new THREE.MeshStandardMaterial({ color: 0x5e554c, roughness: 1, metalness: 0, envMapIntensity: 0, flatShading: true, emissive: 0x0d0b0a });
+  const beltMat = new THREE.MeshStandardMaterial({ color: 0x8a7a68, roughness: 1, metalness: 0, envMapIntensity: 0, flatShading: true, emissive: 0x241c16 }); // catches more sun, so the belt reads
   {
     // the belt: a long, thin band of rocks crossing the distance below the planet
     const N = st.coarse ? 260 : 420, belt = new THREE.InstancedMesh(rockGeo, beltMat, N);
@@ -345,7 +416,7 @@ diffuseColor.rgb = c;
     const DN = st.coarse ? 1400 : 2200, dp = new Float32Array(DN * 3);
     for (let i = 0; i < DN; i++) { const az = 100 + R() * 160, el = 1.5 + 5 * Math.sin(THREE.MathUtils.degToRad(az - 100) * 1.1) + (R() - 0.5) * 4.5, v = dirOf(az, el).multiplyScalar(3000 + R() * 3500); dp.set([v.x, v.y, v.z], i * 3); }
     const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
-    const dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0x8a7c6c, size: 1.0 * renderer.getPixelRatio(), sizeAttenuation: false, transparent: true, opacity: 0.3, depthWrite: false }));
+    const dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0xb8a690, size: 1.3 * renderer.getPixelRatio(), sizeAttenuation: false, transparent: true, opacity: 0.55, depthWrite: false }));
     scene.add(dust);
   }
   // nearer rocks that drift slowly across the view (well clear of the rings)
@@ -375,7 +446,7 @@ diffuseColor.rgb = c;
     fieldRipple(x, y) { field.material.uniforms.uRip.value.set(x, y - B.doorTop / 2, lastT); rip = lastT; },
     animate(t) {
       const dt = Math.max(0, Math.min(0.1, t - lastT)); lastT = t; void rip;
-      field.material.uniforms.uT.value = t;
+      field.material.uniforms.uT.value = t; shaftMat.uniforms.uT.value = t; if (wallMat.userData.sh) wallMat.userData.sh.uniforms.uT.value = t;
       beacons.forEach((b, i) => { b.material.color.setScalar(0).setRGB(1, 0.65, 0.23).multiplyScalar(0.25 + 2.4 * Math.max(0, Math.sin(t * 3 + i * 1.6))); });
       for (let i = 0; i < laneLights.count; i++) { const k = Math.max(0, Math.sin(-laneZ[i] * 0.55 + t * 5)); laneLights.setColorAt(i, col.setRGB(0.15, 0.55, 1).multiplyScalar(0.3 + 2.6 * k * k)); }
       laneLights.instanceColor.needsUpdate = true;
