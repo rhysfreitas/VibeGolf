@@ -10,7 +10,7 @@ import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES, BACK, FRONT } from './holes.mjs';
 import { BUILT, toWorld, toLocal, worldAt, CRACKS } from './scene.mjs';
-import { V, FALL, VENT, POOL, INSIDE, ISLAND, NECK, LAKE } from './world.mjs';
+import { V, FALL, VENT, POOL, INSIDE, ISLAND, NECK, LAKE, VENTS, GEYSERS } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { at, headingAt, clamp, seOutline, lengthOf, rnd, project } from './geo.mjs';
 
@@ -21,7 +21,7 @@ let HFOV = 60 * Math.PI / 180, FPX = (VW / 2) / Math.tan(HFOV / 2);
 const FOG = [242, 234, 230], MIST = 900;
 const SC = { flow: [120, 116, 116], rough: [206, 214, 172], fairway: [170, 206, 130], fringe: [152, 198, 112], green: [160, 214, 120], tee: [184, 212, 150],
   sand: [216, 214, 208], scoria: [198, 124, 102], lava: [250, 132, 42], rock: [96, 94, 100], rubble: [170, 166, 164], cinder: [184, 120, 102], ash: [224, 218, 208],
-  forest: [86, 124, 88], sulfur: [236, 220, 124], hall: [64, 62, 66], void: [26, 26, 30] };
+  forest: [86, 124, 88], sulfur: [236, 220, 124], hall: [64, 62, 66], void: [26, 26, 30], crust: [62, 58, 60], sinter: [240, 236, 222] };
 const LOC = HOLES.map(toLocal), WOR = HOLES.map(toWorld);
 
 const mix = (c, f) => c.map((v, i) => Math.round(v + (FOG[i] - v) * f));
@@ -125,6 +125,13 @@ function renderView(hi, view) {
       const y0 = ys.reduce((a, v) => a + v, 0) / 4 + 0.05, cx = x + s * (0.2 + 0.6 * hash(x, z)), cz = z + s * (0.2 + 0.6 * hash(z, x)), r = s * (0.22 + 0.2 * hash(x + 3, z));
       const P2 = proj(Array.from({ length: 6 }, (_, i) => { const a = i / 6 * 6.283 + hash(x, i); return [cx + Math.cos(a) * r, y0, cz + Math.sin(a) * r * 0.8]; }));
       if (P2) add(q.d - 0.02, `<polygon points="${fmt(P2)}" fill="${hex(mix([92, 46, 34], fogAt(q.d) * 0.4))}" fill-opacity="0.75"/>`);
+    }
+    // crust fields: black plates with glowing seams between them
+    if (c.s === 'crust' && q.d < 1400 && hash(Math.floor(x / 5), Math.floor(z / 5)) > 0.35) {
+      const y0 = ys.reduce((a, v) => a + v, 0) / 4 + 0.1, a0 = hash(z, x) * 6.28, pts = [];
+      for (let i = 0; i <= 3; i++) { const t = i / 3 - 0.5, j = (hash(x + i, z + 1) - 0.5) * s * 0.5; pts.push([x + s / 2 + Math.cos(a0) * t * s - Math.sin(a0) * j, y0, z + s / 2 + Math.sin(a0) * t * s + Math.cos(a0) * j]); }
+      const p = projLine(pts);
+      if (p) add(q.d - 0.03, `<polyline points="${fmt(p)}" fill="none" stroke="${hex(mix([250, 120, 40], fogAt(q.d) * 0.4))}" stroke-width="${Math.max(0.6, 1.6 * (1.1 - fogAt(q.d))).toFixed(2)}"/>`);
     }
     // fresh lava: a rough, broken surface; a few strokes of crust on near cells
     if (c.s === 'flow' && q.d < 260 && s <= 6 && hash(Math.floor(x * 2.3), Math.floor(z * 1.7)) > 0.5) {
@@ -303,6 +310,25 @@ function renderView(hi, view) {
     const near = [Hk.line[0], Hk.pin].some(p => Math.hypot(...toHere(...Wk(...p)).map((v, i) => v - [cam.pos[0], cam.pos[2]][i])) < 900);
     drawObjs(BUILT[k].objs.filter(o => near || ['hall', 'vent'].includes(o.kind)), m, Hk.base);
   }
+  // the inside rivers' vents: spatter cones glowing at the mouth; the geysers: white columns (one in eruption) over
+  // their sinter aprons, steam off the others
+  for (const v of VENTS) {
+    const [x, z] = toHere(...v.at), d = cam.hd([x, 0, z]); if (d > 1600 || !inView(x, z, 0.4)) continue;
+    const y = V(...v.at), vv = cam.view([x, y + 0.5, z]);
+    if (vv[2] > 2) { const c = cam.scr(vv), rr = 6 / vv[2] * FPX; add(d - 1, `<ellipse cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" rx="${(rr * 2.4).toFixed(1)}" ry="${(rr * 1.2).toFixed(1)}" fill="#ffb060" fill-opacity="0.4"/><ellipse cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" rx="${rr.toFixed(1)}" ry="${(rr * 0.5).toFixed(1)}" fill="#ff8a2a"/>`); }
+    steam(x, z, y, 9, 41);
+  }
+  for (const [gi, g] of GEYSERS.entries()) {
+    const [x, z] = toHere(...g.at), d = cam.hd([x, 0, z]); if (d > 1800 || !inView(x, z, 0.4)) continue;
+    const y = V(...g.at);
+    if (g.erupt) {
+      const P = [], N = 10;
+      for (let i = 0; i <= N; i++) { const t = i / N, w = 1.6 + t * t * 9; P.push([x - cam.r[0] * w, y + t * g.erupt, z - cam.r[2] * w]); }
+      for (let i = N; i >= 0; i--) { const t = i / N, w = 1.6 + t * t * 9; P.push([x + cam.r[0] * w, y + t * g.erupt, z + cam.r[2] * w]); }
+      const q = proj(P); if (q) add(d - 1.5, `<polygon points="${fmt(wob(q, true, 17, 1.4))}" fill="white" fill-opacity="0.85" stroke="#9aa4aa" stroke-width="0.8"/>`);
+      steam(x, z, y + g.erupt * 0.8, 9, 51 + gi);
+    } else steam(x, z, y, 5, 61 + gi);
+  }
   // the lavafall: a glowing ribbon down the bay's wall from its lip to the pool, steam where it lands
   {
     const T = toHere(...FALL.top), F = toHere(...FALL.foot), N = 24, Lp = [], Rp = [], dxf = F[0] - T[0], dzf = F[1] - T[1], lf = Math.hypot(dxf, dzf), nx = -dzf / lf, nz = dxf / lf;
@@ -414,7 +440,7 @@ export function viewsFor(hi) {
   if (h.fumaroles) labelSet.push(L3(at(h.line, 160, -70), 'fumaroles', -40));
   if (h.vent) labelSet.push(L3(here(...h.vent.at), 'spatter vent', -50, 7));
   if (h.hall) labelSet.push(L3(h.hall.at, 'the clubhouse', -60, 8));
-  for (const [wp, t] of [[[-600, -575], 'the lava lake'], [[-300, 650], 'the lava river'], [FALL.foot, 'the lavafall'], [[-460, -660], 'the rock bridge']]) {
+  for (const [wp, t] of [[[-600, -575], 'the lava lake'], [[-300, 650], 'the lava river'], [FALL.foot, 'the lavafall'], [[-460, -660], 'the rock bridge'], [[-200, -385], 'the Spill'], [[66, 600], 'geysers'], [[-262, -246], 'lava pool'], [[-30, -322], 'vent']]) {
     const p = here(...wp), pr = project(h.line, ...p); if (pr.d < 260) labelSet.push(L3(p, t, -40, 2));
   }
   const v = [];

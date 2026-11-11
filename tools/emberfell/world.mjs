@@ -51,7 +51,10 @@ function wallFoot(th, top) { return 55 + 0.2 * (crestY(th) - top); }
 
 // the lava lake: a pit in the crater floor, and the island in it (the 9th's green and the clubhouse). The neck is
 // the rock bridge out to the island: a natural span the fairway runs across, lava flowing under it
-export const LAKE = { level: 1000, seed: 7, blobs: [[-750, -522, 18], [-722, -540, 26], [-690, -560, 38], [-625, -566, 74], [-535, -570, 92], [-430, -570, 96], [-345, -590, 94], [-265, -604, 58]] };
+// round 2: the lake grows south and east, up under the second terrace's edge below the 7th, and the island sits
+// deeper in it; its north shore by the 9th stays where it was
+export const LAKE = { level: 1000, seed: 7, blobs: [[-750, -522, 18], [-722, -540, 26], [-690, -560, 38], [-625, -566, 74], [-535, -570, 92], [-430, -570, 96], [-345, -590, 94], [-265, -604, 58],
+  [-575, -515, 66], [-470, -505, 72], [-360, -510, 74], [-250, -540, 72], [-175, -590, 62], [-150, -650, 48], [-215, -668, 40]] };
 export const ISLAND = { c: [-384, -588], rx: 84, rz: 54, rot: 0.3, top: 1027, seed: 8 };
 export const NECK = { pts: [[-488, -706], [-432, -616]], w: 28 };
 // metres outside the lake's shore (negative over the lava)
@@ -61,9 +64,34 @@ const neckD = (X, Z) => distLine(NECK.pts, X, Z) - NECK.w / 2 - 2.5 * noise1(pro
 
 // the barranco: a deep gully carved down the outer flank, across the 2nd
 export const BARRANCO = { pts: [[40, 262], [52, 420], [70, 560], [80, 760], [110, 1100], [140, 1500]], depth: 16, floor: 34, wall: 62 };
-// the live lava river on the 1st: from a spatter vent down the shoulder, in a channel between levees
-export const RIVER = { pts: [[-175, 540], [-235, 612], [-300, 650], [-365, 668], [-440, 700], [-520, 750], [-610, 820], [-710, 900]], w: 15, levee: 3.2, sink: 3.5 };
-const riverP = (X, Z) => project(RIVER.pts, X, Z);
+// lava rivers, each in a channel sunk between its own levees, its surface following the ground down it. The 1st's
+// (outside, from the spatter vent toward the sea; round 2 a third wider), the Spill (from a vent on the caldera
+// floor below the terraces, past the 6th's green into the lake) and the Northern flow (from a
+// vent far across the floor into the lake's east end)
+export const RIVERS = [
+  { name: 'the lava river', pts: [[-175, 540], [-238, 618], [-305, 658], [-371, 676], [-446, 708], [-526, 758], [-616, 828], [-716, 908], [-826, 998], [-946, 1098]], w: 22, levee: 4, sink: 4, len: 760 },
+  { name: 'the Spill', pts: [[-30, -322], [-108, -352], [-170, -374], [-235, -394], [-292, -406], [-330, -434]], w: 17, levee: 2.6, sink: 3, len: 360, inside: true },
+  { name: 'the northern flow', pts: [[-60, -1010], [-92, -940], [-122, -870], [-150, -790], [-172, -720], [-190, -672]], w: 18, levee: 2.8, sink: 3, len: 380, inside: true },
+];
+export const RIVER = RIVERS[0];
+const riverP = (R, X, Z) => project(R.pts, X, Z);
+const riverCut = (X, Z) => { let y = 0; for (const R of RIVERS) { const rp = riverP(R, X, Z), half = R.w / 2; if (rp.d < half + 24 && rp.s > 0.5) y += R.levee * Math.exp(-(((rp.d - half - 3) / 6) ** 2)) - R.sink * (1 - smooth((rp.d - half + 2) / 4)); } return y; };
+// crust fields: lobes of fresh black lava crusted over, glowing at the seams (native ground; raised a metre or two
+// with steep fronts). Kept 40 m or more off the fairways
+export const CRUSTS = [
+  { pts: [[-40, -1060], [-80, -960], [-120, -880], [-160, -800], [-200, -740], [-235, -700]], w: 120 },   // round the northern flow
+  { pts: [[-30, -320], [-108, -352], [-190, -385], [-265, -410]], w: 60 },                                 // round the Spill
+  { pts: [[280, -700], [150, -680], [20, -655], [-100, -640]], w: 110 },                                   // the east floor
+  { pts: [[-720, -1040], [-650, -950], [-600, -890]], w: 90 },                                             // north-west, behind the 9th
+  { pts: [[-990, -540], [-930, -470]], w: 50 },                                                            // the bay, west of the 8th
+  { pts: [[280, -230], [180, -262], [90, -296]], w: 60 },                                                  // the terraces east of the Notch
+];
+const crustD = (X, Z) => { let d = Infinity; for (const C of CRUSTS) { const pr = project(C.pts, X, Z); d = Math.min(d, pr.d - C.w / 2 * (1 + 0.32 * noise2(X / 34, Z / 34, 101) + 0.12 * noise2(X / 11, Z / 11, 103))); } return d; };
+// the geyser field on the barranco's floor below the 2nd: sinter aprons round three geysers, mud pots, steam
+// the vents the inside rivers come from: small spatter cones glowing at the mouth
+export const VENTS = [{ at: [-30, -322], r: 20, h: 9 }, { at: [-60, -1010], r: 26, h: 12 }];
+export const GEYSERS = [{ at: [66, 600], r: 26, erupt: 34 }, { at: [78, 652], r: 20 }, { at: [61, 704], r: 22 }];
+const sinterD = (X, Z) => { let d = Infinity; for (const g of GEYSERS) d = Math.min(d, Math.hypot(X - g.at[0], Z - g.at[1]) - g.r * (1 + 0.25 * noise2(X / 7, Z / 7, 111))); return d; };
 
 // the outer shoulder: a gentle bench round the Notch, falling to the sea. A few control heights shape it under
 // the holes (the 1st runs down a little, the 4th climbs to the Notch)
@@ -118,11 +146,9 @@ export function V(X, Z) {
         y += hh * prof * (1 + 0.08 * noise2(X / 9, Z / 9, 63));
       } }
     // the lava river's channel: levees either side, the lava sunk between them
-    const rp = riverP(X, Z), half = RIVER.w / 2;
-    if (rp.d < half + 22 && rp.s > 0.5) {
-      const levee = RIVER.levee * Math.exp(-(((rp.d - half - 3) / 6) ** 2));
-      y += levee - RIVER.sink * (1 - smooth((rp.d - half + 2) / 4));
-    }
+    y += riverCut(X, Z);
+    // sinter: the geysers' pale aprons, built up in low steps round each vent
+    for (const g of GEYSERS) { const d = Math.hypot(X - g.at[0], Z - g.at[1]); if (d < g.r * 1.3) y += 1.6 * (1 - smooth(d / (g.r * 1.2))) + 0.9 * Math.exp(-((d / 3) ** 2)); }
     return y;
   }
   // inside the rim
@@ -145,6 +171,10 @@ export function V(X, Z) {
   // the wall's talus runs out over the level below it; the floor and terraces roll a little, falling gently
   // toward the centre
   y += 1.6 * noise2(X / 60, Z / 60, 81) + 0.6 * noise2(X / 17, Z / 17, 82) - 0.004 * Math.max(0, d - Math.max(e1, e2, wf) - 40);
+  // the inside rivers' channels, their vents, and the crust fields' lobes (a raised front of fresh lava)
+  y += riverCut(X, Z);
+  for (const v of VENTS) { const dv = Math.hypot(X - v.at[0], Z - v.at[1]) / v.r; if (dv < 1) y += v.h * (1 - dv * dv) * (dv > 0.35 ? 1 : 0.5 + 0.5 * dv / 0.35); }
+  { const cd = crustD(X, Z); if (cd < 6) y += 1.6 * (1 - smooth((cd + 6) / 12)) + 0.5 * noise2(X / 6, Z / 6, 102) * (cd < 0 ? 1 : 0); }
   // the lava lake's pit: a steep rim about 11 m down to the lava over 20 m; the island rises out of it,
   // joined to the north shore by the neck
   const ld = lakeD(X, Z);
@@ -162,18 +192,19 @@ export function V(X, Z) {
 
 // lava: where it lies and its level (null if none). The lake, the river between its levees, the pool under the fall
 export const POOL = { c: [-905, -250], rx: 36, rz: 26, rot: 0.9, level: 1009 };
+// lava pools: under the lavafall, and (round 2) at the foot of the 6th's basalt columns, right of the corner
+export const POOLS = [POOL, { c: [-262, -246], rx: 22, rz: 13, rot: 0.6, level: 1027.4 }];
 // the lavafall: from a lip on the bay's crest down the wall into the pool; the plume's vent, far across the caldera
 export const FALL = { top: [-985, -140], foot: [-905, -250], w: 22 };
 export const VENT = { at: [180, -2350], r: 120, h: 60 };
 export function lavaAt(X, Z) {
   if (lakeD(X, Z) < 0 && islE(X, Z) > 1 && neckD(X, Z) > 0) return { level: LAKE.level, body: 'lake' };
-  const rp = riverP(X, Z);
-  if (rp.s > 0.5 && rp.s < 520 && rp.d < RIVER.w / 2 - 0.5) { const y = V(...riverPt(rp.s)) ; return { level: y + 0.6, body: 'river' }; }
-  if (seDist({ x: POOL.c[0], z: POOL.c[1], rx: POOL.rx, rz: POOL.rz, rot: POOL.rot }, X, Z) + 0.12 * noise2(X / 9, Z / 9, 3) < 1) return { level: POOL.level, body: 'pool' };
+  for (const R of RIVERS) { const rp = riverP(R, X, Z); if (rp.s > 0.5 && rp.s < R.len && rp.d < R.w / 2 - 0.5) return { level: V(...riverPt(R, rp.s)) + 0.6, body: 'river' }; }
+  for (const P of POOLS) if (seDist({ x: P.c[0], z: P.c[1], rx: P.rx, rz: P.rz, rot: P.rot }, X, Z) + 0.12 * noise2(X / 9, Z / 9, 3) < 1) return { level: P.level, body: 'pool' };
   return null;
 }
-function riverPt(s) { // a point on the river's centreline
-  let acc = 0; const P = RIVER.pts;
+function riverPt(R, s) { // a point on a river's centreline
+  let acc = 0; const P = R.pts;
   for (let i = 0; i < P.length - 1; i++) { const l = Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]); if (s <= acc + l) { const t = (s - acc) / l; return [P[i][0] + (P[i + 1][0] - P[i][0]) * t, P[i][1] + (P[i + 1][1] - P[i][1]) * t]; } acc += l; }
   return P.at(-1);
 }
@@ -184,11 +215,13 @@ export function nativeAt(X, Z) {
   const { th, r } = polar(X, Z), rr = rimR(th);
   if (r >= rr) {
     const conePart = crestY(th) - 0.55 * (r - rr) > (1098 - 0.03 * (r - rr)) + 2;
+    if (sinterD(X, Z) < 0) return 'sinter';
     return conePart ? 'cinder' : 'flow';
   }
   const d = rr - r, top = W1(th) > 60 ? CAL.t1 : W2(th) > 60 ? CAL.t2 : CAL.floor, wf = wallFoot(th, top);
   if (d < wf * 0.92) return 'rock';
   if (d < wf + 25 + 10 * noise1(th / 1.1, 91)) return 'rubble';
+  if (crustD(X, Z) < 0) return 'crust';
   return 'ash';
 }
 export const INSIDE = (X, Z) => { const { th, r } = polar(X, Z); return r < rimR(th); };

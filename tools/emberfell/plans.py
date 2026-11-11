@@ -12,7 +12,8 @@ YD = 0.9144
 COL = {'flow': (0.50, 0.49, 0.50), 'rough': (0.80, 0.85, 0.66), 'fairway': (0.62, 0.80, 0.50), 'fringe': (0.55, 0.78, 0.45),
        'green': (0.60, 0.86, 0.48), 'tee': (0.70, 0.84, 0.56), 'sand': (0.86, 0.86, 0.84), 'scoria': (0.78, 0.48, 0.40),
        'lava': (0.98, 0.52, 0.18), 'rock': (0.38, 0.37, 0.39), 'rubble': (0.64, 0.62, 0.62), 'cinder': (0.70, 0.46, 0.40),
-       'ash': (0.86, 0.84, 0.80), 'forest': (0.36, 0.55, 0.38), 'sulfur': (0.93, 0.86, 0.45), 'hall': (0.25, 0.24, 0.26), 'void': (0.10, 0.10, 0.12)}
+       'ash': (0.86, 0.84, 0.80), 'forest': (0.36, 0.55, 0.38), 'sulfur': (0.93, 0.86, 0.45), 'hall': (0.25, 0.24, 0.26), 'void': (0.10, 0.10, 0.12),
+       'crust': (0.27, 0.25, 0.26), 'sinter': (0.95, 0.93, 0.86)}
 INK = '#2b2b2b'
 plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 7})
 pal = np.array([COL[s] for s in SURF])
@@ -63,7 +64,7 @@ for h in D['holes']:
     ax = fig.add_axes([0.005, 0.005, 0.99, 0.99]); ax.imshow(rgb, extent=ext, interpolation='bilinear', zorder=1)
     # stipple the bunkers (grey ash: dark grains; red scoria: darker red specks) and the fresh lava (pale specks)
     rng = np.random.default_rng(n)
-    for code, col, ms in ((SURF.index('sand'), '#8a8a86', 0.8), (SURF.index('scoria'), '#8c3a2c', 0.9), (SURF.index('flow'), '#d4d0cc', 0.5)):
+    for code, col, ms in ((SURF.index('sand'), '#8a8a86', 0.8), (SURF.index('scoria'), '#8c3a2c', 0.9), (SURF.index('flow'), '#d4d0cc', 0.5), (SURF.index('crust'), '#f07a2a', 1.1), (SURF.index('sinter'), '#c8bfa8', 0.6)):
         rr, cc = np.nonzero(srf == code)
         if len(rr):
             k = rng.random(len(rr)) < 0.07
@@ -185,7 +186,7 @@ ax.set_xlim(x0, x1); ax.set_ylim(z1, z0); ax.set_aspect('equal'); ax.axis('off')
 ax.plot([x0 + 40, x0 + 240], [z1 - 40, z1 - 40], color=INK, lw=2); ax.text(x0 + 140, z1 - 55, '200 m', fontsize=7, ha='center')
 ax.annotate('N', xy=(x1 - 50, z0 + 30), xytext=(x1 - 50, z0 + 90), fontsize=8, ha='center', arrowprops=dict(arrowstyle='-|>', color=INK))
 label(ax, (-396, -640), 'the clubhouse', fs=6.5)
-for p_, t_ in (((0, -34), 'the Notch'), ((60, 112), 'the rampart'), ((-470, -520), 'the lava lake'), ((-985, -115), 'lavafall'), ((-380, 700), 'lava river'), ((330, 80), 'the cone'), ((-700, 130), 'the cone'), ((-200, -420), 'caldera floor'), ((40, 330), 'barranco')):
+for p_, t_ in (((0, -34), 'the Notch'), ((60, 112), 'the rampart'), ((-200, -360), 'the Spill'), ((-60, -900), 'northern flow'), ((120, 640), 'geysers'), ((-300, -960), 'crust fields'), ((-470, -520), 'the lava lake'), ((-985, -115), 'lavafall'), ((-380, 700), 'lava river'), ((330, 80), 'the cone'), ((-700, 130), 'the cone'), ((-200, -420), 'caldera floor'), ((40, 330), 'barranco')):
     label(ax, p_, t_, fs=6.5)
 fig.savefig(f'{OUT}/map.png', facecolor='white'); plt.close(fig)
 print('plans, profiles and map written')

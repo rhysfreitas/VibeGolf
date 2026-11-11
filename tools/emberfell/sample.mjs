@@ -5,14 +5,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE, BACK } from './holes.mjs';
 import { BUILT, SURF, toWorld, worldAt, WL, CRACKS, LOC, WOR } from './scene.mjs';
-import { V, CAL, LAKE, ISLAND, NECK, RIVER, POOL, FALL, VENT, lakeD } from './world.mjs';
+import { V, CAL, LAKE, ISLAND, NECK, RIVER, RIVERS, POOL, FALL, VENT, lakeD, GEYSERS, VENTS } from './world.mjs';
 import { project, at, lengthOf, YD, headingAt } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out/grid');
 fs.mkdirSync(OUT, { recursive: true });
 const DRIVES = { tour: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, mid: { Speed: 150, VLA: 12, TotalSpin: 3000 }, high: { Speed: 160, VLA: 14.5, TotalSpin: 3200 } };
-const PHYS = { scoria: 'waste', fringe: 'fairway', tee: 'fairway', lava: 'water', flow: 'desert', cinder: 'waste', ash: 'desert', forest: 'rough', sulfur: 'desert', rock: 'desert', rubble: 'waste', hall: 'rough', void: 'rough' };
+const PHYS = { scoria: 'waste', fringe: 'fairway', tee: 'fairway', lava: 'water', flow: 'desert', crust: 'desert', sinter: 'desert', cinder: 'waste', ash: 'desert', forest: 'rough', sulfur: 'desert', rock: 'desert', rubble: 'waste', hall: 'rough', void: 'rough' };
 
 // a drive from p along direction dir (radians from -z, + right) over the hole's ground: the flight, and where
 // it first meets anything solid above the ground
@@ -66,7 +66,7 @@ for (const [i, B] of BUILT.entries()) {
   if (h.fumaroles) L_(at(h.line, 190, -96), 'fumaroles');
   if (h.vent) { const [x, z] = LOC[i](...h.vent.at); L_([x, z - 22], h.vent.label); }
   // the lava (the lake, the river, the pool) labelled where it is in this hole's frame
-  for (const [wp, t] of [[[-560, -572], 'the lava lake'], [[-380, 690], 'the lava river'], [[-905, -250], 'pool of lava'], [[ISLAND.c[0], ISLAND.c[1] + 34], 'the island'], [[(NECK.pts[0][0] + NECK.pts[1][0]) / 2 - 30, (NECK.pts[0][1] + NECK.pts[1][1]) / 2], 'the rock bridge']]) {
+  for (const [wp, t] of [[[-560, -572], 'the lava lake'], [[-380, 690], 'the lava river'], [[-905, -250], 'pool of lava'], [[-200, -360], 'the Spill (lava)'], [[-262, -228], 'lava pool'], [[66, 600], 'geyser field'], [[-150, -760], 'the northern flow'], [[ISLAND.c[0], ISLAND.c[1] + 34], 'the island'], [[(NECK.pts[0][0] + NECK.pts[1][0]) / 2 - 30, (NECK.pts[0][1] + NECK.pts[1][1]) / 2], 'the rock bridge']]) {
     const p = LOC[i](...wp); if (Math.abs(project(h.line, ...p).off) < 160 && project(h.line, ...p).s > -40 && project(h.line, ...p).s < h.len + 60) L_(p, t);
   }
   { const p = LOC[i](...FALL.foot); if (Math.hypot(...p.map((v, j) => v - h.pin[j])) < 300 || i === 6) L_([p[0], p[1]], 'foot of the lavafall'); }

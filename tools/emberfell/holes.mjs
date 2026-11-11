@@ -72,7 +72,7 @@ export const HOLES = [
       vent: { at: [-175, 540], label: 'spatter vent' },
       targets: [{ name: 'The bend', at: P(232, -2) }],
       words: {
-        plays: 'The opener runs along a kipuka: an island of old ground and forest that fresh lava flowed round and left standing. The fairway lies on the kipuka, its forest down the left and in the corner, and beyond the trees the front of a fresh flow, a ragged wall of black lava. Down the right, about 70 m off the line, a live lava river runs in a channel between its own banks, from a spatter vent behind the 2nd tee down toward the sea. The cone fills the sky ahead-left; the sea lies far below on the right. Gentle and wide: it shows what lava does to a ball before anything asks much of you.',
+        plays: 'The opener runs along a kipuka: an island of old ground and forest that fresh lava flowed round and left standing. The fairway lies on the kipuka, its forest down the left and in the corner, and beyond the trees the front of a fresh flow, a ragged wall of black lava. Down the right a live lava river, 22 m wide, runs in a channel between its own banks, from a spatter vent right of the green down toward the sea: 45–75 m off the line, closest at the bend. The cone fills the sky ahead-left; the sea lies far below on the right. Gentle and wide: it shows what lava does to a ball before anything asks much of you.',
         safe: 'Drive at the bend (232 m), short of the forest in the corner, and play a short iron in.',
         bold: 'Cut the corner over the forest\'s edge: a wedge in, but the trees catch anything short.',
         miss: 'Right is fresh black lava (a bad lie) and past it the river: a stroke and a drop. A big red-cinder bunker sits on the right where drives land, to catch a push before it gets there. Left is the forest, which knocks a ball down.',
@@ -93,7 +93,7 @@ export const HOLES = [
       boulders: [...blocks(P(205, 70), 18, 7, 21), ...blocks(P(215, -80), 16, 6, 22)],
       targets: [{ name: 'The gully floor', at: P(212, 2) }],
       words: {
-        plays: 'Straight, and the interest is all in the vertical. A barranco, a deep gully that water and old floods carved down the flank, cuts across the hole: the drive drops 15 m into it, and the green sits up on the far side, 20 m above the gully floor. The fairway eases down the near wall, runs across the dry floor and pinches as it climbs the far side. Up the gully and down it, the walls stand steep and rocky. The approach plays about a club longer uphill.',
+        plays: 'Straight, and the interest is all in the vertical. A barranco, a deep gully that water and old floods carved down the flank, cuts across the hole: the drive drops 15 m into it, and the green sits up on the far side, 20 m above the gully floor. The fairway eases down the near wall, runs across the dry floor and pinches as it climbs the far side. Up the gully and down it, the walls stand steep and rocky. Down the gully on the right, 115 m off the line, a small geyser field steams on a white sinter terrace; the biggest one erupts every few minutes. The approach plays about a club longer uphill.',
         safe: 'Drive down onto the gully floor (212 m) and play a club more up the hill.',
         bold: 'A long drive carries the floor and stops on the climb: a shorter second, but from a slope.',
         miss: 'Left on the gully floor a long red-cinder bunker runs along the fairway. Off the fairway the gully floor is water-worn boulders and its walls are rock. Short of the green the climb throws a weak approach back down.',
@@ -165,7 +165,7 @@ export const HOLES = [
       targets: [],
       sketch: { tee: { fov: 72, up: 30 } },
       words: {
-        plays: 'The reveal. You climb round the spatter rampart to the rim and the caldera opens beneath you: the lava lake glowing at its heart, the walls rising hundreds of metres all round, the plume and its lightning above. The tee stands on the lip of the Notch, the one low saddle in the rim, and the green is 60 m below and 240 yd away on the first terrace inside, at the foot of the wall. A long hang time; the 240 yd plays about 190. Short grass all round the green and a pod of it short and right give a safe place to miss.',
+        plays: 'The reveal. You climb round the spatter rampart to the rim and the caldera opens beneath you: the lava lake glowing at its heart, rivers of lava and fields of glowing crust across the floor, the walls rising hundreds of metres all round, the plume and its lightning above. The tee stands on the lip of the Notch, the one low saddle in the rim, and the green is 60 m below and 240 yd away on the first terrace inside, at the foot of the wall. A long hang time; the 240 yd plays about 190. Short grass all round the green and a pod of it short and right give a safe place to miss.',
         safe: 'Club for about 190, at the middle of the green; short right is short grass.',
         bold: 'There is no bold line, only the drop.',
         miss: 'Short, the ball hits the wall\'s talus of fallen rock and stays there. Long is rough on the terrace, and past it the terrace\'s edge.',
@@ -187,7 +187,7 @@ export const HOLES = [
       targets: [{ name: 'The upper terrace', at: P(150, -4) }, { name: 'Down on the lower terrace', at: P(236, 0), bold: true }],
       boldLine: [[0, 0], [0, 0]],
       words: {
-        plays: 'When the caldera collapsed, its walls slumped in rings of terraces. This drivable par 4 runs along the first one, the wall rising 170 m on the left, then bends right and steps down its edge, a 12 m crag of basalt columns, to the second terrace and the green. The fairway eases down a gully in the edge. Where the drive stops sets the lie: on the upper terrace it is flat; on the way down, a downslope.',
+        plays: 'When the caldera collapsed, its walls slumped in rings of terraces. This drivable par 4 runs along the first one, the wall rising 170 m on the left, then bends right and steps down its edge, a 12 m crag of basalt columns, to the second terrace and the green. A pool of lava lies at the foot of the crag, just right of the straight line to the green: a drive at the green that leaks right finds it. The fairway eases down a gully in the edge. Where the drive stops sets the lie: on the upper terrace it is flat; on the way down, a downslope.',
         safe: 'Lay up on the upper terrace (150 m) with an iron and play a short iron down to the green.',
         bold: 'Drive straight at the green over the corner: carry the columns and it can finish on the lower terrace by the green.',
         miss: 'A drive that comes up short of the bold carry hits the columns and drops to their foot in broken rock. Left is the wall\'s talus. A red-cinder bunker sits on the lip at the corner.',
@@ -209,7 +209,7 @@ export const HOLES = [
       boulders: [...blocks(P(320, 70), 20, 7, 71), ...blocks(P(150, -60), 14, 4, 72)],
       targets: [{ name: 'The ledge', at: P(218, -2) }, { name: 'The bay', at: P(382, 0) }],
       words: {
-        plays: 'Lava from a vent outside the rim spills over the wall at the back of a bay and pours 420 m down it in a glowing fall, steam rising where it meets a pool of lava at the foot. The hole runs along the ledge of the second terrace toward it, leaning a little away from the terrace\'s edge on the right, then bends left and drops 18 m down the ledge\'s end into the bay, onto the crater floor. The fall is the hole\'s landmark from the tee, straight ahead; the green sits in the bay 120 m from the pool.',
+        plays: 'Lava from a vent outside the rim spills over the wall at the back of a bay and pours 420 m down it in a glowing fall, steam rising where it meets a pool of lava at the foot. The hole runs along the ledge of the second terrace toward it, leaning a little away from the terrace\'s edge on the right, then bends left and drops 18 m down the ledge\'s end into the bay, onto the crater floor. Off to the right, below the terraces, the Spill, a lava river from a vent below the terraces, runs across the floor to the lake. The fall is the hole\'s landmark from the tee, straight ahead; the green sits in the bay 120 m from the pool.',
         safe: 'Drive along the ledge (218 m), play down into the bay (382 m) and pitch on.',
         bold: 'A long second from the ledge can reach the green: the fairway runs down off the end of the ledge, and the bay floor is wide.',
         miss: 'Right of the ledge is the terrace\'s edge, an 18 m drop to the floor: a ball that goes over it is down on the ash, a long way below. Left of the bay a long red-cinder bunker runs along the fairway, and past it the wall\'s talus.',
@@ -255,7 +255,7 @@ export const HOLES = [
       targets: [{ name: 'The shore', at: P(236, -4) }, { name: 'On the bridge', at: P(310, 0) }],
       boldLine: [[0, 0], [0, 0]],
       words: {
-        plays: 'The finish. The fairway runs along the north shore of the lava lake, the lake on the right, then turns right onto a natural rock bridge: a span of old lava 28 m wide with the lake flowing under it, out to an island in the middle of the lake. The bridge climbs onto the island and the green sits raised on its top, 17 m above the shore, with lava glowing on every side and the walls towering all round. Behind the green, on the island\'s high point, stands the clubhouse, built of black basalt.',
+        plays: 'The finish. The fairway runs along the north shore of the lava lake, the lake on the right, then turns right onto a natural rock bridge: a span of old lava 28 m wide with the lake flowing under it, out to an island in the middle of the lake. The bridge climbs onto the island and the green sits raised on its top, 17 m above the shore, with lava glowing on every side (on both sides of the bridge and all round the island) and the walls towering all round. Behind the green, on the island\'s high point, stands the clubhouse, built of black basalt.',
         safe: 'Drive along the shore (236 m), play onto the bridge (310 m), and pitch up to the green.',
         bold: 'From the shore, fly the lava straight at the green: about 150 m, all carry.',
         miss: 'Right of the shore and either side of the bridge is the lake: a stroke and a drop. A red-cinder bunker on the right of the landing area catches a push before it reaches the lava. Short of the green, the false front sends the ball back down the bridge.',

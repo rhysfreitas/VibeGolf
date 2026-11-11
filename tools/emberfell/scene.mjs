@@ -9,7 +9,7 @@ import { makeGreen, makeFairway, makeCrack, makeShaft, noise1, noise2 } from './
 import { HOLES } from './holes.mjs';
 import { V, lavaAt, nativeAt, BARRANCO, CAL, FALL, polar, rimR, INSIDE } from './world.mjs';
 
-export const SURF = ['flow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'scoria', 'lava', 'rock', 'rubble', 'cinder', 'ash', 'forest', 'sulfur', 'hall', 'void'];
+export const SURF = ['flow', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sand', 'scoria', 'lava', 'rock', 'rubble', 'cinder', 'ash', 'forest', 'sulfur', 'hall', 'void', 'crust', 'sinter'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
 const span = (s, a, b, r = 30) => smooth((s - a) / r) * (1 - smooth((s - b) / r));
 
@@ -40,7 +40,7 @@ const FORMS = [], ALL = [];
 for (const [k, h] of HOLES.entries()) {
   for (const f of h.forms || []) FORMS.push({ k, kind: 'mound', ...f, x: f.at[0], z: f.at[1], rot: f.rot || 0, reach: Math.max(f.rx, f.rz) + 10 });
   if (h.cone) { const C = h.cone, [tx, tz] = C.breach.toward, a = Math.atan2(tz - C.at[1], tx - C.at[0]); FORMS.push({ k, kind: 'cone', ...C, x: C.at[0], z: C.at[1], ba: a, reach: C.base + 5 }); }
-  if (h.vent) { const [x, z] = LOC[k](...h.vent.at); FORMS.push({ k, kind: 'vent', x, z, r: 16, h: 7, reach: 20, label: h.vent.label }); }
+  if (h.vent) { const [x, z] = LOC[k](...h.vent.at); FORMS.push({ k, kind: 'vent', x, z, r: 22, h: 10, reach: 26, label: h.vent.label }); }
   for (const c of h.cracks || []) ALL.push({ obj: makeCrack(c), owner: k });
   for (const s of h.skylights || []) ALL.push({ obj: makeShaft(s.at, s.r, 9 + k), owner: k, c0: s.at, r0: s.r });
 }
