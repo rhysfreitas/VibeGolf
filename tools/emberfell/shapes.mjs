@@ -51,7 +51,9 @@ export function makeFairway(line, pieces) {
   const len = lengthOf(line);
   return (x, z) => {
     const pr = project(line, x, z);
-    let s = pr.s, off = pr.off;
+    // round the outside of a bend: there the nearest point is the corner itself, and the plain cross-track
+    // offset would stretch the fairway out past the corner in a spike along the first leg
+    let s = pr.s, off = Math.sign(pr.off || 1) * pr.d;
     // past the ends of the line, carry on straight
     if (s >= len - 0.01 || s <= 0.01) {
       const a = s <= 0.01 ? line[0] : line.at(-2), b = s <= 0.01 ? line[1] : line.at(-1), dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz);

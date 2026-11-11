@@ -271,7 +271,7 @@ export const HOLES = [
         { e: [[184, 0, 28], [215, 0, 31], [245, 0, 30], [268, -2, 24]], wob: 3, seed: 53 },
         { e: [[252, 23, 21], [256, 23, 21], [272, 15, 15], [295, 12, 12], [325, 12, 12], [352, 13, 13], [370, 11, 11]], wob: 4.5, seed: 57 }],
       corridor: 16,
-      cant: [[140, 240, -3]],
+      cant: [[140, 250, -3.5]],
       bunkers: [{ strip: [[112, -24, 35], [150, -28, 41], [200, -29, 42], [240, -29, 42], [272, -17, 30]], wob: 3, job: 'catch' },   // the black-sand beach along the shore, 160 m between the fairway and the lava
          { at: P(376, -15), rx: 6, rz: 4.5, pot: true }, { at: P(412, 13), rx: 6, rz: 4.5, pot: true }],
       green: { lobes: [[-6, 7, 7, 9, 18], [6, 7, 7, 9, -18], [0, -6, 6, 10, 0]], join: 4, raise: 1.4, falseFront: true, contour: [{ fall: 0, pct: 1.5 }, { tier: [0, 3.25], up: 180, h: 0.4, w: 3.5 }], style: 'Two lobes across the back and a point at the front (a heart, for the Heart); raised 1.4 m with a false front; the two back lobes sit on a tier 0.4 m above the point, and the whole falls 1.5% toward the front' },

@@ -139,6 +139,7 @@ export function buildHole(h) {
   const L0 = h.line, sd = [L0[1][0] - L0[0][0], L0[1][1] - L0[0][1]], sl0 = Math.hypot(...sd), ed = [L0.at(-1)[0] - L0.at(-2)[0], L0.at(-1)[1] - L0.at(-2)[1]], el0 = Math.hypot(...ed);
   const along = (x, z) => {
     const pr = project(h.line, x, z);
+    if (pr.s > 0.5 && pr.s < h.len - 0.5) pr.off = Math.sign(pr.off || 1) * pr.d;   // round the outside of a bend (no spike past the corner)
     if (pr.s >= h.len - 0.5) pr.s = h.len + ((x - L0.at(-1)[0]) * ed[0] + (z - L0.at(-1)[1]) * ed[1]) / el0;
     else if (pr.s <= 0.5) pr.s = ((x - L0[0][0]) * sd[0] + (z - L0[0][1]) * sd[1]) / sl0;
     return pr;
