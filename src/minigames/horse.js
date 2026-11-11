@@ -3,7 +3,6 @@
 // in 'manual' mode (this file decides who plays next and when the game ends).
 
 import { simulate } from '../physics.js';
-import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { amateurMiss } from './aim.js';
 import { createCulDeSac } from './scenes/cul-de-sac.js';
@@ -172,7 +171,7 @@ function toolSolve(s) {
 kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt: world.groundAt, surfaceAt: world.surfaceAt }), ideal: s => (G.sol ? toolSolve(s).ball : null) });
 kit.on('hit', s => { if (G.sol) launch(s.ball, 'Sim'); });
 kit.on('ideal', s => { if (G.sol) launch(s.ball, 'Ideal'); });
-launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim' && !kit.player.cpu) launch(e.detail, 'R10'); });
+kit.live(shot => launch(shot, 'R10'), () => !kit.player.cpu);
 
 function launch(ball, src) {
   kit.phase = 'flight'; renderBoard();

@@ -2,7 +2,6 @@
 // Rules: zombie-logic.js. HUD, turns, scoring feedback: the shared kit (survival-run mode).
 
 import { simulate } from '../physics.js';
-import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createDeadFarm } from './scenes/dead-farm.js';
 import { createHorde } from './zombie-horde.js';
@@ -231,7 +230,7 @@ kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt: worl
 kit.on('hit', s => launch(s.ball, 'Sim'));
 kit.on('ideal', s => launch(s.ball, 'Ideal'));
 kit.on('club', () => {});
-launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
+kit.live(shot => launch(shot, 'R10'));
 
 function launch(ball, src) {
   kit.phase = 'flight'; reticle.visible = reticleDot.visible = beacon.visible = chevron.visible = false;

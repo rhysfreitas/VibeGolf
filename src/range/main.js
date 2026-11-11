@@ -12,6 +12,7 @@ import { FAULTS, applyFault } from '../coach/faults.js';
 import { createCoachUI } from './coach-ui.js';
 import { recordDrive } from '../drives.js';
 import { recorder } from '../recorder.js';
+import { keepAwake } from '../wake.js';
 import { createFeelRow } from './feel-row.js';
 
 THREE.ColorManagement.legacyMode = false; // hex colours below are sRGB
@@ -313,6 +314,7 @@ function receiveShot(shot) {
 // every live shot goes in the session record (My game), before the range takes it
 recorder.attach(launchMonitor, { page: 'range', mode: () => (coachUI.active ? 'coach' : 'range'), club: () => CLUBS[state.club].id });
 launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
+keepAwake();
 mountLaunchMonitorUI({ dot: $('lmDot'), text: $('lmText'), button: $('lmBtn') });
 window.PracticeGround = window.WoodsonRange = { receiveShot: msg => { const shot = parseShot(msg); if (shot) receiveShot(shot); } };
 

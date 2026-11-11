@@ -228,7 +228,8 @@ table.sc td.nm { color: var(--mist); font-size: 13px; text-align: left; padding-
 .suHead p { margin: 0; font-size: 13px; line-height: 1.45; color: #d8e1e3; }
 #suTeeRow { grid-column: 1; }
 .suConds { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 10px; }
-.setupBox .cardBtns { grid-column: 1 / -1; }
+.setupBox .cardBtns { grid-column: 1 / -1; flex-wrap: wrap; }
+#suResume { margin-right: auto; border-color: rgba(245,197,66,0.6); color: var(--flag, #f5c542); }
 .suRow { display: flex; flex-direction: column; gap: 5px; }
 .suTees { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
 .suTee { appearance: none; border: 1px solid var(--line); background: rgba(255,255,255,0.04); border-radius: 9px; padding: 6px 9px; cursor: pointer; color: var(--bone); display: grid; grid-template-columns: auto 1fr; grid-template-areas: "dot name" "dot yd" "dot sug"; column-gap: 8px; text-align: left; align-items: center; }

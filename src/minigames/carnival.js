@@ -3,7 +3,6 @@
 // Rules: carnival-logic.js. Scene: scenes/tin-gallery.js. HUD, turns, scoring feedback: the shared kit.
 
 import { simulate } from '../physics.js';
-import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createShotView } from '../world/shot-view.js';
 import { CLUBS } from './shape-it-logic.js';
@@ -96,7 +95,7 @@ kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt }), i
 kit.on('hit', s => launch(s.ball, 'Sim'));
 kit.on('ideal', s => launch(s.ball, 'Ideal'));
 kit.on('club', i => { sv.address(CLUBS[i].tee); });
-launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
+kit.live(shot => launch(shot, 'R10'));
 
 function launch(ball, src) {
   kit.phase = 'flight'; world.setAim(null); world.setLead(null);

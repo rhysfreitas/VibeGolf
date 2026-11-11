@@ -4,7 +4,6 @@
 // gates and the map is the bay's flight-plan screen, a monitor hanging top right.
 
 import { simulate } from '../physics.js';
-import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { makeToolShot, TRAJ_MUL } from './aim.js';
 import { createLaunchBay, createFlightPlanMonitor, BAY } from './scenes/launch-bay.js';
@@ -334,7 +333,7 @@ function toolBallFor(s, ideal) {
 // Hit is a simulated golfer *attempting* the shape: a decent amateur's spread, so on Beginner
 // most swings find a ring or two and perfects are earned (the kit adds the miss)
 kit.aimLine({ world, view: sv, sim: flySim, ideal: s => (cur.shape ? toolBallFor(s, true) : null), blockDrag: e => !!fp.hit(e) });
-launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, true); });
+kit.live(shot => launch(shot, true));
 
 function launch(ball, live, ideal = false) {
   kit.phase = 'flight'; cur.ideal = ideal;

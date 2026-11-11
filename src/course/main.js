@@ -8,6 +8,10 @@ import { cloudDrop } from './relief.js';
 import { TIMES, WINDS, WEATHER, TEMPS, WIND_FROM, rollWind, holeWind, windVector, windInShot, skyAngles, suggestTee, teeYards } from './conditions.js';
 import { recentDrives, recordDrive } from '../drives.js';
 import { recorder } from '../recorder.js';
+import { createLiveQueue } from '../live-queue.js';
+import { keepAwake } from '../wake.js';
+import { attachAdaptiveRes } from '../adaptive-res.js';
+import { packRound, readRound, describeRound } from './round-save.js';
 import { createMinimap } from './minimap.js';
 import { createSimTool } from '../sim-tool.js';
 import { cumulusBanks, skyPines, clumpGeo, clumpMat } from '../world/sky-art.js';
@@ -1306,7 +1310,15 @@ function realSwing(base) {
 // Live launch-monitor entry point (GSPro Open Connect v1 BallData). A local bridge can call this per shot.
 // Real shots from the R10 arrive through the bridge (see src/launch-monitor.js).
 // On the green the app putts for you, since the R10 doesn't read putts well.
-function receiveShot(shot) { initAudio(); if (state.phase === 'address') launch(shot); }
+// A real swing that arrives a moment early (the last ball still flying or settling) is held and played as
+// soon as the next lie is ready; on the hole's flyover it ends the flyover and plays.
+const liveQ = createLiveQueue({
+  ready: () => state.phase === 'address', canHold: () => state.phase === 'flight' || state.phase === 'rest', play: shot => launch(shot),
+  onHold: () => toast('Swing received', 'It plays when the ball is ready.', 2200),
+  onDrop: (s, why) => { if (why === 'too-early') toast('Swing not counted', 'It came before the ball was ready.', 2400); else if (state.phase === 'putt' || state.phase === 'rolling') toast('On the green', 'Tap Putt to putt.', 2000); },
+});
+function receiveShot(shot) { initAudio(); if (state.phase === 'intro') endIntro(); liveQ.push(shot); }
+keepAwake();
 // every live shot goes in the session record (My game's On the course tab)
 recorder.attach(launchMonitor, { page: 'course', mode: 'course', club: () => CLUBS[state.club].id });
 launchMonitor.addEventListener('shot', e => receiveShot(e.detail));
@@ -1421,11 +1433,12 @@ function flightClear(a, b) {
   return true;
 }
 function nextLie() {
-  carryCache.clear();
+  carryCache.clear(); saveRound();
   if (SHAPED && skyCtx?.drifts?.length) SP.moveDrifts(skyCtx);
   if (CAVE && T.cart) T.cart.next(); // the ore cart rolls on between shots
   if (state.lie === 'green' || (state.lie === 'fringe' && state.ball.distanceTo(HOLE.pinPos) < 22)) { startPutting(); return; }
   state.phase = 'address'; state.aimCustom = null;
+  if (liveQ.pending) setTimeout(() => liveQ.flush(), 400);
   const av = availableTargets();
   // default: the first target the player can actually reach, else the pin
   const reach = carryFor(state.lie === 'tee' ? 0 : 1, 0, 0);
@@ -1464,7 +1477,7 @@ function puttRead(from, to) {
   return { k, words, hard: (1 - k) };
 }
 function startPutting() {
-  state.phase = 'putt'; placeBall();
+  state.phase = 'putt'; placeBall(); saveRound();
   const ft = state.ball.distanceTo(HOLE.pinPos) / 0.3048;
   if ($('gimme').checked && ft <= 3) { state.strokes++; toast('Gimme', 'Picked up and counted.'); holeOut(); return; }
   $('puttDist').innerHTML = (ft < 10 ? ft.toFixed(1) : Math.round(ft)) + '<small>ft</small>';
@@ -1498,6 +1511,7 @@ function putt() {
 function holeOut() {
   state.phase = 'holed'; ball.visible = false;
   state.scores[state.holeIdx] = state.strokes;
+  if (state.holeIdx === HOLES.length - 1) clearRound(); else saveRound(true);
   const diff = state.strokes - HOLE.par;
   const word = state.strokes === 1 ? 'Hole in one' : ({ '-3': 'Albatross', '-2': 'Eagle', '-1': 'Birdie', '0': 'Par', '1': 'Bogey', '2': 'Double bogey' }[diff] || `+${diff}`);
   toast(word, `${state.strokes} strokes on ${HOLE.name}`, 2800);
@@ -1796,7 +1810,9 @@ function updateMirror(dt) {
   renderer.setRenderTarget(mirrorRT); renderer.render(scene, M.cam); renderer.setRenderTarget(null);
   renderer.clippingPlanes = clip; M.mesh.visible = true;
 }
-function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; fitToScreen(); step(dt); updateMirror(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
+// frames running long (a night course on a phone): draw fewer pixels rather than drop frames (adaptive-res.js)
+const adaptRes = window.__lowq ? null : attachAdaptiveRes(renderer, scene, () => resize());
+function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); if (adaptRes && !document.hidden) adaptRes.tick(now - last); last = now; fitToScreen(); step(dt); updateMirror(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 // test hooks: step the sim; pass everyFrame=N to render every Nth step like real play
 window.__advance = (sec, everyFrame) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (everyFrame && i % everyFrame === 0) { updateMirror(1 / 30); renderer.render(scene, camera); } } updateMirror(1 / 30); renderer.render(scene, camera); };
 window.__state = state; window.__startHole = i => startHole(i); window.__scene = scene;
@@ -1828,6 +1844,25 @@ function updateWindHud() {
 
 /* ===================== round setup: tees and conditions ===================== */
 const TEE_KEY = `vibegolf.course.${CID}.tee`;
+// The round in progress is saved after every stroke (round-save.js) and offered back on the setup screen.
+const ROUND_KEY = `vibegolf.course.${CID}.round`;
+function saveRound(holed = false) {
+  if (!HOLE || state.phase === 'setup') return;
+  try { localStorage.setItem(ROUND_KEY, JSON.stringify(packRound({ courseId: CID, cond, windRoll, pinPick: state.pinPick, scores: state.scores, holeIdx: state.holeIdx, strokes: state.strokes, ball: [state.ball.x, state.ball.y, state.ball.z], lie: state.lie, holed }))); } catch (e) { /* storage off */ }
+}
+function clearRound() { try { localStorage.removeItem(ROUND_KEY); } catch (e) { /* storage off */ } }
+function savedRound() { try { return readRound(localStorage.getItem(ROUND_KEY), { id: CID, holes: HOLES.length, teeIds: TEE_SETS.map(t => t.id) }); } catch (e) { return null; } }
+function resumeRound(r) {
+  Object.assign(cond, r.cond); cond.teeChosen = true;
+  try { localStorage.setItem(TEE_KEY, cond.tee); } catch (e) { /* storage off */ }
+  $('setup').hidden = true; windRoll = r.windRoll; state.scores = r.scores.slice(); state.pinPick = r.pinPick.slice();
+  startHole(r.holed ? r.holeIdx + 1 : r.holeIdx); initAudio();
+  if (r.holed) return;                       // holed out before leaving: the next hole from its tee
+  const g = groundAt(r.ball[0], r.ball[2]);
+  state.strokes = r.strokes;
+  if (g !== null) { state.ball.set(r.ball[0], g, r.ball[2]); state.lie = r.lie; }   // else the ground has changed: back on the tee, strokes kept
+  placeBall(); endIntro();
+}
 function openSetup() {
   state.phase = 'setup'; state.flyT = 0;
   const sugg = suggestTee(TEE_SETS, recentDrives());
@@ -1856,6 +1891,8 @@ function openSetup() {
   from.onchange = () => { cond.windFrom = from.value === 'random' ? 'random' : +from.value; };
   applySky(HOLES[0].heading ?? 0);
   setPhaseUI();
+  const sv = savedRound(), rb = $('suResume');
+  rb.hidden = !sv; if (sv) { rb.textContent = 'Resume · ' + describeRound(sv, HOLES.map(h => h.par)); rb.onclick = () => resumeRound(sv); }
   $('setup').hidden = false;
 }
 $('suSig').onclick = () => { Object.assign(cond, COURSE.signature); openSetup(); };

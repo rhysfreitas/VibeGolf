@@ -18,7 +18,9 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };
 
 // Software WebGL (SwiftShader). Set CHROME=/path/to/chrome if the bundled Chromium has no WebGL.
-export async function openCourse(course, { width = 844, height = 390, clean = false } = {}) {
+// keep: don't clear storage on each load (for checks that reload the page); start: false stays on the setup screen;
+// init: an extra init script (a function) run before the page's own.
+export async function openCourse(course, { width = 844, height = 390, clean = false, keep = false, start = true, init = null } = {}) {
   const b = await chromium.launch({ ...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}),
     args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const pg = await b.newPage({ viewport: { width, height } }); pg.setDefaultTimeout(900000);
@@ -30,9 +32,10 @@ export async function openCourse(course, { width = 844, height = 390, clean = fa
     try { return r.fulfill({ body: fs.readFileSync(f), contentType: MIME[path.extname(f)] || 'application/octet-stream' }); }
     catch (e) { return r.fulfill({ status: 404, body: '' }); }
   });
-  await pg.addInitScript(() => { window.__lowq = true; window.__noVar = true; try { localStorage.clear(); } catch (e) { /* storage off */ } });
+  await pg.addInitScript(k => { window.__lowq = true; window.__noVar = true; if (!k) try { localStorage.clear(); } catch (e) { /* storage off */ } }, keep);
+  if (init) await pg.addInitScript(init);
   await pg.goto(`http://vibegolf.local/course.html?c=${course}`); await pg.waitForTimeout(2500);
-  await pg.evaluate(() => document.querySelector('#suGo').click()); await pg.waitForTimeout(800);
+  if (start) { await pg.evaluate(() => document.querySelector('#suGo').click()); await pg.waitForTimeout(800); }
   if (clean) await pg.addStyleTag({ content: '#top,#holeCard,#dock,#minimapWrap,.tag,#toast,#card,#intro,#skip,#rotate,#hitbar,#readout,.st,.sim-tool,#aimPill{visibility:hidden!important}' });
   return { browser: b, page: pg, errs };
 }

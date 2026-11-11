@@ -20,7 +20,7 @@ A golf simulator, vibe-coded with Claude, for the **Garmin Approach R10**, built
 - **Locally:** `npm start`, then open http://localhost:8080. Any static server works; the pages use ES modules, so opening them from `file://` does not.
 - **Install as an app:** tap **Install app** on the title screen. Chrome and Edge (desktop and Android) show their install prompt. On iPhone/iPad it is Safari's **Share → Add to Home Screen**, and on a Mac with Safari it is **File → Add to Dock**. Firefox on desktop can't install web apps. Once installed, VibeGolf runs full screen and works offline.
 
-Every course starts on a **round setup** screen: four sets of tees (suggested from the median of your recent drives) and the conditions: time of day (morning, midday, golden hour, night), wind (calm to strong, any or a set direction), weather (clear, high haze, overcast) and temperature. Each course opens on its own signature conditions. Hole cards show a "plays like" yardage that includes the climb or drop to the green and the course's altitude.
+Every course starts on a **round setup** screen: four sets of tees (suggested from the median of your recent drives) and the conditions: time of day (morning, midday, golden hour, night), wind (calm to strong, any or a set direction), weather (clear, high haze, overcast) and temperature. Each course opens on its own signature conditions. Hole cards show a "plays like" yardage that includes the climb or drop to the green and the course's altitude. A round is saved on your device after every stroke: if the page reloads or the phone locks, the setup screen offers **Resume** (for 18 hours).
 
 Without an R10 connected, every swing is simulated from tour-average launch data with realistic dispersion. Shot data can be adjusted in the range's **Adjust** panel.
 
@@ -45,6 +45,8 @@ VibeGolf talks to the R10 itself, straight from the browser.
 1. Switch the R10 on and **close the Garmin Golf app** on every phone nearby: the R10 talks to one device at a time.
 2. In the game, tap the **R10** status, pick **Bluetooth**, and tap **Connect R10**. Choose *Approach R10* in the browser's list.
 3. The dot turns green when the radar is armed. Live shots are tagged **R10** in the readout.
+
+While you play, the game keeps the screen awake (where the browser allows it), so the phone beside the R10 doesn't dim and drop the link. A swing a moment early, before the last ball has stopped, is held and played when the game is ready; one far too early is refused with a message rather than played from a lie you hadn't seen.
 
 If it won't connect, pair the R10 once in the phone's or PC's Bluetooth settings and try again. **R10 to ball** (in feet) is optional: set it and the game sends it to the R10 as its tee distance; leave it blank to keep the R10's own setting. Where the browser remembers the R10 (Chrome), each page reconnects by itself; otherwise the status reads **R10 · tap** and one tap on **Connect R10** links it again.
 
@@ -109,6 +111,11 @@ src/recorder.js       the session record: every live shot, kept on this device, 
 src/mygame/           My game's numbers and tendencies (pure), its page, example data
 src/course/main.js    course renderer, round setup, course-management UI, cameras, scoring
 src/course/terrain.js ground, surfaces and rock for a hole (pure; shared with the physics and tests)
+src/course/round-save.js the round in progress, saved after each stroke (pure)
+src/course/field-code.js how sampled ground is packed in the generated course files (pure)
+src/live-queue.js     holds a real swing that arrives a moment early (pure)
+src/wake.js           keeps the screen on during play
+src/adaptive-res.js   lowers the resolution when frames run long (the course)
 src/course/conditions.js time of day, wind, weather, temperature, tee suggestion (pure)
 src/course/aerie.js   The Aerie's holes; red-mesa.js Red Mesa's (the course builder's format)
 src/course/sky-props.js  The Aerie's floating islands, rock, falls, balloon and distant landmarks
@@ -131,7 +138,7 @@ tests/                physics calibration, coaching rules, mini games, bridge an
 
 **Coaching.** Each shot becomes impact numbers (face, path, attack, spin loft, smash, start line). Target windows per club start at the TrackMan tour averages and scale to your club speed through the flight model, so the LPGA averages fall out at their speeds. Four shots with one club that agree raise a condition; when several do, the root cause wins (setup, then path, face, low point, strike). The full design is in [docs/COACHING.md](docs/COACHING.md).
 
-**Ground.** Bounces use an impulse model with Penner's speed-dependent restitution. Friction depends on spin, and each surface (fairway, green, rough, sand) has its own turf loss. Rolls feel slope and rolling resistance. On the course, the ground function returns `null` over open air, so balls can fall into the clouds, hit cliff faces or roll off edges. Red Mesa adds a canyon floor under the mesas, and arches and hoodoos the ball bounces off.
+**Ground.** Bounces use an impulse model with Penner's speed-dependent restitution. Friction depends on spin, and each surface (fairway, green, rough, sand) has its own turf loss. Bounces come off the ground's own slope, so a sidehill kicks the ball down it and an upslope shortens the run; rolls feel slope and rolling resistance. On the course, the ground function returns `null` over open air, so balls can fall into the clouds, hit cliff faces or roll off edges. Red Mesa adds a canyon floor under the mesas, and arches and hoodoos the ball bounces off.
 
 ## Developing
 

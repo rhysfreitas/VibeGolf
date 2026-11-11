@@ -15,6 +15,8 @@
 
 import { launchMonitor, mountLaunchMonitorUI } from '../launch-monitor.js';
 import { recorder } from '../recorder.js';
+import { createLiveQueue } from '../live-queue.js';
+import { keepAwake } from '../wake.js';
 import { createSimTool } from '../sim-tool.js';
 import { createAimLine } from '../aim-line.js';
 import { amateurMiss, landOf, bearingOf, turnBall, turnPts, aimTurn, toolBall, solveCustom } from './aim.js';
@@ -293,6 +295,22 @@ export function createKit(cfg) {
   // show a player's own score immediately when their turn starts
   function showScore(v) { cancelAnimationFrame(scoreAnim); shownScore = v; R.score.textContent = fmt(v); R.score.classList.remove('bump'); }
 
+  /* ---------- live swings ---------- */
+  // kit.live(play, ok): the game's handler for a real swing. One that arrives a moment early (the last ball
+  // still flying, the next player's banner) is held and played when the game is ready; nothing is held on
+  // the start or end screens. `ok` is an extra condition (Golf HORSE: not the computer's turn).
+  let liveQ = null;
+  keepAwake();
+  function live(play, ok = () => true) {
+    liveQ = createLiveQueue({
+      ready: () => S.phase === 'aim' && ok(), canHold: () => S.phase !== 'setup' && S.phase !== 'over', play,
+      onHold: () => toast('Swing received · it plays when the ball is ready', 2200),
+      onDrop: (s, why) => { if (why === 'too-early') toast('That swing came too early to count', 2200); },
+    });
+    launchMonitor.addEventListener('shot', e => liveQ.push(e.detail));
+  }
+  const flushLive = () => { if (liveQ && liveQ.pending) setTimeout(() => liveQ.flush(), 300); };
+
   /* ---------- feedback ---------- */
   let splashT = 0, closeT = 0, toastT = 0;
   function splash(word, { gold = false, big = false, sub = '' } = {}) {
@@ -362,7 +380,7 @@ export function createKit(cfg) {
   function beginTurn(announce, sub = null) {
     const p = player(); p.shotPts = 0;
     if (Math.round(shownScore) !== p.score) showScore(p.score);
-    S.phase = p.cpu ? 'cpu' : 'aim'; tool.setEnabled(!p.cpu); renderHud();
+    S.phase = p.cpu ? 'cpu' : 'aim'; tool.setEnabled(!p.cpu); renderHud(); flushLive();
     if (announce) {
       R.bannerName.textContent = `${p.name}`; R.bannerSub.textContent = sub != null ? sub : RUN ? `your run · ${p.difficulty.label}` : `your turn · shot ${p.shots + 1} of ${shotsPerPlayer}`;
       R.banner.hidden = false; R.banner.classList.remove('go'); void R.banner.offsetWidth; R.banner.classList.add('go');
@@ -479,12 +497,12 @@ export function createKit(cfg) {
 
   return {
     on(ev, f) { (handlers[ev] = handlers[ev] || []).push(f); return this; },
-    showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, suggest, mapSpot, drawSpot, finishRun, turnTo,
+    live, showStart, award, stat, statMax, splash, soClose, toast, endShot, next, showResult, setClub, suggest, mapSpot, drawSpot, finishRun, turnTo,
     aimLine, refreshAim, aimAt, get aimYaw() { return yaw; }, set aimYaw(v) { yaw = clampYaw(v); refreshAim(); },
     finishGame: () => finish(),
     setShotLabel(t) { S.shotLabel = t; if (RUN || MANUAL) R.shot.textContent = t; },
     setPrompt(html) { R.prompt.innerHTML = html; },
-    get phase() { return S.phase; }, set phase(v) { S.phase = v; tool.setEnabled(v === 'aim'); refreshAim(); },
+    get phase() { return S.phase; }, set phase(v) { S.phase = v; tool.setEnabled(v === 'aim'); refreshAim(); if (v === 'aim') flushLive(); },
     get current() { return S.cur; },
     get player() { return player(); }, get players() { return S.players; },
     get multiplier() { return mult(); }, get difficulty() { return diffObj(); },

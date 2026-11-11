@@ -2,7 +2,6 @@
 // Rules: island-logic.js. HUD, turns, scoring feedback: the shared kit (survival-run mode).
 
 import { simulate } from '../physics.js';
-import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createSkyIslands } from './scenes/sky-islands.js';
 import { createShotView } from '../world/shot-view.js';
@@ -133,7 +132,7 @@ function toolSolve(s) {
 kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt: world.groundAt, voidY: VOID_Y }), ideal: s => { const sol = G.target && toolSolve(s); return sol ? sol.ball : null; } });
 kit.on('hit', s => launch(s.ball, 'Sim'));
 kit.on('ideal', s => launch(s.ball, 'Ideal'));
-launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
+kit.live(shot => launch(shot, 'R10'));
 
 function launch(ball, src) {
   kit.phase = 'flight';

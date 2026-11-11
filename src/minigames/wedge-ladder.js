@@ -2,7 +2,6 @@
 // Rules: wedge-logic.js. Scene: scenes/airfield.js. HUD, turns, scoring feedback: the shared kit.
 
 import { simulate } from '../physics.js';
-import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createAirfield } from './scenes/airfield.js';
 import { createShotView } from '../world/shot-view.js';
@@ -89,7 +88,7 @@ const rungTarget = () => ({ x: 0, z: -kit.player.difficulty.rungs[kit.player.run
 kit.aimLine({ world, view: sv, sim, ideal: s => (kit.player ? toolShot(s.target || rungTarget(), { ...s, ideal: true }).ball : null) });
 kit.on('hit', s => launch(s.ball, 'Sim'));
 kit.on('ideal', s => launch(s.ball, 'Ideal'));
-launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
+kit.live(shot => launch(shot, 'R10'));
 
 let shot = null;
 function launch(ball, src) {

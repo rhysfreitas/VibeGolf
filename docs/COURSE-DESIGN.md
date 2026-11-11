@@ -156,7 +156,10 @@ courses tilt far more. The rules, and the numbers behind them:
   7% on a level landing area, 4–5% where the fairway also runs downhill (it adds roll), and give the low
   side a wide rough or a catch bunker so the slope sets the lie rather than the score.
 - **Lean the ground, not just the line.** A lean runs 60–120 m along the hole and right across the fairway
-  into the rough, blending out beyond; it moves the ball, it doesn't bounce it. The flatter "landing
+  into the rough, blending out beyond; it moves the ball, it doesn't bounce it. (Since 11 November 2026 the
+  physics bounces the ball off the ground's own slope, so a lean is felt from the first bounce: a tour drive
+  finishes about 1.6 yd down a 3% lean and 3.4 yd down a 6% one, a 7 iron 0.8 and 1.7 yd. Steep banks beside a
+  green now kick a ball that lands on them, so check an approach that is meant to run on from both sides.) The flatter "landing
   plateau" idea still holds for where most drives stop: a lean of 2–3% there, more just short of or past it.
 - **Greens: moderate, like a modern course.** Overall fall about 1.5–2.5% (today's greens average about 2%;
   classic greens 3% and more). Most greens (six or seven of nine) also get one internal feature: a tier

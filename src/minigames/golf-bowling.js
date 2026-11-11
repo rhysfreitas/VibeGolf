@@ -3,7 +3,6 @@
 // HUD, turns and feedback: the shared kit (manual turns, so each player bowls a whole frame).
 
 import { simulate } from '../physics.js';
-import { launchMonitor } from '../launch-monitor.js';
 import { createKit } from './kit.js';
 import { createToyRoom } from './scenes/toy-room.js';
 import { createShotView } from '../world/shot-view.js';
@@ -98,7 +97,7 @@ kit.aimLine({ world, view: sv, sim: b => simulate(b, { groundAt, surfaceAt, flig
   seedPct: s => aimFor(kit.player.up, kit.player.difficulty, s).k * 100 });
 kit.on('hit', s => launch(s.ball, 'Sim'));
 kit.on('ideal', s => launch(s.ball, 'Ideal'));
-launchMonitor.addEventListener('shot', e => { if (kit.phase === 'aim') launch(e.detail, 'R10'); });
+kit.live(shot => launch(shot, 'R10'));
 
 function launch(ball, src) {
   kit.phase = 'flight';
