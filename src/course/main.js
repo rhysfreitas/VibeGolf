@@ -21,7 +21,7 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js', rimeholm: './rimeholm.js' };
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js', rimeholm: './rimeholm.js', emberfell: './emberfell.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
 const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
 const CAVE = COURSE.theme === 'cave'; // underground: built like Red Mesa (floor, playfield, rocks), under a roof
@@ -29,7 +29,9 @@ const CAVE = COURSE.theme === 'cave'; // underground: built like Red Mesa (floor
 const CITY = COURSE.theme === 'city';
 // a glacier at night (Rimeholm): a sampled field like The Reclaim's, snow and ice, the aurora; ice-world.js draws it
 const ICE = COURSE.theme === 'ice';
-const FIELD = CITY || ICE;   // ground from a sampled field
+// a volcano at dusk (Emberfell): a sampled field like Rimeholm's, black lava, red cinder, grey ash, lava that plays as water; volcano-world.js draws it
+const VOLC = COURSE.theme === 'volcano';
+const FIELD = CITY || ICE || VOLC;   // ground from a sampled field
 const MESA = COURSE.theme === 'mesa' || CAVE || FIELD;
 const DESERT = MESA && !FIELD; // the red-rock colours (fog, the ground shader's native earth)
 const REDROCK = DESERT && !CAVE; // Red Mesa itself: its art (junipers, talus, ragged far mesas)
@@ -39,6 +41,7 @@ const MW = MESA || SHAPED ? await import('./mesa-world.js') : null;
 const CW = CAVE ? await import('./cave-world.js') : null;
 const CTW = CITY ? await import('./city-world.js') : null;
 const IW = ICE ? await import('./ice-world.js') : null;
+const VW = VOLC ? await import('./volcano-world.js') : null;
 const SP = SHAPED ? await import('./sky-props.js') : null;
 const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
 document.title = COURSE.name;
@@ -66,7 +69,7 @@ const islandAt = (x, z) => T.islandAt(x, z);
 const surfaceAt = (x, z) => T.surfaceAt(x, z);
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' ? 'fairway' : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
-const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: 'Waste area', water: 'Water', green: 'Green', ice: 'Ice', powder: 'Powder' };
+const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : VOLC ? 'Lava rock' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: VOLC ? 'Scoria' : 'Waste area', water: VOLC ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder' };
 const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' || l === 'powder' ? 'var(--sand)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
 
 /* ---------- conditions and tees (set on the round setup screen) ---------- */
@@ -128,6 +131,9 @@ function lightPreset() {
   // the glacier by night: moonlight off the snow, a teal-green cast from the aurora, clear dark air
   if (ICE && t === 'night') return { ...P, sun: 0xa9bcff, si: 0.75, hs: 0x48699a, hg: 0x1c2640, hi: 0.6, exp: 0.88, fog: w === 'overcast' ? 0x1a2230 : 0x0d1828, near: w === 'overcast' ? 200 : 600, far: w === 'overcast' ? 2200 : 6000 };
   if (ICE) { P.fog = w === 'overcast' ? 0xb8c2cc : 0xc8d6e4; }
+  // the volcano at dusk: a low red sun through the ash, a violet sky, warm light thrown up off the lava, smoky air
+  if (VOLC && t === 'golden') return { ...P, sun: 0xff7038, si: 2.1, hs: 0x8a7290, hg: 0x5a2a18, hi: 0.55, exp: 0.66, turb: 9, ray: 3.4, mie: 0.014, fog: w === 'overcast' ? 0x5a4644 : 0x8a6058, near: w === 'overcast' ? 300 : 700, far: w === 'overcast' ? 3000 : 7000 };
+  if (VOLC) { P.fog = t === 'night' ? 0x1a0e0c : 0x9a8278; P.far = 7000; }
   if (CAVE) return { ...P, si: 0, hs: 0x5c6880, hg: 0x221f1b, hi: 0.5, exp: 1.05, fog: 0x080a0d, near: 120, far: 1700 };
   // Red Mesa's golden hour: a deep blue sky over a warm horizon, the low sun raking the walls, cool blue in the shadows, red bounce
   if (REDROCK && t === 'golden' && w === 'clear') Object.assign(P, { sun: 0xffa255, si: 3.3, hs: 0x9db4dc, hg: 0x8a4a30, hi: 0.5, exp: 0.6, turb: 2.4, ray: 3.0, mie: 0.004, fog: 0xe2b58e, near: 600, far: 6000 });
@@ -252,6 +258,7 @@ islandMat.onBeforeCompile = sh => {
   if (MESA) sh.defines = { ...(sh.defines || {}), MESA: '' };
   if (CITY) sh.defines = { ...(sh.defines || {}), CITY: '' };
   if (ICE) { sh.defines = { ...(sh.defines || {}), ICE: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, iceU); }
+  if (VOLC) { sh.defines = { ...(sh.defines || {}), VOLC: '' }; sh.uniforms.uSurf2 = surf2U; sh.uniforms.uClock = clockU; }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -264,12 +271,18 @@ uniform sampler2D uSurf; uniform vec2 uSurfMin, uSurfSize; uniform float uFloorY
 #ifdef ICE
 uniform sampler2D uSurf2; uniform vec3 uMoon; uniform vec2 uWind; uniform vec4 uPools[24]; uniform int uPoolN;
 #endif
+#ifdef VOLC
+uniform sampler2D uSurf2; uniform float uClock; float vGlow = 0.0;
+#endif
 float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
 float fb(vec2 p){ return vn(p)*0.5 + vn(p*2.07+3.1)*0.25 + vn(p*4.13+7.7)*0.125 + vn(p*8.4+1.3)*0.0625; }
 vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
 float strataLine(float y){ return smoothstep(0.0, 0.25, abs(fract(y*0.11) - 0.5)); }`)
     .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+#ifdef VOLC
+totalEmissiveRadiance += vec3(1.0, 0.32, 0.07) * vGlow;
+#endif
 #ifdef ICE
 for (int i = 0; i < 24; i++) { if (i >= uPoolN) break; vec4 L = uPools[i]; float d = length(vWPos.xz - L.xy); float f = 1.0 - smoothstep(0.0, L.z, d); totalEmissiveRadiance += vec3(1.0, 0.6, 0.28) * f * f * L.w * diffuseColor.rgb; }
 #endif`)
@@ -328,7 +341,43 @@ scrub = mix(scrub, lin(vec3(0.3,0.4,0.2)), smoothstep(0.5, 0.78, fb(p.xz*0.05)) 
 dirt = scrub;
 #endif
 #endif
-#ifdef ICE
+#if defined(VOLC)
+// Emberfell: uSurf R mown (fairway, tee), G grass (green 1, collar 0.5), B ash-grey sand, A grass length (rough 0.55);
+// uSurf2 R red cinder (native 0.7, scoria waste 1), G grey ash (rubble 0.5), B glow (crust 1, the lava's light on
+// its shores 0..0.5), A sulfur (1) or sinter (0.5). Native ground is fresh black lava: ropy, rusting in patches
+vec4 s2 = mix(vec4(0.0), texture2D(uSurf2, clamp(st, 0.0, 1.0)), inTex);
+float rope = 0.5 + 0.5*sin(dot(p.xz, vec2(0.9,0.4))*2.6 + fb(p.xz*0.2)*8.0);
+vec3 col = mix(lin(vec3(0.085,0.08,0.085)), lin(vec3(0.15,0.14,0.14)), mid) * (0.72 + 0.5*fine) * (0.9 + 0.14*rope*(1.0 - smoothstep(20.0, 70.0, camD)));
+col = mix(col, lin(vec3(0.19,0.11,0.08)), smoothstep(0.55, 0.8, fb(p.xz*0.03 + 5.0)) * 0.35);
+vec3 cinder = mix(lin(vec3(0.36,0.12,0.07)), lin(vec3(0.48,0.19,0.1)), mid) * (0.8 + 0.35*fine);
+vec3 ash = mix(lin(vec3(0.4,0.38,0.35)), lin(vec3(0.5,0.48,0.44)), mid) * (0.85 + 0.25*fine);
+col = mix(col, cinder, smoothstep(0.3, 0.65, s2.r));
+col = mix(col, ash, smoothstep(0.3, 0.7, s2.g) * mix(0.55, 1.0, smoothstep(0.6, 0.9, s2.g)));
+col = mix(col, mix(lin(vec3(0.82,0.8,0.74)), lin(vec3(0.9,0.88,0.82)), mid), smoothstep(0.3, 0.45, s2.a) * (1.0 - smoothstep(0.6, 0.8, s2.a)));   // sinter
+col = mix(col, mix(lin(vec3(0.72,0.64,0.22)), lin(vec3(0.86,0.8,0.4)), fine), smoothstep(0.7, 0.95, s2.a));                                  // sulfur
+float crust = smoothstep(0.75, 0.95, s2.b);
+col = mix(col, lin(vec3(0.035,0.03,0.03)) * (0.8 + 0.4*fine), crust);
+vec3 mrough = mix(lin(vec3(0.24,0.3,0.12)), lin(vec3(0.3,0.36,0.14)), mid) * (0.74 + 0.46*fine);
+vec3 mfair = mix(lin(vec3(0.3,0.46,0.16)), lin(vec3(0.37,0.53,0.19)), stripe) * (0.9 + 0.16*mid) * (0.93 + 0.14*fine);
+vec3 asand = lin(vec3(0.5,0.48,0.45)) * (0.9 + 0.14*fine) * (0.95 + 0.05*sin(p.x*3.0 + p.z*1.7));
+vec3 scoria = mix(lin(vec3(0.42,0.15,0.08)), lin(vec3(0.56,0.23,0.12)), fine) * (0.9 + 0.15*vn(p.xz*6.0));
+col = mix(col, mrough, smoothstep(0.12, 0.5, sf.a));
+col = mix(col, mfair, sf.r); col = mix(col, grn, sf.g); col = mix(col, asand, smoothstep(0.35, 0.75, sf.b));
+col = mix(col, scoria, smoothstep(0.82, 0.98, s2.r));
+// steep faces: basalt in flows a few metres thick, red clinker between them
+float rw = max(vW4.w, 1.0 - smoothstep(0.45, 0.65, vWN.y));
+float vband = fb(vec2(p.y*0.2, (p.x+p.z)*0.004)), layer = fract(p.y*0.17 + fb(p.xz*0.01)*2.0);
+vec3 rock = mix(lin(vec3(0.11,0.1,0.1)), lin(vec3(0.2,0.18,0.17)), vband);
+rock = mix(rock, lin(vec3(0.3,0.13,0.08)), smoothstep(0.82, 0.92, layer) * 0.8);
+rock *= 0.8 + 0.3*fine;
+col = mix(col, rock, rw);
+diffuseColor.rgb = col;
+// glow: the crust's seams, and the lava's light thrown on its shores
+float seamV = 1.0 - smoothstep(0.0, 0.05, abs(fb(p.xz*0.32) - 0.5));
+vGlow = crust * seamV * (0.55 + 0.45*sin(uClock*0.8 + fb(p.xz*0.1)*10.0)) * 1.6;
+float shore = min(s2.b, 0.5) * 2.0 * (1.0 - crust);
+vGlow += shore * shore * 0.12 * (0.85 + 0.15*sin(uClock*1.3 + p.x*0.05));
+#elif defined(ICE)
 // Rimeholm: snow and ice. uSurf: R packed snow (fairways, tees), G grass (green 1, its collar 0.5), B black sand,
 // A rough (powder, 0.55); uSurf2: R lake ice, G bare rock, B powder bunker, A travertine
 vec4 s2 = mix(vec4(0.0), texture2D(uSurf2, clamp(st, 0.0, 1.0)), inTex);
@@ -730,7 +779,7 @@ function buildTrees(list, group) {
     const shape = { oak: [2.5, 3, 1], juniper: [0.5, 1.5, 0.6], pinyon: [1.2, 1.9, 0.7], cotton: [4.5, 3.6, 1.4] }[t.type] || [2.5, 3, 1];
     const H = shape[0] * t.s, s = shape[1] * t.s;
     m.compose(ps.set(t.x, t.y - 0.3, t.z), q.identity(), sc.set(t.s * shape[2], H + 1.2, t.s * shape[2])); trunks.setMatrixAt(ti++, m);
-    const pal = CITY ? [0x2f4a20, 0x3a5726, 0x46622c] : REDROCK && t.type !== 'cotton' ? [0x3e4c34, 0x4a5a3a, 0x3a4a33] : { juniper: [0x3a4a30, 0x445436, 0x34432e], pinyon: [0x3d5230, 0x48593a, 0x3a4c2c], cotton: [0x7c8c3a, 0x8f9a44, 0x6e8034] }[t.type] || [0x3f5a28, 0x4a6230, 0x56692f];
+    const pal = CITY ? [0x2f4a20, 0x3a5726, 0x46622c] : VOLC ? [0x26401f, 0x2f4a24, 0x3a5228] : REDROCK && t.type !== 'cotton' ? [0x3e4c34, 0x4a5a3a, 0x3a4a33] : { juniper: [0x3a4a30, 0x445436, 0x34432e], pinyon: [0x3d5230, 0x48593a, 0x3a4c2c], cotton: [0x7c8c3a, 0x8f9a44, 0x6e8034] }[t.type] || [0x3f5a28, 0x4a6230, 0x56692f];
     const base = pal[Math.floor(R() * 3)];
     if (REDROCK) { // a juniper or pinyon: an irregular crown of small faceted clumps, lopsided
       const lean = R() * 6.28;
@@ -791,7 +840,7 @@ function buildHole(h) {
   const box = holeBox(h); playBox = MESA ? box : null;
   if (surf2U.value) { surf2U.value.dispose(); surf2U.value = null; }
   if (MESA || SHAPED) { // paint texture first: the island shader reads it
-    const tex = ICE ? (() => { const [a, b] = IW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75, COURSE.ice); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
+    const tex = ICE ? (() => { const [a, b] = IW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75, COURSE.ice); surf2U.value = b; return a; })() : VOLC ? (() => { const [a, b] = VW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
     surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
   }
   for (const I of ISL) buildIsland(I, { seg: MESA ? Math.min(coarse ? 200 : 280, Math.max(96, Math.round(Math.max(I.rx, I.rz) * 1.6))) : coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
@@ -803,11 +852,12 @@ function buildHole(h) {
     if (!FIELD) MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
     MW.buildPlayfield(T, box, playMat, coarse, holeGroup, { steepFine: CAVE || FIELD, snapEdges: CAVE || FIELD, levels: LEVELS, keepSteep: FIELD });
     MW.buildWater(T, holeGroup);
-    if (!ICE) MW.buildRocks(T, h, islandMat, holeGroup);   // ice-world.js draws Rimeholm's seracs and boulders
+    if (!ICE && !VOLC) MW.buildRocks(T, h, islandMat, holeGroup);   // ice-world.js and volcano-world.js draw their own rocks
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });
     else if (ICE) { mesaCtx = IW.buildIce(h, T, box, COURSE.ice, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir, night: !!TIMES[cond.time]?.night }); trees.push(...mesaCtx.trees);
       iceU.uWind.value.set(windVec.x, windVec.z); if (iceU.uWind.value.lengthSq() < 1e-4) iceU.uWind.value.set(0.6, 0.8);
       iceU.uPoolN.value = Math.min(24, mesaCtx.pools.length); mesaCtx.pools.slice(0, 24).forEach((q, i) => iceU.uPools.value[i].set(...q)); }
+    else if (VOLC) { mesaCtx = VW.buildVolcano(h, T, box, COURSE.volc, HOLES.indexOf(h), { group: holeGroup, coarse }); trees.push(...mesaCtx.trees); }
     else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
     else {
       MW.talus(talusPts, coarse, holeGroup); talusPts = null;
@@ -905,7 +955,7 @@ function buildHole(h) {
     rocks: T.rocks.map(r => ({ type: r.type, x: r.x, z: r.z, r: r.type === 'arch' ? r.ao : r.capR, rot: r.rot || 0, d: r.d || 0, ai: r.ai || 0 })),
     fit: h.line ? [...Object.values(h.tees).map(t => (Array.isArray(t) ? t : [t.x, t.z])), [pp.x, pp.z]] : null,
     // a city course: the map is painted from the ground's surfaces, with the buildings in dark grey
-    paint: ICE ? IW.mapPaint(T, h) : CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
+    paint: ICE ? IW.mapPaint(T, h) : VOLC ? VW.mapPaint(T, h) : CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
       return (x, z) => { for (const r of blds) { const dx = x - r.x, dz = z - r.z; if (Math.abs(dx * r.c + dz * r.s) < r.w / 2 && Math.abs(-dx * r.s + dz * r.c) < r.d / 2) return '#3b3a37'; } return C[T.surfaceAt(x, z)] || '#77746d'; }; })() : null,
     feat: { greens: T.features.greens.map(G => featureOutline(G, 'green')), bunkers: T.features.bunkers.map(B => featureOutline(B, 'bunker', 24)), tees: T.features.tees.map(t => featureOutline(t, 'tee')), water: T.features.water.map(W => featureOutline(W, 'water')) },
   });
@@ -1382,7 +1432,7 @@ function finishShot() {
       drop.y = groundAt(drop.x, drop.z) ?? f.from.y;
       state.ball.copy(drop); state.lie = surfaceAt(drop.x, drop.z); if (state.lie === 'water') { state.ball.copy(f.from); state.lie = f.fromLie; }
       toast('In the water', '+1. Dropping beside where it went in.', 3000);
-      res = '<span style="color:var(--bad)">Water +1</span>';
+      res = `<span style="color:var(--bad)">${VOLC ? 'Lava' : 'Water'} +1</span>`;
     }
     if (HOLE.pinPos.y - end.y > 12) { // under a rim it can't climb: offer a drop back up where it went over (+1)
       for (let i = f.W.length - 1; i >= 0; i--) {
