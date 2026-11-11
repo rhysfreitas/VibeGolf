@@ -79,7 +79,7 @@ The plan-book tools (`tools/<course>/sample.mjs`) carry the same checks for a co
 | 19 | Greens deeper than wide, angled both ways; three of a style at most | Should | `analyse.mjs` |
 | 20 | Fairway width changes 30% or more along a par 4/5 | Should | `analyse.mjs` |
 | 21 | Every fairway bunker has a job and touches the fairway; no bunker pattern twice | Should | `analyse.mjs` |
-| 22 | Room for the tips tee on every hole | Should | the plan-book checks |
+| 22 | A tips tee in the data on every hole, switched off (`COURSE.tipsSet`, `hole.tips`), its spot ready | Must when laying out or reworking | `tips.mjs`, the plan-book checks |
 | 23 | Grand visuals by layering; edges that wander; chasms that catch the eye; big sand now and then | Taste | a review round |
 | 24 | Fairway forms: no form more than twice, never two in a row, two plain strips at most, no two fairways measured alike | Must | `alike.mjs` |
 | 25 | No kind of feature more than twice a nine, and the second does a different job | Should | the hole cards |
@@ -534,6 +534,22 @@ slopes for strategy" (cross slopes to about 7% on level zones, 4–5% when also 
   carries that matter from the tips without taking the landing area under 45 m); nothing overhead within 45 m of
   that pad either; and the pad off the fairway, like every tee. Sketch the tips spot on the plan even before the
   tee set exists, so adding it later is data, not a redesign.
+- **The tips tee: an option in the data, on every hole of every course** (Must for a course being laid out or
+  reworked; the owner, 11 November 2026: "something I'll likely add in the future as a 'turn on' rather than
+  replan"). Don't only leave room: put the tee in the data, switched off.
+  - `COURSE.tipsSet = { id, name, color, minDrive }` (a name in the course's theme; `minDrive` about 290). It stays
+    **out of `teeSets`**, so the game doesn't offer it and nothing on screen changes.
+  - Every hole: `tips: { tee: [x, z], yards }` (optional `pad: { w, l, h, rot }`), in the hole's frame like `tees`.
+    It stays **out of `tees` and `yards`**, so no pad is drawn and no test or check counts it as a tee set.
+  - Turning it on later is then two moves and no design work: put `tipsSet` first in `teeSets`, and copy each
+    hole's `tips.tee` and `tips.yards` into `tees` and `yards` under its id.
+  - The spot must be ready now: real ground under a 10 × 12 m pad, level within about a metre, shaped as part of
+    the hole (not a cliff, a wall, water or another hole's green), off the fairway, nothing overhead within 45 m,
+    20–50 yd behind the back tee on par 4s and 5s (8–30 on a par 3), the tee shot's target in the fixed camera's
+    frame, and a 290 yd drive landing on 40 m or more of fairway with the hole's hazards still in play.
+  - `node tools/review/tips.mjs <course>` checks all of that on a playable course; the plan books' checks do it
+    for planned ones. Generated courses carry `tips` through their emitter into the hole's frame.
+  - A hole that can't take one (a tee against a cave wall) says so on its hole card, and Rhys decides.
 
 ## Water (Should)
 
