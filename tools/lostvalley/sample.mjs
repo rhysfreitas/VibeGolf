@@ -9,6 +9,7 @@ import { V, RIVER, POOL, TAR, SWAMP, BLUFF, BRIDGE, LEDGE, CAMP_FALLS, GREAT_FAL
 import { CAMP, LIFE } from './life.mjs';
 import { project, at, lengthOf, YD, headingAt } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
+import { greenStats, leanAlong } from './greens.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out/grid');
 fs.mkdirSync(OUT, { recursive: true });
@@ -138,7 +139,7 @@ function playsLike(dist, dh) {
   }
   return best && Math.round(best / YD);
 }
-const p3 = [];
+const p3 = [], CONT = [], LEANS = [];
 for (const [i, B] of BUILT.entries()) {
   const h = HOLES[i], m = meta[i], back = h.teePts[BACK];
   // the tips spot: room, not a cliff or another hole's green, off the fairways, nothing overhead
@@ -187,7 +188,38 @@ for (const [i, B] of BUILT.entries()) {
   m.greenShape = { depth: Math.round(depth), width: Math.round(width), angle: Math.round(ang) };
   R_(`  ${h.n} green ${m.greenArea} m2, ${Math.round(depth)} deep x ${Math.round(width)} wide (${(depth / width).toFixed(2)}), long axis ${Math.abs(Math.round(ang))}° ${ang > 8 ? 'right' : ang < -8 ? 'left' : 'straight'} of the approach`);
   if (h.par === 3) p3.push({ n: h.n, yd: h.yards[BACK], plays: playsLike(h.len, m.pinY - m.teeY) });
+  // the green's contour: its typical slope, relief beyond its plane, the pin, the pin areas, the cuppable share
+  const gs = greenStats(B), feat = gs.relief >= 0.25 ? 'a feature' : 'flatter';
+  m.contour = { median: +gs.median.toFixed(1), relief: +gs.relief.toFixed(2), areas: gs.areas.length, cup: Math.round(gs.cup * 100), feat };
+  CONT.push({ n: h.n, feat, relief: gs.relief });
+  {   // the green diagram's grid: 0.5 m in the approach's frame (up the page = away from the approach)
+    const fx = ux, fz = uz, rx = -uz, rz = ux, N = 97, y0 = B.ground(...h.pin), hg = [], gmv = [], sf = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const a = (c - 48) / 2, b = (48 - r) / 2, x = h.pin[0] + a * rx + b * fx, z = h.pin[1] + a * rz + b * fz, g = B.ground(x, z);
+      hg.push(g === null ? null : +(g - y0).toFixed(3)); gmv.push(+B.gm(x, z).toFixed(2)); sf.push(SURF.indexOf(B.surface(x, z)));
+    }
+    const pa = gs.areas.map(q => { const dx = q.x - h.pin[0], dz = q.z - h.pin[1]; return [+(dx * rx + dz * rz).toFixed(1), +(dx * fx + dz * fz).toFixed(1)]; });
+    fs.writeFileSync(`${OUT}/green${h.n}.json`, JSON.stringify({ N, step: 0.5, h: hg, gm: gmv, s: sf, areas: pa }));
+  }
+  const badG = gs.pinSlope > 3 || gs.areas.length < 2 || gs.median < 1 || gs.median > 3;
+  R_(`${badG ? '!' : ' '} ${h.n} green contour: typical slope ${gs.median.toFixed(1)}%, ${gs.relief.toFixed(2)} m beyond its plane (${feat}), pin ${gs.pinSlope.toFixed(1)}%, ${gs.areas.length} pin areas, ${Math.round(gs.cup * 100)}% cuppable`);
+  // the fairway's lean across the line where drives land: round each fairway target, 30 m either side
+  if (h.par > 3) {
+    const L = leanAlong(B), ws = [];
+    for (const q of (h.targets || []).filter(q => !q.bold)) {
+      const s0 = project(h.line, ...q.at).s, v = L.filter(([s]) => Math.abs(s - s0) <= 30).map(x => x[1]);
+      if (v.length) ws.push({ name: q.name, lean: v.reduce((a, b) => a + b, 0) / v.length });
+    }
+    const top = ws.reduce((a, b) => Math.abs(b.lean) > Math.abs(a?.lean ?? 0) ? b : a, null);
+    m.lean = ws.map(w => ({ name: w.name, lean: +w.lean.toFixed(1) }));
+    LEANS.push({ n: h.n, lean: top ? top.lean : 0 });
+    R_(`  ${h.n} fairway lean: ${ws.map(w => `${w.name} ${Math.abs(w.lean).toFixed(1)}% ${w.lean > 0.3 ? 'to the right' : w.lean < -0.3 ? 'to the left' : 'level'}`).join('; ') || 'no targets'}`);
+  }
 }
+const lean2 = LEANS.filter(l => Math.abs(l.lean) >= 2).length, strong = LEANS.filter(l => Math.abs(l.lean) >= 5.5).length;
+R_(`${lean2 * 2 > LEANS.length ? ' ' : '!'} fairways leaning 2% or more where drives land: ${lean2} of ${LEANS.length} par 4s and 5s; strong (5.5%+): ${strong}${strong < 1 || strong > 2 ? ' (want one or two)' : ''}`);
+const featN = CONT.filter(c => c.feat === 'a feature').length;
+R_(`${featN >= 5 ? ' ' : '!'} greens with a feature (0.25 m+ beyond the plane): ${featN} of ${CONT.length}; flatter: ${CONT.filter(c => c.feat !== 'a feature').map(c => c.n).join(', ') || 'none'}`);
 for (const q of p3) R_(`  par 3 ${q.n}: ${q.yd} yd, plays like about ${q.plays} yd`);
 const pl = p3.map(q => q.plays).sort((a, b) => a - b); for (let j = 1; j < pl.length; j++) if (pl[j] - pl[j - 1] < 25) R_(`! par 3s within ${pl[j] - pl[j - 1]} yd of each other (plays-like)`);
 fs.writeFileSync(`${OUT}/checks.txt`, report.join('\n'));

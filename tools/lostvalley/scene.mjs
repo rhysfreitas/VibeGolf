@@ -46,6 +46,23 @@ function shapesAt(X, Z) {
   return y;
 }
 
+// a green's contour, in its own frame (u right, v toward the back, metres from the pin). Directions are
+// degrees clockwise from the front: 0 = toward the tee, 90 = right, 180 = the back. (As tools/emberfell.)
+//   { fall: deg, pct }               the whole green falls toward deg
+//   { tier: [u, v], up: deg, h, w }  a step h metres up across the line through [u, v], rising toward up, over w
+//   { ridge: [[u, v], [u, v]], h, w } a spine along the segment (h < 0: a swale), w its half-width
+//   { bowl: [u, v], r, h }           a dip h deep, r across (h < 0: a knob)
+const dirUV = a => [Math.sin(a * Math.PI / 180), -Math.cos(a * Math.PI / 180)];
+export function contourAt(C, u, v) {
+  let g = 0;
+  for (const c of C) {
+    if (c.fall != null) { const [du, dv] = dirUV(c.fall); g -= (u * du + v * dv) * c.pct / 100; }
+    else if (c.tier) { const [du, dv] = dirUV(c.up), d = (u - c.tier[0]) * du + (v - c.tier[1]) * dv; g += c.h * smooth(d / c.w + 0.5); }
+    else if (c.ridge) { const d = distLine(c.ridge, u, v); g += c.h * Math.exp(-((d / c.w) ** 2)); }
+    else if (c.bowl) { const d = Math.hypot(u - c.bowl[0], v - c.bowl[1]); g -= c.h * Math.exp(-((d / (c.r / 2)) ** 2)); }
+  }
+  return g;
+}
 export function buildHole(h) {
   const k = h.n - 1, W = WOR[k], PR = PROF[k];
   const endHead = headingAt(h.line, h.len - 1);
@@ -102,6 +119,7 @@ export function buildHole(h) {
       let g = 0;
       if (Gd.tier) g += Gd.tier.h * smooth((pr.s - Gd.tier.s) / 5);
       if (Gd.tilt) g += (Gd.tilt.side ? Gd.tilt.side * u : 0) * Gd.tilt.pct / 100 * -1 + (Gd.tilt.front ? v * Gd.tilt.pct / 100 : 0);
+      if (Gd.contour) g += contourAt(Gd.contour, u, v);
       y += g * fade;
     }
     for (const b of bunkers) { if (x < b.box[0] || x > b.box[2] || z < b.box[1] || z > b.box[3]) continue; const e = edgeM(b, x, z); if (e < 0.5) y -= b.depth * (1 - smooth((e + (b.pot ? 0.8 : 2)) / (b.pot ? 0.9 : 2.3))) * smooth((go - 0.5) / 1.5); }
