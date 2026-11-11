@@ -345,6 +345,16 @@ copy a piece list into a hole's `fw` and adjust.
 | **Double (Channel)** | A second fairway out across the hazard. | The carry to it shortens the hole. |
 | **Scalloped** | Hazards bite in from alternate sides. | The line weaves; pick a side for each shot. |
 
+- **The sheet shows each form in its plainest state, on a straight line. That is the starting point, not the
+  hole.** A form is measured along the playing line, so it bends with the hole: any of them can be a dogleg,
+  an S-bend or a cape, and the bend is chosen separately (see "Hole shape and outline"). Then give it character
+  (Taste, Rhys 11 November 2026): uneven edges, one side fuller than the other, the wide part off-centre, the
+  ground's own lines showing in the outline. Two holes of one form should not look like the same drawing.
+- **The exotic forms sparingly** (Taste, Rhys 11 November 2026). A **bowl** once a course at most, and never
+  the round basin on the sheet: an irregular shape that follows its hollow. **Stepping stones** once a course at
+  most, as a few large stones (two to four, each a proper landing area of 40 m or more) so it still reads as a
+  golf hole; many small ones are a mini game. Island, double and scalloped are the next most unusual: once or
+  twice. The everyday variety comes from hourglass, fan, funnel, hook, split and broken, bent and shaped.
 - **Choose the form from the hole's story, before any numbers.** Never start a fairway by copying the last
   hole's knots. A hole whose card says "spindle" needs a reason on the card.
 - **The plan tools draw all of them** (`tools/<course>/shapes.mjs` `makeFairway`). A piece is a ribbon
