@@ -8,7 +8,7 @@ Eight mini games, all gamified at the **same level**. That level is a fun sweet 
 
 ## Scenes: every game has its own world
 
-The scoring, feedback, players and end screen are shared, but each game has its **own scene** that fits it. All scenes keep the same camera ("standing over the ball", bottom centre) and HUD layout, and each scene sits on the shared base stage (`src/world/stage.js`: renderer, sky, sun, fog).
+The scoring, feedback, players and end screen are shared, but each game has its **own scene** that fits it. All scenes keep the same camera ("standing over the ball", bottom centre) and HUD layout, and each scene sits on the shared base stage (`src/world/stage.js`: renderer, sky, sun, fog). Each scene has an art brief in `tools/minigames/` (palette, materials, light, references); the first art pass (November 2026) followed them.
 
 | Game | Scene |
 |---|---|

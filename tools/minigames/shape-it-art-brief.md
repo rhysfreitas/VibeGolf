@@ -29,3 +29,5 @@ its edges, the space beyond brighter than now: a nebula, a dense starfield, the 
 [Star Citizen hangar concept gallery](https://starcitizen.tools/Comm-Link:Hangar_Concept_Gallery),
 [Hangar environment breakdown](https://gamesartist.co.uk/hangar-environment-breakdown-leonardo-betancur/)
 (module, 70/30 detail, decals, blue light and fog, practical vs shape lights, steam).
+
+**Rhys's picks (11 November 2026).** All seven games, worst first. A busy hangar (ribbed walls, pipes, signs, haze and light shafts) and a nebula with dense stars and a visible asteroid belt.

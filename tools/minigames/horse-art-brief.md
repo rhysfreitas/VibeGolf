@@ -26,3 +26,5 @@ glare); windows lit warm against the blue.
 **References.** [Twilight real-estate photography (Redfin)](https://www.redfin.com/blog/twilight-photography-and-listing-your-home/),
 [Twilight photography tips](https://expertphotography.com/twilight-real-estate-photography),
 [Porch and door, night](https://gdanmitchell.com/2017/01/18/porch-and-door-night).
+
+**Rhys's picks (11 November 2026).** All seven games, worst first. Real houses and porch lights: gabled houses with lit windows, porch-light pools, hedges and cars, real tree canopies, softer floodlights.

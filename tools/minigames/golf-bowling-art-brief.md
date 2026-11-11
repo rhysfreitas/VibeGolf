@@ -9,3 +9,5 @@ woven fibre texture at its real scale (×30, so each tuft is a few centimetres);
 toys; the warm bounce light from the floorboards.
 
 **Avoid.** Anything that gets in the way of reading the pins.
+
+**Rhys's picks (11 November 2026).** All seven games, worst first. Polish: a visible sunbeam with dust, a woven rug.

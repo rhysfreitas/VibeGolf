@@ -27,3 +27,5 @@ runway catching a glint toward the sun; mist glowing where the sun is behind it.
 **References.** [Flying circus at dawn (Mark Alan Andre)](https://mark-andre.squarespace.com/blog/2016/8/20/the-flying-circus?format=amp),
 [Shuttleworth's grass field and old aircraft](https://targeta.co.uk/shuttleworth2016.htm),
 [Hot-air balloon photography](https://expertphotography.com/hot-air-balloon-photos).
+
+**Rhys's picks (11 November 2026).** All seven games, worst first. A real sunrise: low gold sun, long shadows, mist on the grass, a weathered runway with markings, closer balloons.

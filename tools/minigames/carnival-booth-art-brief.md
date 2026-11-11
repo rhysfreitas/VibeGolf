@@ -24,3 +24,5 @@ in haze so the gallery stands out.
 
 **References.** [Pacific Ocean Park shooting gallery (1920s)](https://www.1stdibs.com/furniture/folk-art/carnival-art/carnival-shooting-gallery-from-pacific-ocean-park-venice-beach/id-f_374448),
 [Antique shooting gallery targets](https://www.1stdibs.com/buy/antique-shooting-gallery-targets).
+
+**Rhys's picks (11 November 2026).** All seven games, worst first. Polish: warmer low sun, glowing bulbs, chipped paint.

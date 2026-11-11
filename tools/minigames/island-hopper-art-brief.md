@@ -15,3 +15,5 @@ and cloud banks, a mown tee on the start island with a rim of rock, the targets'
 and a green each, and the cloud sea lit from above.
 
 **Avoid.** A grey horizon; every island the same shape; flat white cliffs.
+
+**Rhys's picks (11 November 2026).** All seven games, worst first. Match the Aerie's golden morning: the same light, banded rock, pines, cloud sea and horizon cumulus as the course.

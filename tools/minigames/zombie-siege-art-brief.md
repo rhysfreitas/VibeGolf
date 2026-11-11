@@ -35,3 +35,5 @@ line (all there or easy). A few, not busy.
 [Moonlight on the prairie](https://amazingsky.net/2015/08/03), [The colour of moonlight](https://neiloseman.com/tag/night-shooting/)
 (silvery grey in life, blue in films; smoke for depth, ground lights behind ridges glowing through it),
 [5 ways to shoot night exteriors](https://www.indepthcine.com/videos/moonlight-lighting).
+
+**Rhys's picks (11 November 2026).** All seven games, worst first. Silver moonlight, fog in layers: a readable moonlit field, warm fire pools at the fence, soft glowing fog and beams, a big haloed moon.

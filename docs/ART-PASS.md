@@ -90,6 +90,13 @@ All four, every pass:
 Then `npm test` and the play-through, `node tools/review/playthrough.mjs <course> --render=120` (the golf
 only; a tenth of the time), because art can play (new trees, solid props).
 
+**Mini games** (their first pass, November 2026) run the same way with one brief a game
+(`tools/minigames/<game>-art-brief.md`): `node tools/review/games.mjs [game ...]` renders the play view
+(with and without its UI), a wide view a few metres back and up, the ball in flight and the payoff, and
+prints draws, triangles and software frame time; `--tag=x` keeps a set beside the others for before and
+after; `sheet.py --files` makes the sheets. A scene is one file, so keep its art in it; the Aerie's sky
+world shares `src/world/sky-art.js` (cumulus banks, wind-bent pines) with the course.
+
 ## 5. Deliver
 
 Send a contact sheet of the best views and a few lines on what changed, by the owner's four answers.
