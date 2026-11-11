@@ -22,12 +22,13 @@ function flyer(T, o, yaw, live) {
     return { x, z, y: g, surf: g === null || e[1] < T.voidY - o.y + 1 ? 'void' : T.surfaceAt(x, z) };
   };
 }
-// is the straight line to (x, z) clear of rock and rising ground under a rough arc (25 m apex)?
+// is the line to (x, z) clear of rock and rising ground under a rough arc? The same test as the game's flightClear
+// (main.js): the arc runs from the ball's height to the target's, so a green up a climb isn't read as blocked.
 function clear(T, o, x, z) {
-  const d = Math.hypot(x - o.x, z - o.z);
-  for (let k = 1; k < 30; k++) {
-    const f = k / 30, px = o.x + (x - o.x) * f, pz = o.z + (z - o.z) * f, h = o.y + 100 * f * (1 - f) * Math.min(1, d / 120);
-    const g = T.groundAt(px, pz); if (g !== null && g > h - 1) return false;
+  const d = Math.hypot(x - o.x, z - o.z), ty = T.groundAt(x, z) ?? o.y, apex = Math.min(32, Math.max(4, d / 9));
+  for (let f = 0.06; f < 0.95; f += 0.04) {
+    const px = o.x + (x - o.x) * f, pz = o.z + (z - o.z) * f, h = o.y + (ty - o.y) * f + 4 * apex * f * (1 - f);
+    const g = T.groundAt(px, pz); if (g !== null && g > h) return false;
     if (T.solidAt(px, h, pz)) return false;
   }
   return true;
@@ -40,18 +41,20 @@ function playHole(h, T, set, seed, opts = {}) {
   let ball = { x: back[0], z: back[1], y: T.groundAt(back[0], back[1]), surf: 'tee' }, n = 0, pen = 0;
   const log = [], tg = (h.targets || []).filter(t => !t.pin && !skip.includes(t)).map(t => [t.x, t.z]);
   while (n < (opts.max ?? 12)) {
-    if (ball.surf === 'green' || (ball.surf === 'fringe' && Math.hypot(ball.x - pin[0], ball.z - pin[1]) < 8)) {
+    if (ball.surf === 'green' || (ball.surf === 'fringe' && Math.hypot(ball.x - pin[0], ball.z - pin[1]) < 22)) { // as the game putts
       const d = Math.hypot(ball.x - pin[0], ball.z - pin[1]); n += d < 3 ? 1 : 2; log.push(d < 3 ? 'putt' : '2 putts'); return { n, log, pen };
     }
     const reach = (REACH[ball.surf] ?? 190) * scale, dp = Math.hypot(pin[0] - ball.x, pin[1] - ball.z);
     let aim;
     if (n === 0 && opts.first) { const d = Math.hypot(opts.first[0] - ball.x, opts.first[1] - ball.z), f = Math.min(1, reach / d); aim = [ball.x + (opts.first[0] - ball.x) * f, ball.z + (opts.first[1] - ball.z) * f]; }
-    else if (dp <= reach && clear(T, ball, pin[0], pin[1])) aim = pin;
+    else if (dp <= reach * 0.9 && clear(T, ball, pin[0], pin[1])) aim = pin;
     else {
-      const ahead = tg.filter(t => Math.hypot(pin[0] - t[0], pin[1] - t[1]) < dp - 5);
-      const ok = ahead.filter(t => Math.hypot(t[0] - ball.x, t[1] - ball.z) <= reach && clear(T, ball, t[0], t[1]));
-      aim = ok.find((t, i) => Math.hypot(t[0] - ball.x, t[1] - ball.z) >= 0.6 * reach || i === ok.length - 1);
-      if (!aim) { const t = ahead[0] || pin, d = Math.hypot(t[0] - ball.x, t[1] - ball.z), f = Math.min(1, reach / d); aim = [ball.x + (t[0] - ball.x) * f, ball.z + (t[1] - ball.z) * f]; }
+      // as the game's auto-aim (nextLie in main.js): the first clear target in reach that is a real shot (60% of reach
+      // or more), else the furthest clear one, else the pin, as far toward it as this lie reaches
+      const flat = t => Math.hypot(t[0] - ball.x, t[1] - ball.z);
+      const ok = tg.filter(t => Math.hypot(pin[0] - t[0], pin[1] - t[1]) < dp - 5 && flat(t) <= reach * 1.02 && clear(T, ball, t[0], t[1]));
+      aim = ok.find(t => flat(t) >= 0.6 * reach) || ok.reduce((a, t) => (!a || flat(t) > flat(a) ? t : a), null);
+      if (!aim) { const f = Math.min(1, reach / dp); aim = [ball.x + (pin[0] - ball.x) * f, ball.z + (pin[1] - ball.z) * f]; }
     }
     const yaw = Math.atan2(aim[0] - ball.x, -(aim[1] - ball.z)), dist = Math.hypot(aim[0] - ball.x, aim[1] - ball.z);
     const flat = flyer(T, ball, yaw, false), live = flyer(T, ball, yaw, true);

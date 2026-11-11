@@ -248,7 +248,11 @@ function simulate(shot, opts = {}) {
       if (vh < 0.05 && holds) break;
       let vx = s.vel[0] - (5 / 7) * G * gx * dt, vz = s.vel[2] - (5 / 7) * G * gz * dt;
       const v2 = Math.hypot(vx, vz) || 1e-9;
-      const nv = Math.max(0, v2 - surf.crr * G * dt), f = nv / v2;
+      // above about 9 m/s a ball isn't rolling on turf but skimming and hopping through it, and the ground takes far
+      // more out of it: without this a topped drive that met a rise kept 40 m/s and ran 450 yd uphill. Ordinary
+      // run-outs enter the roll slower than that and are unchanged.
+      const fast = v2 > 9 ? 1 + ((v2 - 9) / 7) ** 2 : 1;
+      const nv = Math.max(0, v2 - surf.crr * fast * G * dt), f = nv / v2;
       if (nv < 0.05 && holds) break;
       s.vel = [vx * f, 0, vz * f];
       const nx = x + s.vel[0] * dt, nz = z + s.vel[2] * dt;

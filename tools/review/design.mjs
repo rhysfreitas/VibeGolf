@@ -1,4 +1,4 @@
-// node tools/review/design.mjs <course ...|all> [--seeds=12] [--no-play] [--only=decisions]
+// node tools/review/design.mjs <course ...|all> [--seeds=12] [--no-play] [--only=decisions|gate]
 // The checks behind docs/COURSE-DESIGN.md "The nine" and "The hole card" that the other tools don't make:
 //   skeleton   par order, length, net height change and bend of every hole, and, with more than one course,
 //              where the courses repeat each other (the same par order, the same kind of hole in the same slot)
@@ -20,7 +20,7 @@ import { loadCourse, MODULES, REPO } from './page.mjs';
 import { makePlayer } from './play.mjs';
 
 const args = process.argv.slice(2), flag = k => args.find(a => a.startsWith(`--${k}`));
-const SEEDS = +((flag('seeds=') || '--seeds=12').split('=')[1]), PLAY = !flag('no-play'), ONLY_DEC = !!flag('only=decisions');
+const SEEDS = +((flag('seeds=') || '--seeds=12').split('=')[1]), PLAY = !flag('no-play'), ONLY_DEC = !!flag('only=decisions'), ONLY_GATE = !!flag('only=gate');
 const PLANNED = ['emberfell', 'lostvalley'];
 let names = args.filter(a => !a.startsWith('--'));
 if (!names.length || names[0] === 'all') names = [...Object.keys(MODULES), ...PLANNED];
@@ -106,7 +106,7 @@ for (const c of names) {
         notes.push(`${stuck || over > 2 ? '! ' : ''}${s.name} (${who} hitter): ${over >= 0 ? '+' : ''}${over.toFixed(1)} to par, ${(pen / SEEDS).toFixed(1)} penalties a hole${stuck ? `, never finished on ${stuck} of ${SEEDS}` : ''}`);
       }
       // decisions: the bold line against the safe one
-      if (bold.length && h.par > 3) {
+      if (bold.length && h.par > 3 && !ONLY_GATE) {
         const B = bold[0], bp = [B.x, B.z];
         for (const [s, scale, who] of [[sets[0], 1.1, 'long'], [sets[Math.min(2, sets.length - 1)], 0.82, 'short']]) {
           const tee = h.tees[s.id], reach = 245 * scale, sAim = aimFrom(tee, reach, safe), gain = yd(dist(sAim, pin) - dist(bp, pin));

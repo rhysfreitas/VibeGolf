@@ -99,3 +99,12 @@ test('a ball on a moderate slope stops at once instead of sitting until the cloc
   const back = simulate(wedge, { groundAt: (x, z) => Math.min(8, Math.max(0, (-z - 60) * 0.14)), surfaceAt: () => 'green' });
   assert.ok(back.totalDown < back.carry - 5, 'a 14% green slope sends it back');
 });
+
+test('a topped shot runs, but not for ever: it never goes further up a slope than on the flat', () => {
+  const topped = { Speed: 135, VLA: 3, HLA: 0, TotalSpin: 1500, SpinAxis: 0 }, fw = { surfaceAt: () => 'fairway' };
+  const flat = simulate(topped, fw), up = simulate(topped, { ...fw, groundAt: (x, z) => -z * 0.06 });
+  assert.ok(flat.totalDown > 130 && flat.totalDown < 230, `flat: ${flat.totalDown.toFixed(0)} yd`);
+  assert.ok(up.totalDown < flat.totalDown, `up a 6% slope ${up.totalDown.toFixed(0)} yd, flat ${flat.totalDown.toFixed(0)}`);
+  const drive = { Speed: 150, VLA: 12, HLA: 0, TotalSpin: 2800, SpinAxis: 0 };
+  assert.ok(Math.abs(simulate(drive).total - 249) < 4, 'an ordinary drive runs out as before');
+});
