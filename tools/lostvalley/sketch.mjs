@@ -262,9 +262,9 @@ function renderView(hi, view) {
     const cx = cam.r[0], cz = cam.r[2];   // the camera's right, flat, for crowns that face it
     let svg = '';
     const trunkW = (w) => Math.max(0.8, w * ppm).toFixed(2);
-    if (kind === 'giant') {   // the giant monkey-puzzle: a massive trunk under tier on tier of flat, spiny boughs
+    if (kind === 'giant') {   // the giant monkey-puzzle: a massive trunk under a dome of flat, spiny boughs in tiers
       svg += lineSvg(projLine([[x, y0, z], [x, y0 + hh * 0.97, z]]), hex(mix([92, 74, 58], f)), trunkW(2.2));
-      for (const [lv, rr] of [[0.16, 0.8], [0.27, 1.0], [0.38, 0.98], [0.49, 0.9], [0.6, 0.8], [0.71, 0.66], [0.82, 0.5], [0.92, 0.32]]) {
+      for (const [lv, rr] of [[0.2, 0.5], [0.32, 0.72], [0.44, 0.88], [0.56, 0.98], [0.67, 1.0], [0.77, 0.94], [0.86, 0.8], [0.94, 0.56]]) {
         const P = []; for (let i = 0; i <= 10; i++) { const a = Math.PI * i / 10; P.push([x + Math.cos(a) * r * rr * cx, y0 + hh * lv + Math.sin(a) * hh * 0.045 - Math.abs(Math.cos(a)) * hh * 0.03, z + Math.cos(a) * r * rr * cz]); }
         const c = proj(P); if (c) svg += `<polygon points="${fmt(wob(c, true, seed + lv * 9, 0.8))}" fill="${fill}" stroke="${outline}" stroke-width="${(0.6 * (1.2 - f)).toFixed(2)}"/>`;
       }

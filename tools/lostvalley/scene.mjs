@@ -110,8 +110,22 @@ export function buildHole(h) {
   const onPad = (t, x, z) => { const [u, v] = [(x - t.x) * tc + (z - t.z) * ts, (x - t.x) * ts - (z - t.z) * tc]; return Math.abs(u) < 6 && Math.abs(v) < 5; };
 
   const L0 = h.line, sd = [L0[1][0] - L0[0][0], L0[1][1] - L0[0][1]], sl0 = Math.hypot(...sd), ed = [L0.at(-1)[0] - L0.at(-2)[0], L0.at(-1)[1] - L0.at(-2)[1]], el0 = Math.hypot(...ed);
+  // where the line is along its length (s) and how far off it, eased across the bisector inside each corner, where
+  // the nearest leg changes and s jumps (a jump in s is a step in the line's profile)
+  const blendS = (x, z) => {
+    const L = h.line, c = []; let acc = 0;
+    for (let i = 0; i < L.length - 1; i++) {
+      const [ax, az] = L[i], [bx, bz] = L[i + 1], dx = bx - ax, dz = bz - az, l = Math.hypot(dx, dz);
+      const t = clamp(((x - ax) * dx + (z - az) * dz) / (l * l), 0, 1), d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+      c.push({ d, s: acc + t * l, off: (dx * (z - az) - dz * (x - ax)) / l }); acc += l;
+    }
+    c.sort((p, q) => p.d - q.d);
+    if (c.length < 2 || Math.abs(c[0].s - c[1].s) > 60) return c[0];
+    const w = 0.5 + 0.5 * smooth((c[1].d - c[0].d) / 14);
+    return { d: c[0].d, s: c[0].s * w + c[1].s * (1 - w), off: c[0].off * w + c[1].off * (1 - w) };
+  };
   const along = (x, z) => {
-    const pr = project(h.line, x, z);
+    const pr = blendS(x, z);
     if (pr.s >= h.len - 0.5) pr.s = h.len + ((x - L0.at(-1)[0]) * ed[0] + (z - L0.at(-1)[1]) * ed[1]) / el0;
     else if (pr.s <= 0.5) pr.s = ((x - L0[0][0]) * sd[0] + (z - L0[0][1]) * sd[1]) / sl0;
     return pr;
@@ -124,7 +138,7 @@ export function buildHole(h) {
     const line = PR.at(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -90, 90) + stepAt(pr.s, pr.off);
     const [X, Z] = W(x, z);
     if (kk >= 1) return V(X, Z);
-    const v = V(X, Z, true), gap = Math.abs(v - line), keep = smooth((gap - 4) / 6) * smooth((Math.abs(pr.off) - 14) / 10);
+    const v = V(X, Z, true), gap = Math.abs(v - line), keep = h.hold ? 0 : smooth((gap - 4) / 6) * smooth((Math.abs(pr.off) - 14) / 10);
     return cutAt(X, Z, lerp(lerp(line, v, kk), v, keep) + standAt(X, Z));
   }
   // everything but water and tee pads, relative to the hole's base

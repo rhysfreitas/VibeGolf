@@ -189,7 +189,7 @@ export const HOLES = [
 
   // 6. THE STRANGLER: a drivable par 4 up onto a knoll, a colossal strangler fig whose buttress roots arch over
   // the right of the fairway: the bold drive threads under the arch, the safe line goes round to the left
-  hole({ n: 6, name: 'The Strangler', par: 4, legs: [[274, 0]], place: { at: [560, -1480], heading: 175 }, flat: 64, fade: 40,
+  hole({ n: 6, name: 'The Strangler', par: 4, legs: [[274, 0]], place: { at: [560, -1480], heading: 175 }, flat: 80, fade: 46, hold: true,
     build: (P) => ({
       tees: { titan: 0, rex: 14, raptor: [52, 36], compy: [92, 40] },
       // two ways: straight up the middle and under the arch, or a branch of fairway out left round the fig's foot
@@ -221,11 +221,11 @@ export const HOLES = [
       // up to the bluff, then a lane each side of it (left: wide, safe, blind; right: along the river, the short
       // way), joining again past it
       fw: [{ e: [[60, 14, 14], [100, 22, 21], [150, 30, 28], [178, 44, 40], [190, 36, 30]], wob: 5 },
-        { e: [[180, 70, -34], [210, 74, -38], [240, 70, -36], [262, 54, -22]], wob: 4, seed: 43 },
-        { e: [[180, -12, 50], [210, -13, 54], [236, -10, 56], [258, -2, 44]], wob: 3.5, seed: 45 },
+        { e: [[180, 74, -40], [210, 76, -42], [240, 72, -40], [262, 56, -26]], wob: 4, seed: 43 },
+        { e: [[180, -6, 50], [210, -6, 54], [236, -8, 56], [258, -2, 46]], wob: 3, seed: 45 },
         { e: [[252, 34, 30], [280, 24, 22], [310, 19, 20], [345, 15, 15], [372, 12, 12]], wob: 5, seed: 47 }],
       corridor: 18,
-      cant: [[200, 270, -3]],   // away from the river: both lanes fall to the left
+      cant: [[200, 270, -3]],   // eases the fall to the river; the left lane still leans toward the bluff
       // the crest: the drive climbs over it, and the second plays down 20 m to the bend
       forms: [{ at: P(140, 0), rx: 80, rz: 34, rot: 0, h: 2.5, label: 'the crest' }],
       // the green inside a ring of sand, open at the front left, where the left lane comes in
@@ -233,10 +233,10 @@ export const HOLES = [
       green: { lobes: [[0, -2, 8.5, 13, 28], [3, 9, 7.5, 7, 0]], contour: [{ fall: 0, pct: 1.5 }, { bowl: [3, 9], r: 10, h: 0.3 }], style: 'A bean set from front left to back right, falling 1.5% toward the front (nothing tips toward the river), with a bowl in its back half that gathers to a back pin, the whole green inside a ring of sand with one way in, from the front left' },
       trees: [...stand(P(120, 62), 20, 8, 71, [['broad', 0.5], ['fern', 0.5]]), ...stand(P(300, -64), 22, 8, 72, [['conifer', 0.6], ['broad', 0.4]])],
       skeleton: { label: 'the skeleton' },
-      targets: [{ name: 'Left of the bluff', at: P(226, -52) }, { name: 'Right of the bluff', at: P(222, 32), bold: true }],
+      targets: [{ name: 'Left of the bluff', at: P(226, -56) }, { name: 'Right of the bluff', at: P(222, 24), bold: true }],
       words: {
         story: 'The bluff: a sandstone outcrop standing in the fairway at the corner, a long-neck\'s skeleton showing in its face toward the tee.',
-        plays: 'The Bone Bluff stands right in the middle of the fairway at the corner, a sandstone outcrop 30 m high and 35 m across, and the rain has worn its face back over the ages until a long-neck\'s skeleton showed through, half out of the rock: its spine curving along the face toward you, ribs like a ship\'s timbers, the long neck reaching up the stone. The drive climbs over a gentle crest, then the fairway splits round the bluff: the left lane is wide and safe but the green is out of sight behind the rock from most of it; the right lane runs between the bluff and the river and opens the green up, the short way. Past the bluff the hole bends right and falls 20 m to a green beside the river\'s bend, set inside a ring of sand with one way in, from the front left.',
+        plays: 'The Bone Bluff stands right in the middle of the fairway at the corner, a sandstone outcrop 30 m high and 30 m across, and the rain has worn its face back over the ages until a long-neck\'s skeleton showed through, half out of the rock: its spine curving along the face toward you, ribs like a ship\'s timbers, the long neck reaching up the stone. The drive climbs over a gentle crest, then the fairway splits round the bluff: the left lane is wide and safe but the green is out of sight behind the rock from most of it; the right lane runs between the bluff and the river and opens the green up, the short way. Past the bluff the hole bends right and falls 20 m to a green beside the river\'s bend, set inside a ring of sand with one way in, from the front left.',
         safe: 'Drive left of the bluff (226 m) and play down to the green, over the corner of the sand.',
         bold: 'Right of the bluff (222 m), between the rock and the river: the green opens up and the way in from the front left is straight ahead.',
         miss: 'Right is the river: a stroke and a drop. At the bluff, the rock: a ball off its face drops at the foot in the scrub. Long left of the left lane, broadleaves. Round the green, sand everywhere but the front left.',

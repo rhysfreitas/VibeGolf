@@ -115,14 +115,14 @@ export const BRIDGE = { a: [450, -1478], b: [512, -1468] };   // the rope bridge
 // weaves between the pools
 // the 8th's stepping stones: two pools reaching across its second leg from the swamp, leaving a dry way round
 // the left (each a rotated ellipse: centre, half-length across the line, half-width along it, rotation)
-export const POOLS8 = [[508, -373, 30, 10, 2.443], [470, -436, 22, 9, 2.443]];
+export const POOLS8 = [[509, -375, 36, 11, 2.443], [473, -436, 30, 10, 0.3]];
 export const SWAMP = { level: 397.4, blobs: [[372, -668, 52], [392, -598, 60], [342, -560, 62], [398, -520, 46], [378, -468, 60], [336, -436, 50], [296, -520, 58], [436, -506, 24]], seed: 41 };
 // the tar pit: a black seep in a hollow on the 3rd, a little below the ground round it
 // the tar pit wraps the 3rd green's front and right
 export const TAR = { c: [140, -698], rx: 30, rz: 19, rot: 0.15, level: 394.8, seed: 51, blobs: [[132, -703, 26, 17, 0.15], [162, -690, 18, 12, 0.6], [184, -684, 13, 8, 0.1]] };
 // the Bone Bluff: a sandstone outcrop on the 7th's left, 34 m high, a long-neck's skeleton half out of its face
 // the Bone Bluff stands in the middle of the 7th's fairway at the corner, splitting it
-export const BLUFF = { c: [626, -965], rx: 17, rz: 30, rot: 0, h: 30, seed: 61 };
+export const BLUFF = { c: [631, -969], rx: 15, rz: 27, rot: 0, h: 30, seed: 61 };
 
 const riverAt = (X, Z) => {   // nearest point on the river: s, offset, half-width and level there
   const P = RIVER.pts, L = P.map(p => [p[0], p[1]]), pr = project(L, X, Z);
@@ -213,7 +213,7 @@ export function cutAt(X, Z, y) {
   { const cp = CAMP_FALLS.pool, e = seDist({ x: cp.c[0], z: cp.c[1], rx: cp.rx, rz: cp.rz, rot: cp.rot }, X, Z); if (e < 1.6) y = lerp(y, Math.min(y, cp.level - 1.2), 1 - smooth((e - 0.9) / 0.5)); }
   { const sp = project(CAMP_FALLS.stream, X, Z); if (sp.d < 8 && sp.s > 0) y = lerp(y, Math.min(y, CAMP_FALLS.pool.level - 0.9), 1 - smooth((sp.d - 1.6) / 3)); }
   // the creek: a channel about 6 m across, 1.5 m below its banks
-  { const cp = project(CREEK.pts, X, Z); if (cp.d < 14 && cp.s > 1 && Z < -30) { const lv = CRK.lv(cp.s), bed = lv - 0.5; y = lerp(y, Math.min(y, bed), 1 - smooth((cp.d - CREEK.w) / 6)); } }
+  { const cp = project(CREEK.pts, X, Z); if (cp.d < 14 && cp.s > 1 && Z < -30) { const lv = CRK.lv(cp.s), bed = lv - 0.5; y = lerp(y, Math.min(y, bed), 1 - smooth((cp.d - CREEK.w + 1) / 10)); } }
   { const e = pondE(HOLLOW_POND, X, Z); if (e < 1.6) y = lerp(y, HOLLOW_POND.level - 0.8, 1 - smooth((e - 0.9) / 0.6)); }
   // the back channel across the 4th: water between low gravel banks, and its oxbow pond
   { const bp = project(BACKCH.pts, X, Z); if (bp.d < 30 && bp.s > 0) { const bank = BCK.lv(bp.s) + 0.9; y = lerp(y, Math.min(y, bp.d < BACKCH.w ? BCK.lv(bp.s) - 0.6 : bank + (bp.d - BACKCH.w) * 0.08), 1 - smooth((bp.d - BACKCH.w - 4) / 18)); } }
