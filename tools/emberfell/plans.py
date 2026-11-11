@@ -117,7 +117,8 @@ for h in D['holes']:
     ax.add_patch(Polygon([[h['pin'][0], h['pin'][1] - 9], [h['pin'][0] + 6, h['pin'][1] - 7.5], [h['pin'][0], h['pin'][1] - 6]], fc='#c0392b', ec='none', zorder=17))
     for t in h['targets']:
         ax.plot(*t['p'], marker='o', ms=4, mfc='#e85d3f' if t['bold'] else '#26a6b8', mec=INK, mew=0.5, zorder=16)
-        ax.annotate(f"{t['name']} · {t['d']}", t['p'], xytext=(6, 3), textcoords='offset points', fontsize=5.6, zorder=18,
+        left = round(hypot(t['p'][0] - h['pin'][0], t['p'][1] - h['pin'][1]) / YD)
+        ax.annotate(f"{t['name']} · {t['d']} yd ({left} left)", t['p'], xytext=(6, 3), textcoords='offset points', fontsize=5.6, zorder=18,
                     bbox=dict(boxstyle='round,pad=0.15', fc='white', ec='none', alpha=0.85))
     for p, t in h['labels']: label(ax, p, t, fs=5.8, color='#334')
 

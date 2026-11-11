@@ -55,7 +55,8 @@ p { font-size: 8.6pt; line-height: 1.34; margin: 0 0 4pt; }
 .view .cap { font-size: 7.2pt; margin-top: 1.5pt; color: #333; }
 .view .cap b { font-weight: 600; }
 .body { display: grid; grid-template-columns: 3.5in 1fr; gap: 0.2in; margin-top: 0.08in; height: 5.22in; }
-.plan img { width: 3.5in; height: 5.13in; object-fit: contain; object-position: center top; border: 0.6pt solid #888; display: block; }
+.plan .pcap { font-size: 6.5pt; color: #555; margin-top: 2pt; }
+.plan img { width: 3.5in; height: 4.98in; object-fit: contain; object-position: center top; border: 0.6pt solid #888; display: block; }
 .side { display: flex; flex-direction: column; min-height: 0; }
 .side .txt { flex: none; }
 .side p { font-size: 7.7pt; line-height: 1.26; margin-bottom: 2.5pt; }
@@ -139,7 +140,7 @@ for (const h of D.holes) {
       <div class="facts"><span><b>Par ${h.par}</b></span><span>${shape(h)}</span><span>${height(h)} tee to green (climbs ${h.rise} m, drops ${h.fall} m)</span></div></div>${card(h)}</div>
     <div class="views">${vs.map(v => `<div class="view"><img src="${img('views/h' + h.n + '_' + v.id + '.png')}"><div class="cap">${cap(v)}</div></div>`).join('')}</div>
     <div class="body">
-      <div class="plan"><img src="${img('plan' + h.n + '.png')}"></div>
+      <div class="plan"><img src="${img('plan' + h.n + '.png')}"><div class="pcap">Ticks on the line: yards to the green. Targets: yards from the back tee (and left to the green).</div></div>
       <div class="side"><div class="txt">
         <div class="gimg"><img src="${img('green' + h.n + '.png')}"><div class="cap">The green: 5 cm contours, arrows downhill (red over 3%), pin areas dashed.</div></div>
         <p>${esc(w.plays)}</p>
