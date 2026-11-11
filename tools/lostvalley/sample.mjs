@@ -75,7 +75,7 @@ for (const [i, B] of BUILT.entries()) {
   // the camp and the bridge, from world space into this hole's frame
   for (const o of CAMP) { const p = LOC[i](...o.at); if (Math.hypot(p[0] - h.line.at(-1)[0], p[1] - h.line.at(-1)[1]) < 500 || Math.hypot(...p) < 400) wobjs.push({ ...o, x: p[0], z: p[1], rot: (o.rot || 0) - h.place.heading * Math.PI / 180 }); }
   { const a = LOC[i](...BRIDGE.a), b = LOC[i](...BRIDGE.b); if (Math.min(Math.hypot(...a.map((v, j) => v - h.pin[j])), Math.hypot(...a)) < 400) wobjs.push({ kind: 'bridge', a, b }); }
-  meta.push({ tips: h.tipsPt, tipsYards: h.tipsYards, cracks: cr, wobjs, n: h.n, name: h.name, par: h.par, yards: h.yards, x0, z0, W, H, line: h.line, len: h.len, pin: h.pin, tees: h.teePts,
+  meta.push({ tips: h.tipsPt, tipsYards: h.tipsYards, tipsSet: COURSE.tipsSet, cracks: cr, wobjs, n: h.n, name: h.name, par: h.par, yards: h.yards, x0, z0, W, H, line: h.line, len: h.len, pin: h.pin, tees: h.teePts,
     greenArea: gcells, teeY: tee0, pinY: B.ground(...h.pin), rise: Math.round(rise), fall: Math.round(fall), targets: (h.targets || []).map(t => {
       // the width of fairway straight across the line where the target sits
       const pr = project(h.line, ...t.at); let w = 0;
@@ -158,13 +158,24 @@ for (const [i, B] of BUILT.entries()) {
   for (const [k, H] of HOLES.entries()) if (k !== i) { const g = toWorld(H)(...H.pin); nearG = Math.min(nearG, Math.hypot(g[0] - tw[0], g[1] - tw[1])); }
   let nearF = Infinity; for (let a = 0; a < 6.283; a += 0.2) for (let r = 0; r < 16; r++) if (B.surface(t[0] + Math.cos(a) * r, t[1] + Math.sin(a) * r) === 'fairway') nearF = Math.min(nearF, r);
   const over = B.solids(...t).filter(([a]) => a - tg < 45);
-  const okT = !['void', 'water', 'tar', 'green', 'fairway', 'cliff', 'camp'].includes(ts) && sl < 0.3 && nearG > 35 && nearF >= 12 && !over.length;
-  let land = '';
-  if (h.par > 3) {   // a tips drive carrying 280 and 300 yd down the line: the fairway there
-    const tsl = project(h.line, ...t).s;
-    for (const c of [280, 300]) { const s = Math.min(h.len - 1, tsl + c * YD), p = at(h.line, s); land += ` ${c} yd: ${B.surface(...p)} ${Math.round(fwWidth(B, p, headingAt(h.line, s)))} m;`; }
+  // the pad: real ground under 10 x 12 m, level within 1.2 m; 20-50 yd behind the back tee (8-30 on a par 3)
+  const hd0 = headingAt(h.line, 1), pc = Math.cos(hd0), ps = Math.sin(hd0), padY = [];
+  for (const u of [-5, 0, 5]) for (const v of [-6, 0, 6]) padY.push(B.ground(t[0] + u * pc - v * ps, t[1] + u * ps + v * pc));
+  const padOk = padY.every(y => y !== null) && Math.max(...padY) - Math.min(...padY) <= 1.2, behind = h.tipsYards - h.yards[BACK];
+  const lenOk = h.par === 3 ? behind >= 8 && behind <= 30 : behind >= 20 && behind <= 50;
+  let land = '', landOk = true;
+  if (h.par > 3) {   // a tips drive (tipsSet.minDrive, 290 yd) down the line from the tips spot (behind the tee, so s < 0): 40 m or more of fairway where it lands
+    const L0 = h.line, sl0 = Math.hypot(L0[1][0] - L0[0][0], L0[1][1] - L0[0][1]), tsl = ((t[0] - L0[0][0]) * (L0[1][0] - L0[0][0]) + (t[1] - L0[0][1]) * (L0[1][1] - L0[0][1])) / sl0, c = COURSE.tipsSet?.minDrive || 290, s = Math.min(h.len - 1, tsl + c * YD);
+    // down the line, and toward the first target where there is one (as tools/review/tips.mjs measures it): the
+    // better of the two, with lanes counted as the landing check counts them (40 m, or two lanes of 25 m)
+    const aim = (h.targets || []).find(q => !q.bold), cands = [[at(h.line, s), headingAt(h.line, s)]];
+    if (aim) { const dx = aim.at[0] - t[0], dz = aim.at[1] - t[1], l = Math.hypot(dx, dz); cands.push([[t[0] + dx / l * c * YD, t[1] + dz / l * c * YD], Math.atan2(dx, -dz)]); }
+    const meas = cands.map(([p, dir]) => { const ln = lanes(B, p, dir); return { p, ln, ok: Math.max(0, ...ln) >= 40 || ln.filter(v => v >= 25).length >= 2 }; });
+    const best = meas.find(m => m.ok) || meas[0], sf = B.surface(...best.p);
+    land = ` ${c} yd drive: ${sf}, lanes ${best.ln.map(Math.round).join(' + ') || 'none'} m;`; landOk = best.ok;
   }
-  R_(`${okT ? ' ' : '!'} ${h.n} tips ${h.tipsYards} yd (+${h.tipsYards - h.yards[BACK]}): ${ts}, slope ${(sl * 100).toFixed(0)}%, ${nearF === Infinity ? '16+' : nearF} m off fairway, nearest other green ${Math.round(nearG)} m${over.length ? ', OVERHEAD' : ''};${land}`);
+  const okT = !['void', 'water', 'tar', 'green', 'fairway', 'cliff', 'camp'].includes(ts) && padOk && lenOk && nearG > 35 && nearF >= 12 && !over.length && landOk;
+  R_(`${okT ? ' ' : '!'} ${h.n} tips ${h.tipsYards} yd (+${behind}): ${ts}, pad ${padOk ? 'level' : 'NOT LEVEL'} (${(Math.max(...padY.filter(y => y !== null)) - Math.min(...padY.filter(y => y !== null))).toFixed(1)} m), ${nearF === Infinity ? '16+' : nearF} m off fairway, nearest other green ${Math.round(nearG)} m${over.length ? ', OVERHEAD' : ''};${land}`);
   // every tee set's drive lands on 40 m or more of fairway: the fairway across the line at the drive's length
   // (minDrive, or 150 yd for the forward set) from that tee
   if (h.par > 3) {

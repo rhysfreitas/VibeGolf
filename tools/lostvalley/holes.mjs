@@ -22,6 +22,9 @@ export const COURSE = {
     { id: 'raptor', name: 'Raptor', color: '#d8b25a', minDrive: 200 },
     { id: 'compy', name: 'Compy', color: '#9cc879', minDrive: 0 },
   ],
+  // the tips tee, switched off (docs/COURSE-DESIGN.md "The tips tee: an option in the data"): kept out of teeSets;
+  // turning it on is putting it first there and copying each hole's tips.tee and tips.yards into tees and yards
+  tipsSet: { id: 'brachio', name: 'Brachio', color: '#5b4a3a', minDrive: 290 },
   // the course card (docs/COURSE-DESIGN.md Part 1)
   card: {
     hook: 'A valley where time stopped, walled in by the sheer cliffs of a table mountain. Its one rule: the animals are scenery and never in play; tar plays as water and the river\'s gravel bars as bunkers.',
@@ -56,10 +59,12 @@ function hole(def) {
   for (const [k, v] of Object.entries(h.tees)) h.teePts[k] = typeof v === 'number' ? P(v) : P(v[0], v[1]);
   h.yards = {};
   for (const [k, v] of Object.entries(h.tees)) { const s = typeof v === 'number' ? v : v[0]; h.yards[k] = Math.round((len - s) / YD / 5) * 5; }
-  // the spot for a future tips tee (a fifth set at tour length): behind the back tee, about 35-40 yd on the par 4s
-  // and 5s, 15 on the par 3s; [s, off] with s < 0. Plan only until the tee set exists
-  const tp = def.tips || h.tips || (def.par === 3 ? [-14, 0] : [-34, 0]);
+  // the tips tee (COURSE.tipsSet, switched off): behind the back tee, about 35-40 yd on the par 4s and 5s, 15 on the
+  // par 3s. Written as [s, off] with s < 0; carried as tips: { tee: [x, z], yards } in the hole's frame, out of
+  // tees and yards until the set is turned on
+  const tp = def.tips || (def.par === 3 ? [-14, 0] : [-34, 0]);
   h.tipsPt = P(...tp); h.tipsYards = Math.round((len - tp[0]) / YD / 5) * 5;
+  h.tips = { tee: h.tipsPt, yards: h.tipsYards };
   return { ...def, ...h };
 }
 
@@ -176,7 +181,7 @@ export const HOLES = [
 
   // 4. THE TAR PIT: a short iron over a tar seep that wraps the green's front and right, a great horned skull and
   // ribs in it; the way round is left. No sand: the tar is the hazard (a Short, dressed in tar)
-  hole({ n: 4, name: 'The Tar Pit', par: 3, legs: [[133, 0]], place: { at: [-120, -575], heading: 135 }, tips: [-4, 30], shape: 'One shot',
+  hole({ n: 4, name: 'The Tar Pit', par: 3, legs: [[133, 0]], place: { at: [-120, -575], heading: 135 }, tips: [-10, 30], shape: 'One shot',
     build: (P) => ({
       tees: { titan: 0, rex: 10, raptor: 22, compy: [46, -24] },
       corridor: 12,

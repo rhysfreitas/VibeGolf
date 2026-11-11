@@ -147,7 +147,7 @@ for (const h of D.holes) {
         ${h.targets.length ? `<p class="kv"><b>Targets</b> ${h.targets.map(t => `${esc(t.name)} (${t.d} yd, ${t.width} m wide)`).join(' · ')}</p>` : ''}
         <p class="kv"><b>Green</b> ${esc(h.green.style)} (${h.greenShape.depth} m deep × ${h.greenShape.width} m wide, ${h.greenArea} m²).</p>
         ${h.contour ? `<p class="kv"><b>Contour</b> Typically ${h.contour.median}% underfoot, ${h.contour.feat === 'a feature' ? `${h.contour.relief} m of shape beyond its fall` : 'flatter: just its fall'}; ${h.contour.areas} pin areas, ${h.contour.cup}% cuppable.${h.lean && h.lean.length ? ' Fairway lean: ' + h.lean.map(l => `${esc(l.name)} ${Math.abs(l.lean)}% ${l.lean > 0.3 ? 'right' : l.lean < -0.3 ? 'left' : 'level'}`).join(', ') + '.' : ''}</p>` : ''}
-        <p class="kv"><b>Tips</b> Room for a future tips tee: ${h.tipsYards} yd${h.par > 3 ? ', landing areas checked for 280–300 yd drives' : ''}.</p>
+        <p class="kv"><b>Tips</b> The Brachio tee, in the data and switched off: ${h.tipsYards} yd${h.par > 3 ? ', its 290 yd drive checked on fairway' : ''}.</p>
         ${drv}
         <div class="gn"><img class="prof" src="${img('prof' + h.n + '.png')}"><div class="gimg"><img src="${img('green' + h.n + '.png')}"><div class="cap">The green: 5 cm contours, arrows downhill (red over 3%), pin areas dashed.</div></div></div>
         <div class="notes"><div class="t">Notes</div>${lines(6)}</div>
