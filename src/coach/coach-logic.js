@@ -13,7 +13,7 @@
 
 import { CLUB_REF, LAUNCH_PER_LOFT, windowsFor as physicsWindows } from './windows.js';
 import { CONDITIONS } from './conditions.js';
-import { clubTrust, spinTrust, spinForRules } from './trust.js';
+import { clubTrust, spinTrust, spinForRules, CLUB_LIMITS } from './trust.js';
 
 export const READ_WINDOW = 4;     // shots before the coach speaks
 export const FOCUS_SHOTS = 8;     // shots on a cue before the progress check
@@ -38,7 +38,10 @@ export function shotMetrics(shot, clubId) {
   // no club data: a rough D-plane inverse (start mostly face, curve from face to path)
   const ftpB = axis / 1.8, faceB = dir + 0.2 * ftpB;
   const face = hasClub ? num(c.FaceToTarget) : faceB, path = hasClub ? num(c.Path) : faceB - ftpB;
-  const clubSpeed = num(c.Speed) > 0 ? num(c.Speed) : shot.Speed / ref.smash;
+  // club speed on its own is still worth having when the angles weren't tracked
+  const rawSpeed = shot.Club ? num(shot.Club.Speed) : NaN, sm = (+shot.Speed || 0) / rawSpeed;
+  const speedOk = num(c.Speed) > 0 || (rawSpeed >= CLUB_LIMITS.speed[0] && rawSpeed <= CLUB_LIMITS.speed[1] && sm >= CLUB_LIMITS.smash[0] && sm <= CLUB_LIMITS.smash[1]);
+  const clubSpeed = num(c.Speed) > 0 ? num(c.Speed) : speedOk ? rawSpeed : shot.Speed / ref.smash;
   const aoa = isFinite(num(c.AngleOfAttack)) ? num(c.AngleOfAttack) : ref.aoa;
   const launch = +shot.VLA || 0;
   const dynLoft = isFinite(num(c.Loft)) ? num(c.Loft) : launch / LAUNCH_PER_LOFT[ref.kind];
@@ -46,7 +49,7 @@ export function shotMetrics(shot, clubId) {
   const st = spinTrust({ spin: spinRaw, axis, launch, clubSpeed, aoa: aoaMeasured ? aoa : null, ftp: hasClub ? face - path : null,
     spinSource: shot.Meta && shot.Meta.spinSource }, clubId);
   return {
-    club: clubId, kind: ref.kind, hasClub, clubTrust: ct.why,
+    club: clubId, kind: ref.kind, hasClub, hasSpeed: !!speedOk, clubTrust: ct.why,
     ballSpeed: +shot.Speed || 0, clubSpeed, smash: (+shot.Speed || 0) / clubSpeed,
     launch, dir, spin: spinForRules(spinRaw, st), spinRaw, spinTrust: st.verdict, spinWhy: st.why, axis,
     face, path, ftp: face - path, aoa, dynLoft, spinLoft: dynLoft - aoa,
@@ -56,42 +59,52 @@ export function shotMetrics(shot, clubId) {
 /* ---------------- per-shot predicates ---------------- */
 // Each returns 0 (no), or a side: 1 (or ±1 for conditions with a direction). `opp` is the
 // opposite miss: one of those in the window stops the condition firing.
-const isThin = (m, w) => m.launch > 3 && m.launch <= w.launchC - 4 && m.spin <= w.spinC * 0.8;
+const isThin = (m, w) => m.launch > 3 && m.launch <= w.launchC - 3 && m.spin <= w.spinC * 0.82;
 const isTop = (m, w) => m.launch <= 3 && m.spin < w.spin[0] * 0.4;
 // heavy contact: slow off the face without the extra spin a flip adds
 const isFat = (m, w) => m.smash <= 0.92 * w.smashRef && m.spin <= w.spin[1] && !isThin(m, w) && !isTop(m, w);
 const iron = m => m.kind === 'iron' || m.kind === 'wedge';
 const wood = m => m.kind === 'wood' || m.kind === 'driver';
+// The R10 measures the ball (speed, launch, start line) better than the club (face and path
+// within about 2–4°), so a path or face read must also show in the ball: the start line or the
+// curve on the same side. Rules tuned with tools/coach/sim-check.mjs (an amateur's swing plus
+// R10-sized error); see docs/COACHING.md.
 export const RULES = {
   // setup faults are judged on the window's averages (swing noise hides them shot by shot)
-  aimedOff: { test: (m) => (Math.abs(m.dir) >= 3 && Math.abs(m.ftp) <= 2 ? Math.sign(m.dir) : 0), sided: true, onMean: true },
-  ballBack: { test: (m, w) => (m.kind !== 'driver' && m.aoa <= w.aoa[0] - 2 && m.path >= 3 && m.dir > 0 ? 1 : 0), onMean: true },
-  ballForward: { test: (m, w) => (iron(m) && m.aoa >= w.aoa[1] && m.path <= -2 && m.smash < w.smashMin ? 1 : 0) },
-  overTheTop: { test: m => (m.path <= -3 ? 1 : 0), opp: m => m.path >= 3, agree: m => m.dir < -1 || m.axis > 2.5 },
-  stuck: { test: m => (m.path >= 4 ? 1 : 0), opp: m => m.path <= -3, agree: m => m.dir > 1 || m.axis < -2.5 },
-  openFace: { test: m => (m.ftp >= 3 ? 1 : 0), opp: m => m.ftp <= -3, agree: m => m.axis > 2.5 },
-  closedFace: { test: m => (m.ftp <= -3 ? 1 : 0), opp: m => m.ftp >= 3, agree: m => m.axis < -2.5 },
-  flip: { test: (m, w) => (m.spinLoft >= w.spinLoft + 4 && m.smash < w.smashMin + 0.03 ? 1 : 0), opp: (m, w) => m.spinLoft <= w.spinLoft - 4 },
-  steep: { test: (m, w) => (m.aoa <= w.aoa[0] - 2 && (m.spin >= w.spinC || m.launch <= w.launchC - 1) ? 1 : 0), opp: (m, w) => m.aoa >= w.aoa[1] },
-  fat: { test: (m, w) => (isFat(m, w) ? 1 : 0) },
-  driverDown: { test: (m, w) => (m.kind === 'driver' && m.aoa < w.aoa[0] && m.spin > w.spin[1] ? 1 : 0) },
+  // aimed off: face and path both off the same way, so the ball starts off line and barely curves
+  aimedOff: { test: (m) => (Math.abs(m.dir) >= 3 && Math.abs(m.axis) <= 3.5 ? Math.sign(m.dir) : 0), sided: true, onMean: true },
+  ballBack: { test: (m, w) => (m.kind !== 'driver' && m.aoa <= w.aoa[0] - 1 && m.path >= 2.5 && m.dir > 1 ? 1 : 0), onMean: true },
+  ballForward: { test: (m, w) => (iron(m) && m.aoa >= w.aoa[1] - 0.5 && m.path <= -2 && (!m.hasSpeed || m.smash < w.smashMin + 0.01) ? 1 : 0), onMean: true },
+  overTheTop: { test: m => (m.path <= -3 && (m.dir < 0 || m.axis > 1.5) ? 1 : 0), opp: m => m.path >= 3, agree: m => m.dir < -1 || m.axis > 2.5 },
+  stuck: { test: m => (m.path >= 4 && (m.dir > 0 || m.axis < -1.5) ? 1 : 0), opp: m => m.path <= -3, agree: m => m.dir > 1 || m.axis < -2.5 },
+  openFace: { test: m => (m.ftp >= 3 && m.axis > 2 ? 1 : 0), opp: m => m.ftp <= -3 && m.axis < -2, agree: m => m.axis > 2.5 },
+  closedFace: { test: m => (m.ftp <= -3 && m.axis < -2 ? 1 : 0), opp: m => m.ftp >= 3 && m.axis > 2, agree: m => m.axis < -2.5 },
+  flip: { test: (m, w) => (m.spinLoft >= w.spinLoft + 4 && (!m.hasSpeed || m.smash < w.smashMin + 0.03) ? 1 : 0), opp: (m, w) => m.spinLoft <= w.spinLoft - 4 },
+  // the driver has its own version (driverDown)
+  steep: { test: (m, w) => (m.kind !== 'driver' && m.aoa <= w.aoa[0] - 2 && (m.spin >= w.spinC || m.launch <= w.launchC - 1) ? 1 : 0), opp: (m, w) => m.aoa >= w.aoa[1] },
+  fat: { test: (m, w) => (m.hasSpeed && isFat(m, w) ? 1 : 0) },
+  driverDown: { test: (m, w) => (m.kind === 'driver' && m.aoa <= w.aoa[0] - 1.5 && m.spin >= w.spinC ? 1 : 0), onMean: true },
   thin: { test: (m, w) => (isThin(m, w) ? 1 : 0) },
-  offCentre: { test: (m, w) => (iron(m) && m.smash < w.smashMin - 0.05 && !isFat(m, w) && m.launch >= w.launch[0] - 1 && m.launch <= w.launch[1] + 1 && m.spin >= w.spin[0] * 0.9 && m.spin <= w.spin[1] * 1.1 ? 1 : 0) },
-  toeHeel: { test: m => { if (!wood(m) || !m.hasClub) return 0; const d = m.axis - 1.8 * m.ftp; return Math.abs(d) >= 6 ? Math.sign(d) : 0; }, sided: true },
+  // a strike that loses ball speed without the launch and spin of a fat or thin one
+  offCentre: { test: (m, w) => (iron(m) && m.hasSpeed && m.smash <= 0.965 * w.smashRef && m.smash > 0.92 * w.smashRef && m.launch >= w.launch[0] - 1 && m.launch <= w.launch[1] + 1 && m.spin >= w.spin[0] * 0.85 && m.spin <= w.spin[1] * 1.15 ? 1 : 0), onMean: true },
+  // gear effect on a wood: curve the face to path doesn't explain, judged on the window's mean
+  toeHeel: { test: m => { if (!wood(m) || !m.hasClub) return 0; const d = m.axis - 1.8 * m.ftp; return Math.abs(d) >= 7.5 ? Math.sign(d) : 0; }, sided: true, onMean: true, need: (m, side) => side * (m.axis - 1.8 * m.ftp) >= 3 },
   top: { test: (m, w) => (isTop(m, w) ? 1 : 0) },
-  shank: { test: m => (m.dir >= 10 && m.smash < 1.0 ? 1 : 0), single: true },
+  shank: { test: (m, w) => (m.dir >= 10 && (m.hasSpeed ? m.smash < 0.82 * w.smashRef : m.ballSpeed < 0.8 * w.clubSpeed * w.smashRef) ? 1 : 0), single: true },
 };
 // a firing condition removes the ones it explains (its root cause covers them)
 export const EXPLAINS = {
-  ballBack: ['steep', 'stuck', 'closedFace', 'aimedOff'], ballForward: ['overTheTop', 'thin', 'fat', 'openFace'],
+  ballBack: ['steep', 'stuck', 'closedFace', 'aimedOff'], ballForward: ['overTheTop', 'thin', 'fat', 'openFace', 'aimedOff', 'offCentre'],
   aimedOff: ['overTheTop', 'stuck'], overTheTop: ['steep', 'openFace'], stuck: ['closedFace'],
   flip: ['openFace', 'fat', 'thin'], steep: ['fat'], driverDown: ['steep'], fat: ['offCentre'], thin: ['offCentre'],
 };
 export const GROUP_ORDER = ['urgent', 'setup', 'path', 'face', 'control', 'lowPoint', 'strike', 'session'];
 
 /* ---------------- the window: which conditions hold ---------------- */
+// two-way: [metric, spread (sd) over, both sides past]
+export const TWO_WAY = [['dir', 2.8, 2.5], ['axis', 9.5, 7]];
 const METRIC_KEYS = ['ballSpeed', 'clubSpeed', 'smash', 'launch', 'dir', 'spin', 'axis', 'face', 'path', 'ftp', 'aoa', 'dynLoft', 'spinLoft'];
-function meanOf(ms) { const o = { ...ms[ms.length - 1] }; for (const k of METRIC_KEYS) o[k] = mean(ms.map(m => m[k])); return o; }
+function meanOf(ms) { const o = { ...ms[ms.length - 1] }; for (const k of METRIC_KEYS) o[k] = mean(ms.map(m => m[k])); o.hasClub = ms.every(m => m.hasClub); o.hasSpeed = ms.every(m => m.hasSpeed); return o; }
 // ms: the last READ_WINDOW metrics with one club; w: that club's windows
 export function evaluate(ms, w) {
   const fired = [];
@@ -101,8 +114,11 @@ export function evaluate(ms, w) {
     if (r.single) continue;
     if (r.onMean) {
       const side = r.test(meanOf(win), w); if (!side) continue;
+      if (r.need && win.filter(m => r.need(m, side)).length < READ_WINDOW - 1) continue;
       const n = win.filter(m => r.test(m, w) === side).length;
-      fired.push({ id, side, matches: n, confidence: n >= READ_WINDOW - 1 ? 'high' : 'medium' });
+      // club-data reads need the club data on every shot for high confidence
+      const conf = n >= READ_WINDOW - 1 && (!r.need || win.every(m => m.hasClub)) ? 'high' : 'medium';
+      fired.push({ id, side, matches: n, confidence: conf });
       continue;
     }
     const sides = win.map(m => r.test(m, w));
@@ -115,10 +131,11 @@ export function evaluate(ms, w) {
     if (r.agree) { const hasClub = win.every(m => m.hasClub), ag = win.filter(m => r.agree(m)).length; if (!hasClub || ag < READ_WINDOW - 1) confidence = 'medium'; }
     fired.push({ id, side, matches: n, confidence });
   }
-  // two-way miss: path or face spread wider than its bias
-  for (const k of ['path', 'face']) {
+  // two-way miss, read from the ball (the R10's path and face scatter too much on their own):
+  // starting both sides of the line (pushes and pulls), or curving both ways (draws and fades)
+  for (const [k, spread, edge] of TWO_WAY) {
     const v = win.map(m => m[k]), s = sd(v);
-    if (s > 4 && Math.abs(mean(v)) < s && Math.max(...v) >= 3 && Math.min(...v) <= -3) { fired.push({ id: 'twoWay', side: 1, matches: READ_WINDOW, confidence: 'medium', key: k }); break; }
+    if (s > spread && Math.abs(mean(v)) < s && Math.max(...v) >= edge && Math.min(...v) <= -edge) { fired.push({ id: 'twoWay', side: 1, matches: READ_WINDOW, confidence: 'medium', key: k }); break; }
   }
   return fired;
 }
@@ -172,7 +189,7 @@ export const PROGRESS = {
   ballBack: { value: avg('aoa'), target: w => w.aoa[0] }, ballForward: { value: avg('aoa'), target: w => w.aoa[1] },
   overTheTop: { value: avg('path'), target: () => -1 }, stuck: { value: avg('path'), target: () => 2 },
   openFace: { value: avg('ftp'), target: () => 1 }, closedFace: { value: avg('ftp'), target: () => -1 },
-  twoWay: { value: ms => Math.max(sd(ms.map(m => m.path)), sd(ms.map(m => m.face))), target: () => 2 },
+  twoWay: { value: ms => Math.max(sd(ms.map(m => m.dir)), sd(ms.map(m => m.axis)) / 3), target: () => 1.5 },
   flip: { value: avg('spinLoft'), target: w => w.spinLoft + 1 }, steep: { value: avg('aoa'), target: w => w.aoa[0] },
   fat: { value: avg('smash'), target: w => w.smashMin }, driverDown: { value: avg('aoa'), target: () => 0 },
   thin: { value: avg('launch'), target: w => w.launch[0] }, offCentre: { value: avg('smash'), target: w => w.smashMin },

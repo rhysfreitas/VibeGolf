@@ -18,6 +18,12 @@ export const FAULTS = [
   { id: 'twoWay', name: 'Two-way' },
   { id: 'aimedOff', name: 'Aimed right' },
   { id: 'ballBack', name: 'Ball back' },
+  { id: 'ballForward', name: 'Ball forward' },
+  { id: 'driverDown', name: 'Driver hitting down' },
+  { id: 'offCentre', name: 'Off-centre' },
+  { id: 'toe', name: 'Toe strike' },
+  { id: 'top', name: 'Topped' },
+  { id: 'shank', name: 'Shank' },
   // skill attempts (Learn a skill): the swing doing what the lesson asks
   { id: 'draw', name: 'Skill: draw swing' },
   { id: 'fade', name: 'Skill: fade swing' },
@@ -40,6 +46,12 @@ const DELTA = {
   thin: { smash: 0.95, spinMul: 0.65, launch: -5 },
   aimedOff: { face: 4, path: 4 },
   ballBack: { aoa: -4, path: 4.5, face: 3, loft: -3 },
+  ballForward: { aoa: 3.5, path: -3.5, face: -2.5, loft: 1, smash: 0.96 },
+  driverDown: { aoa: -5, loft: -1 },
+  offCentre: { smash: 0.935 },
+  toe: { axis: -8, smash: 0.96 },          // gear effect: a draw axis with no face-to-path to explain it
+  top: { launch: -40, spinMul: 0.3, smash: 0.82 },
+  shank: { face: 14, smash: 0.7, spinMul: 0.8 },
   draw: { face: 1.5, path: 5 },
   fade: { face: -1.5, path: -5 },
   compress: { loft: -4, aoa: -1.5, smash: 1.01 },
@@ -49,19 +61,23 @@ const DELTA = {
   faster: { speed: 1.06 },
 };
 
-// shot: a simulated ball with Club data (as the range's realSwing makes); returns a new shot
-export function applyFault(shot, id, clubId, rnd = Math.random) {
+// shot: a simulated ball with Club data (as the range's realSwing makes); returns a new shot.
+// `scale` makes the fault milder (under 1) or stronger (over 1): angles and the strike
+// effects scale together.
+export function applyFault(shot, id, clubId, rnd = Math.random, scale = 1) {
   if (!id || id === 'none') return shot;
   const ref = CLUB_REF[clubId] || CLUB_REF['7i'];
   let d = DELTA[id];
   if (id === 'twoWay') { const s = rnd() < 0.5 ? -1 : 1; d = { path: s * 6, face: s * 3.5 }; }
   if (!d) return shot;
+  if (scale !== 1) { const k = scale, m = v => (v === undefined ? v : 1 + (v - 1) * k); d = { ...d, smash: m(d.smash), spinMul: m(d.spinMul), speed: m(d.speed) };
+    for (const f of ['face', 'path', 'aoa', 'loft', 'launch', 'axis']) if (d[f] !== undefined) d[f] *= k; }
   const s = { ...shot, Club: { ...(shot.Club || {}) } }, c = s.Club;
   const face = d.face || 0, path = d.path || 0, aoa = d.aoa || 0, loft = d.loft || 0;
   const perDeg = 290 * ref.spin / 7097;           // rpm per degree of spin loft, scaled to the club
   s.HLA = (s.HLA || 0) + 0.8 * face + 0.2 * path;
-  s.SpinAxis = (s.SpinAxis || 0) + 1.9 * (face - path);
-  s.VLA = s.VLA + 0.8 * loft + (d.launch || 0);
+  s.SpinAxis = (s.SpinAxis || 0) + 1.9 * (face - path) + (d.axis || 0);
+  s.VLA = Math.max(0.5, s.VLA + 0.8 * loft + (d.launch || 0));
   s.TotalSpin = Math.max(300, (s.TotalSpin + perDeg * (loft - aoa)) * (d.spinMul || 1));
   s.Speed = s.Speed * (d.smash || 1) * (d.speed || 1);
   if (d.speed && c.Speed !== undefined) c.Speed = +c.Speed * d.speed;

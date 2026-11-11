@@ -35,8 +35,11 @@ export const peakFt = shot => flightOf(shot).peak;
 export function skillMetrics(shot, club) { return { ...shotMetrics(shot, club), ...flightOf(shot) }; }
 const sd = a => { const m = mean(a); return Math.sqrt(mean(a.map(v => (v - m) ** 2))); };
 
-// a goal: { key, label, unit, lo, hi, tol, club: true if it needs club data from the R10 }
-const G = (key, label, unit, lo, hi, tol, club = false) => ({ key, label, unit, lo, hi, tol, club });
+// a goal: { key, label, unit, lo, hi, tol, club: true if it needs club data from the R10,
+// soft: true if it scores but doesn't decide "in the goal" (the R10's face and path scatter
+// 2–4° shot to shot, too much to require on every shot; tools/coach/skill-check.mjs) }
+const G = (key, label, unit, lo, hi, tol, club = false, soft = false) => ({ key, label, unit, lo, hi, tol, club, soft });
+const soft = g => ({ ...g, soft: true });
 // a blocker: what's in the way, its test over a window of metrics, the cue and lesson
 const B = (id, headline, sub, cue, lesson, test) => ({ id, headline, sub, cue, lesson, test });
 
@@ -63,8 +66,8 @@ export const SKILLS = {
       ? [{ title: 'Set up a touch right', lesson: 'skill-draw-setup' }, { title: 'Swing out to the right', lesson: 'skill-draw-path' }, { title: 'Face closed to the path', lesson: 'skill-draw-face' }]
       : [{ title: 'Set up a touch left', lesson: 'skill-fade-setup' }, { title: 'Swing across to the left', lesson: 'skill-fade-path' }, { title: 'Face open to the path', lesson: 'skill-fade-face' }]),
     goals: (o) => (o === 'draw'
-      ? [G('path', 'Path', '°', 2, 7, 3), G('ftp', 'Face to path', '°', -5, -1.5, 2.5), G('dir', 'Start line', '°', -0.5, 5, 3)]
-      : [G('path', 'Path', '°', -7, -2, 3), G('ftp', 'Face to path', '°', 1.5, 5, 2.5), G('dir', 'Start line', '°', -5, 0.5, 3)]),
+      ? [G('dir', 'Start line', '°', -0.5, 5, 3), G('axis', 'Curve (spin axis)', '°', -14, -2, 4), soft(G('path', 'Path', '°', 2, 7, 3)), soft(G('ftp', 'Face to path', '°', -5, -1.5, 2.5))]
+      : [G('dir', 'Start line', '°', -5, 0.5, 3), G('axis', 'Curve (spin axis)', '°', 2, 14, 4), soft(G('path', 'Path', '°', -7, -2, 3)), soft(G('ftp', 'Face to path', '°', 1.5, 5, 2.5))]),
     blockers: o => (o === 'draw' ? [
       B('pathLeft', "The path isn't out to the right yet", 'With the path still left, the ball has nothing to curve back across.', 'Swing out toward right field', 'skill-draw-path', ms => mean(ms.map(m => m.path)) < 1.5),
       B('tooHooky', "It's hooking: too much face", 'The face is shutting well past the path, so it starts left or curves too far.', 'Hold the face a touch longer', 'closed-body', ms => mean(ms.map(m => m.ftp)) < -6 || mean(ms.map(m => m.dir)) < -1.5),
@@ -81,7 +84,7 @@ export const SKILLS = {
     title: () => 'Compress your irons', sub: () => 'Hit down on it with the hands ahead: less loft at impact, the ball first, then the turf.',
     cue: () => 'Hands ahead, chest over the ball',
     keys: () => [{ title: 'Pressure forward', lesson: 'skill-compress-pressure' }, { title: 'Hands ahead at impact', lesson: 'skill-compress-hands' }, { title: 'Low point past the ball', lesson: 'skill-compress-low' }],
-    goals: (o, ctx) => { const w = ctx.w; return [G('aoa', 'Attack', '°', w.aoa[0], (w.aoa[0] + w.aoa[1]) / 2, 2, true), G('spinLoft', 'Spin loft', '°', w.spinLoft - 6, w.spinLoft + 1, 3), G('smash', 'Smash', '', w.smashMin, w.smashRef + 0.05, 0.06)]; },
+    goals: (o, ctx) => { const w = ctx.w; return [soft(G('aoa', 'Attack', '°', w.aoa[0] - 1.5, (w.aoa[0] + w.aoa[1]) / 2, 2, true)), G('spinLoft', 'Spin loft', '°', w.spinLoft - 7, w.spinLoft - 1.5, 3), G('smash', 'Smash', '', w.smashMin, w.smashRef + 0.05, 0.06)]; },
     blockers: () => [
       B('flip', 'The club is adding loft', 'The clubhead passes the hands before the ball, so it arrives with too much loft and spin.', 'Hands ahead at impact', 'flip-cast', (ms, ctx) => mean(ms.map(m => m.spinLoft)) > ctx.w.spinLoft + 2.5),
       B('weightBack', "Pressure isn't getting forward", 'The weight stays back, so the club bottoms out early and catches the ball on the way up.', 'Pressure into the lead foot first', 'flip-weight', (ms, ctx) => ms.some(m => m.hasClub) && mean(ms.map(m => m.aoa)) > (ctx.w.aoa[0] + ctx.w.aoa[1]) / 2 + 0.5),
@@ -129,7 +132,7 @@ export const SKILLS = {
     title: () => 'Start it on your line', sub: () => 'The face sets most of the start line. Aim it first, keep it square at the top, and let the body turn it back to the ball.',
     cue: () => 'Face at the target, then the feet',
     keys: () => [{ title: 'Aim the face first', lesson: 'skill-line-aim' }, { title: 'Square at the top', lesson: 'skill-line-top' }, { title: 'The body squares it', lesson: 'skill-line-body' }],
-    goals: () => [G('dir', 'Start line', '°', -1.5, 1.5, 3), G('face', 'Face', '°', -2, 2, 3)],
+    goals: () => [G('dir', 'Start line', '°', -1.5, 1.5, 3), soft(G('face', 'Face', '°', -2, 2, 3))],
     blockers: () => [
       B('aimed', "You're lined up off target", 'Every ball starts the same way off line with the face and path agreeing: the setup is aimed there.', 'Face at the target, then the feet', 'aim-body', ms => Math.abs(mean(ms.map(m => m.dir))) >= 2 && Math.abs(mean(ms.map(m => m.ftp))) <= 2 && sd(ms.map(m => m.dir)) < 2),
       B('faceRight', 'The face is open at impact', 'It starts right because the face arrives open: often a cupped wrist at the top.', 'Flat lead wrist at the top', 'open-wrist', ms => mean(ms.map(m => m.dir)) > 1.5),
@@ -173,7 +176,7 @@ export const SKILLS = {
     title: () => 'Tighten your pattern', sub: () => 'Good players miss one way. Keep the face and path the same shot to shot, so your curve and start line repeat.',
     cue: () => 'Same tempo, body leads',
     keys: () => [{ title: 'Same setup every time', lesson: 'skill-line-aim' }, { title: 'Tempo, not effort', lesson: 'skill-pattern-tempo' }, { title: 'The body leads the arms', lesson: 'skill-line-body' }],
-    goals: (o, ctx) => { const f = centreOf(ctx.recent, 'ftp'), d = centreOf(ctx.recent, 'dir'); return [G('ftp', 'Face to path', '°', f - 2, f + 2, 3), G('dir', 'Start line', '°', d - 2.5, d + 2.5, 3)]; },
+    goals: (o, ctx) => { const f = centreOf(ctx.recent, 'ftp'), d = centreOf(ctx.recent, 'dir'); const a = centreOf(ctx.recent, 'axis'); return [G('dir', 'Start line', '°', d - 2.5, d + 2.5, 3), G('axis', 'Curve (spin axis)', '°', a - 4.5, a + 4.5, 4), soft(G('ftp', 'Face to path', '°', f - 2, f + 2, 3))]; },
     blockers: () => [
       B('twoWay', 'It misses both ways', 'Some curve left, some right: the face is turning a different amount each time.', 'Same grip pressure, body leads', 'skill-line-body', ms => ms.some(m => m.ftp > 2) && ms.some(m => m.ftp < -2)),
       B('face', 'The face changes more than the path', 'Your path repeats but the face does not: the hands are doing the squaring.', 'Quiet hands, body turns', 'closed-body', ms => sd(ms.map(m => m.face)) > sd(ms.map(m => m.path)) + 0.5),
@@ -203,7 +206,7 @@ export function scoreShot(m, goals) {
     const v = m[g.key], out = v < g.lo ? g.lo - v : v > g.hi ? v - g.hi : 0;
     return { key: g.key, value: v, inside: out === 0, score: out === 0 ? 1 : Math.max(0, 1 - out / g.tol) };
   });
-  return { parts, score: mean(parts.map(p => p.score)), inside: parts.every(p => p.inside) };
+  return { parts, score: mean(parts.map(p => p.score)), inside: parts.filter((p, i) => !goals.filter(g => !g.club || m.hasClub)[i].soft).every(p => p.inside) };
 }
 
 // the choice of club: the skill's own, else the one you're holding if it allows it

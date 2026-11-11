@@ -30,6 +30,21 @@ The coach believes what the R10 measures well (ball speed, launch, start line) a
 - **Club data** counts as missing when face, path and attack are all alike (the R10's 0/0/0 on a slow swing, or a connector's dummy 1/1/1), a number is out of range, or the club speed or smash factor is impossible. Then face and path come from the start line and spin axis, as before. The bridge also drops club data a connector marks as absent.
 - **Spin** passes four checks: measured beats estimated (a marked ball); possible for the club at that launch; within 30% of the spin the measured attack and the loft implied by launch predict; spin axis within 4° of 1.9 × face to path. All pass: used. One fails: a tie-breaker (the rules see half way to the predicted spin). Two fail, or it's impossible: ignored (the rules see the predicted spin). With a plain ball (and into a net) the R10's spin is its own estimate, so it supports a read rather than making one.
 
+## Tuned against an R10 in simulation
+
+`tools/coach/sim-check.mjs` plays every fault preset (and clean swings) through the coach with an amateur's swing scatter and R10-sized measurement error (`tools/coach/model.mjs`: face σ 1.6°, path σ 3.0°, attack σ 1.3°, estimated spin ±12%, no loft, the occasional untracked club), then counts how often the first read in 8 shots is right. `tools/coach/skill-check.mjs` does the same for Learn a skill. The error sizes are an assumption from a published R10 vs TrackMan comparison until real sessions arrive. What the tuning changed (11 November):
+
+- Path and face reads need the ball to agree: over the top or stuck needs the start line or the curve on the same side; open or closed face needs the curve.
+- Aimed off is read from the ball: starting off line by 3° or more with little curve (spin axis within 3.5°).
+- Two-way is read from the ball: start lines both sides (spread over 2.8°) or curves both ways (spin axis spread over 9.5°). The R10's path scatter alone used to trip it.
+- Ball back, ball forward, off-centre, driver down and toe/heel are judged on the window's average. Ball forward also covers aimed off and off-centre.
+- Steep is for irons and woods; the driver's version is driver down (attack 1.5° below its window, spin at or above the centre).
+- Thin needs 3° less launch (was 4°) and 18% less spin. A shank needs ball speed under 82% of the club's smash, so a driver shank counts.
+- Club speed is kept when the face and path weren't tracked but the speed is believable, so strike reads still work.
+- Skills: shaping, start line and pattern are scored on the ball (start line and curve); path, face and face to path still score but don't decide "in the goal". Compress needs spin loft at least 1.5° under normal.
+
+Result with R10 error (mean of 7 iron, PW and driver): faults read right 62% → 83%; clean swings flagged 57–63% → 23–28% (with perfect data 13–16%). The shaping skills went from about 10% learned in 12 shots to 81–89%. `tests/coach-sim.test.mjs` holds the line. Weakest now: toe/heel (68%; the R10 has no impact location, so it's read from curve the face doesn't explain) and mild faults (at 70% size about half are read in 8 shots; they take longer).
+
 ## Session record and My game
 
 Every live shot is kept on the device (`src/recorder.js`) with its club, mode, the trust verdicts, the flight or the course result, the coach's events and an optional feel tag. Range and Coaching shots feed **My game**'s Bag and Practice tabs; course shots feed On the course; mini-game shots are kept but feed nothing. Sessions export as JSON from My game; the next step is a replay tool that runs them back through the coach to tune the thresholds.
@@ -41,7 +56,7 @@ Every live shot is kept on the device (`src/recorder.js`) with its club, mode, t
 | `src/coach/windows.js` | Pure | Club reference (TrackMan tour averages), fixed attack/smash windows, and `windowsFor(club, clubSpeed)`: spin scales as speed^0.35 (irons) and the descent target drops 22° per unit of speed lost; the flight model finds the launch that lands it, so LPGA averages fall out |
 | `src/coach/coach-logic.js` | Pure | `shotMetrics` (impact numbers, D-plane inverse when there's no club data), `RULES` per condition, `evaluate` (the 4-shot window), `pick` (explained conditions drop out, then priority group), `rankCauses`, `progressOf`, and `createCoach()` (the session state machine) |
 | `src/coach/conditions.js` | Data | The catalogue: headline, one line, cue, evidence, and up to three causes each with a check, a lesson and a drill |
-| `src/coach/faults.js` | Pure | Swing-fault presets for simulated shots (the shot tool's *Swing fault* picker on the range) |
+| `src/coach/faults.js` | Pure | Swing-fault presets for simulated shots (the shot tool's *Swing fault* picker on the range), one for every condition, with a `scale` for milder or stronger versions |
 | `src/coach/skills.js` | Pure | Learn a skill: `SKILLS` (options, clubs, keys, goals, blockers per skill), `scoreShot`, `skillMetrics` (adds peak height and carry from the flight model) and `createSkillCoach()` (baseline → learn → test → open) |
 | `src/coach/trust.js` | Pure | `clubTrust` (placeholder and impossible club data), `expectedSpin`, `spinTrust` (the four spin checks: use, tie or ignore), `spinForRules` |
 | `src/coach/lessons.js` | Data | Mannequin lessons, one per cause: changes to the base swing, camera, pause point, highlighted body part, readout, caption |
