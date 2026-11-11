@@ -3,15 +3,17 @@
 // island is always at the local origin (the camera never has to move far from the stand-over view).
 
 import { createStage, rng, hash2 } from '../../world/stage.js';
+import { cumulusBanks, skyPines } from '../../world/sky-art.js';
 import { edgeR, islandTop, islandFrac, padRadius, groundAt as islandsGround, band } from '../island-logic.js';
 
 const FOG_V = '\n#include <fog_pars_vertex>\n';
 
 export function createSkyIslands(container) {
   const st = createStage(container, {
-    turbidity: 4, rayleigh: 1.6, mie: 0.005, mieG: 0.85, elev: 16, az: 48,
-    sunColor: 0xffd9b0, sunInt: 2.4, exposure: 0.6, hemiSky: 0xd6e8ff, hemiGround: 0x6a7a68, hemiInt: 0.5,
-    fogColor: 0xbfd0dc, fogNear: 320, fogFar: 4200, shadowBox: 140,
+    // the Aerie's golden morning (its course preset): low warm sun, a bright cloud sea bouncing light back up
+    turbidity: 2.6, rayleigh: 1.9, mie: 0.005, mieG: 0.85, elev: 16, az: 48,
+    sunColor: 0xffc48a, sunInt: 3.0, exposure: 0.6, hemiSky: 0xb8cdea, hemiGround: 0xd9d2c4, hemiInt: 0.62,
+    fogColor: 0xece6da, fogNear: 700, fogFar: 5600, shadowBox: 140,
   });
   const { scene } = st;
   const chain = new THREE.Group(); scene.add(chain);
@@ -33,7 +35,7 @@ export function createSkyIslands(container) {
           float n = fb(p + fb(p*0.5 + uT*0.01)*1.6);
           float a = smoothstep(0.38, 0.72, n) * uA;
           float lit = 0.8 + 0.25*smoothstep(0.45, 0.85, fb(p*1.7 + 3.0));
-          gl_FragColor = vec4(mix(vec3(0.74,0.78,0.84), vec3(1.0,0.97,0.92), lit*0.9), a);
+          gl_FragColor = vec4(mix(vec3(0.6,0.66,0.76), vec3(1.0,0.96,0.88), lit*0.95), a); // white tops, blue-grey folds
           #include <tonemapping_fragment>
           #include <encodings_fragment>
           #include <fog_fragment>
@@ -43,18 +45,25 @@ export function createSkyIslands(container) {
     m.position.y = y; m.renderOrder = -1; scene.add(m); return mat;
   }
   const clouds = [cloudLayer(-170, 0.0016, 1, 1), cloudLayer(-115, 0.0028, 0.5, 1.8)];
+  // cumulus standing round the horizon, as on the Aerie course (one mesh)
+  scene.add(cumulusBanks({ cx: 0, cz: -300, sunDir: st.sunDir, haze: new THREE.Color(0xece6da), n: st.coarse ? 22 : 34, baseY: -150 }));
 
   /* ---------- island mesh ---------- */
   const islandMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.93, envMapIntensity: 0.6 });
-  const cone = new THREE.ConeGeometry(1, 1, 8); cone.translate(0, 0.5, 0);
-  const trunk = new THREE.CylinderGeometry(0.12, 0.2, 1, 6); trunk.translate(0, 0.5, 0);
-  const pineMat = new THREE.MeshStandardMaterial({ color: 0x2f4d2c, roughness: 0.9 }), barkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 });
   const c1 = new THREE.Color(), c2 = new THREE.Color();
+  // the Aerie's palette (tools/aerie/art-brief.md): pale quartz sandstone in amber bands, darker undersides, mown
+  // grass lighter than the golden rough, moss on the lip
+  const SAND = [0xcdbfa3, 0xb39f80, 0xd9b98a].map(h => new THREE.Color(h)), UNDER = new THREE.Color(0x6f6658), MOSS = new THREE.Color(0x4f6b30);
+  const FAIR = new THREE.Color(0x5f9a36), FAIR2 = new THREE.Color(0x6aa63e), ROUGH = new THREE.Color(0x5a7a34), ROUGH2 = new THREE.Color(0x6e7f38);
   function islandMesh(I, deco) {
     const N = deco ? 48 : 80, rings = [0, 0.12, 0.25, 0.4, 0.55, 0.68, 0.79, 0.88, 0.94, 0.98, 1], K = deco ? 14 : 22;
     const D = I.depth || I.r * (3.2 + (I.seed % 1) * 2.4), rows = rings.length + K;
     const pos = new Float32Array((N + 1) * rows * 3), col = new Float32Array((N + 1) * rows * 3);
     const R = rng(Math.floor(I.seed * 1000) + 7), lean = [(R() - 0.5) * 0.2, (R() - 0.5) * 0.2];
+    // far spires in three forms, as on the Aerie course: straight-sided pillars, stepped towers and carrots
+    const form = !deco ? 'carrot' : (hash2(Math.floor(I.seed * 97), 5) < 0.45 ? 'pillar' : hash2(Math.floor(I.seed * 97), 6) < 0.4 ? 'stepped' : 'carrot');
+    const shape = t => form === 'pillar' ? (t < 0.82 ? 1 - 0.16 * t : 0.87 * Math.sqrt(Math.max(0, 1 - (t - 0.82) / 0.18)))
+      : form === 'stepped' ? Math.max(0, 1 - 0.22 * Math.floor(t * 4.2)) * (t < 0.95 ? 1 : (1 - t) / 0.05) : Math.pow(Math.max(0, 1 - t), 0.75);
     let v = 0;
     for (let j = 0; j <= N; j++) {
       const th = j / N * Math.PI * 2, er = edgeR(I, th), cx = Math.cos(th), sz = Math.sin(th);
@@ -63,17 +72,21 @@ export function createSkyIslands(container) {
         const x = I.x + cx * er * f * 0.999, z = I.z + sz * er * f * 0.999, y = islandTop(I, x, z, f);
         pos.set([x, y, z], v * 3);
         const n = 0.5 + 0.5 * Math.sin(x * 0.7 + I.seed) * Math.cos(z * 0.6);
-        c1.setRGB(0.3, 0.5, 0.18).lerp(c2.setRGB(0.4, 0.6, 0.24), n * 0.8); if (f > 0.9) c1.lerp(c2.setRGB(0.28, 0.4, 0.17), 0.6);
+        if (f < 0.62) c1.copy(FAIR).lerp(FAIR2, n * 0.5).lerp(ROUGH, Math.max(0, (f - 0.42) / 0.2) * 0.85);   // mown round the pad
+        else c1.copy(ROUGH).lerp(ROUGH2, n * 0.7);                                                       // longer, a little golden
+        if (f > 0.92) c1.lerp(MOSS, 0.6);
         col.set([c1.r, c1.g, c1.b], v * 3); v++; rimY = y;
       }
       for (let k = 1; k <= K; k++) {
         const t = Math.pow(k / K, 1.3), d = t * D;
-        const taper = k === 1 ? 1.03 : Math.pow(Math.max(0, 1 - t), 0.75) * (1 + 0.14 * (hash2(j * 7 + k, Math.floor(I.seed * 31)) - 0.5) + 0.06 * Math.sin(d * 0.15 + th * 5));
+        const taper = k === 1 ? 1.03 : shape(t) * (1 + 0.14 * (hash2(j * 7 + k, Math.floor(I.seed * 31)) - 0.5) + 0.06 * Math.sin(d * 0.15 + th * 5));
         const x = I.x + lean[0] * d + cx * er * taper, z = I.z + lean[1] * d + sz * er * taper;
         pos.set([x, rimY - d - (k === 1 ? 0.8 : 0), z], v * 3);
-        const strata = 0.5 + 0.5 * Math.sin((rimY - d) * 0.5 + th * 2);
-        c1.setRGB(0.62, 0.57, 0.5).lerp(c2.setRGB(0.48, 0.44, 0.39), strata * 0.7).multiplyScalar(1 - 0.55 * Math.min(1, d / (D * 0.8)));
-        if (k <= 2) c1.lerp(c2.setRGB(0.25, 0.37, 0.15), 0.7);           // mossy lip
+        const yy = rimY - d, bi = Math.floor(yy / 3.2 + I.seed * 7), band = hash2(bi, Math.floor(I.seed * 13)), wob = 0.5 + 0.5 * Math.sin(yy * 1.7 + th * 3);
+        c1.copy(SAND[band < 0.45 ? 0 : band < 0.75 ? 1 : 2]).lerp(SAND[1], wob * 0.25);                 // horizontal bands, amber where the sun catches
+        if (hash2(j, Math.floor(I.seed * 31)) < 0.1) c1.multiplyScalar(0.72);                           // vertical fractures
+        c1.lerp(UNDER, Math.min(1, d / (D * 0.75)) * 0.85);                                              // the underside falls into shadow
+        if (k <= 2) c1.lerp(MOSS, 0.7);                                                                   // mossy lip
         col.set([c1.r, c1.g, c1.b], v * 3); v++;
       }
     }
@@ -91,16 +104,7 @@ export function createSkyIslands(container) {
       if (!deco && Math.sin(th) < -0.25) continue;                          // you tee off from the front: keep it clear
       trees.push([x, islandTop(I, x, z, f), z, 0.8 + R() * 0.7]);
     }
-    if (trees.length) {
-      const cones = new THREE.InstancedMesh(cone, pineMat, trees.length * 2), trunks = new THREE.InstancedMesh(trunk, barkMat, trees.length);
-      const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s3 = new THREE.Vector3(), p3 = new THREE.Vector3();
-      trees.forEach(([x, y, z, s], i) => {
-        m4.compose(p3.set(x, y - 0.2, z), q, s3.set(s, 2.2 * s, s)); trunks.setMatrixAt(i, m4);
-        m4.compose(p3.set(x, y + 1.2 * s, z), q, s3.set(1.8 * s, 4.5 * s, 1.8 * s)); cones.setMatrixAt(i * 2, m4);
-        m4.compose(p3.set(x, y + 3.2 * s, z), q, s3.set(1.25 * s, 3.2 * s, 1.25 * s)); cones.setMatrixAt(i * 2 + 1, m4);
-      });
-      cones.castShadow = trunks.castShadow = true; g.add(cones, trunks);
-    }
+    if (trees.length) skyPines(trees.map(([x, y, z, s]) => ({ x, y, z, s, r: R() * 0.6, type: 'pine' })), g); // the Aerie's wind-bent pines
     return g;
   }
 
@@ -146,7 +150,7 @@ export function createSkyIslands(container) {
     if (!animate) { chain.remove(obj.group); dispose(obj.group); islands.splice(islands.indexOf(obj), 1); return; }
     obj.removing = 0.0001;
   }
-  const dispose = g => g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== islandMat && o.material !== pineMat && o.material !== barkMat) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+  const dispose = g => g.traverse(o => { if (o.geometry && !o.geometry.userData.keep) o.geometry.dispose(); if (o.material && o.material !== islandMat && !o.isInstancedMesh) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
 
   /* ---------- distant spires (static decor) ---------- */
   const R = rng(321);
