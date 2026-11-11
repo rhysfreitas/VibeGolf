@@ -88,8 +88,14 @@ function landformDelta(L, x, z) {
 //   contours: [{ u, b, r, h }] (rolls in the surface; default: a few, seeded), roll (their scale, default 1),
 //   lobes: [[u, b, rx, rz, rotDeg]...] (optional: the outline is the smooth union of these ellipses, centred
 //   at (u, b) from x, z in the green's frame, instead of one rx × rz ellipse; join = how softly they merge, m;
-//   wob = edge wander, m) }
-// Around each pin the rolls flatten into a cupping area, so a pin sits on the green's tilt alone.
+//   wob = edge wander, m), shape: designed contour in the green's frame (u right, b toward the back; directions
+//   in degrees clockwise from the front: 0 = toward the tee, 90 = right, 180 = the back), any of
+//   { tier: [u, b], up, h, w } (a step h m up across the line through [u, b], rising toward up, over w m),
+//   { ridge: [[u, b], [u, b]], h, w } (a spine along the segment, w its half-width; h < 0: a swale) and
+//   { bowl: [u, b], r, h } (a dip h m deep, r m across; h < 0: a knob). A green with a shape has no random
+//   rolls unless it lists contours (docs/COURSE-DESIGN.md "Side slope and green contour") }
+// Around each pin the rolls flatten into a cupping area, so a pin sits on the green's tilt alone (the shape
+// doesn't: pins go on the flat parts of a designed shape, 1.5 m or more off a tier).
 const GREEN_STYLES = {
   tilt: {},
   tiered: { tiers: [{ b: 0, step: 0.75 }] },
@@ -108,6 +114,7 @@ export function prepGreen(G, baseAt, from) {
   if (G.lobes) lobeEdge(G);
   G.reach = G.R ? Math.max(...G.R) : Math.max(G.rx, G.rz) * 1.08;
   G.bound = G.reach * 1.07 + G.apron + 14;
+  if (!G.contours && G.shape) G.contours = [];
   if (!G.contours) { // a few rolls across the surface: humps and hollows 4-8 m across
     let k = Math.abs(Math.sin(G.seed * 12.9898) * 43758.5453) % 1; const r = () => (k = (k * 9301 + 0.4927) % 1);
     G.contours = Array.from({ length: 3 }, (_, i) => ({ u: (r() - 0.5) * G.rx * 1.2, b: (r() - 0.5) * G.rz * 1.2, r: 4.5 + r() * 3.5, h: (i % 2 ? -1 : 1) * (0.2 + r() * 0.18) * (G.roll ?? 1) }));
@@ -161,7 +168,28 @@ function greenH(G, u, b, rho) {
   // rolls, flattened into a cupping area around each pin (within about 2.2 m, easing out by 4.5 m)
   let c = rolls(G, u, b);
   for (const p of G.cups) { const d = Math.hypot(u - p.u, b - p.b); if (d < 4.5) c += (p.c - c) * (1 - sstep(2.2, 4.5, d)); }
+  if (G.shape) h += greenShape(G.shape, u, b);
   return h + c + 0.04 * (fbm(u / 6 + G.seed, b / 6) - 0.5);
+}
+// a green's designed shape at local (u, b): tiers, spines and swales, bowls and knobs
+const dirUB = a => [Math.sin(a * Math.PI / 180), -Math.cos(a * Math.PI / 180)];
+function segDist(P, u, b) {
+  let d = Infinity;
+  for (let i = 0; i < P.length - 1; i++) {
+    const [au, ab] = P[i], [bu, bb] = P[i + 1], du = bu - au, db = bb - ab, l2 = du * du + db * db || 1e-9;
+    const t = Math.max(0, Math.min(1, ((u - au) * du + (b - ab) * db) / l2));
+    d = Math.min(d, Math.hypot(u - au - du * t, b - ab - db * t));
+  }
+  return d;
+}
+export function greenShape(S, u, b) {
+  let h = 0;
+  for (const c of S) {
+    if (c.tier) { const [du, db] = dirUB(c.up ?? 180), d = (u - c.tier[0]) * du + (b - c.tier[1]) * db; h += c.h * sstep(-c.w / 2, c.w / 2, d); }
+    else if (c.ridge) h += c.h * Math.exp(-((segDist(c.ridge, u, b) / c.w) ** 2));
+    else if (c.bowl) h -= c.h * Math.exp(-((Math.hypot(u - c.bowl[0], b - c.bowl[1]) / (c.r / 2)) ** 2));
+  }
+  return h;
 }
 // the complex's ground: { h, w } (w = how much of it replaces the ground), or null when out of reach
 function greenGround(G, x, z, base) {

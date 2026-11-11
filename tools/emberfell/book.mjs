@@ -57,12 +57,17 @@ p { font-size: 8.6pt; line-height: 1.34; margin: 0 0 4pt; }
 .body { display: grid; grid-template-columns: 3.5in 1fr; gap: 0.2in; margin-top: 0.08in; height: 5.0in; }
 .plan img { width: 3.5in; height: 4.91in; border: 0.6pt solid #888; display: block; }
 .side { display: flex; flex-direction: column; min-height: 0; }
-.side p { font-size: 7.9pt; line-height: 1.28; margin-bottom: 2.5pt; }
+.side p { font-size: 7.7pt; line-height: 1.26; margin-bottom: 2.5pt; }
 .side p.small { font-size: 7pt; }
-.side p.kv { font-size: 7.7pt; line-height: 1.26; margin: 0 0 2pt; }
+.side p.kv { font-size: 7.5pt; line-height: 1.24; margin: 0 0 2pt; }
 .kv b { display: inline-block; min-width: 0.5in; font-weight: 600; }
-.side img.prof { width: 100%; max-height: 1.62in; object-fit: contain; object-position: left top; border: 0.6pt solid #ddd; margin-top: 3pt; display: block; }
-.notes { border: 0.6pt solid #333; padding: 3pt 8pt; margin-top: 5pt; flex: 1; min-height: 0.75in; overflow: hidden; }
+.side img.prof { width: 100%; max-height: 1.3in; object-fit: contain; object-position: left top; border: 0.6pt solid #ddd; margin-top: 3pt; display: block; }
+.notes { border: 0.6pt solid #333; padding: 3pt 8pt; margin-top: 5pt; flex: 1; min-height: 0.45in; overflow: hidden; }
+.gn { display: flex; gap: 6pt; flex: none; margin-top: 4pt; }
+.gn .gimg { width: 1.3in; flex: none; }
+.gn .gimg img { width: 1.3in; height: 1.3in; border: 0.6pt solid #ddd; display: block; }
+.gn .gimg .cap { font-size: 6.3pt; color: #555; line-height: 1.2; margin-top: 1.5pt; }
+.gn img.prof { flex: 1; min-width: 0; width: auto; margin-top: 0; }
 .notes .t { font-size: 7.4pt; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
 table.sc { border-collapse: collapse; width: 100%; font-size: 7.6pt; }
 table.sc th, table.sc td { border-bottom: 0.6pt solid #ccc; padding: 1.8pt 4pt; text-align: center; }
@@ -143,9 +148,10 @@ for (const h of D.holes) {
         <p class="kv"><b>A miss</b> ${esc(w.miss)}</p>
         ${h.targets.length ? `<p class="kv"><b>Targets</b> ${h.targets.map(t => `${esc(t.name)} (${t.d} yd, ${t.width} m wide)`).join(' · ')}</p>` : ''}
         <p class="kv"><b>Green</b> ${esc(h.green.style)} (${h.greenShape.depth} m deep × ${h.greenShape.width} m wide, ${h.greenArea} m²).</p>
+        ${h.contour ? `<p class="kv"><b>Contour</b> Typically ${h.contour.median}% underfoot, ${h.contour.feat === 'a feature' ? `${h.contour.relief} m of shape beyond its fall` : 'flatter: just its fall'}; ${h.contour.areas} pin areas, ${h.contour.cup}% cuppable.${h.lean && h.lean.length ? ' Fairway lean: ' + h.lean.map(l => `${esc(l.name)} ${Math.abs(l.lean)}% ${l.lean > 0.3 ? 'right' : l.lean < -0.3 ? 'left' : 'level'}`).join(', ') + '.' : ''}</p>` : ''}
         <p class="kv"><b>Tips</b> Room for a future tips tee: ${h.tipsYards} yd${h.par > 3 ? ', landing areas checked for 280–300 yd drives' : ''}.</p>
         ${drv}
-        <img class="prof" src="${img('prof' + h.n + '.png')}">
+        <div class="gn"><img class="prof" src="${img('prof' + h.n + '.png')}"><div class="gimg"><img src="${img('green' + h.n + '.png')}"><div class="cap">The green: 5 cm contours, arrows downhill (red over 3%), pin areas dashed.</div></div></div>
         <div class="notes"><div class="t">Notes</div>${lines(6)}</div>
       </div>
     </div>

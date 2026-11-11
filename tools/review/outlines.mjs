@@ -109,7 +109,38 @@ export function holeOutlines(h, T, COURSE, L) {
     if (job === 'fairway' && span < 20) flags.push(`fairway bunker of ${Math.round(span)} m at ${Math.round(pr.s)} m`);
     if (!gs && !touches) flags.push(`bunker at ${Math.round(pr.s)} m doesn't touch the fairway`);
   }
-  return { green, fairway, widths, land, bunkers, flags, dy: (T.groundAt(pin[0], pin[1]) ?? 0) - (T.groundAt(...h.tees[COURSE.teeSets[0].id]) ?? 0) };
+  // side slope and green contour (docs/COURSE-DESIGN.md "Side slope and green contour"): the fairway's lean
+  // across the shot round each tee set's landing and each fairway target, and the green's typical slope, shape
+  // beyond its plane, the pin, pin areas (discs 6 m across at 3% or less, 3 m inside the edge, 8 m apart)
+  const gy = (x, z) => T.groundAt(x, z), D = 0.75;
+  const slope = (x, z) => { const a = gy(x + D, z), b = gy(x - D, z), c = gy(x, z + D), d = gy(x, z - D); return [a, b, c, d].some(v => v == null) ? 99 : Math.hypot(a - b, c - d) / (2 * D) * 100; };
+  const leanAt = (x, z, ux, uz) => { const nx = -uz, nz = ux, v = [];
+    for (let k = -30; k <= 30; k += 5) { const px = x + ux * k, pz = z + uz * k; if (sf(px, pz) !== 'fairway') continue;
+      const l = gy(px - nx * 12, pz - nz * 12), r = gy(px + nx * 12, pz + nz * 12), sl = sf(px - nx * 12, pz - nz * 12), sr = sf(px + nx * 12, pz + nz * 12);
+      if (l == null || r == null || ['water', 'void'].includes(sl) || ['water', 'void'].includes(sr)) continue; v.push((l - r) / 24 * 100); }
+    return v.length >= 3 ? +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : null; };
+  const leans = [];
+  if (h.par > 3) {
+    let prev = h.tees[COURSE.teeSets[0].id];
+    for (const t of tg) { const l = Math.hypot(t.x - prev[0], t.z - prev[1]) || 1, v = leanAt(t.x, t.z, (t.x - prev[0]) / l, (t.z - prev[1]) / l); if (v != null) leans.push({ at: t.name, lean: v }); prev = [t.x, t.z]; }
+    if (!leans.length) { const s0 = Math.min(230, len * 0.6), [x, z, ux, uz] = along(L, s0), v = leanAt(x, z, ux, uz); if (v != null) leans.push({ at: Math.round(s0) + ' m', lean: v }); }
+  }
+  const gset = new Set(gc.map(([x, z]) => `${x},${z}`)), cells = gc.map(([x, z]) => ({ x, z, y: gy(x, z), s: slope(x, z) })).filter(c => c.y != null);
+  const inside = (x, z, r) => { for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) if (dx * dx + dz * dz <= r * r && !gset.has(`${x + dx},${z + dz}`)) return false; return true; };
+  const byKey = new Map(cells.map(c => [`${c.x},${c.z}`, c]));
+  let mx = 0, mz = 0, my = 0; for (const c of cells) { mx += c.x; mz += c.z; my += c.y; } mx /= cells.length; mz /= cells.length; my /= cells.length;
+  let cxx = 0, czz = 0, cxz = 0, cxy = 0, czy = 0; for (const c of cells) { const a = c.x - mx, b = c.z - mz, d = c.y - my; cxx += a * a; czz += b * b; cxz += a * b; cxy += a * d; czy += b * d; }
+  const det = cxx * czz - cxz * cxz, pa = (cxy * czz - czy * cxz) / det, pc = (czy * cxx - cxy * cxz) / det;
+  let rlo = Infinity, rhi = -Infinity; for (const c of cells) { const r = c.y - (my + pa * (c.x - mx) + pc * (c.z - mz)); rlo = Math.min(rlo, r); rhi = Math.max(rhi, r); }
+  const cand = []; for (const c of cells) { if (!inside(c.x, c.z, 6)) continue; let ok = true, worst = 0; for (let dx = -3; dx <= 3 && ok; dx++) for (let dz = -3; dz <= 3; dz++) { if (dx * dx + dz * dz > 9) continue; const q = byKey.get(`${c.x + dx},${c.z + dz}`); if (!q || q.s > 3) { ok = false; break; } worst = Math.max(worst, q.s); } if (ok) cand.push({ ...c, worst }); }
+  cand.sort((a, b) => a.worst - b.worst); const areas = []; for (const c of cand) if (areas.every(q => Math.hypot(c.x - q.x, c.z - q.z) >= 8)) areas.push(c);
+  const sl = cells.map(c => c.s).sort((a, b) => a - b);
+  const contour = { median: +sl[Math.floor(sl.length / 2)].toFixed(1), relief: +(rhi - rlo).toFixed(2), pin: +slope(pin[0], pin[1]).toFixed(1), areas: areas.length, steep: Math.round(cells.filter(c => c.s > 3).length / cells.length * 100) };
+  contour.feature = contour.relief >= 0.25;
+  if (contour.median < 1) flags.push(`green nearly flat (typical slope ${contour.median}%)`);
+  if (contour.median > 3) flags.push(`green steep (typical slope ${contour.median}%)`);
+  if (contour.areas < 2) flags.push(`green has ${contour.areas} pin area${contour.areas === 1 ? '' : 's'}`);
+  return { green, fairway, widths, land, bunkers, leans, contour, flags, dy: (T.groundAt(pin[0], pin[1]) ?? 0) - (T.groundAt(...h.tees[COURSE.teeSets[0].id]) ?? 0) };
 }
 
 // the course as a whole: styles, par 3s, how the angled greens balance
@@ -125,5 +156,12 @@ export function courseOutlines(HOLES, rows, COURSE) {
   const L = rows.filter(r => r.green.turn === 'L').length, R = rows.filter(r => r.green.turn === 'R').length;
   if (L < 2 || R < 2) flags.push(`angled greens: ${L} left, ${R} right (want 2 or 3 each)`);
   const ovals = rows.filter(r => r.green.oval >= 0.9).length;
-  return { styles, p3, angled: { L, R }, ovals, flags };
+  // side slope and green contour across the nine
+  const big = HOLES.map((h, i) => [h, rows[i]]).filter(([h]) => h.par > 3), top = r => r.leans.reduce((a, b) => Math.abs(b.lean) > Math.abs(a) ? b.lean : a, 0);
+  const lean2 = big.filter(([, r]) => Math.abs(top(r)) >= 2).length, strong = big.filter(([, r]) => Math.abs(top(r)) >= 5.5).length;
+  const features = rows.filter(r => r.contour.feature).length;
+  if (lean2 * 2 <= big.length) flags.push(`only ${lean2} of ${big.length} par 4/5 landing areas lean 2% or more`);
+  if (strong < 1 || strong > 2) flags.push(`${strong} strong sidehill landing areas (5.5%+; want one or two)`);
+  if (features < 5) flags.push(`only ${features} greens with a feature (0.25 m+ beyond their plane; want most)`);
+  return { styles, p3, angled: { L, R }, ovals, lean: { lean2, strong, of: big.length }, features, flags };
 }

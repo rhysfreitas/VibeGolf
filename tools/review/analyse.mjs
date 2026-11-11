@@ -74,7 +74,9 @@ for (const o of out) {
     (O.fairway ? `; fairway ${O.fairway.min}–${O.fairway.max} m (×${O.fairway.change})` : '') +
     (Object.keys(O.land).length ? `; drives land on ${Object.entries(O.land).map(([k, v]) => `${k} ${v.w ?? '-'}`).join(', ')} m` : '') +
     `; bunkers ${O.bunkers.map(b => `${b.job}${b.job === 'greenside' ? '' : '@' + b.s}:${b.span}m${b.touches || b.job === 'greenside' ? '' : '(off)'}`).join(' ') || 'none'}`);
+  console.log(`  contour: green typical ${O.contour.median}%, ${O.contour.relief} m beyond its plane${O.contour.feature ? ' (a feature)' : ''}, pin ${O.contour.pin}%, ${O.contour.areas} pin areas, ${O.contour.steep}% over 3%` + (O.leans.length ? `; fairway lean ${O.leans.map(l => `${l.at} ${l.lean}%`).join(', ')}` : ''));
   for (const f of O.flags) console.log(`  ! ${f}`);
 }
 console.log(`\ncourse: green styles ${JSON.stringify(courseO.styles)}, plain ovals ${courseO.ovals} of ${out.length}, angled greens ${courseO.angled.L} left / ${courseO.angled.R} right, par 3s ${courseO.p3.map(p => `${p.n}: ${p.yd} yd, plays ~${p.plays}`).join('; ')}`);
+console.log(`course: fairways leaning 2%+ ${courseO.lean.lean2} of ${courseO.lean.of}, strong ${courseO.lean.strong}; greens with a feature ${courseO.features} of ${out.length}`);
 for (const f of courseO.flags) console.log(`! ${f}`);

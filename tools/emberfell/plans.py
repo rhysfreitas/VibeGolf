@@ -189,4 +189,41 @@ label(ax, (-396, -640), 'the clubhouse', fs=6.5)
 for p_, t_ in (((0, -34), 'the Notch'), ((60, 112), 'the rampart'), ((-200, -360), 'the Spill'), ((-60, -900), 'northern flow'), ((120, 640), 'geysers'), ((-300, -960), 'crust fields'), ((-470, -520), 'the lava lake'), ((-985, -115), 'lavafall'), ((-380, 700), 'lava river'), ((330, 80), 'the cone'), ((-700, 130), 'the cone'), ((-200, -420), 'caldera floor'), ((40, 330), 'barranco')):
     label(ax, p_, t_, fs=6.5)
 fig.savefig(f'{OUT}/map.png', facecolor='white'); plt.close(fig)
-print('plans, profiles and map written')
+
+# green diagrams: the approach comes up from the bottom; contours every 5 cm (bold every 25), arrows downhill
+# (longer = steeper, red over 3%), the pin areas as dashed rings, the pin as a flag
+for n in range(1, 10):
+    gj = f'{G}/green{n}.json'
+    if not os.path.exists(gj): continue
+    J = json.load(open(gj)); N = J['N']; st = J['step']
+    Hh = np.array([np.nan if v is None else v for v in J['h']], float).reshape(N, N)
+    GM = np.array(J['gm'], float).reshape(N, N); SF = np.array(J['s'], int).reshape(N, N)
+    ext = [-24.25, 24.25, -24.25, 24.25]
+    fig = plt.figure(figsize=(2.3, 2.3), dpi=220); ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(-22, 22); ax.set_ylim(-22, 22); ax.axis('off')
+    img = pal[SF].copy(); img[SF == SURF.index('green')] = (0.66, 0.88, 0.56)
+    ax.imshow(img, extent=ext, origin='upper', interpolation='nearest')
+    ys, xs = np.mgrid[24:-24.5:-st, -24:24.5:st]
+    on = GM < 0.4
+    Hg = np.where(on, Hh, np.nan)
+    lo, hi = np.nanmin(Hg), np.nanmax(Hg)
+    lv = np.arange(np.floor(lo / 0.05) * 0.05, hi + 0.05, 0.05)
+    ax.contour(xs, ys, Hg, levels=lv, colors='#3d5a2e', linewidths=0.35, alpha=0.8)
+    lv2 = [v for v in lv if abs(round(v / 0.25) * 0.25 - v) < 1e-6]
+    if lv2: ax.contour(xs, ys, Hg, levels=lv2, colors='#2a3f20', linewidths=0.8)
+    ax.contour(xs, ys, GM, levels=[0], colors=INK, linewidths=0.9)
+    gy, gx = np.gradient(Hh, st)           # gy along rows (down the page), so uphill up-page is -gy
+    for r in range(4, N - 4, 8):
+        for c in range(4, N - 4, 8):
+            if GM[r, c] > -1 or np.isnan(Hh[r, c]): continue
+            dx, dy = -gx[r, c], gy[r, c]     # downhill, in page axes (x right, y up)
+            sl = hypot(dx, dy) * 100
+            if sl < 0.4: continue
+            L = min(3.6, 1.3 + sl * 0.6); u, v = dx / hypot(dx, dy) * L, dy / hypot(dx, dy) * L
+            ax.annotate('', xy=(xs[r, c] + u / 2, ys[r, c] + v / 2), xytext=(xs[r, c] - u / 2, ys[r, c] - v / 2),
+                        arrowprops=dict(arrowstyle='-|>', color='#c0392b' if sl > 3 else INK, lw=0.7, mutation_scale=6))
+    for a, b in J['areas']: ax.add_patch(Circle((a, b), 3, fill=False, ls=(0, (2, 1.5)), lw=0.7, ec='#1f5fa8'))
+    ax.plot([0, 0], [0, 2.6], color=INK, lw=0.7); ax.add_patch(Polygon([[0, 2.6], [1.6, 2.15], [0, 1.7]], color='#d23b2a')); ax.plot(0, 0, 'o', ms=1.6, color=INK)
+    ax.plot([-20, -10], [-20.5, -20.5], color=INK, lw=1.2); ax.text(-15, -19.6, '10 m', fontsize=5.5, ha='center')
+    ax.annotate('approach', xy=(17, -15), xytext=(17, -21), fontsize=5, ha='center', va='bottom', arrowprops=dict(arrowstyle='-|>', color=INK, lw=0.6))
+    fig.savefig(f'{OUT}/green{n}.png', facecolor='white'); plt.close(fig)
+print('plans, profiles, greens and map written')
