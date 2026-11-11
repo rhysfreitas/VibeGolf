@@ -36,6 +36,11 @@ for (const g of games) {
   await pg.evaluate(() => __advance(1.5, 3));
   const shot = async v => { if (only.includes(v)) await pg.screenshot({ path: path.join(OUT, `game_${g}_${v}${tag}.png`) }); };
   await shot('play');
+  const cost = await pg.evaluate(() => { // draws, triangles and software frame time of the play view
+    const R = __world.renderer, info = R.info; info.autoReset = false; info.reset(); R.render(__world.scene, __world.camera);
+    const calls = info.render.calls, tris = info.render.triangles; info.autoReset = true;
+    const gl = R.getContext(), px = new Uint8Array(4), t = performance.now(); for (let i = 0; i < 4; i++) { R.render(__world.scene, __world.camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return { calls, tris, ms: Math.round((performance.now() - t) / 4) };
+  });
   const style = await pg.addStyleTag({ content: CLEAN });
   await shot('clean');
   if (only.includes('wide')) {
@@ -56,7 +61,7 @@ for (const g of games) {
     await pg.evaluate(() => __advance(1.4, 2)); await pg.addStyleTag({ content: CLEAN }); await shot('flight');
     await pg.evaluate(() => __advance(5, 3)); await shot('land');
   }
-  console.log(g, 'done', Math.round((Date.now() - t0) / 1000) + 's');
+  console.log(g, 'done', Math.round((Date.now() - t0) / 1000) + 's', `| ${cost.calls} draws, ${Math.round(cost.tris / 1000)}k triangles, ${cost.ms} ms a frame`);
   await pg.close();
 }
 console.log('errors', JSON.stringify(errs));

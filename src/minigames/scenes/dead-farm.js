@@ -22,12 +22,12 @@ function radialTex(stops, size = 64) {
 export function createDeadFarm(container) {
   const st = createStage(container, {
     turbidity: 2, rayleigh: 0.5, mie: 0.003, mieG: 0.8, elev: 35, az: 330, // moonlight from high behind your left shoulder (no glare off the field)
-    sunColor: 0x8aa2d8, sunInt: 0.55, exposure: 1.0, hemiSky: 0x24304e, hemiGround: 0x0a0a0e, hemiInt: 0.36,
+    sunColor: 0x9db4e8, sunInt: 1.55, exposure: 1.0, hemiSky: 0x2c3a62, hemiGround: 0x100e0c, hemiInt: 0.5, // silver moonlight you can read the field by (art pass 1)
     fogColor: 0x0b1018, fogNear: 100, fogFar: 1200, shadowBox: 110,
   });
   const { scene, renderer, sunDir } = st;
   st.sky.visible = false; scene.environment = null;
-  scene.fog = new THREE.FogExp2(0x0a0e16, 0.0023);
+  scene.fog = new THREE.FogExp2(0x182030, 0.0021); // a moonlit haze, so far things stand out against it instead of sinking into black
   const R = rng(66), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(), col = new THREE.Color();
   const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.92, ...o });
   const basic = (c, o = {}) => new THREE.MeshBasicMaterial({ color: c, toneMapped: false, ...o });
@@ -66,9 +66,10 @@ void main(){
   float a = acos(clamp(dot(d, uMoon), -1.0, 1.0));
   vec2 mp = vec2(dot(d, normalize(cross(uMoon, vec3(0.0, 1.0, 0.0)))), d.y - uMoon.y) * 28.0;
   float disc = smoothstep(0.052, 0.047, a), seas = fb(mp * 0.8 + 3.0);
-  vec3 moon = vec3(1.0, 0.84, 0.66) * (0.66 + 0.42 * smoothstep(0.35, 0.7, seas));
-  c = mix(c, moon * 2.2, disc);
-  c += vec3(0.55, 0.55, 0.62) * (exp(-a * 11.0) * 0.25 + exp(-a * 3.0) * 0.06);
+  vec3 moon = vec3(1.0, 0.9, 0.78) * (0.55 + 0.5 * smoothstep(0.32, 0.72, seas));
+  c = mix(c, moon * 0.95, disc);
+  c += vec3(0.55, 0.57, 0.66) * (exp(-a * 11.0) * 0.3 + exp(-a * 3.0) * 0.08);
+  c += vec3(0.42, 0.45, 0.55) * 0.05 * exp(-pow((a - 0.384) / 0.022, 2.0));                      // a faint 22-degree halo in the high haze
   // clouds: a slow-moving layer, silver near the moon, lit from inside by lightning
   vec2 cp = d.xz / max(d.y + 0.06, 0.04) * 0.55 + vec2(uT * 0.004, uT * 0.0015);
   float cl = smoothstep(0.42, 0.78, fb(cp * 1.3) * 0.75 + fb(cp * 3.7 + 9.0) * 0.25) * smoothstep(-0.02, 0.1, h);
@@ -83,6 +84,8 @@ void main(){
 }`,
   }));
   dome.renderOrder = -10; dome.frustumCulled = false; scene.add(dome);
+  // the moon itself, low over the far ridge: a cool rim on the horde, the corn and the buildings, and a sheen on the dewy field
+  const moonRim = new THREE.DirectionalLight(0x9fb2dc, 1.1); moonRim.position.copy(moonDir).multiplyScalar(500); scene.add(moonRim, moonRim.target);
 
   /* ---------------- ground: flat field, low hills around it ---------------- */
   const CORN = [-258, -335];
@@ -95,7 +98,7 @@ void main(){
   const surfaceAt = () => 'rough';
   const inGrave = (x, z) => x > GRAVEYARD.x[0] - 3 && x < GRAVEYARD.x[1] + 3 && z > GRAVEYARD.z[0] - 3 && z < GRAVEYARD.z[1] + 3;
   const geo = terrainMesh(groundAt, { N: st.coarse ? 240 : 300, nearX: 140, farX: 2600, nearZ: 230, farZ: 2600, cz: -160 });
-  const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0 }); // dew: a soft sheen toward the moon
   mat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, poolU, { uFlood: { value: floodU } });
     sh.vertexShader = sh.vertexShader
@@ -108,7 +111,8 @@ vec3 p = vWPos;
 float camD = length(cameraPosition - p);
 float fine = mix(fb(p.xz*2.6), 0.5, smoothstep(20.0, 80.0, camD));
 float mid = fb(p.xz*0.12), big = fb(p.xz*0.02 + 7.0);
-vec3 grass = mix(lin(vec3(0.32,0.3,0.21)), lin(vec3(0.24,0.26,0.18)), mid) * (0.78 + 0.42*fine);
+vec3 grass = mix(lin(vec3(0.33,0.33,0.27)), lin(vec3(0.23,0.25,0.21)), mid) * (0.7 + 0.55*fine);
+grass *= 0.86 + 0.28 * vn(vec2(p.x * 1.6, p.z * 0.06));                                          // stubble rows running away toward the corn
 vec3 dirt = lin(vec3(0.36,0.29,0.21)) * (0.8 + 0.35*fine);
 vec3 c = mix(grass, dirt, smoothstep(0.55, 0.72, fb(p.xz*0.07)) * 0.8);
 // ploughed rows under the corn, and fresh dirt in the graveyard
@@ -219,7 +223,7 @@ diffuseColor.rgb = c;
     const z = FENCE_Z + 2.2, y = groundAt(bx, z);
     const b = new THREE.Mesh(barrelGeo, rust); b.position.set(bx, y, z); b.castShadow = true; scene.add(b);
     const rim = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.03, 6, 16), basic(0xff7a30)); rim.rotation.x = Math.PI / 2; rim.position.set(bx, y + 0.9, z); scene.add(rim);
-    addFire(bx, z, { y: y + 0.85, rate: 30, size: 0.55, rise: 1.4, pool: addPool(bx, z, 7, 1.2, 0xff7a2a, 0.35), glowSize: 3.2 });
+    addFire(bx, z, { y: y + 0.85, rate: 30, size: 0.55, rise: 1.4, pool: addPool(bx, z, 10, 1.5, 0xff7a2a, 0.35), glowSize: 3.6 });
   }
 
   // a kerosene lantern on a crate beside you
@@ -241,12 +245,16 @@ diffuseColor.rgb = c;
   for (const x of [-0.08, 0, 0.08]) { const tn = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32, 4), metal); tn.position.set(x, 1.75, 0); fork.add(tn); }
 
   /* ---------------- floodlights: real spot lights, beams in the fog, one dying ---------------- */
-  const floods = [];
+  const floods = [], beamMats = [];
   const beamMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    uniforms: { uC: { value: new THREE.Color(0xd8e4ff) }, uK: { value: 1 } },
-    vertexShader: 'varying float vY; void main(){ vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: 'varying float vY; uniform vec3 uC; uniform float uK; void main(){ gl_FragColor = vec4(uC * 0.1 * uK * pow(vY, 0.9), 1.0); }',
+    uniforms: { uC: { value: new THREE.Color(0xd8e4ff) }, uK: { value: 1 }, uT: { value: 0 } },
+    // soft edges (fresnel: faint where the cone is seen edge-on) and drifting dust, so the beams read as light in the air, not glass cones
+    vertexShader: 'varying float vY; varying vec3 vN, vV, vW; void main(){ vY = uv.y; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `varying float vY; varying vec3 vN, vV, vW; uniform vec3 uC; uniform float uK, uT;
+      ${GLSL_NOISE}
+      void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 1.6); float dust = 0.7 + 0.6 * fb(vW.xz * 0.15 + vec2(0.0, vW.y * 0.2) + uT * 0.03);
+        gl_FragColor = vec4(uC * 0.14 * uK * pow(vY, 0.9) * f * dust * smoothstep(0.0, 0.12, vY), 1.0); }`,
   });
   const floodU = []; // aim points light the fog
   function flood(x, z, aim, H = 22) {
@@ -257,7 +265,7 @@ diffuseColor.rgb = c;
     for (let c = 0; c < 3; c++) { const l = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.9), basic(0xf2f6ff)); l.position.set(-0.85 + c * 0.85, 0, 0.16); head.add(l); lamps.push(l); }
     const gl = glowSprite(0xdfe8ff, 9); gl.position.set(x, H, z); scene.add(gl);
     const dir = new THREE.Vector3(aim[0] - x, -H, aim[1] - z), len = dir.length();
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.6, len * 0.22, len, 20, 1, true), beamMat.clone()); beam.geometry.translate(0, -len / 2, 0); beam.position.set(x, H, z);
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.6, len * 0.22, len, 20, 1, true), beamMat.clone()); beamMats.push(beam.material); beam.geometry.translate(0, -len / 2, 0); beam.position.set(x, H, z);
     beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.normalize()); scene.add(beam);
     const L = new THREE.SpotLight(0xcfdcff, 6, 420, 0.24, 0.55, 1.0); L.position.set(x, H, z); L.target.position.set(aim[0], 0, aim[1]); scene.add(L, L.target);
     const f = { L, lamps, gl, beam, base: 6, aim, flicker: false }; floods.push(f);
@@ -284,7 +292,7 @@ diffuseColor.rgb = c;
         float dens = wisp * (0.26 + 0.24 * corn) * far;
         float camD = length(vW - cameraPosition);
         dens *= 1.0 - smoothstep(190.0, 360.0, camD);                      // never piles up into a band on the horizon
-        vec3 c = vec3(0.05, 0.06, 0.085);                                 // moonlit: paler than the ground so it reads
+        vec3 c = vec3(0.085, 0.1, 0.135);                                 // moonlit: paler than the ground so it reads
         for (int i = 0; i < 4; i++){ vec2 d = vW.xz - uFlood[i].xy; c += vec3(0.16, 0.17, 0.21) * uFlood[i].w * exp(-dot(d, d) / (uFlood[i].z * uFlood[i].z)); }
         c += poolLight(vW.xz) * 0.2;
         vec2 fd = vW.xz - uFlash.xy; c += vec3(0.5, 0.25, 0.08) * uFlash.w * exp(-dot(fd, fd) / 900.0);
@@ -325,7 +333,7 @@ diffuseColor.rgb = c;
         float n = fb(vUv * vec2(3.0, 1.4) + vec2(vSeed + uT * 0.02, vSeed * 0.7));
         float a = edge * smoothstep(0.28, 0.7, n) * 0.34;
         a *= smoothstep(18.0, 45.0, vCam) * (1.0 - smoothstep(260.0, 380.0, vCam));
-        vec3 c = vec3(0.06, 0.07, 0.095);
+        vec3 c = vec3(0.1, 0.115, 0.15);
         for (int i = 0; i < 4; i++){ vec2 d = vW.xz - uFlood[i].xy; c += vec3(0.2, 0.21, 0.26) * uFlood[i].w * exp(-dot(d, d) / (uFlood[i].z * uFlood[i].z * 1.6)); }
         c += poolLight(vW.xz) * 0.25;
         vec2 fd = vW.xz - uFlash.xy; c += vec3(0.6, 0.3, 0.1) * uFlash.w * exp(-dot(fd, fd) / 1200.0);
@@ -391,7 +399,7 @@ diffuseColor.rgb = c;
   for (const x of [-0.65, 0.65]) {
     const o = new THREE.Vector3(x, 0.3, 2.75).applyMatrix4(truck.matrixWorld);
     const g = glowSprite(0xfff0c0, 2.4); g.position.copy(o); scene.add(g);
-    const len = 26, bm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 3.5, len, 14, 1, true), beamMat.clone()); bm.material.uniforms.uC.value.set(0xfff0c0); bm.material.uniforms.uK.value = 0.7;
+    const len = 26, bm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 3.5, len, 14, 1, true), beamMat.clone()); beamMats.push(bm.material); bm.material.uniforms.uC.value.set(0xfff0c0); bm.material.uniforms.uK.value = 0.7;
     bm.geometry.translate(0, -len / 2, 0); bm.position.copy(o); bm.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), hlDir.clone().setY(-0.04).normalize()); scene.add(bm);
   }
   const tp = new THREE.Vector3(-30, 0, -108).addScaledVector(hlDir, 12);
@@ -638,7 +646,7 @@ diffuseColor.rgb = c;
     flashFog(at, k) { fogU.uFlash.value.set(at.x, at.z, 0, Math.max(fogU.uFlash.value.w, k)); },
     animate(clock) {
       const dt = Math.min(0.1, Math.max(0, clock - lastClock)); lastClock = clock;
-      skyU.uT.value = clock; fogU.uT.value = clock;
+      skyU.uT.value = clock; fogU.uT.value = clock; for (const m of beamMats) m.uniforms.uT.value = clock;
       stepPuffs(dt);
       for (const sg of signs) { const f = 0.8 + 0.12 * Math.sin(clock * 9 + sg.ph) * Math.sin(clock * 5.7 + sg.ph * 2); sg.mat.emissiveIntensity = 0.9 * f; sg.glow.material.opacity = 0.55 * f; }
       for (let i = 0; i < candleFlames.length; i++) candleFlames[i].scale.y = 0.85 + 0.2 * Math.sin(clock * 13 + i * 1.7);
