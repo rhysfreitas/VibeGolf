@@ -94,7 +94,7 @@ export function contourAt(C, u, v) {
 export function buildHole(h) {
   const k = h.n - 1, W = WOR[k], PR = PROF[k];
   const endHead = headingAt(h.line, h.len - 1), ec = Math.cos(endHead), es = Math.sin(endHead);
-  const GR = makeGreen(h.pin, endHead, { seed: 70 + h.n, ...h.green }), gm = GR.gm, gUV = GR.uv;
+  const GR = makeGreen(h.pin, endHead, { seed: 70 + (h.seedN ?? h.n), ...h.green }), gm = GR.gm, gUV = GR.uv;
   const fwD = makeFairway(h.line, h.fw || []);
   // ash-grey sand by the greens; red scoria (cinder) waste out in the fairways
   const bunkers = (h.bunkers || []).map((b, i) => {
@@ -102,7 +102,7 @@ export function buildHole(h) {
     if (b.strip) { const fd = makeFairway(h.line, [{ e: b.strip, wob: b.wob ?? 3, seed: 90 + i }]), sx = b.strip.map(([s, L, R]) => at(h.line, s, (R - L) / 2));
       return { strip: true, kind: b.kind === 'cinder' ? 'scoria' : 'sand', depth: 0.9, edgeM: fd, x: sx[0][0], z: sx[0][1], box: [Math.min(...sx.map(p => p[0])) - 70, Math.min(...sx.map(p => p[1])) - 70, Math.max(...sx.map(p => p[0])) + 70, Math.max(...sx.map(p => p[1])) + 70] }; }
     const kind = b.kind === 'cinder' ? 'scoria' : b.kind || (Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45 ? 'sand' : 'scoria');
-    return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, kind, depth: kind === 'sand' ? 0.8 : 0.9 }; });
+    return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + (h.seedN ?? h.n) * 9, kind, depth: kind === 'sand' ? 0.8 : 0.9 }; });
   const bunkerE = (b, x, z) => seDist(b, x, z) + 0.13 * noise2(x / 4, z / 4, b.seed);
   for (const b of bunkers) {   // a greenside bunker sits at least 2.5 m outside the green's edge
     if (b.kind !== 'sand' || b.strip || b.wrap) continue;
@@ -230,7 +230,7 @@ export function buildHole(h) {
     for (const [e, n] of [[P[0], P[1]], [P.at(-1), P.at(-2)]]) objs.push({ kind: 'mouth', x: e[0], z: e[1], dir: Math.atan2(n[0] - e[0], -(n[1] - e[1])), w: c.spec.w, depth: c.depth, base: gAt(e[0] + (e[0] - n[0]) * 0.1, e[1] + (e[1] - n[1]) * 0.1) });
   }
   if (h.columns) {   // basalt columns on the terrace edge's face round the corner: wherever the mountain is steep
-    const R = rnd(600 + h.n);
+    const R = rnd(600 + (h.seedN ?? h.n));
     for (let s = h.columns.from[0]; s < h.columns.to[0]; s += 2.2) for (let o = h.columns.from[1] - 90; o < h.columns.to[1]; o += 2.2) {
       const p = at(h.line, s, o), G = (x, z) => ground(x, z, true), d = 1.5, sl = Math.hypot(G(p[0] + d, p[1]) - G(p[0] - d, p[1]), G(p[0], p[1] + d) - G(p[0], p[1] - d)) / (2 * d);
       if (sl < 0.9 || R() < 0.25) continue;

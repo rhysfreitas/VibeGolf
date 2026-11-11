@@ -84,7 +84,7 @@ of fairways on different courses measure as alike.
 | Hollowmere | spindle 4, island 2, split | 4 | Four spindles; the Adit, the Rim, the Grotto and the Cenote alike |
 | The Reclaim | spindle 5, broken 2 | 6 | Five spindles; the Atrium, Broken Tower, Riverside and the Rift all alike |
 | Rimeholm | island 3, spindle 2, uneven, broken | 2 | Three plain strips; the Ice Gate and the Hot Springs alike, in a row |
-| Emberfell (planned) | spindle 3, hourglass 3, island | 5 | Kipuka, the Barranco and the Lake alike; the Lava Tube and the Lavafall alike |
+| Emberfell (planned) | round 6 draft: scalloped, funnel, split (a double fairway), hourglass, broken, fan, island | 0 | Inside it; two fairways match another course's (the Barranco and Rimeholm's Ice Gate, the Heart and the Lost Valley's Bone Bed). Was spindle 3, hourglass 3, island, five pairs alike |
 | The Lost Valley (planned) | split 4, broken 3 | 0 | Every hole split or broken: two forms, and three splits in a row |
 
 The two planned courses fix theirs in their re-lay (their briefs say so). The playable five keep theirs until

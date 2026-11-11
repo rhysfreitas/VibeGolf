@@ -19,8 +19,7 @@ const shape = h => {
   const turns = []; for (let i = 1; i < L.length - 1; i++) { const a = [L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]], b = [L[i + 1][0] - L[i][0], L[i + 1][1] - L[i][1]];
     // x right, -z downrange: a right turn has a positive cross product
     const cr = a[0] * b[1] - a[1] * b[0]; turns.push(cr > 0 ? 'R' : 'L'); }
-  if (h.n === 8) return 'Cape right';
-  if (h.n === 9) return 'Dogleg right, onto the island';
+  if (h.name === 'The Heart') return 'Dogleg right, onto the island';
   return turns.length === 1 ? `Dogleg ${turns[0] === 'R' ? 'right' : 'left'}` : turns.join('') === 'LR' ? 'S-bend (left, then right)' : turns.join('') === 'RL' ? 'S-bend (right, then left)' : 'Bends ' + turns.join(' ');
 };
 const lines = n => Array.from({ length: n }, () => '<div class="rule"></div>').join('');

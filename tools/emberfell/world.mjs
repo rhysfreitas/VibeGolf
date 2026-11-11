@@ -62,8 +62,9 @@ export const lakeD = (X, Z) => { let d = Infinity; for (const [x, z, r] of LAKE.
 const islE = (X, Z) => seDist({ x: ISLAND.c[0], z: ISLAND.c[1], rx: ISLAND.rx, rz: ISLAND.rz, rot: ISLAND.rot }, X, Z) + 0.1 * noise2(X / 18, Z / 18, ISLAND.seed);
 const neckD = (X, Z) => distLine(NECK.pts, X, Z) - NECK.w / 2 - 2.5 * noise1(project(NECK.pts, X, Z).s / 7, 5);
 
-// the barranco: a deep gully carved down the outer flank, across the 2nd
-export const BARRANCO = { pts: [[40, 262], [52, 420], [70, 560], [80, 760], [110, 1100], [140, 1500]], depth: 16, floor: 34, wall: 62 };
+// the barranco: a deep gully carved down the outer flank, across the 2nd. Round 6: its head starts at z 360 (it was
+// 262), below the Lava Tube's trench, so the 3rd's channel fairway sits on the shoulder above it
+export const BARRANCO = { pts: [[48, 360], [52, 420], [70, 560], [80, 760], [110, 1100], [140, 1500]], depth: 16, floor: 34, wall: 62 };
 // lava rivers, each in a channel sunk between its own levees, its surface following the ground down it. The 1st's
 // (outside, from the spatter vent toward the sea; round 2 a third wider), the Spill (from a vent on the caldera
 // floor below the terraces, past the 6th's green into the lake) and the Northern flow (from a

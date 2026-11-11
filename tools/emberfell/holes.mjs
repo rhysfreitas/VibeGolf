@@ -1,7 +1,9 @@
-// Emberfell, plan book round 1: nine holes on a volcano at dusk. Four play round the outside of the cone on a
-// broad shoulder below the rim (a kipuka of old forest with a live lava river beside it, a barranco, a cinder
-// cone, a collapsed lava tube), the 5th drops 62 m off the rim at the Notch into the caldera, and four play
-// inside it, down two slumped terraces, past a lavafall, round the lava lake and out to an island in it.
+// Emberfell: nine holes on a volcano at dusk. Round 6 (11 November 2026) re-lays it to a new skeleton, 5 4 4 3 4 5
+// 4 3 4: three play round the outside of the cone on a broad shoulder below the rim (a kipuka of old forest with a
+// live lava river beside it, a barranco, a collapsed lava tube), the 4th drops 59 m off the rim at the Notch into
+// the caldera, and five play inside it, down two slumped terraces, past a lavafall, round the lava lake, into a
+// cinder cone on the floor and out to an island in the lake. `words` carries each hole's card (story, form, type,
+// feature, decision, miss map, tee view, ground; docs/COURSE-DESIGN.md Part 1).
 // Each hole is written in its own frame (metres; tee at the origin, the hole runs toward -z, x is right of the
 // line, y up from the hole's `base`, the back tee's height), from `legs` ([length, turn in degrees, + = right]).
 // `place` puts it on the mountain (world.mjs): world x east, -z north. Heights come from the mountain under
@@ -52,119 +54,130 @@ let cvSeed = 1;
 const cv = (P, pts, w, lip, more = {}) => ({ pts: pts.map(p => P(...p)), w, seed: cvSeed++, lip: lip && { ...lip, toward: P(...lip.toward) }, ...more });
 
 export const HOLES = [
-  // 1. KIPUKA: along an island of old forest left when fresh lava flowed round it, a live lava river down the right
-  hole({ n: 1, name: 'Kipuka', par: 4, legs: [[225, 0], [132, -35]], place: { at: [-470, 610], heading: 75 },
+  // 1. KIPUKA: a gentle three-shot opener along an island of old forest left when fresh lava flowed round it, a
+  // live lava river far down the right. Round 6: a par 5 (the tee 120 m further back on the flow), its fairway
+  // scalloped by the forest's lobes on the left and tongues of fresh flow on the right
+  hole({ n: 1, name: 'Kipuka', par: 5, legs: [[345, 0], [132, -35]], place: { at: [-586, 641], heading: 75 },
     build: (P) => ({
-      tees: { obsidian: 0, basalt: 20, pumice: [78, -38], ash: [118, -40] },
-      fw: [{ e: [[60, 14, 14], [95, 22, 22], [150, 28, 27], [200, 32, 27], [240, 30, 25], [275, 22, 23], [305, 17, 18], [335, 13, 14]], wob: 6 }],
-      corridor: 20,
-      cant: [[150, 290, -3]],
+      tees: { obsidian: 0, basalt: 22, pumice: [95, -38], ash: [150, -44] },
+      // form: scalloped. A wide ribbon with the forest biting in from the left and the flow from the right, in turn
+      fw: [{ e: [[50, 12, 14], [110, 26, 26], [180, 37, 35], [250, 37, 39], [320, 39, 34], [380, 33, 32], [420, 25, 22], [452, 15, 14]], wob: 6 },
+        { bite: [[150, -36, 38, 28, 8], [246, 38, 36, 28, -10], [334, -34, 36, 26, 6], [404, 30, 26, 18, -8]], wob: 2.5 }],
+      corridor: 22,
+      cant: [[195, 290, 2.5], [320, 420, -3]],   // the drive's landing falls right toward the flow (an easy hole); the lay-up's left, toward the forest
       // the kipuka: old ground a little higher than the flows, with its forest down the left and in the corner
-      forms: [{ at: P(205, -82), rx: 62, rz: 150, rot: -0.2, h: 3, label: 'the kipuka (old forest)' }],
-      zones: [{ blobs: [[110, -62, 26], [160, -70, 36], [215, -72, 38], [262, -58, 30], [300, -50, 24], [335, -46, 18]], surf: 'forest' }],
-      // where the forest stops, the edge of the fresh flow: a ragged front of black lava 3 m high
-      cracks: [cv(P, [[80, -128], [150, -142], [220, -150], [290, -120], [350, -96], [410, -90]], 0, { h: 3.2, toward: [220, -220], run: 30, fall: 20, face: 2.5 }, { open: false, jag: 6, crag: true })],
-      bunkers: [{ at: P(234, 38), rx: 18, rz: 11, rot: 0.15, kind: 'cinder', job: 'catch' },
-        { at: P(342, 18), rx: 8, rz: 5 }, { at: P(372, -15), rx: 7, rz: 5 }],
-      green: { lobes: [[-5, 8, 8, 12, -30], [3, -6, 8, 11, -30], [6, 3, 6, 7, 0]], contour: [{ fall: -40, pct: 1.8 }, { bowl: [-6, 10], r: 11, h: 0.3 }], style: 'A kidney set from front right to back left, curled round the forest, falling 1.8% toward the front left, with a shallow bowl in the back-left lobe that gathers to a back pin: open from the right, where the bunker guards the fairway' },
-      trees: [...grove(P(150, -72), 32, 16, 11), ...grove(P(220, -78), 36, 18, 12), ...grove(P(290, -60), 22, 9, 13), ...grove(P(370, -52), 16, 6, 14)],
-      boulders: [...blocks(P(170, 48), 14, 5, 15), ...blocks(P(300, 50), 12, 4, 16)],
+      forms: [{ at: P(300, -84), rx: 64, rz: 185, rot: -0.15, h: 3, label: 'the kipuka (old forest)' }],
+      zones: [{ blobs: [[150, -60, 26], [205, -74, 30], [255, -72, 30], [330, -60, 34], [384, -70, 34], [430, -56, 28], [462, -48, 22]], surf: 'forest' }],
+      // where the forest stops, the edge of the fresh flow: a ragged front of black lava 3 m high; on the right, two
+      // tongues of the fresh flow nose in toward the fairway (raised, with a steep front)
+      cracks: [cv(P, [[180, -128], [270, -142], [340, -150], [410, -120], [470, -96], [530, -90]], 0, { h: 3.2, toward: [340, -220], run: 30, fall: 20, face: 2.5 }, { open: false, jag: 6, crag: true }),
+        cv(P, [[214, 84], [232, 66], [250, 62], [268, 68], [286, 88]], 0, { h: 2.4, toward: [250, 110], run: 22, fall: 14, face: 2 }, { open: false, jag: 4, crag: true }),
+        cv(P, [[376, 72], [392, 56], [408, 54], [424, 64]], 0, { h: 2, toward: [400, 100], run: 18, fall: 12, face: 2 }, { open: false, jag: 4, crag: true })],
+      bunkers: [{ at: P(372, 40), rx: 17, rz: 11, rot: 0.15, kind: 'cinder', job: 'catch' },
+        { at: P(462, 18), rx: 8, rz: 5 }, { at: P(492, -15), rx: 7, rz: 5 }],
+      green: { lobes: [[-5, 8, 8, 12, -30], [3, -6, 8, 11, -30], [6, 3, 6, 7, 0]], contour: [{ fall: -40, pct: 1.8 }, { bowl: [-6, 10], r: 11, h: 0.3 }], style: 'A kidney set from front right to back left, curled round the forest, falling 1.8% toward the front left, with a shallow bowl in the back-left lobe that gathers to a back pin: open from the right, where the bunker guards the lay-up' },
+      trees: [...grove(P(160, -68), 24, 9, 10), ...grove(P(270, -72), 32, 16, 11), ...grove(P(340, -78), 36, 18, 12), ...grove(P(410, -60), 22, 9, 13), ...grove(P(490, -52), 16, 6, 14)],
+      boulders: [...blocks(P(290, 50), 14, 5, 15), ...blocks(P(420, 50), 12, 4, 16)],
       vent: { at: [-175, 540], label: 'spatter vent' },
-      targets: [{ name: 'The bend', at: P(232, -2) }],
+      targets: [{ name: 'The drive', at: P(240, -4) }, { name: 'The bend', at: P(352, -2) }],
       words: {
-        story: 'An island of old forest left standing in fresh lava, a live lava river down the right.',
-        structure: 'a single fairway, dogleg left',
-        plays: 'The opener runs along a kipuka: an island of old ground and forest that fresh lava flowed round and left standing. The fairway lies on the kipuka, its forest down the left and in the corner, and beyond the trees the front of a fresh flow, a ragged wall of black lava. Down the right a live lava river, 22 m wide, runs in a channel between its own banks, from a spatter vent right of the green down toward the sea: 45–75 m off the line, closest at the bend. The cone fills the sky ahead-left; the sea lies far below on the right. The landing area leans 3% to the left, toward the forest, so the right half of the fairway, by the bunker, is the place to be. Gentle and wide: it shows what lava does to a ball before anything asks much of you.',
-        safe: 'Drive at the bend (232 m), short of the forest in the corner, and play a short iron in.',
-        bold: 'Cut the corner over the forest\'s edge: a wedge in, but the trees catch anything short.',
-        miss: 'Right is fresh black lava (a bad lie) and past it the river: a stroke and a drop. A big red-cinder bunker sits on the right where drives land, to catch a push before it gets there. Left is the forest, which knocks a ball down.',
+        story: 'A gentle three-shot opener down an island of old forest that fresh lava flowed round, a live lava river far down the right.',
+        structure: 'scalloped: the forest and the fresh flow bite in from either side in turn',
+        form: 'scalloped',
+        type: 'original: a three-shot hole whose line weaves',
+        feature: 'The kipuka\'s forest: a frame down the left and the corner, and an obstacle that knocks a hook down. The flow\'s tongues set the lie on the right (fresh black lava).',
+        decision: 'none: one clear line, three shots down the middle',
+        plays: 'The opener runs along a kipuka: an island of old ground and forest that fresh lava flowed round and left standing. The fairway lies on the kipuka, wide, its edge scalloped where the forest juts in from the left and tongues of fresh black lava nose in from the right, so the line weaves a little from shot to shot. Beyond the trees on the left, the front of the fresh flow stands as a ragged wall of black lava. Far down the right, beyond the flow, a live lava river 22 m wide runs in a channel between its own banks, from a spatter vent right of the green down toward the sea: 40–120 m off the line, nearest at the bend. The cone fills the sky ahead-left; the sea lies far below on the right. Three shots: a drive past the first tongue, a second to the bend, a short iron round the forest to a kidney green.',
+        safe: 'Drive at the middle (240 m), lay up at the bend (352 m), and play a short iron in.',
+        bold: 'There is no bold line: a long second can reach the corner\'s trees, so lay up.',
+        miss: 'Small miss: the first cut, or a scallop\'s rough. Medium: left, the forest (knocks a ball down); right, a tongue of fresh flow (a bad lie). Big: right, past the flow, the river (a stroke and a drop); left, the flow front behind the trees. A red-cinder bunker on the right of the lay-up catches a push before the flow. Safe miss at the green: right.',
+        teeView: 'Near: the flow\'s black crust either side of the tee. Middle: the fairway on the kipuka, the forest\'s lobes left, the first tongue right. Beyond: the cone ahead-left, the plume over it, the river\'s glow and the sea right. The landing area is in view.',
+        ground: 'Down 10 m over 480 m. The drive\'s landing falls 2.5% right (toward the flow, on the easy hole); the lay-up 3% left, toward the forest. The one contour: the kipuka\'s 3 m rise under the left half. The green: a bowl in its back lobe.',
       },
     }),
   }),
 
-  // 2. THE BARRANCO: straight across a deep gully carved down the flank, down 15 m to the drive and up 20 to the green
-  hole({ n: 2, name: 'The Barranco', par: 4, legs: [[384, 0]], place: { at: [-142, 478], heading: 92 }, tips: [-34, 32],
+  // 2. THE BARRANCO: straight across a deep gully carved down the flank, down 15 m to the drive and up 20 to the
+  // green. Round 6: the back tee 14 m forward (405 yd), and the fairway a funnel, wide where it drops into the
+  // gully and closing all the way up the climb
+  hole({ n: 2, name: 'The Barranco', par: 4, legs: [[384, 0]], place: { at: [-142, 478], heading: 92 }, tips: [-20, 32],
     build: (P) => ({
-      tees: { obsidian: 0, basalt: 20, pumice: [64, 40], ash: [102, 40] },
+      tees: { obsidian: 14, basalt: 34, pumice: [80, 42], ash: [118, 62] },
       ramps: [[108, 202], [226, 330]],
-      fw: [{ e: [[62, 14, 14], [100, 22, 22], [150, 27, 28], [195, 30, 29], [230, 29, 29], [262, 24, 24], [292, 19, 19], [325, 19, 18], [358, 14, 13]], wob: 5.5 }],
+      // form: funnel. Generous off the near wall, narrowing across the floor and all the way up the climb
+      fw: [{ e: [[62, 13, 15], [96, 33, 31], [140, 47, 45], [190, 43, 41], [228, 36, 32], [258, 29, 27], [288, 22, 21], [318, 18, 16], [350, 14, 13], [364, 12, 11]], wob: 5.5 }],
       corridor: 18,
       cant: [[160, 280, 3]],   // the gully floor runs down-valley to the right
-      bunkers: [{ strip: [[170, 44, -28], [192, 49, -30], [215, 51, -31], [240, 46, -28]], wob: 3, kind: 'cinder', job: 'catch' },
+      bunkers: [{ strip: [[172, 62, -42], [196, 64, -40], [222, 58, -34], [250, 50, -28]], wob: 3, kind: 'cinder', job: 'catch' },
         { at: P(352, -17), rx: 8, rz: 5 }, { at: P(384, 15), rx: 7, rz: 5 }, { strip: [[294, 34, 32], [302, 36, 34], [310, 34, 31]], wob: 2.5, job: 'cross' }],
       green: { lobes: [[0, 0, 8, 17, 28], [6, 12, 6, 6, 0]], contour: [{ fall: 0, pct: 1.2 }, { tier: [3.5, 8], up: 152, h: 0.5, w: 4 }], style: 'Long and thin, set from front left to back right with a knob at the back, falling 1.8% toward the front, two tiers (the upper at the back, 0.5 m up): open from the left, where the strip bunker runs' },
-      boulders: [...blocks(P(205, 70), 18, 7, 21), ...blocks(P(215, -80), 16, 6, 22)],
-      targets: [{ name: 'The gully floor', at: P(212, 2) }],
+      boulders: [...blocks(P(205, 74), 18, 7, 21), ...blocks(P(215, -84), 16, 6, 22)],
+      targets: [{ name: 'The gully floor', at: P(226, 2) }],
       words: {
         story: 'Down into a flood gully and up the far side, a band of black sand across the climb where the floods run.',
-        structure: 'broken by a cross bunker on the climb',
-        plays: 'Straight, and the interest is all in the vertical. A barranco, a deep gully that water and old floods carved down the flank, cuts across the hole: the drive drops 15 m into it, and the green sits up on the far side, 20 m above the gully floor. The fairway eases down the near wall, runs across the dry floor and pinches as it climbs the far side, where a band of black ash sand runs right across it 75–90 m short of the green: the floods\' channel. Up the gully and down it, the walls stand steep and rocky. Down the gully on the right, 115 m off the line, a small geyser field steams on a white sinter terrace; the biggest one erupts every few minutes. The gully floor runs down-valley to the right, so the landing area leans 3% that way. The approach plays about a club longer uphill.',
-        safe: 'Drive down onto the gully floor (212 m) and play a club more up the hill.',
-        bold: 'A long drive carries the floor and stops on the climb: a shorter second, but from a slope.',
-        miss: 'Left on the gully floor a long red-cinder bunker runs along the fairway. Off the fairway the gully floor is water-worn boulders and its walls are rock. On the climb a cross bunker of black sand takes the fairway from edge to edge 75–90 m short of the green: a weak second finds it. Short of the green the climb throws a weak approach back down.',
+        structure: 'a funnel, broken near the green by a cross bunker on the climb',
+        form: 'funnel',
+        type: 'original: down and up across a gully',
+        feature: 'The barranco: a lie-setter (the drive stops on its floor, the second is uphill) and a frame (its rock walls up and down the gully). The cross bunker is the hazard; the climb throws a weak approach back (it sets the lie).',
+        decision: 'none: one clear line, to the gully floor',
+        plays: 'Straight, and the interest is all in the vertical. A barranco, a deep gully that water and old floods carved down the flank, cuts across the hole: the drive drops 15 m into it, and the green sits up on the far side, 20 m above the gully floor. The fairway is a funnel: generous where it eases down the near wall, narrowing across the dry floor and all the way up the far side, so the longer the drive, the tighter the landing. A band of black ash sand runs right across the climb 75–90 m short of the green: the floods\' channel. Up the gully and down it, the walls stand steep and rocky. Down the gully on the right, 115 m off the line, a small geyser field steams on a white sinter terrace; the biggest one erupts every few minutes. The gully floor runs down-valley to the right, so the landing area leans 3% that way. The approach plays about a club longer uphill.',
+        safe: 'Drive down onto the gully floor (226 m), where it is still wide, and play a club more up the hill.',
+        bold: 'There is no bold line: a long drive only finds the narrow part of the funnel, on the climb.',
+        miss: 'Small miss: the low side of the lean (right), or the first cut. Medium: left, a long red-cinder bunker along the fairway; right, the gully floor\'s water-worn boulders. Big: the gully\'s rock walls up and down the barranco. On the climb, the cross bunker takes the fairway from edge to edge 75–90 m short of the green. Safe miss at the green: left, along the strip.',
+        teeView: 'Near: the near wall\'s lip and the rough down it. Middle: the gully floor and the fairway climbing the far side, the cross bunker a black band across it. Beyond: the green on the far rim, the geysers\' steam down the gully to the right, the cone up to the left.',
+        ground: 'Down 15 m into the gully and up 20 to the green. The floor leans 3% to the right (down-valley); the climb is the one contour. The green: a back tier 0.5 m up.',
       },
     }),
   }),
 
-  // 3. THE CINDER CONE: a par 3 up the flank of a small breached cinder cone, the green in its crater
-  hole({ n: 3, name: 'The Cinder Cone', par: 3, legs: [[136, 0]], place: { at: [270, 512], heading: 20 },
+  // 3. THE LAVA TUBE: a long par 4 (round 6, was the par 5 4th) up the shoulder to the foot of the rampart, over a
+  // collapsed lava tube. The tube runs down the shoulder from under the rampart toward the barranco's head and its
+  // trench crosses the hole on a diagonal; one stretch of roof never fell, a natural bridge the fairway crosses.
+  // A Channel: the main fairway stays right of the trench and comes over the bridge; a second fairway beyond the
+  // trench's lower arm, for whoever carries it, gives a shorter approach that comes in along the green
+  hole({ n: 3, name: 'The Lava Tube', seedN: 4, par: 4, legs: [[285, 0], [132, -14]], place: { at: [290, 400], heading: 306 },
     build: (P) => ({
-      tees: { obsidian: 0, basalt: 12, pumice: 28, ash: [56, -30] },
-      // the cone: rim 16 m up, a breach in its front wall facing the tee, a level crater floor 8 m up and the
-      // green dipping 2.5 m into it (a true punchbowl)
-      cone: { at: P(136, 2), base: 80, rim: 37, rimH: 16, floor: 8, floorR: 23, breach: { toward: P(0), w: 44, lip: 8 }, label: 'the cinder cone' },
-      corridor: 10,
-      bunkers: [{ wrap: { from: -148, to: 148, d: 2.5, w: 6 }, job: 'ring' }],   // a ring of ash sand round the green, open only toward the breach
-      green: { lobes: [[0, -6, 9, 9, 0], [-1, 7, 8, 9, 0]], join: 6, apron: 4, punch: { depth: 2.5, floor: 2.5, bank: 7 }, contour: [{ fall: 0, pct: 1.5 }], style: 'A bean straight up the line, pinched at the waist, on the crater floor and dipped 2.5 m into it: a true punchbowl, falling a gentle 1.5% toward the front (the bowl is the feature)' },
-      boulders: [...blocks(P(60, 46), 16, 4, 31), ...blocks(P(40, -50), 14, 4, 32)],
-      targets: [],
+      tees: { obsidian: 0, basalt: 20, pumice: [70, 34], ash: [110, 40] },
+      // form: double (a Channel). The main fairway right of the trench, over the bridge to the approach; the channel
+      // fairway left of the trench's lower arm, running up to the approach
+      fw: [{ e: [[104, 13, 15], [150, 25, 30], [198, 29, 36], [236, 22, 42], [262, 12, 40], [282, 1, 31], [292, 13, 15], [305, 17, 13], [332, 24, 9], [362, 25, 12], [392, 19, 14], [404, 14, 12]], wob: 4.5 },
+        { lobes: [[222, -92, 36, 20, -34], [264, -72, 34, 21, -30], [305, -48, 30, 19, -24]], join: 16, wob: 4, seed: 61 }],
+      corridor: 18,
+      cant: [[196, 280, 2.5]],   // the main landing falls right, away from the trench (the channel leans with it, toward its own trouble: it is the bold line)
+      // the tube's trench, square-ended where the roof still stands (the bridge, and its mouths); a skylight further
+      // down the tube toward the barranco, and one up it under the rampart
+      cracks: [cv(P, [[150, -112], [185, -90], [215, -62], [248, -33], [278, -11]], 17, null, { ends: 'square', depth: 14, jag: 1.6, tube: true }),
+        cv(P, [[306, 11], [318, 30], [332, 54], [346, 76]], 15, null, { ends: 'square', depth: 14, jag: 1.6, tube: true })],
+      skylights: [{ at: P(132, -138), r: 5 }, { at: P(362, 104), r: 4 }],
+      voidLabels: [[[200, -76], 'the tube (roof fallen in)'], [[326, 44], 'the tube']],
+      bridge: { s: 292, w: 28, label: 'the bridge' },
+      bunkers: [{ at: P(222, -34), rx: 11, rz: 9, rot: 0.6, kind: 'cinder', job: 'catch' },   // between the main fairway and the trench
+        { at: P(398, 15), rx: 8, rz: 5 }, { at: P(430, -12), rx: 6, rz: 4.5, pot: true }],
+      // the green: a long peanut set from front left to back right, along the channel's approach; from the main
+      // fairway you come in across its narrow side, over the front-right bunker
+      green: { lobes: [[-4, -8, 8, 11, 32], [4, 7, 7, 10, 32]], join: 5, raise: 1.2, falseFront: true, contour: [{ fall: 10, pct: 2 }], style: 'A peanut set from front left to back right (along the channel\'s approach), pinched in the middle, raised 1.2 m with a false front, falling 2% toward the front (the false front is the feature): open from the left, the channel side; from the right you come across it, over the bunker' },
+      lavaTrees: [...lavaTrees(P(170, 62), 20, 12, 41), ...lavaTrees(P(250, 70), 16, 8, 42)],
+      boulders: [...blocks(P(120, 60), 16, 5, 43)],
+      targets: [{ name: 'The main fairway', at: P(232, 12) }, { name: 'The channel', at: P(240, -86), bold: true }],
       words: {
-        story: 'In through the breach of an old cinder cone to a green in its crater, ringed with ash sand.',
-        structure: 'par 3: a green in a ring of sand',
-        plays: 'Cinder cones stand all over a volcano\'s flanks: heaps of red and black cinder thrown up round a vent. This one is small and old, and its front wall broke away long ago, so it opens toward you. You hit up its cinder flank and in through the breach; inside, the crater floor runs level, then the green dips into a hollow in the middle of it, a true punchbowl. The crater\'s walls rise 8 m more behind and round it, and feed a near miss in. From the tee you see the walls and the flag, not the putting surface.',
-        safe: 'Aim at the middle of the breach and take enough club to carry the lip: anything on the crater floor feeds down.',
-        bold: 'There is no bold line: the crater is the target, and the only way onto the green that misses the sand is up the middle through the breach.',
-        miss: 'Short, the ball lands on the cone\'s outer flank of loose cinder and runs back down it. Wide of the breach it hits the crater\'s outer wall. A ring of ash sand wraps the green 2–3 m off its edge on every side but the front. Long, it climbs the back wall and usually comes back, often into the sand.',
+        story: 'Over a collapsed lava tube: carry its trench to the channel fairway, or stay right and come over the one stretch of roof that never fell.',
+        structure: 'a double fairway (a Channel) either side of the trench, joined at the bridge',
+        form: 'double (Channel)',
+        type: 'Channel',
+        feature: 'The tube\'s trench: the hazard (a stroke and a drop), and an obstacle on the second from the main fairway. The bridge: a helper (a topped second runs across it instead of into the trench).',
+        decision: 'Bite off what you dare: carry the trench\'s lower arm (about 225 m from the back tee, a long hitter\'s line) to the channel, and the approach comes in along the green; or drive right of the trench (no carry) and come in across the green\'s narrow side, over the bridge and the front bunker. To be measured in round 6.',
+        plays: 'A lava tube is a cave left where a flow\'s crust hardened and the lava drained away; where the roof falls in, it leaves a trench. One runs down the shoulder from under the rampart toward the barranco\'s head, and crosses this hole on a diagonal: 15 m deep, sheer-sided, dark mouths where the roof still stands. One stretch of roof never fell, a natural bridge 28 m wide on the line. The main fairway lies right of the trench, wide, leaning away from it; beyond the trench\'s lower arm, on the left, a second fairway (a channel) runs up toward the green for whoever carries it. The green sits at the foot of the spatter rampart, long and angled along the channel\'s approach, raised with a false front. From the main fairway the second comes over the bridge and across the green\'s narrow side, over a bunker; from the channel it comes in along it. The rampart\'s black wall closes the view ahead; the Notch is out of sight above it.',
+        safe: 'Drive at the main fairway (232 m), right of the trench, and play over the bridge to the middle of the green.',
+        bold: 'Carry the trench\'s lower arm to the channel (about 225 m carry from the back tee): the second comes in along the green, with nothing in front of it.',
+        miss: 'Small miss: the first cut, or the low side of the lean (right). Medium: right, the lava trees (stone shells of an old forest) and the cone\'s cinder; left of the main fairway, a red-cinder catch bunker before the trench. Big: left, the trench (a stroke and a drop). On the channel, a push finds the trench (the bold line\'s risk). Safe miss at the green: left and short, on the channel side.',
+        teeView: 'Near: the lava trees right. Middle: the main fairway, the trench\'s lip and its dark mouth on a diagonal left, the channel beyond it. Beyond: the rampart\'s wall, the cone rising right, the plume above. Both routes and the trench are in view.',
+        ground: 'Up 15 m over 420 m, the shoulder rising to the rampart. The main landing leans 2.5% right, away from the trench; the channel leans with it, toward its trench (the bold line). The one contour: the bridge\'s crown. The green: raised 1.2 m with a false front.',
       },
     }),
   }),
 
-  // 4. THE LAVA TUBE: a par 5 S-bend over a collapsed lava tube, a natural bridge carrying the fairway across
-  hole({ n: 4, name: 'The Lava Tube', par: 5, legs: [[200, 0], [160, -50], [134, 40]], place: { at: [403, 246], heading: 300 },
-    build: (P) => ({
-      tees: { obsidian: 0, basalt: 22, pumice: [70, 46], ash: [110, 46] },
-      fw: [{ e: [[60, 14, 14], [100, 22, 24], [150, 26, 30], [195, 32, 32], [235, 30, 26], [275, 24, 22], [305, 17, 17], [322, 13, 13], [338, 13, 13], [352, 17, 17], [385, 24, 22], [420, 22, 22], [452, 16, 17], [478, 12, 12]], wob: 5 }],
-      corridor: 20,
-      cant: [[345, 430, -7]],   // the second landing: a sidehill off the cone's flank, falling left
-      // a hog's back down the first leg: a spine that kicks a drive off the line away from it
-      forms: [{ at: P(178, 0), rx: 17, rz: 60, rot: 0, h: 1.8, label: 'hog\'s back' }],
-      // the tube's trench, square-ended where the roof still stands (the bridge between the two pieces, and the
-      // tube mouths), and two skylights where the roof has holes in it further along
-      cracks: [cv(P, [[333, 15], [329, 45], [334, 72], [331, 86]], 17, null, { ends: 'square', depth: 14, jag: 1.6, tube: true }),
-        cv(P, [[331, -15], [334, -55], [330, -92], [333, -122]], 15, null, { ends: 'square', depth: 14, jag: 1.6, tube: true })],
-      skylights: [{ at: P(332, 104), r: 5 }, { at: P(333, -150), r: 4 }],
-      voidLabels: [[[331, 75], 'the tube (roof fallen in)'], [[332, -70], 'the tube']],
-      bridge: { s: 330, w: 28, label: 'the bridge' },
-      bunkers: [{ at: P(220, 38), rx: 17, rz: 12, rot: -0.3, kind: 'cinder', job: 'target' }, { at: P(386, -31), rx: 13, rz: 9, kind: 'cinder', job: 'approach' },
-        { at: P(478, -19), rx: 8, rz: 5 }, { at: P(504, 13), rx: 7, rz: 5 }],
-      green: { lobes: [[-2, -7, 9, 9, 0], [4, 8, 8, 9, 0]], join: 5, raise: 1.2, falseFront: true, contour: [{ fall: 10, pct: 2 }], style: 'A peanut set a little from front left to back right, pinched in the middle, raised 1.2 m with a false front, falling 2% toward the front (the false front is the feature): open from the left, where the lay-up bunker sits' },
-      lavaTrees: [...lavaTrees(P(170, -58), 22, 14, 41), ...lavaTrees(P(250, -52), 16, 8, 42)],
-      boulders: [...blocks(P(130, 60), 16, 5, 43)],
-      targets: [{ name: 'The corner', at: P(215, -6) }, { name: 'Over the bridge', at: P(385, 2) }],
-      boldLine: [[0, 0], [0, 0]],   // set below: from the corner straight to the green
-      words: {
-        story: 'Over a collapsed lava tube on the one stretch of roof that never fell.',
-        structure: 'S-bend, the fairway over the tube\'s trench on a natural bridge',
-        plays: 'A lava tube is a cave left where a flow\'s crust hardened and the lava drained away; where the roof falls in, it leaves a trench. One runs down the shoulder right across this hole: 15 m deep, sheer-sided, with dark tube mouths at both ends where the roof still stands. One stretch of roof never fell, a natural bridge 28 m wide, and the fairway runs across it. The hole bends left round a stand of lava trees, crosses the bridge and bends right up the last slope below the Notch, climbing 13 m in all. The cone rises steeply on the right the whole way, and past the bridge the fairway runs along its flank: the lay-up area leans 7% to the left, the strongest side slope on the course, so the third is played with the ball above your feet.',
-        safe: 'Drive to the corner (215 m), lay up across the bridge (385 m), and pitch up to the green.',
-        bold: 'From a good drive, a fairway wood straight at the green, carrying the trench where it is open, about 245 m.',
-        miss: 'Into the trench is a stroke and a drop back on the side it went in. Left of the first leg the lava trees, stone shells of an old forest, knock a ball about. A red-cinder bunker waits right of the corner and another left of the lay-up.',
-      },
-    }),
-  }),
-
-  // 5. THE CROWN: off the rim at the Notch, 62 m down to the first terrace inside the caldera
-  hole({ n: 5, name: 'The Crown', par: 3, legs: [[219, 0]], place: { at: [0, 0], heading: 332 },
+  // 4. THE CROWN (was the 5th): off the rim at the Notch, 59 m down to the first terrace inside the caldera
+  hole({ n: 4, name: 'The Crown', seedN: 5, par: 3, legs: [[219, 0]], place: { at: [0, 0], heading: 332 },
     build: (P) => ({
       tees: { obsidian: 0, basalt: [8, 22], pumice: [44, -20], ash: [94, -30] },
       corridor: 14,
@@ -177,6 +190,12 @@ export const HOLES = [
       words: {
         story: 'The reveal: off the rim at the Notch, 59 m down to the first terrace, the caldera opening beneath you.',
         structure: 'par 3: all carry, off the rim',
+        form: 'par 3',
+        type: 'original: the drop off the rim (an Eden is proposed for its green, see the routing questions)',
+        feature: 'The drop and the reveal: a frame (the caldera opens beneath you) and the hazard (the wall\'s talus short). The short grass round the green and the pod short right are helpers: they hold a near miss at green level.',
+        decision: 'none: one clear line, the drop',
+        teeView: 'Near: the Notch\'s rock walls either side. Middle: the green 59 m below on the first terrace. Beyond: the whole caldera, the lake, the floor\'s rivers and crust, the cone on the floor far ahead, the far walls and the plume. The planned reveal.',
+        ground: 'Down 59 m from the rim to the terrace. The green: a swale down its middle gathering from both horns.',
         plays: 'The reveal. You climb round the spatter rampart to the rim and the caldera opens beneath you: the lava lake glowing at its heart, rivers of lava and fields of glowing crust across the floor, the walls rising hundreds of metres all round, the plume and its lightning above. The tee stands on the lip of the Notch, the one low saddle in the rim, and the green is 60 m below and 240 yd away on the first terrace inside, at the foot of the wall. A long hang time; the 240 yd plays about 190. Short grass all round the green and a pod of it short and right give a safe place to miss.',
         safe: 'Club for about 190, at the middle of the green; short right is short grass.',
         bold: 'There is no bold line, only the drop.',
@@ -185,8 +204,8 @@ export const HOLES = [
     }),
   }),
 
-  // 6. THE TERRACES: a drivable par 4 along the first terrace, then down its edge to the second
-  hole({ n: 6, name: 'The Terraces', par: 4, legs: [[110, 0], [164, 66]], place: { at: [-160, -160], heading: 262 },
+  // 5. THE TERRACES (was the 6th): a drivable par 4 along the first terrace, then down its edge to the second
+  hole({ n: 5, name: 'The Terraces', seedN: 6, par: 4, legs: [[110, 0], [164, 66]], place: { at: [-160, -160], heading: 262 },
     build: (P) => ({
       tees: { obsidian: 0, basalt: 14, pumice: [52, -30], ash: [92, -34] },
       ramps: [[164, 226]],
@@ -202,6 +221,12 @@ export const HOLES = [
       words: {
         story: 'Drive the green down a crag of basalt columns, or lay up on the terrace above it.',
         structure: 'stepping down a crag from terrace to terrace',
+        form: 'hourglass',
+        type: 'original: a drivable par 4 (Leven-like: the pool sits on the side that opens the green)',
+        feature: 'The crag of basalt columns: an obstacle to carry on the bold line and a frame for the green below it. The lava pool at its foot: the hazard. The upper terrace\'s lean: a lie-setter.',
+        decision: 'Drivable par 4: carry the columns and finish by the green (about 255 m), or lay up on the upper terrace (150 m) and play a short iron down.',
+        teeView: 'Near: the wall rising on the left. Middle: the upper terrace and its lip at the corner, the columns\' crag. Beyond: the green on the lower terrace, the pool\'s glow right of it, the lake and the floor beyond.',
+        ground: 'Down 11 m, stepping off the crag. The upper terrace leans 2.4% right toward its edge. The green: a back-left tier 0.6 m up.',
         plays: 'When the caldera collapsed, its walls slumped in rings of terraces. This drivable par 4 runs along the first one, the wall rising 170 m on the left, then bends right and steps down its edge, a 12 m crag of basalt columns, to the second terrace and the green. A pool of lava lies at the foot of the crag, just right of the straight line to the green: a drive at the green that leaks right finds it. The fairway eases down a gully in the edge. Where the drive stops sets the lie: the upper terrace leans 2–3% toward its edge, so a drive there kicks right toward the corner; on the way down, a downslope.',
         safe: 'Lay up on the upper terrace (150 m) with an iron and play a short iron down to the green.',
         bold: 'Drive straight at the green over the corner: carry the columns and it can finish on the lower terrace by the green.',
@@ -210,51 +235,98 @@ export const HOLES = [
     }),
   }),
 
-  // 7. THE LAVAFALL: a par 5 along the second terrace's ledge, past a lavafall, then down into a bay in the wall
-  hole({ n: 7, name: 'The Lavafall', par: 5, legs: [[262, 0], [204, -35]], place: { at: [-345, -300], heading: 282 }, tips: [-30, 32],
+  // 6. THE LAVAFALL (was the 7th): a par 5 along the second terrace's ledge, past a lavafall, then down into a bay in the wall
+  hole({ n: 6, name: 'The Lavafall', seedN: 7, par: 5, legs: [[262, 0], [204, -35]], place: { at: [-345, -300], heading: 282 }, tips: [-30, 32],
     build: (P) => ({
       tees: { obsidian: 0, basalt: 22, pumice: [70, 40], ash: [110, 40] },
       ramps: [[196, 292]],
       cant: [[150, 290, -6.5]],
-      fw: [{ e: [[60, 14, 14], [100, 22, 24], [150, 28, 28], [200, 31, 30], [238, 31, 29], [262, 26, 26], [285, 15, 15], [305, 17, 17], [340, 25, 26], [380, 27, 26], [418, 19, 18], [445, 14, 14]], wob: 5.5 }],
+      // form: broken. The ledge's fairway stops at the rill; the bay's begins beyond it, wider, toward the fall
+      fw: [{ e: [[60, 12, 13], [108, 21, 23], [158, 29, 27], [204, 33, 30], [238, 31, 28], [264, 26, 25], [290, 22, 21], [314, 20, 18]], wob: 5.5 },
+        { e: [[356, 24, 21], [384, 33, 30], [414, 27, 24], [440, 17, 15], [452, 13, 12]], wob: 5, seed: 31 }],
       corridor: 18,
       bunkers: [{ at: P(452, -17), rx: 8, rz: 5 }, { at: P(484, 13), rx: 7, rz: 5 }, { at: P(222, 36), rx: 14, rz: 10, kind: 'cinder', job: 'target' }],
       green: { lobes: [[1, -3, 8, 15, 40], [-7, 9, 8, 5, 0]], contour: [{ fall: 0, pct: 1.8 }, { ridge: [[-6, 7], [-8, 14]], h: 0.3, w: 2.5 }], style: 'An L: a long leg from front left to back right and a wing at the back left toward the fall, falling 1.8% toward the front, a low spine walling the wing off from the leg: open from the left, where the strip bunker runs' },
       boulders: [...blocks(P(320, 70), 20, 7, 71), ...blocks(P(150, -60), 14, 4, 72)],
-      targets: [{ name: 'The ledge', at: P(218, -2) }, { name: 'The bay', at: P(382, 0) }],
+      targets: [{ name: 'The ledge', at: P(218, -2) }, { name: 'Short of the rill', at: P(302, 0) }, { name: 'The bay', at: P(384, 0), bold: true }],
       words: {
         story: 'Toward a lavafall whose pool spills back down the bay and across the fairway: carry the rill with the second or lay up short.',
         structure: 'broken by a lava rill on the second shot',
+        form: 'broken',
+        type: 'Long: a three-shot hole with a cross hazard (the rill) where the second wants to finish',
+        feature: 'The lavafall: the landmark and a frame (the green reads against it). The rill: the hazard that makes the second a choice. The bay\'s wall: a helper, it backstops a long second from going on into the rubble.',
+        decision: 'Go or lay up: lay up short of the rill (302 m) and pitch on, or carry it into the bay (384 m) or at the green with the second.',
+        teeView: 'Near: the second terrace\'s ledge. Middle: the fairway along the ledge, its edge dropping right. Beyond: the lavafall straight ahead down the wall, its steam, the bay.',
+        ground: 'Down 20 m: along the ledge, then down its end into the bay. The ledge leans 6.5% left (the strong sidehill of the nine), away from its edge. The green: a spine walls off its back wing.',
         plays: 'Lava from a vent outside the rim spills over the wall at the back of a bay and pours 420 m down it in a glowing fall, steam rising where it meets a pool of lava at the foot; the pool spills over in a rill that runs back down the bay along the wall on the left and cuts across the fairway at the foot of the ledge. The hole runs along the ledge of the second terrace toward it, then bends left and drops 18 m down the ledge\'s end into the bay, onto the crater floor. The ledge is a slumped block of the wall that rotated as it slid, so it tilts back toward the wall: the landing area leans 6.5% to the left, away from the edge, and the second is played with the ball above your feet. The fall is the landmark from the tee, straight ahead.',
-        safe: 'Drive along the ledge (218 m), lay up short of the overflow at the foot of the ledge (about 310 m), and pitch on with a short iron; or carry it into the bay (382 m).',
+        safe: 'Drive along the ledge (218 m), lay up short of the overflow at the foot of the ledge (302 m), and pitch on with a short iron; or carry it into the bay (382 m).',
         bold: 'A long second from the ledge can reach the green, but it has to carry the overflow, which cuts across 330–350 m out on a diagonal, nearest on the right.',
         miss: 'The ledge leans left, so a drive on the left half runs on toward the wall\'s foot, into the rough. Right of the ledge is the terrace\'s edge, an 18 m drop to the floor: a ball that goes over it is down on the ash, a long way below. Left of the bay the overflow runs along the fairway at the foot of the wall, then cuts across it: a stroke and a drop.',
       },
     }),
   }),
 
-  // 8. THE LAKE: a par 4 cape right round the west end of the lava lake, over a blind crest
-  hole({ n: 8, name: 'The Lake', par: 4, legs: [[230, 0], [136, 65]], place: { at: [-775, -320], heading: 345 }, tips: [-30, 34],
+  // 7. THE LAKE (was the 8th): a par 4 round the west end of the lava lake, over a blind crest. Round 6: the back
+  // tee 14 m forward (385 yd), and the fairway a fan, narrow up the crest and opening beyond it toward the shore
+  hole({ n: 7, name: 'The Lake', seedN: 8, par: 4, legs: [[230, 0], [136, 65]], place: { at: [-775, -320], heading: 345 }, tips: [-16, 34],
     build: (P) => ({
-      tees: { obsidian: 0, basalt: 20, pumice: [70, -40], ash: [110, -40] },
-      fw: [{ e: [[60, 14, 14], [100, 22, 22], [150, 28, 24], [200, 30, 24], [240, 28, 22], [272, 22, 20], [310, 18, 16], [345, 14, 13]], wob: 5.5 }],
+      tees: { obsidian: 14, basalt: 34, pumice: [84, -40], ash: [122, -40] },
+      // form: fan. Narrow up the crest's face, opening beyond it to the left, away from the lake
+      fw: [{ e: [[64, 9, 11], [104, 13, 14], [150, 18, 20], [200, 26, 24], [240, 34, 24], [272, 40, 22], [305, 40, 18], [335, 32, 14], [350, 20, 11]], wob: 5 }],
       corridor: 18,
       cant: [[170, 290, -2]],   // away from the lake
       forms: [{ at: P(200, 0), rx: 90, rz: 36, rot: 0, h: 8, label: 'the crest' }, { at: P(214, -40), rx: 6, rz: 7, rot: 0, h: 1.5, label: 'the hornito' }],
       zones: [{ blobs: [[108, -62, 14], [150, -76, 18], [170, -60, 12], [210, -70, 16], [250, -66, 14], [292, -58, 12]], surf: 'sulfur' }],
       fumaroles: [[110, -60], [150, -78], [168, -60], [210, -70], [250, -66], [292, -56], [214, -40]],
-      bunkers: [{ at: P(250, -33), rx: 17, rz: 11, rot: -0.4, kind: 'cinder', job: 'target' }, { at: P(346, -16), rx: 8, rz: 5 }, { at: P(378, 8), rx: 7, rz: 5 }],
+      bunkers: [{ at: P(298, -40), rx: 17, rz: 11, rot: -0.4, kind: 'cinder', job: 'target' }, { at: P(346, -16), rx: 8, rz: 5 }, { at: P(378, 8), rx: 7, rz: 5 }],
       green: { lobes: [[0, 0, 9, 18, -30], [-6, 12, 8, 7, 0]], contour: [{ fall: -30, pct: 2 }, { bowl: [-6, 12], r: 10, h: 0.3 }], style: 'Long and thin, set from front right to back left, a knob at the back, falling 2% toward the front left (nothing tips toward the lake) with a bowl in the knob that gathers to a back pin: open from the right, the lake side' },
       boulders: [...blocks(P(120, 50), 14, 4, 81), ...blocks(P(214, -40), 5, 7, 82)],
-      targets: [{ name: 'Over the crest', at: P(246, -6) }],
-      boldLine: [[0, 0], [0, 0]],
+      targets: [{ name: 'Over the crest', at: P(252, -10) }],
       words: {
-        story: 'A cape round the lava lake over a blind crest, a hornito steaming on its left shoulder to aim by.',
-        structure: 'a single fairway, cape right over a crest',
-        plays: 'A cape round the west end of the lava lake. The drive climbs 8 m to a crest, a blind one from the tee, and runs down its far side to where the hole bends right along the shore; the lake lies on the right the whole way, glowing in its pit 12 m down. Fumaroles steam across sulfur-yellow ground on the left, and the crest leans that way, away from the lake. On the crest\'s left shoulder a hornito, a chimney of welded spatter, steams from its cleft: from the tee it is the marker to aim just right of. The green runs along the shore. Bite off as much of the lake as you dare: the further right you go, the shorter the second.',
+        story: 'Round the west end of the lava lake over a blind crest, a hornito steaming on its left shoulder to aim by.',
+        structure: 'a fan: narrow up the crest, opening beyond it down to the shore',
+        form: 'fan',
+        type: 'Road (proposed): a blind drive by a marker, a green angled along the shore with the lava hard behind it',
+        feature: 'The hornito: the aim point for the blind drive. The crest: a lie-setter (short of it, an upslope with the green hidden). The lake: the hazard. The crest\'s lean away from the lake is a helper.',
+        decision: 'none: one clear line, just right of the hornito (proposed; it was a cape)',
+        teeView: 'Near: the floor\'s ash. Middle: the crest, blind, with the hornito steaming on its left shoulder as the marker. Beyond: the lake\'s glow right, the island and the clubhouse beyond it, the cone straight ahead on the floor.',
+        ground: 'Up 8 m to the crest, down its far side to the shore. The landing leans 2% left, away from the lake. The green: a bowl in its back knob.',
+        plays: 'A cape round the west end of the lava lake. The drive climbs 8 m to a crest, a blind one from the tee, and runs down its far side to where the hole bends right along the shore; the lake lies on the right the whole way, glowing in its pit 12 m down. Fumaroles steam across sulfur-yellow ground on the left, and the crest leans that way, away from the lake. On the crest\'s left shoulder a hornito, a chimney of welded spatter, steams from its cleft: from the tee it is the marker to aim just right of. The green runs along the shore. Over the crest the fairway opens out to the left, away from the lake, so the drive that clears it has room.',
         safe: 'Drive just right of the hornito, over the crest (246 m), and play a short iron in.',
-        bold: 'Aim right of the corner and carry the lake\'s west end: a wedge in, if it gets over.',
+        bold: 'There is no bold line: the lake\'s corner is too far to carry for a real gain.',
         miss: 'Right is the lake: a stroke and a drop beside where it went in. Left is the sulfur ground round the fumaroles (a bad lie) and a red-cinder bunker at the corner. A hooked drive finds the hornito\'s rock and drops among its boulders. A drive that comes up short sits on the crest\'s upslope with the green out of sight.',
+      },
+    }),
+  }),
+
+  // 8. THE CINDER CONE (was the 3rd, outside the rim): a par 3 up the flank of a small breached cinder cone on the
+  // caldera floor (cones form inside calderas: Wizard Island in Crater Lake), the green in its crater. Round 6: it
+  // stands behind the Heart's tee, between the Lake's green and the Heart, and plays north-east toward the plume.
+  // Its green is exactly as designed: the breach facing the tee, the level crater floor, the true punchbowl, the ring
+  hole({ n: 8, name: 'The Cinder Cone', seedN: 3, par: 3, legs: [[136, 0]], place: { at: [-894, -728], heading: 50 },
+    build: (P) => ({
+      tees: { obsidian: 0, basalt: 12, pumice: 28, ash: [56, -30] },
+      // the cone: rim 16 m up, a breach in its front wall facing the tee, a level crater floor 8 m up and the
+      // green dipping 2.5 m into it (a true punchbowl)
+      cone: { at: P(136, 2), base: 80, rim: 37, rimH: 16, floor: 8, floorR: 23, breach: { toward: P(0), w: 44, lip: 8 }, label: 'the cinder cone' },
+      corridor: 10,
+      bunkers: [{ wrap: { from: -148, to: 148, d: 2.5, w: 6 }, job: 'ring' }],   // a ring of ash sand round the green, open only toward the breach
+      green: { lobes: [[0, -6, 9, 9, 0], [-1, 7, 8, 9, 0]], join: 6, apron: 4, punch: { depth: 2.5, floor: 2.5, bank: 7 }, contour: [{ fall: 0, pct: 1.5 }], style: 'A bean straight up the line, pinched at the waist, on the crater floor and dipped 2.5 m into it: a true punchbowl, falling a gentle 1.5% toward the front (the bowl is the feature)' },
+      boulders: [...blocks(P(60, 46), 16, 4, 31), ...blocks(P(40, -50), 14, 4, 32)],
+      targets: [],
+      words: {
+        story: 'In through the breach of an old cinder cone to a green in its crater, ringed with ash sand.',
+        structure: 'par 3: a green in a ring of sand',
+        form: 'par 3',
+        type: 'Punchbowl: a green sunk into the level crater floor whose banks feed a near miss in',
+        feature: 'The cone: an obstacle (you play in through its breach) and a helper (its crater walls feed a near miss down to the green). The ring of ash sand: the hazard. A landmark from the Crown\'s tee, the Lake\'s tee and the Heart\'s.',
+        decision: 'none: one clear line, up the middle of the breach',
+        teeView: 'Near: the floor\'s grey ash. Middle: the cone\'s cinder flank and the breach. Beyond: the crater\'s back wall with the flag in front of it, and the plume rising behind the cone.',
+        ground: 'Up 8 m to the crater floor; the green dips 2.5 m into it.',
+        plays: 'Cinder cones stand all over a volcano: heaps of red and black cinder thrown up round a vent, and they rise inside calderas too, on the floor after the collapse. This one stands alone on the ash behind the Heart\'s tee; it is small and old, and its front wall broke away long ago, so it opens toward you. You hit up its cinder flank and in through the breach; inside, the crater floor runs level, then the green dips into a hollow in the middle of it, a true punchbowl. The crater\'s walls rise 8 m more behind and round it, and feed a near miss in. From the tee you see the walls and the flag, not the putting surface.',
+        safe: 'Aim at the middle of the breach and take enough club to carry the lip: anything on the crater floor feeds down.',
+        bold: 'There is no bold line: the crater is the target, and the only way onto the green that misses the sand is up the middle through the breach.',
+        miss: 'Short, the ball lands on the cone\'s outer flank of loose cinder and runs back down it. Wide of the breach it hits the crater\'s outer wall. A ring of ash sand wraps the green 2–3 m off its edge on every side but the front. Long, it climbs the back wall and usually comes back, often into the sand.',
       },
     }),
   }),
@@ -283,6 +355,12 @@ export const HOLES = [
       words: {
         story: 'A tumulus splits the shore fairway: the beach lane by the lava, or the long way left; then over a rock bridge to the island green.',
         structure: 'split round a tumulus, then a bridge to an island',
+        form: 'split',
+        type: 'original: a split fairway along the shore, then an island green',
+        feature: 'The tumulus: the obstacle that splits the fairway. The black-sand beach: a helper (it catches a push before the lava). The bridge: the route to the island (its false front sets the lie). The island green: lava all round on purpose (it breaks the penalty-on-one-side rule for the finish: the bridge, the beach and the short grass short of the green are the way to play it safe).',
+        decision: 'Split fairway: the beach lane (shorter, straight onto the bridge, lava 15 m right) or the left lane (wider, away from the lava, the bridge out of line).',
+        teeView: 'Near: the floor\'s ash and the cone\'s flank behind. Middle: the shore fairway, the tumulus and the beach. Beyond: the island, the clubhouse on it, the lake glowing, the walls all round.',
+        ground: 'Up 17 m in all: along the shore, then up the bridge to the island. The landing leans 3.5% left, away from the lava. The green: raised 1.4 m with a false front, its back lobes on a tier.',
         plays: 'The finish. The fairway runs along the north shore of the lava lake, the lake on the right, leaning 2–3% to the left, away from the lava, with a black-sand beach between it and the lava; where drives land a tumulus, a blister of old lava, splits it into a beach lane and a wider lane on the left. Then it turns right onto a natural rock bridge: a span of old lava 28 m wide with the lake flowing under it, out to an island in the middle of the lake. The bridge climbs onto the island and the green sits raised on its top, 17 m above the shore, with lava glowing on every side and the walls towering all round. Behind the green, on the island\'s high point, stands the clubhouse, built of black basalt.',
         safe: 'Take the left lane (232 m), wide and away from the lava, play onto the bridge (310 m), and pitch up to the green.',
         bold: 'Take the beach lane right of the tumulus, by the lava: from there the bridge is straight ahead, or fly the lava at the green, about 150 m, all carry.',
@@ -295,11 +373,12 @@ export const HOLES = [
 // finishing touches that need the built line: the bold lines, and the clubhouse behind the 9th green
 {
   const at_ = (h, s, o = 0) => at(h.line, s, o);
-  HOLES[3].boldLine = [at_(HOLES[3], 215), HOLES[3].pin];
-  HOLES[5].boldLine = [[0, 0], HOLES[5].pin];
-  HOLES[7].boldLine = [[0, 0], at_(HOLES[7], 300)];
-  HOLES[8].boldLine = [at_(HOLES[8], 236), HOLES[8].pin];
+  const H = name => HOLES.find(h => h.name === name);
+  H('The Lava Tube').boldLine = [[0, 0], at_(H('The Lava Tube'), 240, -86)];
+  H('The Terraces').boldLine = [[0, 0], H('The Terraces').pin];
+  H('The Lavafall').boldLine = [at_(H('The Lavafall'), 218), H('The Lavafall').pin];
+  H('The Heart').boldLine = [at_(H('The Heart'), 236), H('The Heart').pin];
   // the clubhouse on the island's south-east side, its long side facing the green
-  const h9 = HOLES[8], a = h9.place.heading * Math.PI / 180, dX = -346 - h9.place.at[0], dZ = -580 - h9.place.at[1];
+  const h9 = H('The Heart'), a = h9.place.heading * Math.PI / 180, dX = -346 - h9.place.at[0], dZ = -580 - h9.place.at[1];
   h9.hall.at = [dX * Math.cos(a) + dZ * Math.sin(a), -(dX * Math.sin(a) - dZ * Math.cos(a))];
 }

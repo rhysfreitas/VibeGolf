@@ -187,7 +187,7 @@ ax.set_xlim(x0, x1); ax.set_ylim(z1, z0); ax.set_aspect('equal'); ax.axis('off')
 ax.plot([x0 + 40, x0 + 240], [z1 - 40, z1 - 40], color=INK, lw=2); ax.text(x0 + 140, z1 - 55, '200 m', fontsize=7, ha='center')
 ax.annotate('N', xy=(x1 - 50, z0 + 30), xytext=(x1 - 50, z0 + 90), fontsize=8, ha='center', arrowprops=dict(arrowstyle='-|>', color=INK))
 label(ax, (-396, -640), 'the clubhouse', fs=6.5)
-for p_, t_ in (((0, -34), 'the Notch'), ((60, 112), 'the rampart'), ((-200, -360), 'the Spill'), ((-60, -900), 'northern flow'), ((120, 640), 'geysers'), ((-300, -960), 'crust fields'), ((-470, -520), 'the lava lake'), ((-985, -115), 'lavafall'), ((-380, 700), 'lava river'), ((330, 80), 'the cone'), ((-700, 130), 'the cone'), ((-200, -420), 'caldera floor'), ((40, 330), 'barranco')):
+for p_, t_ in (((0, -34), 'the Notch'), ((60, 112), 'the rampart'), ((-200, -360), 'the Spill'), ((-60, -900), 'northern flow'), ((120, 640), 'geysers'), ((-300, -960), 'crust fields'), ((-470, -520), 'the lava lake'), ((-985, -115), 'lavafall'), ((-380, 700), 'lava river'), ((330, 80), 'the cone'), ((-700, 130), 'the cone'), ((-200, -420), 'caldera floor'), ((10, 600), 'barranco')):
     label(ax, p_, t_, fs=6.5)
 fig.savefig(f'{OUT}/map.png', facecolor='white'); plt.close(fig)
 

@@ -1,10 +1,12 @@
 # Emberfell: plan book tools
 
-Emberfell is a course in planning: nine holes on a volcano at dusk. Four play round the outside of the cone on a
-broad shoulder below the rim (a kipuka of old forest beside a live lava river, a barranco, a breached cinder cone with
-the green in its crater, a collapsed lava tube with a natural bridge), the 5th drops 59 m off the rim at the Notch,
-and four play inside the caldera (two slumped terraces, a bay under a lavafall, a cape round the lava lake, and an
-island in the lake with the clubhouse on it). These tools make its plan book from one set of data, so the plans,
+Emberfell is a course in planning: nine holes on a volcano at dusk, re-laid in round 6 (11 November 2026) to
+5 4 4 3 4 5 4 3 4. Three play round the outside of the cone on a broad shoulder below the rim (a par 5 down a kipuka
+of old forest beside a live lava river, a barranco, a long par 4 over a collapsed lava tube with a natural bridge and a
+channel fairway beyond its trench), the 4th drops 59 m off the rim at the Notch, and five play inside the caldera (two
+slumped terraces, a bay under a lavafall, round the lava lake, a breached cinder cone on the floor with the green in
+its crater, and an island in the lake with the clubhouse on it). A hole moved to a new number keeps its old shapes
+through `seedN` (its old number seeds the green, bunkers and columns). These tools make its plan book from one set of data, so the plans,
 profiles and sketch views always agree. They follow `tools/rimeholm/` (geo.mjs and shapes.mjs are copies of its own).
 
 | Step | What it does |
