@@ -3,7 +3,7 @@
 // origin, the pin straight down -z. Other holes' ground in the same cavern comes along as scenery islands, and
 // the caverns (halls, roof openings, stalactites, marks) go in hole.cave for cave.js and cave-world.js.
 import fs from 'fs';
-import { HOLES, HALLS, SKY, HOLLOW, LANDMARKS, caveFloor } from './holes.mjs';
+import { HOLES, HALLS, SKY, HOLLOW, LANDMARKS, COURSE, caveFloor } from './holes.mjs';
 import { hallDepth } from '../../src/course/cave.js';
 import { createTerrain, prepIsland, islandF, edgeRadius } from '../../src/course/terrain.js';
 const M = JSON.parse(fs.readFileSync(new URL('./out/meta.json', import.meta.url)));
@@ -30,12 +30,14 @@ const out = HOLES.map((h0, i) => {
     yards: Object.fromEntries(Object.entries(m.tees).map(([k, t]) => [k, t.yd])),
     line: [tee, ...h0.line.slice(1)].map(L), pin: L(pin), corridor: h0.corridor ?? 38,
     // course-management picks (where to aim the tee shot, a lay-up), then the green
-    targets: [...(h0.targets || []).map(t => { const [x, z] = L([t.x, t.z]); return { name: t.name, x, z }; }), { name: 'Green', pin: true }], drops: [],
+    targets: [...(h0.targets || []).map(t => { const [x, z] = L([t.x, t.z]); return { name: t.name, x, z, ...(t.bold ? { bold: true } : {}) }; }), { name: 'Green', pin: true }], drops: [],
     islands: h0.islands.map(island),
     floor: { ...floor0, gorges: floor0.gorges.map(g => ({ ...xz(g), rot: rot(g.rot) })) },
     fairways: (h0.fairways || []).map(f => ({ ...f, pts: f.pts.map(P) })),
     green: feat(h0.green),
   };
+  // the tips tee, switched off: out of tees and yards, so no pad is drawn and the game doesn't offer it
+  if (h0.tips) H.tips = { tee: L(h0.tips), yards: m.tips.yd };
   for (const k of ['bunkers', 'landforms', 'water']) if (h0[k]) H[k] = h0[k].map(feat);
   if (h0.groves) H.groves = h0.groves.map(G => { const { r, kind, ...g } = feat(G); return kind === 'mushroom' ? { ...g, rx: r, rz: r, type: 'mushroom', s: [1.8, 2.8] } : { ...g, rx: r, rz: r, type: 'oak', s: [1.1, 1.6] }; });
   const rock = R => { const o = xz(R); if (R.rot !== undefined) o.rot = rot(R.rot); return o; };
@@ -105,6 +107,9 @@ export const COURSE = {
     { id: 'swift', name: 'Swift', color: '#c94a3a', minDrive: 185 },
     { id: 'wren', name: 'Wren', color: '#e0b84a', minDrive: 0 },
   ],
+  // the tips tee, an option switched off: to turn it on, put this first in teeSets and copy each hole's tips.tee and
+  // tips.yards into its tees and yards under 'condor'
+  tipsSet: ${JSON.stringify(COURSE.tipsSet)},
 };
 export const HOLES = [
 ${out.map(h => '  ' + JSON.stringify(h)).join(',\n')},

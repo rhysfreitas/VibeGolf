@@ -69,7 +69,9 @@ HOLES.forEach((h0, i) => {
     if (m.x !== undefined) [o.x, o.z] = loc([m.x, m.z]);
     return o; });
   const teeInfo = Object.fromEntries(Object.entries(h.tees).map(([id, p]) => [id, { x: Lc(...p)[0], z: Lc(...p)[1], yd: Math.round(yardsFrom(h.line, p)), y: T.groundAt(p[0], p[1]) }]));
-  meta.push({ n, name: h.name, par: h.par, shape: h.shape, idea: h.idea, play: h.play, features: h.features, heading: Math.round(((hd * 180 / Math.PI) % 360 + 360) % 360), box: [x0, z0, nx, nz, RES],
+  // the tips tee (switched off): its yardage, measured like the tees'
+  const tipsInfo = h0.tips ? { x: Lc(...h0.tips)[0], z: Lc(...h0.tips)[1], yd: Math.round(yardsFrom(h.line, h0.tips)), y: T.groundAt(...h0.tips) } : null;
+  meta.push({ n, name: h.name, par: h.par, tips: tipsInfo, shape: h.shape, idea: h.idea, play: h.play, features: h.features, heading: Math.round(((hd * 180 / Math.PI) % 360 + 360) % 360), box: [x0, z0, nx, nz, RES],
     tees: teeInfo, line: h.line.map(loc), pin: loc(pin), pinY: T.groundAt(...pin), green: loc([h.green.x, h.green.z]), marks, prof, hang, roofY: h.roof.y });
   console.log(n, h.name, 'yards', Object.values(teeInfo).map(t => t.yd).join('/'), 'grid', nx, nz, 'tee y', teeInfo.eagle.y?.toFixed(1), 'pin y', T.groundAt(...pin)?.toFixed(1));
 });

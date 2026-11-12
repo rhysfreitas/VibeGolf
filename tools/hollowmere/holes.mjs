@@ -120,6 +120,9 @@ export const COURSE = {
   name: 'Hollowmere', tees: [
     { id: 'eagle', name: 'Eagle', color: '#2f5fa8' }, { id: 'hawk', name: 'Hawk', color: '#f2efe6' },
     { id: 'swift', name: 'Swift', color: '#c94a3a' }, { id: 'wren', name: 'Wren', color: '#e0b84a' }],
+  // the tips tee: an option in the data, switched off (kept out of tees, so the game doesn't offer it; docs/COURSE-DESIGN.md
+  // "The tips tee"). Each hole's spot is hole.tips ([x, z] in this world frame); sample.mjs works out its yardage
+  tipsSet: { id: 'condor', name: 'Condor', color: '#23272d', minDrive: 290 },
 };
 
 const L1 = [[0, 0], [10, -215], [72, -358]];
@@ -154,9 +157,11 @@ export const HOLES = [
   /* 1 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Adit', par: 4, shape: 'Off a ledge, bends right',
-    targets: [{ name: 'Fairway', x: 12, z: -222 }, { name: 'Bite the corner', x: 22, z: -258 }],
+    // one clear line (11 November 2026): the Rim keeps the course's bite-the-corner decision
+    targets: [{ name: 'Fairway', x: 12, z: -222 }],
     line: L1,
     tees: { eagle: [0, 0], hawk: [-6, -34], swift: [-20, -78], wren: [-22, -122] },
+    tips: [-1.2, 21.9],   // on the ledge in the mine's mouth, 24 yd behind the Eagle tee
     islands: [
       isl(0, 10, 36, 20, 0), cap([2, -10], [8, -135], 110, 0, -25, { kind: 'rough' }),
       cap([8, -135], [14, -215], 130, -25, -28), cap([14, -215], [74, -372], 140, -28, -34),
@@ -221,9 +226,10 @@ export const HOLES = [
   /* 3 ---------------------------------------------------------------------------------------------- */
   {
     name: 'Stalagmite Forest', par: 5, shape: 'Dogleg left: down the terraces, up the slope',
-    targets: [{ name: 'Down the terraces', x: 172, z: -712 }, { name: 'Lay up right', x: 168, z: -846 }, { name: 'Thread the stalagmites', x: 72, z: -906 }],
+    targets: [{ name: 'Down the terraces', x: 172, z: -712 }, { name: 'Lay up right', x: 168, z: -846 }, { name: 'Thread the stalagmites', x: 72, z: -906, bold: true }],
     line: [[184, -522], [165, -778], [-8, -948]],
     tees: { eagle: [184, -522], hawk: [204, -556], swift: [150, -600], wren: [212, -646] },
+    tips: [186.5, -483.6],   // back up the hall on the cave floor, 42 yd behind the Eagle tee
     // on the cave floor (no slabs: their edges stood as cliffs beside the 2nd green): down the terraces, then
     // one wide ramp from wall to wall up to the ledge the green sits on
     floor: caveFloor(-46), islands: [],
@@ -255,7 +261,7 @@ export const HOLES = [
   /* 4 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Rim', par: 4, shape: 'Downhill dogleg left, canted toward the Deep',
-    targets: [{ name: 'Fairway', x: c(-200, 40)[0], z: c(-200, 40)[1] }, { name: 'Bite the corner', x: c(-222, 0)[0], z: c(-222, 0)[1] }],
+    targets: [{ name: 'Fairway', x: c(-200, 40)[0], z: c(-200, 40)[1] }, { name: 'Bite the corner', x: c(-222, 0)[0], z: c(-222, 0)[1], bold: true }],
     line: L4,
     tees: { eagle: c(-172, 255), hawk: c(-182, 222), swift: c(-205, 180), wren: c(-238, 126) },
     floor: hollowFloor,
@@ -290,6 +296,7 @@ export const HOLES = [
     name: 'The Geode', par: 3, shape: 'Steeply uphill, into a broken-open geode',
     line: L5,
     tees: { eagle: c(-302.4, -145.9), hawk: c(-276, -142), swift: c(-262, -158), wren: c(-232, -186) },
+    tips: c(-319.2, -130.3),   // further back down the bay, 25 yd behind the Eagle tee
     floor: hollowFloor,
     // the geode, cracked open: the green sits in its lower half, a rim of crystal-lined rock round the back
     // and sides that turns a ball back toward the green; the upper half stands on end behind it
@@ -314,7 +321,9 @@ export const HOLES = [
   /* 6 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Falls', par: 4, shape: 'Cape dogleg right, across the inlet',
-    targets: [{ name: 'Safe left', x: c(0, -208)[0], z: c(0, -208)[1] }],
+    // the drive target sits past the crest (short of it the next shot came off its back face), and the lay-up round the
+    // top of the inlet is a target, so the safe way is played (the gate, 11 November 2026)
+    targets: [{ name: 'Safe left', x: c(20, -204)[0], z: c(20, -204)[1] }, { name: 'Round the top', x: c(104, -205)[0], z: c(104, -205)[1] }],
     line: L6,
     tees: { eagle: c(-198, -212), hawk: c(-176, -238), swift: c(-146, -240), wren: c(-112, -248) },
     floor: hollowFloor,
@@ -341,7 +350,7 @@ export const HOLES = [
   /* 7 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Trestle', par: 5, shape: 'S-bend over the fissure, down the terraces',
-    targets: [{ name: 'Fairway', x: c(236, -10)[0], z: c(236, -10)[1] }, { name: 'Over the trestle', x: c(206, 140)[0], z: c(206, 140)[1] }, { name: 'Round the end', x: c(334, 60)[0], z: c(334, 60)[1] }],
+    targets: [{ name: 'Fairway', x: c(236, -10)[0], z: c(236, -10)[1] }, { name: 'Over the trestle', x: c(206, 140)[0], z: c(206, 140)[1], bold: true }, { name: 'Round the end', x: c(334, 60)[0], z: c(334, 60)[1] }],
     line: L7,
     tees: { eagle: c(200, -205), hawk: c(178, -160), swift: c(173, -118), wren: c(184, -74) },
     floor: hollowFloor,
@@ -398,9 +407,13 @@ export const HOLES = [
   /* 9 ---------------------------------------------------------------------------------------------- */
   {
     name: 'The Cenote', par: 4, shape: 'Drivable dogleg right: through the eyelet, up into the cenote', corridor: 46,
-    targets: [{ name: 'Safe round the fin', x: 384, z: -330 }],
+    // the bold line: straight through the eyelet, onto the fairway short of the green
+    targets: [{ name: 'Safe round the fin', x: 384, z: -330 }, { name: 'Through the eyelet', x: 274, z: -285, bold: true }],
     line: L9,
     tees: { eagle: [421, -479], hawk: [404, -452], swift: [436, -426], wren: [372, -401] },
+    // at the back of the ledge on the eyelet line, 24 yd behind the Eagle tee: from the tips the drive is the go through
+    // the eyelet (42 m of fairway where 290 yd lands on that line; tips.mjs measures toward the safe target and flags it)
+    tips: [434.7, -496.2],
     floor: { y: -24, relief: 1.2, solid: true, gorges: [...HOLLOW.gorges, { x: 404, z: -168, rx: 6, rz: 24, rot: 0.2, p: 2.4 }] },
     islands: [
       isl(424, -486, 26, 22, -10), cap([420, -466], [398, -372], 100, -10, -23, { kind: 'rough' }),
