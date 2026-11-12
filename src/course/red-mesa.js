@@ -215,7 +215,7 @@ export const HOLES = [
       { x: -52, z: -211, rx: 14, rz: 10, toward: [-43, -201], height: 6, n: 22, size: [0.4, 2.4] },
       { x: 30, z: -122, rx: 8, rz: 6, toward: [41, -109], height: 3, n: 10, size: [0.4, 1.6] },
     ],
-    targets: [{ name: 'Through the arch', x: -4, z: -218 }, { name: 'Right side', x: 2, z: -246 }, { name: 'Green', pin: true }],
+    targets: [{ name: 'Left side', x: -4, z: -218 }, { name: 'Right side', x: 2, z: -246 }, { name: 'Green', pin: true }],
     drops: [],
     props: [],
     glyph: 'sun',
@@ -303,9 +303,10 @@ export const HOLES = [
       { x: -29, z: -300, rx: 12, rz: 24, style: 'flashed', toward: [23, -320] },   // front left of the green
     ],
     rocks: [
-      // the blocker: a table rock, a broad block on a short column, and a few small spires to its right
-      { type: 'hoodoo', x: -2, z: -205, r: 8, h: 17, cap: 9 },
-      { type: 'boulder', x: -2, z: -205, r: 21, h: 13, pe: 4, rot: 0.3, y: 15 },
+      // the blocker: a table rock, a broad block on a short column, and a few small spires to its right. It stands left of
+      // the go-for-it line (moved 8 m left 11 November, so a drive at the receiving fairway clears its cap's right edge)
+      { type: 'hoodoo', x: -10, z: -205, r: 8, h: 17, cap: 9 },
+      { type: 'boulder', x: -10, z: -205, r: 21, h: 13, pe: 4, rot: 0.3, y: 15 },
       { type: 'hoodoo', x: 34, z: -201, r: 2, h: 10 }, { type: 'hoodoo', x: 34, z: -224, r: 2.2, h: 13 }, { type: 'hoodoo', x: 55, z: -214, r: 1.8, h: 8 },
     ],
     targets: [{ name: 'Upper plateau', x: -50, z: -215 }, { name: 'Go for it', x: 24, z: -268, bold: true }, { name: 'Green', pin: true }],
@@ -319,7 +320,8 @@ export const HOLES = [
     blurb: 'Off a ledge 12 m up the canyon wall, beside a waterfall that pours off the left wall and becomes a river on the canyon floor below. It swings right across the front of the landing area and back left across the second shot, then runs along the left wall and out of the canyon past the green. The green is an Eden, back to front, with a big bunker short right.',
     line: L8, pin: [22, -412],
     tees: { ...teesOn(L8, { canyon: 450, mesa: 400, sage: 370 }), lizard: [-45, -226] },
-    tips: { tee: [0.6, 25.2], yards: 480 },
+    teePads: { canyon: { h: 2.5 } }, // built up 2 m on the ledge so the camera sees over its lip to the landing area
+    tips: { tee: [0.6, 25.2], yards: 480, pad: { h: 3.5 } },
     floor: { y: 0, relief: 1.5 },
     // the river: from the foot of the falls, right across the landing area, back left, then along the wall and out
     rivers: [{ pts: [[-58, -108], [-38, -110], [-18, -117], [4, -127], [24, -139], [44, -155], [54, -172], [52, -192], [46, -210], [36, -229], [22, -247], [6, -263], [-8, -277], [-24, -292], [-38, -305], [-48, -320], [-52, -342], [-52, -372], [-52, -405], [-51, -440], [-50, -470], [-58, -500], [-84, -532]], w: 12 }],

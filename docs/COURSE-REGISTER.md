@@ -67,7 +67,7 @@ middle; a long par 3 early.
 | Course | Its logic | Classics | Decision types | Set pieces and landmarks | Big sand |
 |---|---|---|---|---|---|
 | **The Aerie** | Clouds are a penalty area; islands drift between shots | Cape (5), punchbowl (6) | Bite off a carry (5), go or lay up (9) (both `bold: true`, 11 November); the long way round (3) is a showpiece, its right route measures as a trap | Waterfall that knocks a ball down (1), drifting island, hot-air balloon, rock pinnacle on the line (3), climb to the clubhouse (9) | None |
-| **Red Mesa** | A miss off the top plays from the canyon floor | Cape (1), speed slot to a punchbowl (2), Redan (3), Biarritz (6), Alps (9) | Bite the corner (1), go or lay up (5), drivable (7) (all `bold: true`, 11 November); the arch (4) is a frame, its choice waits on Rhys | 70 m drop par 3 (3), natural arch (4), trestle and steam train (6), hoodoos (7), cliff dwellings, climb through the tiers (9) | Waste on 5 |
+| **Red Mesa** | A miss off the top plays from the canyon floor | Cape (1), speed slot to a punchbowl (2), Redan (3), Biarritz (6), Alps (9) | Bite the corner (1), go or lay up (5), drivable (7) (all `bold: true`, 11 November); the arch (4) is a frame and an obstacle: a one-line hole (Rhys, 11 November) | 70 m drop par 3 (3), natural arch (4), trestle and steam train (6), hoodoos (7), cliff dwellings, climb through the tiers (9) | Waste on 5 |
 | **Hollowmere** | Walls soak a ball; lit play in the dark | Punchbowl (5, 8) | Bite the corner (1, 4), thread the stalagmites (3), over the trestle (7), drivable through the eyelet (9) | Ore cart that moves (1), Mirror Lake (2), terraces (3), the Deep and its falls (4, 6, 7), geode green (5), glowworm grotto (8), cenote (9) | None |
 | **The Reclaim** | Facades soak a ball; streets are native ground | Punchbowl (3), Redan and plateau greens | Through the lobby (2), over the crest (4), drivable over the fountain (6), go or lay up at the inlet (7), across the basin (8) | The El (1, 6), gutted tower (2), subway cave-in (3), propped tower (4), stadium and sinkhole (5), fallen bridge (7), rift and leaning clubhouse (9) | None |
 | **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8) | Cape over the moulin (7), split fairway (8), drivable through the seracs (5) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
@@ -167,8 +167,9 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
   (the tool can't bend a ball round the pinnacle). The 4th is not a decision: every bold spot tried on its top
   terrace costs the long hitter 0.75–1.7 (its card: "no hero carry, just a climb"). Marking 3, 4 and 5 would be
   three in a row.
-- **Tips:** none yet. No back tee has ground behind it (the tee islands end 12–26 m behind the Eagle tees); a
-  small tee island behind each (the Condor set, 3,692 yd) is proposed and waits on Rhys.
+- **Tips:** the Albatross set, switched off, 3,692 yd: 452, 205, 549, 353, 480, 153, 445, 490, 565 (44, 29, 39,
+  33, 30, 25, 32, 33, 35 yd behind). No back tee had ground behind it, so each is a small tee island floating
+  behind the back tee (Rhys's pick, 11 November). Long Way Round's is blind over its crest like its back tee.
 - **Rhythm:** five straight holes (three at most); par 4s 320–457 yd, a good spread; par 3s 126 and 171.
 - **Classics:** two (Cape, punchbowl). Short of four or five.
 
@@ -180,19 +181,18 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
   tees, because the tool (and the game's auto-aim) reads the 242 m to the pin on the flat, beyond 90% of reach,
   and lays up to "Bail out short"; the 70 m drop isn't counted.
 - **View:** three blind tee shots by the check. By eye: the 2nd is blind by design (the 34 m drop); the 6th reads
-  as in sight (the green shows over the tee mesa's lip); the 8th (Dry Wash) is the one to fix: a 2 m raised
-  Canyon tee brings it from 1.8 m to 0.4 m and waits on Rhys.
+  as in sight (the green shows over the tee mesa's lip); the 8th (Dry Wash) was the one to fix: its Canyon tee is now built up 2 m on
+  a raised pad (11 November), 1.8 m into the sight line → 0.4 m. Two blind, inside the limit.
 - **Decisions:** three marked `bold: true`. Rimrock's corner: 57 yd less, no difference for either player
   (3.96 / 4.00 long, 3.92 / 4.00 short). Switchback's "Over the waste" (second shot, 190 yd from the drive, 86 yd
   less than the lay-up): pays the long hitter 0.13, costs the short one 0.58: real. Hoodoos' "Go for it": pays the
-  long hitter 0.13, costs the short one 0.54; the table rock's cap knocks down five long drives in twelve, and
-  moving it 8 m left makes it pay half a stroke (proposed, waits on Rhys). Needle's Eye is unmarked: both tee
-  targets pass under the arch, and "Through the arch" is just the left side, 22 yd further; the right side (22 yd
-  closer, opens the back tier) pays the long hitter 0.12. Rhys picks: the right side as the bold line, or a
-  one-line hole.
-- **Tips:** the Butte set, switched off, 3,680 yd, all on existing mesa ground: 419, 440, 287, 400, 565, 190,
+  long hitter 0.13, costs the short one 0.54; the table rock's cap knocked down five long drives in twelve, so it
+  moved 8 m left (11 November): Go for it now pays the long hitter about half a stroke (see the numbers below). Needle's Eye is a one-line hole (Rhys's pick): both tee
+  targets pass under the arch, so "Through the arch" is now "Left side" beside "Right side"; the arch is a frame
+  and an obstacle.
+- **Tips:** the Butte set, switched off, 3,676 yd, all on existing mesa ground: 419, 440, 287, 400, 565, 190,
   350, 480, 545 (24, 30, 25, 30, 30, 15, 30, 30, 30 yd behind the back tees). The 2nd's and 6th's are blind like
-  their back tees.
+  their back tees; the 8th's has a 3.5 m pad so it sees over the ledge too.
 - **Rhythm:** four straight holes; par 4s 320–450; par 3s 175 and 265 (far apart on the card, close plays-like
   because of the 70 m drop, as the shape review found).
 - **Classics:** five. The model for the rule.
@@ -262,8 +262,7 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
 1. Done 11 November: the tool and the game disagreed on Rimeholm because the tool's player aimed differently
    (fixed in `tools/review/play.mjs`), and a topped shot ran for ever (fixed in `src/physics.js`).
 2. Mark `bold: true` in the courses that lack it, then fix the choices that measure backwards or as traps:
-   The Reclaim's 2nd and 8th. Red Mesa and the Aerie marked 11 November; Red Mesa's 4th (the arch) and 7th (the
-   table rock) wait on Rhys's picks in their review page.
+   The Reclaim's 2nd and 8th. Red Mesa and the Aerie done 11 November (the arch a one-line hole, the table rock moved).
 3. Look at the drop-off-a-lip tee views (Red Mesa 2, Rimeholm 1 and 5) in a render.
 4. Done 11 November: Rhys picked new skeletons for Emberfell and the Lost Valley (see "Assigned" above).
 5. Write hole cards (feature job, miss map, tee view) for the playable courses as each next gets touched.

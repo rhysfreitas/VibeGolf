@@ -19,6 +19,9 @@ export const COURSE = {
     { id: 'swift', name: 'Swift', color: '#c94a3a', minDrive: 185 },
     { id: 'wren', name: 'Wren', color: '#e0b84a', minDrive: 0 },
   ],
+  // the tips tee: an option in the data, switched off (docs/COURSE-DESIGN.md "The tips tee"); each hole's spot is a small
+  // tee island behind the back tee. Turning it on is putting this first in teeSets and copying each hole's tips into tees and yards
+  tipsSet: { id: 'albatross', name: 'Albatross', color: '#20262e', minDrive: 290 },
 };
 
 // landmarks seen in the distance from other holes, in their own hole's frame
@@ -34,8 +37,10 @@ export const HOLES = [
     yards: {"eagle":408,"hawk":367,"swift":322,"wren":272},
     line: [[0,0],[-4,-212],[80,-344]],
     tees: {"eagle":[0,5],"hawk":[0,-33],"swift":[-2,-74],"wren":[24,-124]},
+    tips: {"tee":[0.7,45],"yards":452},
     islands: [
       {"x":0,"z":8,"rx":16,"rz":22,"top":0,"depth":230,"kind":"tee","seed":1},
+      {"x":0.7,"z":45,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":90,"trees":0}, // the tips tee, switched off
       {"x":0,"z":-33,"rx":6.8,"rz":8,"top":-1.5,"depth":70,"kind":"tee","seed":6,"trees":0},
       {"x":-2,"z":-74,"rx":6.8,"rz":8,"top":-3.5,"depth":70,"kind":"tee","seed":7,"trees":0},
       {"x":24,"z":-124,"rx":6.8,"rz":8,"top":-5,"depth":70,"kind":"tee","seed":8,"trees":0},
@@ -84,8 +89,10 @@ export const HOLES = [
     yards: {"eagle":171,"hawk":149,"swift":129,"wren":99},
     line: [[0,0],[-8,-152]],
     tees: {"eagle":[0,4],"hawk":[-1,-16],"swift":[-2,-34],"wren":[-3.5,-62]},
+    tips: {"tee":[0.7,30.5],"yards":205},
     islands: [
       {"x":0,"z":6,"rx":14,"rz":16,"top":0,"depth":220,"kind":"tee","seed":11},
+      {"x":0.7,"z":30.5,"rx":9,"rz":8,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":91,"trees":0}, // the tips tee, switched off
       {"x":-1,"z":-16,"rx":5.95,"rz":7,"top":-1.5,"depth":70,"kind":"tee","seed":14,"trees":0},
       {"x":-2,"z":-34,"rx":5.95,"rz":7,"top":-3,"depth":70,"kind":"tee","seed":15,"trees":0},
       {"x":-3.5,"z":-62,"rx":5.95,"rz":7,"top":-6,"depth":70,"kind":"tee","seed":16,"trees":0},
@@ -124,8 +131,10 @@ export const HOLES = [
     yards: {"eagle":510,"hawk":470,"swift":420,"wren":366},
     line: [[0,0],[4,-215],[18,-462]],
     tees: {"eagle":[0,4],"hawk":[0.6,-33],"swift":[1.5,-78],"wren":[-30,-135]},
+    tips: {"tee":[-0.9,39.5],"yards":549},
     islands: [
       {"x":0,"z":6,"rx":14,"rz":18,"top":0,"depth":230,"kind":"tee","seed":21},
+      {"x":-0.9,"z":39.5,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":92,"trees":0}, // the tips tee, switched off
       {"x":0.6,"z":-33,"rx":6.8,"rz":8,"top":-1,"depth":70,"kind":"tee","seed":26,"trees":0},
       {"x":1.5,"z":-78,"rx":6.8,"rz":8,"top":-2.5,"depth":70,"kind":"tee","seed":27,"trees":0},
       {"x":-30,"z":-135,"rx":6.8,"rz":8,"top":-4,"depth":70,"kind":"tee","seed":28,"trees":0},
@@ -176,8 +185,10 @@ export const HOLES = [
     yards: {"eagle":320,"hawk":298,"swift":257,"wren":206},
     line: [[0,0],[-4,-150],[-44,-264]],
     tees: {"eagle":[0,22],"hawk":[0,2],"swift":[-1,-36],"wren":[-30,-88]},
+    tips: {"tee":[0.9,52.5],"yards":353},
     islands: [
       {"x":0,"z":13,"rx":15,"rz":24,"top":0,"depth":220,"kind":"tee","seed":31},
+      {"x":0.9,"z":52.5,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":93,"trees":0}, // the tips tee, switched off
       {"x":-1,"z":-36,"rx":6.8,"rz":8,"top":0.5,"depth":70,"kind":"tee","seed":32,"trees":0},
       {"x":-30,"z":-88,"rx":6.8,"rz":8,"top":3.5,"depth":70,"kind":"tee","seed":33,"trees":0},
       {"x":-4,"z":-146,"rx":40,"rz":86,"top":3,"depth":240,"kind":"fairway","seed":35,"slope":{"from":[-3,-124,3],"to":[-4,-142,8]}},
@@ -217,8 +228,10 @@ export const HOLES = [
     yards: {"eagle":450,"hawk":410,"swift":366,"wren":303},
     line: [[0,0],[0,-220],[130,-330]],
     tees: {"eagle":[0,21],"hawk":[0,-15],"swift":[0,-56],"wren":[-12,-114]},
+    tips: {"tee":[0,48.5],"yards":480},
     islands: [
       {"x":0,"z":10,"rx":16,"rz":26,"top":0,"depth":230,"kind":"tee","seed":41},
+      {"x":0,"z":48.5,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":94,"trees":0}, // the tips tee, switched off
       {"x":0,"z":-56,"rx":6.8,"rz":8,"top":-1.5,"depth":70,"kind":"tee","seed":42,"trees":0},
       {"x":-12,"z":-114,"rx":6.8,"rz":8,"top":-3,"depth":70,"kind":"tee","seed":43,"trees":0},
       {"x":-6,"z":-208,"rx":48,"rz":78,"rot":0.05,"top":-5,"depth":320,"kind":"fairway","seed":44},
@@ -264,8 +277,10 @@ export const HOLES = [
     yards: {"eagle":126,"hawk":114,"swift":97,"wren":74},
     line: [[0,0],[0,-112]],
     tees: {"eagle":[0,3],"hawk":[0,-8],"swift":[-9,-24],"wren":[4,-44]},
+    tips: {"tee":[0,26],"yards":153},
     islands: [
       {"x":0,"z":0,"rx":13,"rz":15,"top":0,"depth":200,"kind":"tee","seed":51},
+      {"x":0,"z":26,"rx":7.5,"rz":8,"p":3,"top":3,"depth":70,"kind":"tee","seed":95,"trees":0}, // the tips tee, switched off
       {"x":-9,"z":-24,"rx":5.95,"rz":7,"top":-1,"depth":70,"kind":"tee","seed":52,"trees":0},
       {"x":4,"z":-44,"rx":5.95,"rz":7,"top":-2.5,"depth":70,"kind":"tee","seed":53,"trees":0},
       {"x":0,"z":-114,"rx":30,"rz":28,"top":-10,"depth":220,"kind":"rough","seed":54,"trees":0},
@@ -299,8 +314,10 @@ export const HOLES = [
     yards: {"eagle":413,"hawk":378,"swift":338,"wren":276},
     line: [[0,0],[-6,-215],[-69,-352]],
     tees: {"eagle":[0,12],"hawk":[-0.6,-20],"swift":[-1.6,-57],"wren":[-28,-116]},
+    tips: {"tee":[1,41],"yards":445},
     islands: [
       {"x":0,"z":1,"rx":15,"rz":26,"top":4,"depth":230,"kind":"tee","seed":61},
+      {"x":1,"z":41,"rx":8,"rz":9,"p":3,"top":5.4,"depth":70,"kind":"tee","seed":96,"trees":0}, // the tips tee, switched off
       {"x":-1.6,"z":-57,"rx":6.8,"rz":8,"top":2.5,"depth":70,"kind":"tee","seed":62,"trees":0},
       {"x":-28,"z":-116,"rx":6.8,"rz":8,"top":0,"depth":70,"kind":"tee","seed":63,"trees":0},
       {"x":-6,"z":-214,"rx":42,"rz":80,"top":-4,"depth":320,"kind":"fairway","seed":64},
@@ -357,8 +374,10 @@ export const HOLES = [
     yards: {"eagle":457,"hawk":420,"swift":377,"wren":316},
     line: [[0,0],[2,-235],[-22,-398]],
     tees: {"eagle":[0,18],"hawk":[0,-16],"swift":[0.5,-55],"wren":[-26,-114]},
+    tips: {"tee":[-0.2,48.5],"yards":490},
     islands: [
       {"x":0,"z":8,"rx":16,"rz":26,"top":8,"depth":240,"kind":"tee","seed":71},
+      {"x":-0.2,"z":48.5,"rx":8,"rz":9,"p":3,"top":11,"depth":70,"kind":"tee","seed":97,"trees":0}, // the tips tee, switched off
       {"x":0.5,"z":-55,"rx":6.8,"rz":8,"top":6,"depth":70,"kind":"tee","seed":72,"trees":0},
       {"x":-26,"z":-114,"rx":6.8,"rz":8,"top":2,"depth":70,"kind":"tee","seed":73,"trees":0},
       {"x":2,"z":-238,"rx":44,"rz":82,"top":-6,"depth":330,"kind":"fairway","seed":74},
@@ -408,8 +427,10 @@ export const HOLES = [
     yards: {"eagle":530,"hawk":485,"swift":436,"wren":367},
     line: [[0,0],[-4,-225],[-24,-392],[-10,-478]],
     tees: {"eagle":[0,4],"hawk":[-0.6,-37],"swift":[-1.5,-82],"wren":[-32,-150]},
+    tips: {"tee":[0.5,36],"yards":565},
     islands: [
       {"x":0,"z":5,"rx":15,"rz":18,"top":0,"depth":240,"kind":"tee","seed":81},
+      {"x":0.5,"z":36,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":98,"trees":0}, // the tips tee, switched off
       {"x":-0.6,"z":-37,"rx":6.8,"rz":8,"top":-1,"depth":70,"kind":"tee","seed":82,"trees":0},
       {"x":-1.5,"z":-82,"rx":6.8,"rz":8,"top":-2,"depth":70,"kind":"tee","seed":83,"trees":0},
       {"x":-32,"z":-150,"rx":6.8,"rz":8,"top":-2.5,"depth":70,"kind":"tee","seed":84,"trees":0},
