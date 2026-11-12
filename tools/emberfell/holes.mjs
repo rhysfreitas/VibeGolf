@@ -119,7 +119,7 @@ export const HOLES = [
   // 2. THE BARRANCO: straight across a deep gully carved down the flank, down 15 m to the drive and up 20 to the
   // green. Round 6: the back tee 14 m forward (405 yd), and the fairway a funnel, wide where it drops into the
   // gully and closing all the way up the climb
-  hole({ n: 2, name: 'The Barranco', par: 4, legs: [[384, 0]], place: { at: [-142, 478], heading: 92 }, tips: [-20, 32],
+  hole({ n: 2, name: 'The Barranco', par: 4, legs: [[384, 0]], place: { at: [-142, 478], heading: 92 }, tips: [-14, 11],
     build: (P) => ({
       tees: { obsidian: 14, basalt: 34, pumice: [80, 42], ash: [118, 62] },
       ramps: [[108, 202], [226, 330]],
@@ -248,16 +248,16 @@ export const HOLES = [
         decision: 'Drivable par 4: carry the columns and finish by the green (about 255 m), or lay up on the upper terrace (150 m) and play a short iron down.',
         teeView: 'Near: the wall rising on the left. Middle: the upper terrace and its lip at the corner, the columns\' crag. Beyond: the green on the lower terrace, the pool\'s glow right of it, the lake and the floor beyond.',
         ground: 'Down 11 m, stepping off the crag. The upper terrace leans 2.4% right toward its edge. The green: a back-left tier 0.6 m up.',
-        plays: 'When the caldera collapsed, its walls slumped in rings of terraces. This drivable par 4 runs along the first one, the wall rising 170 m on the left, then bends right and steps down its edge, a 12 m crag of basalt columns, to the second terrace and the green. A pool of lava lies at the foot of the crag, just right of the straight line to the green: a drive at the green that leaks right finds it. The fairway eases down a gully in the edge. Where the drive stops sets the lie: the upper terrace leans 2–3% toward its edge, so a drive there kicks right toward the corner; on the way down, a downslope.',
+        plays: 'When the caldera collapsed, its walls slumped in rings of terraces. This drivable par 4 runs along the first one, the wall rising 170 m on the left, then bends right and steps down its edge, a 12 m crag of basalt columns, to the second terrace and the green. A pool of lava lies at the foot of the crag and runs on toward the green in a long tongue, just right of the straight line to it: a drive at the green that leaks right, or comes up short on the right, finds it. The fairway eases down a gully in the edge. Where the drive stops sets the lie: the upper terrace leans 2–3% toward its edge, so a drive there kicks right toward the corner; on the way down, a downslope.',
         safe: 'Lay up on the upper terrace (150 m) with an iron and play a short iron down to the green.',
         bold: 'Drive straight at the green over the corner: carry the columns and it can finish on the lower terrace by the green.',
-        miss: 'A drive that comes up short of the bold carry hits the columns and drops to their foot in broken rock. Left is the wall\'s talus. A red-cinder bunker sits on the lip at the corner.',
+        miss: 'A drive that comes up short of the bold carry hits the columns and drops to their foot in broken rock. A push on the bold line finds the lava pool, which runs from the columns\' foot to within 45 m of the green (a stroke and a drop). Left is the wall\'s talus. A red-cinder bunker sits on the lip at the corner.',
       },
     }),
   }),
 
   // 6. THE LAVAFALL (was the 7th): a par 5 along the second terrace's ledge, past a lavafall, then down into a bay in the wall
-  hole({ n: 6, name: 'The Lavafall', seedN: 7, par: 5, legs: [[262, 0], [204, -35]], place: { at: [-345, -300], heading: 282 }, tips: [-30, 32],
+  hole({ n: 6, name: 'The Lavafall', seedN: 7, par: 5, legs: [[262, 0], [204, -35]], place: { at: [-345, -300], heading: 282 }, tips: [-34, 12],
     build: (P) => ({
       tees: { obsidian: 0, basalt: 22, pumice: [70, 40], ash: [110, 40] },
       ramps: [[196, 292]],
@@ -290,7 +290,7 @@ export const HOLES = [
   // 7. THE LAKE (was the 8th): a par 4 cape right round the west end of the lava lake, over a blind crest. Round 6:
   // the back tee 14 m forward (385 yd), and the fairway a fan, narrow up the crest and opening beyond it, away from
   // the lake; the cape's bite stays (Rhys), so 5, 6 and 7 are decisions in a row on purpose
-  hole({ n: 7, name: 'The Lake', seedN: 8, par: 4, legs: [[230, 0], [136, 65]], place: { at: [-775, -320], heading: 345 }, tips: [-16, 34],
+  hole({ n: 7, name: 'The Lake', seedN: 8, par: 4, legs: [[230, 0], [136, 65]], place: { at: [-775, -320], heading: 345 }, tips: [-6, -6],
     build: (P) => ({
       tees: { obsidian: 14, basalt: 34, pumice: [84, -40], ash: [122, -40] },
       // form: fan. Narrow up the crest's face, opening beyond it to the left, away from the lake

@@ -11,7 +11,7 @@ export const OUT = path.join(REPO, 'tools/review/out');
 fs.mkdirSync(OUT, { recursive: true });
 
 // course id -> module file in src/course/
-export const MODULES = { aerie: 'aerie', redmesa: 'red-mesa', hollowmere: 'hollowmere', reclaim: 'reclaim', rimeholm: 'rimeholm' };
+export const MODULES = { aerie: 'aerie', redmesa: 'red-mesa', hollowmere: 'hollowmere', reclaim: 'reclaim', rimeholm: 'rimeholm', emberfell: 'emberfell' };
 export const loadCourse = c => import(path.join(REPO, 'src/course', `${MODULES[c]}.js`));
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json',

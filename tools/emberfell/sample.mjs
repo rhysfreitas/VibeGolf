@@ -159,11 +159,14 @@ const p3 = [], CONT = [], LEANS = [];
 for (const [i, B] of BUILT.entries()) {
   const h = HOLES[i], m = meta[i], back = h.teePts[BACK];
   // the tips spot: room, not a cliff or another hole's green, off the fairways, nothing overhead
-  const t = h.tipsPt, ts = B.surface(...t), tg = B.ground(...t), d = 2;
+  // surfaces from the shared world (worldAt), so another hole's fairway or green near the spot counts (round 7: the
+  // Lake's old spot sat on the Lavafall's approach, which its own surface function didn't see)
+  const SW = (x, z) => worldAt(...toWorld(h)(x, z)).s;
+  const t = h.tipsPt, ts = SW(...t), tg = B.ground(...t), d = 2;
   const sl = tg === null ? 9 : Math.hypot(B.ground(t[0] + d, t[1]) - B.ground(t[0] - d, t[1]), B.ground(t[0], t[1] + d) - B.ground(t[0], t[1] - d)) / (2 * d);
   let nearG = Infinity; const tw = toWorld(h)(...t);
   for (const [k, H] of HOLES.entries()) if (k !== i) { const g = toWorld(H)(...H.pin); nearG = Math.min(nearG, Math.hypot(g[0] - tw[0], g[1] - tw[1])); }
-  let nearF = Infinity; for (let a = 0; a < 6.283; a += 0.2) for (let r = 0; r < 16; r++) if (B.surface(t[0] + Math.cos(a) * r, t[1] + Math.sin(a) * r) === 'fairway') nearF = Math.min(nearF, r);
+  let nearF = Infinity; for (let a = 0; a < 6.283; a += 0.2) for (let r = 0; r < 16; r++) if (SW(t[0] + Math.cos(a) * r, t[1] + Math.sin(a) * r) === 'fairway') nearF = Math.min(nearF, r);
   const over = B.solids(...t).filter(([a]) => a - tg < 45);
   const okT = !['void', 'lava', 'green', 'fairway', 'rock', 'hall'].includes(ts) && sl < 0.3 && nearG > 35 && nearF >= 12 && !over.length;
   let land = '';

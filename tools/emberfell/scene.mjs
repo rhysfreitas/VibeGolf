@@ -175,9 +175,12 @@ export function buildHole(h) {
   const level = (x, z, y) => { const go = gm(x, z); if (go > 9) return y; const raw = baseAbs(x, z) - h.base + shapesAt(...W(x, z)); return y + (pinBase - raw) * (1 - smooth((go + 1) / 10)); };
   for (const t of teePads) t.y = level(t.x, t.z, base(t.x, t.z)) + 0.4;
 
-  function ground(x, z, raw = false) {
+  function ground(x, z, raw = false, noLava = false) {
     if (!raw && voidD(x, z) < 0) return null;
-    const [X, Z] = W(x, z), lv = lavaAt(X, Z);
+    const [X, Z] = W(x, z), lv = noLava ? null : lavaAt(X, Z);
+    // a river's lava stands 0.6 m over the channel's bed at its centre, as this hole shapes that bed (round 7: it took
+    // the mountain's height, V, which stood the overflow 14 m above the Lavafall's eased ground, a wall of lava)
+    if (lv && lv.c) { const L = LOC[k](...lv.c); return ground(L[0], L[1], true, true) + 0.6; }
     if (lv) return lv.level - h.base;
     for (const t of teePads) if (onPad(t, x, z)) return t.y;
     let y = level(x, z, base(x, z));
@@ -259,13 +262,14 @@ export const BUILT = HOLES.map(buildHole);
 
 // the mountain between the holes (world, absolute heights): each hole's own ground near its line, blended into
 // its neighbours' further out and into the mountain beyond, the shared shapes on top
-export function worldAt(X, Z) {
+export function worldAt(X, Z, noLava = false) {
   let ws = 0, ys = 0, best = -1, bd = Infinity;
   const near = [];
   for (let k = 0; k < HOLES.length; k++) { const d = distLine(WL[k], X, Z); near.push(d); if (d < bd) { bd = d; best = k; } }
-  const lv = lavaAt(X, Z);
+  const lv = noLava ? null : lavaAt(X, Z);
   const [lx, lz] = LOC[best](X, Z), own = BUILT[best];
   if (worldVoid(X, Z) < 0) return { y: null, raw: V(X, Z) + shapesAt(X, Z) - 14, s: 'void', k: best };
+  if (lv && lv.c) return { y: worldAt(...lv.c, true).y + 0.6, s: 'lava', k: best };   // a river: 0.6 m over the bed at the channel's centre
   if (lv) return { y: lv.level, s: 'lava', k: best };
   let y;
   if (bd > 260) y = V(X, Z) + shapesAt(X, Z);

@@ -55,7 +55,7 @@ function wallFoot(th, top) { return 55 + 0.2 * (crestY(th) - top); }
 // deeper in it; its north shore by the 9th stays where it was
 export const LAKE = { level: 1000, seed: 7, blobs: [[-750, -522, 18], [-722, -540, 26], [-690, -560, 38], [-625, -566, 74], [-535, -570, 92], [-430, -570, 96], [-345, -590, 94], [-265, -604, 58],
   [-575, -515, 66], [-470, -505, 72], [-360, -510, 74], [-250, -540, 72], [-175, -590, 62], [-150, -650, 48], [-215, -668, 40]] };
-export const ISLAND = { c: [-384, -588], rx: 84, rz: 54, rot: 0.3, top: 1027, seed: 8 };
+export const ISLAND = { c: [-384, -588], rx: 84, rz: 54, rot: 0.3, top: 1022, seed: 8 };   // round 7: top 1027 -> 1022, so the neck climbs onto it
 export const NECK = { pts: [[-488, -706], [-432, -616]], w: 28 };
 // metres outside the lake's shore (negative over the lava)
 export const lakeD = (X, Z) => { let d = Infinity; for (const [x, z, r] of LAKE.blobs) { const e = Math.hypot(X - x, Z - z) - r; d = d === Infinity ? e : Math.min(d, e) - 0.08 * Math.max(0, 30 - Math.abs(d - e)); } return d + 7 * noise2(X / 40, Z / 40, LAKE.seed) + 3 * noise2(X / 12, Z / 12, LAKE.seed + 1); };
@@ -187,22 +187,29 @@ export function V(X, Z) {
     const nd = neckD(X, Z);
     const isl = Math.max(1 - smooth((ie - 0.75) / 0.45), 1 - smooth(nd / 9));
     const iy = lerp(1003, ISLAND.top + 2.5 * (1 - Math.min(1, ie)), smooth((1 - ie) / 0.3));
-    if (isl > 0) y = lerp(y, nd < ie * 30 ? lerp(1012, 1018, smooth(project(NECK.pts, X, Z).s / 70)) : iy, isl);
+    // round 7: the neck climbs all the way to the island's top (it stopped 9 m short, so the 9th's green stood on an 11 m
+    // wall of rock and a short approach dropped back to its foot: +2.2 a hole for the forward tees in the gate)
+    if (isl > 0) y = lerp(y, nd < ie * 30 ? lerp(1012, ISLAND.top + 1, smooth(project(NECK.pts, X, Z).s / 104)) : iy, isl);
   }
   return y;
 }
 
 // lava: where it lies and its level (null if none). The lake, the river between its levees, the pool under the fall
 export const POOL = { c: [-905, -250], rx: 36, rz: 26, rot: 0.9, level: 1009 };
-// lava pools: under the lavafall, and (round 2) at the foot of the 6th's basalt columns, right of the corner
-export const POOLS = [POOL, { c: [-262, -246], rx: 22, rz: 13, rot: 0.6, level: 1027.4 }];
+// lava pools: under the lavafall, and (round 2) at the foot of the 5th's basalt columns, right of the corner.
+// Round 7 (Rhys: "a little larger for a little more risk if you go for it"): the Terraces' pool grows, and a
+// second lobe runs on from it toward the green along the right of the bold line (`more`: ellipses joined to it)
+export const POOLS = [POOL, { c: [-263, -247], rx: 25, rz: 15, rot: 0.6, level: 1027.4, more: [{ c: [-289, -265], rx: 24, rz: 11, rot: 0.38 }] }];
 // the lavafall: from a lip on the bay's crest down the wall into the pool; the plume's vent, far across the caldera
 export const FALL = { top: [-985, -140], foot: [-905, -250], w: 22 };
 export const VENT = { at: [180, -2350], r: 120, h: 60 };
 export function lavaAt(X, Z) {
   if (lakeD(X, Z) < 0 && islE(X, Z) > 1 && neckD(X, Z) > 0) return { level: LAKE.level, body: 'lake' };
-  for (const R of RIVERS) { const rp = riverP(R, X, Z); if (rp.s > 0.5 && rp.s < R.len && rp.d < R.w / 2 - 0.5) return { level: V(...riverPt(R, rp.s)) + 0.6, body: 'river' }; }
-  for (const P of POOLS) if (seDist({ x: P.c[0], z: P.c[1], rx: P.rx, rz: P.rz, rot: P.rot }, X, Z) + 0.12 * noise2(X / 9, Z / 9, 3) < 1) return { level: P.level, body: 'pool' };
+  for (const R of RIVERS) { const rp = riverP(R, X, Z); if (rp.s > 0.5 && rp.s < R.len && rp.d < R.w / 2 - 0.5) { const c = riverPt(R, rp.s); return { level: V(...c) + 0.6, body: 'river', c }; } }   // c: the channel's centre (a hole's ground can differ from V there: scene.mjs levels the lava to it)
+  for (const P of POOLS) {
+    const n = 0.12 * noise2(X / 9, Z / 9, 3);
+    for (const E of [P, ...(P.more || [])]) if (seDist({ x: E.c[0], z: E.c[1], rx: E.rx, rz: E.rz, rot: E.rot }, X, Z) + n < 1) return { level: P.level, body: 'pool' };
+  }
   return null;
 }
 function riverPt(R, s) { // a point on a river's centreline

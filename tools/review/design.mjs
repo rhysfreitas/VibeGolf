@@ -13,7 +13,7 @@
 //              Use --seeds=24 or more here: at 6 seeds a difference under 0.3 strokes is noise. A bold target out of
 //              reach from the tee is scored as a second-shot choice (the drive plays safe, the second goes at it); a
 //              Green target marked bold is a drivable green
-// Playable courses come from src/course; planned ones (emberfell, lostvalley) give a skeleton row from their plan data.
+// Playable courses come from src/course; planned ones (lostvalley) give a skeleton row from their plan data.
 // Lines starting `!` break a rule. Seconds a course without the play, a few minutes with it.
 import path from 'path';
 import { createTerrain } from '../../src/course/terrain.js';
@@ -23,7 +23,7 @@ import { makePlayer } from './play.mjs';
 
 const args = process.argv.slice(2), flag = k => args.find(a => a.startsWith(`--${k}`));
 const SEEDS = +((flag('seeds=') || '--seeds=12').split('=')[1]), PLAY = !flag('no-play'), ONLY_DEC = !!flag('only=decisions'), ONLY_GATE = !!flag('only=gate');
-const PLANNED = ['emberfell', 'lostvalley'];
+const PLANNED = ['lostvalley'];   // Emberfell is playable (a blockout) since round 7
 let names = args.filter(a => !a.startsWith('--'));
 if (!names.length || names[0] === 'all') names = [...Object.keys(MODULES), ...PLANNED];
 const YD = 0.9144, yd = m => Math.round(m / YD), deg = r => r * 180 / Math.PI;

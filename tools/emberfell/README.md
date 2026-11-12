@@ -23,4 +23,15 @@ profiles and sketch views always agree. They follow `tools/rimeholm/` (geo.mjs a
 
 Fairways aren't only ribbons: in `holes.mjs` a piece of `fw` is `{ e: [[s, L, R] ...] }` (two edges along the line), `{ lobes: [[s, off, along, across, rot] ...] }` (a free shape: a bowl, a fan, a hook, an island of fairway) or `{ bite: [...] }` (the same shapes cut out of the rest: an island in the middle, a scalloped edge). `docs/fairway-forms.svg` shows twelve forms and `tools/review/forms.mjs` has the data for each; `node tools/review/alike.mjs emberfell` names each fairway's form and flags repeats (`docs/COURSE-DESIGN.md` "Sameness" and "Fairway forms").
 
-Run them in that order. Output goes to `out/` (ignored by git). No emitter to the engine format yet.
+Run them in that order. Output goes to `out/` (ignored by git).
+
+`node emit.mjs` writes the playable course, `src/course/emberfell.js`, from the same data (about a minute): each hole's
+ground sampled every 2 m from `worldAt` (so it meets its neighbours as the book draws them; open air for the lava tube's
+trench and skylights; lava as the engine's 'water', its bed 0.8 m under the drawn level) with a paint byte (fresh flow,
+rock, rubble, red cinder, forest floor, sulfur, the clubhouse's floor, crust, sinter, lava), the green and bunkers as
+outlines over it (`features.js` `outline` + `keepGround`; sand by the greens, red scoria `waste` in the fairways),
+boulders, lava trees and the clubhouse as rocks the ball hits, the kipuka's forest as plants, the tips tee carried
+through switched off, and `COURSE.ember`: the volcano once in world space (a 10 m height map over the caldera and the
+shoulder, a 50 m one out to the sea, the lavafall, the plume, vents, geysers, columns) for `src/course/ember-world.js`.
+Rerun it after any change here, then `node --test tests/emberfell.test.mjs`, `node tools/review/quickplay.mjs emberfell`
+and `node tools/review/playthrough.mjs emberfell --render=120`.
