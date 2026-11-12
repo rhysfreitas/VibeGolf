@@ -167,13 +167,18 @@ export const HOLES = [
       cap([8, -135], [14, -215], 130, -25, -28), cap([14, -215], [74, -372], 140, -28, -34),
       pad(0, 0, 0.6, 3), isl(-6, -34, 9, 9, -4.6), pad(-6, -34, -4, 4), isl(-20, -78, 9, 9, -13.6), pad(-20, -78, -13, 5), isl(-22, -122, 9, 9, -22.6), pad(-22, -122, -22, 6),
     ],
-    fairways: [{ pts: [[4, -140, 26], [8, -200, 36], [18, -250, 34], [40, -300, 26], [58, -335, 18]] }],
+    // a fan (proposal 1, 11 November 2026): a throat where the breakdown slope meets the floor, between two rubble banks,
+    // then the hall opens out and so does the fairway, fuller on the left, the outside of the bend
+    fairways: [{ pts: [[...at(L1, 138, -1), 15], [...at(L1, 170, -3), 19], [...at(L1, 205, -6), 27], [...at(L1, 240, -9), 35], [...at(L1, 275, -11), 41], [...at(L1, 305, -12), 44], [...at(L1, 330, -9), 37], [...at(L1, 345, -5), 26]] }],
     green: { x: 74, z: -362, rx: 16, rz: 14, lobes: [[0, 0, 9, 16, 35], [-7, 4, 7, 7, 0], [4, -6, 6, 5, 0]], join: 3, style: 'plateau', shape: [], tilt: 1.5, raise: 3.2, falseFront: 0.6, apron: 9, runoff: true, from: [20, -250], pins: [[76, -364], [68, -356], [80, -370], [70, -368]] },
-    bunkers: [{ x: 44, z: -196, rx: 14, rz: 7, style: 'flashed', toward: [0, 0] },
-      bunker(at(L1, 232, -30), L1[1], L1[2], 7, 15), bunker(at(L1, 346, -27), L1[1], L1[2], 8, 11),
+    bunkers: [bunker(at(L1, 196, 22), L1[0], L1[1], 7, 17),          // the inside of the corner, at the throat
+      bunker(at(L1, 262, -41), L1[1], L1[2], 8, 17), bunker(at(L1, 340, -38), L1[1], L1[2], 8, 11),
       { x: 56, z: -370, rx: 5, rz: 4, style: 'flashed', toward: [74, -362] }, { x: 92, z: -350, rx: 4, rz: 3, style: 'pot' }, { x: 90, z: -378, rx: 6, rz: 5, style: 'flashed', toward: [74, -362] }],
-    landforms: [cant(12, -190, [8, -135], -3, 110, 110), swale(30, -270, [14, -215], 80, 50, 1.2), roll(-30, -250, 50, 40, 2.4), roll(55, -250, 40, 36, 1.8)],
-    groves: [shrooms(at(L1, 302, -46), 11, 6), shrooms(at(L1, 170, 52), 9, 4)],
+    // the throat: two banks of fallen roof either side where the slope meets the floor; beyond them the floor spreads
+    // out, leaning right into the bend, with a shallow swale across the wide part
+    landforms: [cant(12, -190, [8, -135], -3, 110, 110), swale(30, -280, [14, -215], 70, 60, 1.2),
+      roll(...at(L1, 172, -33), 60, 28, 3, yaw(L1[0], L1[1])), roll(...at(L1, 178, 31), 52, 24, 2.6, yaw(L1[0], L1[1]))],
+    groves: [shrooms(at(L1, 300, -64), 11, 6), shrooms(at(L1, 170, 52), 9, 4)],
     rocks: [...stand(at(L1, 200, -52), 7, 9, 11), ...stand(at(L1, 270, 55), 6, 8, 12), ...stand(at(L1, 120, 54), 5, 7, 13, 4, 10)],
     roof: { y: 55 },
     // an ore cart on the rails: it rolls between shots, along the wall and into the crystal cave, and a ball
@@ -199,9 +204,10 @@ export const HOLES = [
     targets: [{ name: 'Bail out right', x: 178, z: -500 }],
     line: [[104, -382], [138, -532]],
     tees: { eagle: [104, -382], hawk: [108, -398], swift: [114, -420], wren: [124, -448] },
+    tips: [101.2, -370.3],   // at the back of the ledge, 13 yd behind the Eagle tee
     floor: { ...caveFloor(-53), relief: 1.2 },
     islands: [
-      isl(104, -376, 16, 14, -30, { kind: 'rough' }), pad(104, -382, -29.4, 21), isl(108, -400, 9, 8, -33.6), pad(108, -398, -33, 22),
+      isl(104, -376, 16, 14, -30, { kind: 'rough' }), isl(101.2, -370.3, 9, 9, -30, { kind: 'rough' }), pad(104, -382, -29.4, 21), // the ledge runs on back to the tips spot isl(108, -400, 9, 8, -33.6), pad(108, -398, -33, 22),
       isl(116, -422, 10, 10, -37), pad(114, -420, -36.4, 23), isl(124, -450, 10, 10, -45), pad(124, -448, -44.4, 24),
     ],
     landforms: [roll(146, -532, 70, 60, 4.5), roll(186, -480, 110, 50, 6, 0.2)],
@@ -264,8 +270,9 @@ export const HOLES = [
     targets: [{ name: 'Fairway', x: c(-200, 40)[0], z: c(-200, 40)[1] }, { name: 'Bite the corner', x: c(-222, 0)[0], z: c(-222, 0)[1], bold: true }],
     line: L4,
     tees: { eagle: c(-172, 255), hawk: c(-182, 222), swift: c(-205, 180), wren: c(-238, 126) },
+    tips: c(-162.1, 276.9),   // at the back of the ledge, 24 yd behind the Eagle tee
     floor: hollowFloor,
-    islands: [isl(...c(-172, 262), 30, 14, -31), cap(c(-174, 246), c(-188, 140), 110, -31, -64, { kind: 'rough' }),
+    islands: [isl(...c(-172, 262), 30, 14, -31), isl(...c(-163, 276), 15, 15, -31),   // the ledge runs back to the tips spot cap(c(-174, 246), c(-188, 140), 110, -31, -64, { kind: 'rough' }),
       pad(...c(-172, 255), -30.4, 41), isl(...c(-182, 222), 9, 9, -39), pad(...c(-182, 222), -38.4, 42), isl(...c(-205, 180), 9, 9, -52), pad(...c(-205, 180), -51.4, 43),
       isl(...c(-330, 70), 82, 62, 75, { kind: 'rock', depth: 300 })],
     // the rimstone pools set into a recess in the wall behind the green: four steps up, a glowing pool on each
@@ -326,9 +333,11 @@ export const HOLES = [
     targets: [{ name: 'Safe left', x: c(20, -204)[0], z: c(20, -204)[1] }, { name: 'Round the top', x: c(104, -205)[0], z: c(104, -205)[1] }],
     line: L6,
     tees: { eagle: c(-198, -212), hawk: c(-176, -238), swift: c(-146, -240), wren: c(-112, -248) },
+    tips: [-47.7, -1412.8],   // on a shelf cut into the back of the knoll, 27 yd behind the Eagle tee
     floor: hollowFloor,
     islands: [],
-    landforms: [KNOLL6, crest(...c(10, -207), c(-112, -230), 26, 70, 2.5), roll(...c(-60, -250), 60, 40, 3), roll(...c(60, -238), 50, 30, 2.2), swale(...c(-30, -205), c(-110, -214), 60, 30, 1)],
+    landforms: [KNOLL6, { type: 'tilt', x: -47.7, z: -1412.8, from: [-47.7, -1470], grade: 30, length: 30, width: 30 }, // a level shelf cut into the knoll's back for the tips
+      crest(...c(10, -207), c(-112, -230), 26, 70, 2.5), roll(...c(-60, -250), 60, 40, 3), roll(...c(60, -238), 50, 30, 2.2), swale(...c(-30, -205), c(-110, -214), 60, 30, 1)],
     fairways: [{ pts: [[...c(-110, -214), 30], [...c(-40, -206), 42], [...c(20, -205), 44], [...c(70, -212), 36], [...c(112, -200), 30]] }, { pts: [[...c(140, -172), 18], [...c(150, -142), 16]] }],
     green: { x: c(154, -112)[0], z: c(154, -112)[1], rx: 15, rz: 13, lobes: [[0, 0, 9, 17, -55], [-5, -7, 6, 6, 0]], join: 4, style: 'tilt', tilt: 1.5, shape: [{ tier: [-3.2, -4.5], up: 144, h: 0.35, w: 3.5 }], raise: 1.6, apron: 7, runoff: true, from: c(-20, -205), pins: [c(154, -112), c(148, -106), c(160, -118), c(150, -120)] },
     bunkers: [bunker(at(L6, 230, -34), L6[0], L6[1], 8, 20), { x: c(132, -126)[0], z: c(132, -126)[1], rx: 5, rz: 4, style: 'flashed', toward: c(154, -112) }, { x: c(174, -98)[0], z: c(174, -98)[1], rx: 4, rz: 3, style: 'pot' }],
@@ -353,11 +362,13 @@ export const HOLES = [
     targets: [{ name: 'Fairway', x: c(236, -10)[0], z: c(236, -10)[1] }, { name: 'Over the trestle', x: c(206, 140)[0], z: c(206, 140)[1], bold: true }, { name: 'Round the end', x: c(334, 60)[0], z: c(334, 60)[1] }],
     line: L7,
     tees: { eagle: c(200, -205), hawk: c(178, -160), swift: c(173, -118), wren: c(184, -74) },
+    tips: [369.4, -1448.6],   // back up the floor, 48 yd behind the Eagle tee
     floor: hollowFloor,
     islands: [],
     landforms: [cant(...c(236, -10), c(200, -205), -3, 100, 90), terrace(...c(213, 102), c(214, 62), 2.5, 420, 260), terrace(...c(211, 150), c(214, 62), 2.5, 420, 210), terrace(...c(222, 206), c(214, 62), 2, 420, 160),
       roll(...c(250, -60), 60, 40, 2.5), roll(...c(300, 20), 50, 40, 2), swale(...c(228, -120), c(200, -205), 70, 30, 1.2)],
-    fairways: [{ pts: [[...c(210, -120), 30], [...c(228, -60), 40], [...c(236, -10), 38]] }, { pts: [[...c(214, 70), 32], [...c(198, 130), 38], [...c(214, 190), 34], [...c(244, 240), 26]] },
+    fairways: [{ pts: [[...c(210, -120), 30], [...c(228, -60), 40], [...c(236, -10), 38], [...c(237, 2), 32]] },  // the last knot runs on toward the fissure, for the tips drive
+      { pts: [[...c(214, 70), 32], [...c(198, 130), 38], [...c(214, 190), 34], [...c(244, 240), 26]] },
       { pts: [[...c(326, -40), 26], [...c(338, 20), 24], [...c(334, 70), 24], [...c(310, 110), 26]] }],
     green: { x: c(262, 274)[0], z: c(262, 274)[1], rx: 16, rz: 13, lobes: [[0, 0, 9, 17, -30], [10, 1, 6, 6, 0]], join: 4, style: 'redan', shape: [], side: 1.5, apron: 7, runoff: true, from: c(214, 190), pins: [c(262, 274), c(256, 268), c(270, 280), c(254, 280)] },
     bunkers: [bunker(at(L7, 150, 34), L7[0], L7[1], 7, 22), { x: c(250, 70)[0], z: c(250, 70)[1], rx: 12, rz: 6, style: 'flashed', toward: c(200, -205) }, bunker(at(L7, 330, -34), L7[2], L7[3], 7, 20),
@@ -384,14 +395,19 @@ export const HOLES = [
     targets: [{ name: 'Fairway', x: 546, z: -776 }],
     line: L8,
     tees: { eagle: [452, -908], hawk: [489, -899], swift: [509, -876], wren: [540, -856] },
+    tips: [433.4, -934.1],   // back on the grotto floor, 35 yd behind the Eagle tee
     // on the grotto floor, rising gently all the way (no slabs, no edges): 7 m along the first leg, 10 m up the second
     floor: caveFloor(-57), islands: [],
     landforms: [cant(546, -776, [452, -908], 2.5, 100, 90), { type: 'step', x: 503, z: -840, from: [452, -908], length: 170, width: 300, height: -7, run: 400 }, { type: 'step', x: 530, z: -686, from: [556, -772], length: 180, width: 300, height: -10, run: 60 },
-      crest(540, -792, [452, -908], 34, 100, 3.4), { type: 'ridge', x: 532, z: -680, from: [556, -772], length: 60, width: 26, height: 1.6 }],
-    fairways: [{ pts: [[500, -846, 28], [528, -810, 34], [550, -770, 32], [540, -720, 26], [522, -665, 22]] }],
+      crest(540, -792, [452, -908], 34, 100, 3.4), { type: 'ridge', x: 532, z: -680, from: [556, -772], length: 60, width: 26, height: 1.6 },
+      // the funnel's sides: banks of flowstone rising either side of the closing approach
+      roll(...at(L8, 280, -36), 110, 30, 4.5, yaw(L8[1], L8[2])), roll(...at(L8, 285, 32), 100, 26, 4, yaw(L8[1], L8[2]))],
+    // a funnel (proposal 1, 11 November 2026): the grotto floor is wide where drives land, round the corner, then the
+    // passage closes in up the ridge to the punchbowl, banks rising either side; fuller on the left (outside the bend)
+    fairways: [{ pts: [[...at(L8, 100, -2), 30], [...at(L8, 118, -5), 37], [...at(L8, 150, -10), 39], [...at(L8, 190, -13), 36], [...at(L8, 225, -10), 29], [...at(L8, 258, -6), 22], [...at(L8, 290, -2), 16], [...at(L8, 318, 0), 14], [...at(L8, 334, 0), 13]] }],
     green: { x: 504, z: -598, rx: 14, rz: 13, lobes: [[0, -1, 10, 10, 0], [7, -4, 7, 7, 0], [-7, 4, 7, 7, 0], [4, 7, 7, 7, 0]], join: 3, style: 'punchbowl', shape: [], apron: 6, runoff: true, from: [540, -720], pins: [[504, -598], [498, -604], [510, -592], [498, -592]] },
-    bunkers: [{ x: 575, z: -790, rx: 13, rz: 7, style: 'flashed', toward: [452, -908] }, bunker(at(L8, 120, -32), L8[0], L8[1], 7, 18), { x: 520, z: -612, rx: 4, rz: 3, style: 'pot' }],
-    groves: [shrooms([514, -733], 12, 6), shrooms([482, -818], 12, 5), shrooms([556, -690], 10, 4), shrooms(at(L8, 260, 56), 10, 5), shrooms([598, -830], 10, 5)],
+    bunkers: [bunker(at(L8, 178, -50), L8[0], L8[1], 8, 18), bunker(at(L8, 110, -46), L8[0], L8[1], 7, 17), { x: 520, z: -612, rx: 4, rz: 3, style: 'pot' }],
+    groves: [shrooms([514, -733], 12, 6), shrooms([482, -818], 12, 5), shrooms(at(L8, 250, -54), 10, 4), shrooms(at(L8, 260, 56), 10, 5), shrooms([598, -830], 10, 5)],
     rocks: [column([467.4, -863.1], 5.5, 74), { type: 'arch', x: 590, z: -700, rot: 1.1, y: -48.3, w: 16, h: 14, t: 7, d: 7, crown: 0.7 } /* an eyelet for looks */, ...stand([590, -730], 5, 7, 81), ...stand([466, -640], 5, 7, 82)],
     roof: { y: 12 },
     marks: [
@@ -411,9 +427,7 @@ export const HOLES = [
     targets: [{ name: 'Safe round the fin', x: 384, z: -330 }, { name: 'Through the eyelet', x: 274, z: -285, bold: true }],
     line: L9,
     tees: { eagle: [421, -479], hawk: [404, -452], swift: [436, -426], wren: [372, -401] },
-    // at the back of the ledge on the eyelet line, 24 yd behind the Eagle tee: from the tips the drive is the go through
-    // the eyelet (42 m of fairway where 290 yd lands on that line; tips.mjs measures toward the safe target and flags it)
-    tips: [434.7, -496.2],
+    tips: [434.7, -496.2],   // at the back of the ledge on the eyelet line, 24 yd behind the Eagle tee
     floor: { y: -24, relief: 1.2, solid: true, gorges: [...HOLLOW.gorges, { x: 404, z: -168, rx: 6, rz: 24, rot: 0.2, p: 2.4 }] },
     islands: [
       isl(424, -486, 26, 22, -10), cap([420, -466], [398, -372], 100, -10, -23, { kind: 'rough' }),
