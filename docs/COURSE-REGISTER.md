@@ -70,7 +70,7 @@ middle; a long par 3 early.
 | **Red Mesa** | A miss off the top plays from the canyon floor | Cape (1), speed slot to a punchbowl (2), Redan (3), Biarritz (6), Alps (9) | Bite the corner (1), go or lay up (5), drivable (7) (all `bold: true`, 11 November); the arch (4) is a frame and an obstacle: a one-line hole (Rhys, 11 November) | 70 m drop par 3 (3), natural arch (4), trestle and steam train (6), hoodoos (7), cliff dwellings, climb through the tiers (9) | Waste on 5 |
 | **Hollowmere** | Walls soak a ball; lit play in the dark | Punchbowl (5, 8) | Bite the corner (1, 4), thread the stalagmites (3), over the trestle (7), drivable through the eyelet (9) | Ore cart that moves (1), Mirror Lake (2), terraces (3), the Deep and its falls (4, 6, 7), geode green (5), glowworm grotto (8), cenote (9) | None |
 | **The Reclaim** | Facades soak a ball; streets are native ground | Punchbowl (3), Redan and plateau greens, Bottle (4) | Through the lobby (2, long way round), the bottle at the crest (4), drivable, running on from the right (6), bite off the basin (8) | The El (1, 6), gutted tower (2), subway cave-in (3), propped tower (4), stadium and sinkhole (5), fallen bridge (7), rift and leaning clubhouse (9) | None |
-| **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8) | Cape over the moulin (7), split fairway (8), drivable through the seracs (5) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
+| **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8), Bottle (9) | Drivable through the seracs (5), cape over the moulin (7), split fairway (8), bottle through the neck (9) (all `bold: true`, 11 November) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
 | **Emberfell** (playable blockout, round 7) | Lava plays as water | Leven (5), Long (6), Cape (7), Punchbowl in a crater ringed with sand (8) | Drivable down the columns (5), go or lay up at the rill (6), bite off the cape (7), split (9) | Kipuka and lava river (1), geysers (2), tube bridge and a double fairway either side of its trench (3), the Notch reveal (4), basalt columns (5), lavafall in its bay (6), lava lake (7), cinder cone on the caldera floor (8), island clubhouse (9) | Cross bunker (2), ring (8), beach (9) |
 | **The Lost Valley** (planned) | Animals are scenery; tar plays as water | Cape (7) | Split round the giant (2), over the channel (4), drivable under the arch (6), centre-line bluff (7), stepping stones or the dry way (8) | Camp ledge (1, 9), monkey-puzzle (2), tar pit and bones (3), braided river (4), Great Falls (5), strangler fig arch (6), Bone Bluff (7), swamp (8), nests (9) | Gravel bars |
 
@@ -90,7 +90,7 @@ of fairways on different courses measure as alike.
 | Red Mesa | spindle 2, broken 2, scalloped, hourglass, split | 0 of 21 | Inside it. The most varied course |
 | Hollowmere | spindle 4, island 2, split | 4 | Four spindles; the Adit, the Rim, the Grotto and the Cenote alike |
 | The Reclaim | broken 2, spindle 2, hourglass, hook, fan (reshaped 11 November) | 0 | Inside it; six fairways match another course's (three Hollowmere's, three Rimeholm's), was 26. Was spindle 5, broken 2, six pairs alike |
-| Rimeholm | island 3, spindle 2, uneven, broken | 2 | Three plain strips; the Ice Gate and the Hot Springs alike, in a row |
+| Rimeholm | reworked 11 November: spindle, scalloped (2), island 2 (4, 5), uneven, broken, hourglass (9) | 0 | Inside it but for the islands back to back (4, 5). Was: four plain strips and five pairs alike, once the check counted only each hole's own ground (it had read the 8th's fairway beside the 9th's tees as an island) |
 | Emberfell (playable blockout) | round 6: scalloped, funnel, split (a double fairway), hourglass, broken, fan, island | 0 | Inside it; two fairways match another course's (the Barranco and Rimeholm's Ice Gate, the Heart and the Lost Valley's Bone Bed). Was spindle 3, hourglass 3, island, five pairs alike |
 | The Lost Valley (planned) | split 4, broken 3 | 0 | Every hole split or broken: two forms, and three splits in a row |
 
@@ -228,18 +228,29 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
   31, 30, 38, 39 yd behind the back tee); the 1st's on the El platform's back end, run on 24 m for it.
 - **Classics:** three by green style.
 
-### Rimeholm
+### Rimeholm (reworked and re-measured 11 November, 12 and 36 rounds gate, 24 decisions)
 
-- **Gate:** one hole flagged. The 9th (The Aurora Hall) from the forward tees: +2.1, didn't finish on one of
-  eight (the 38 m climb is a lot for a short hitter). The 4th and 8th, flagged in the first run, were the tool.
-  On the 4th the first target (The trough) sits at the foot of a 23% ramp, so a driver off the deck from there
-  flies into the slope: worth moving the target a few metres back.
-- **View:** four blind tee shots, two over the limit: the 1st and 5th (both off a lip, the ledge hides the
-  landing area by about 2 m), the 6th (blind by design) and the 9th (the climb).
-- **Decisions:** two marked. Over the moulin (7th) is a real choice: 69 yd less, pays the short hitter a quarter
-  of a stroke, nothing for the long one. The 8th's is a second shot. The drivable 5th has no bold target marked.
+- **Gate:** passes in 12 and 36 rounds; worst hole the 9th from the back, +0.2. The 9th from the Hare tees was
+  +1.9 and failed to finish one round: not the climb but an erratic boulder 7 m in front of the Hare tee that
+  turned every drive back (erratics now stay 22 m off every tee pad); now −0.2. The 9th's fairway keeps a third
+  of the snow waves (`groomed`): a ball in a trough on the climb clipped the next crest, the solver took a driver
+  and flew the green under the ledge behind the hall.
+- **View:** one blind tee shot, the 6th, by design. The 1st's and 5th's drops now start at the back tee's pad;
+  the 9th's first ramp is one rise to the shelf.
+- **Fairways:** the 2nd scalloped (its pools alternate sides), the 9th an hourglass; 0 pairs alike, two plain
+  strips (1, 7). The 4th and 5th are both islands, back to back (the 5th as stepping stones was offered, not taken).
+- **Decisions:** four marked, four types. Through the gap (5th): 58 yd less, pays the long hitter 0.7 and the
+  short one 0.6. Over the moulin (7th): 69 yd less, no difference for the long hitter, pays the short one 0.2:
+  the wrong way round. The low side (8th, a second-shot choice): only 18 yd less than the high side, with the crevasse
+  between; costs the long hitter 0.7 (against going for the bowl) and makes no difference to the short one.
+  Through the neck (9th): 75 yd less, no difference for the long hitter (0.1), costs the short one 0.3.
+  Fixes for 7 and 8 are Rhys's pick for the next round.
+- **Tips:** the Bear set, switched off, 3,605 yd: 430, 400, 175, 575, 325, 205, 470, 570, 455 (28, 31, 11, 37,
+  24, 24, 49, 49, 48 yd behind the back tees). The 1st's and 5th's sit behind a lip and carry `pad.h` 3.5 and 3 m,
+  so they see the landing area; when turned on they want a built tee (ice blocks, a rock knoll), not the engine's
+  box. The 6th's is blind like its other tees.
 - **Rhythm:** passes every check. Par 4s 300–420.
-- **Classics:** two (Redan, punchbowl).
+- **Classics:** three (Redan, punchbowl, Bottle).
 
 ### Emberfell (planned, round 5)
 
@@ -269,6 +280,6 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
    (fixed in `tools/review/play.mjs`), and a topped shot ran for ever (fixed in `src/physics.js`).
 2. Mark `bold: true` in the courses that lack it, then fix the choices that measure backwards or as traps:
    The Reclaim's 8th reshaped (a hook) 11 November; its 2nd still wants a risk. Red Mesa and the Aerie done 11 November (the arch a one-line hole, the table rock moved).
-3. Look at the drop-off-a-lip tee views (Red Mesa 2, Rimeholm 1 and 5) in a render.
+3. Look at the drop-off-a-lip tee views (Red Mesa 2, Rimeholm 1 and 5) in a render. Rimeholm's done 11 November (both fixed).
 4. Done 11 November: Rhys picked new skeletons for Emberfell and the Lost Valley (see "Assigned" above).
 5. Write hole cards (feature job, miss map, tee view) for the playable courses as each next gets touched.

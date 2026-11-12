@@ -87,10 +87,17 @@ export async function courseFairways(c) {
     return H.HOLES.filter(h => h.par > 3).map(h => { const fd = S.makeFairway(h.line, h.fw || []); return { n: h.n, name: h.name, par: h.par, sig: signature(h.line, (x, z) => fd(x, z) < 0) }; });
   }
   const { HOLES, COURSE } = await loadCourse(c), back = COURSE.teeSets[0].id;
+  const lineOf = h => h.line || [h.tees[back], ...(h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]), h.green?.pins?.[0] || h.pin];
+  // Generated courses (a `frame` on every hole) sample their ground from the whole world, so a hole's field also
+  // holds its neighbours' fairways; count only the hole's own ground: points nearer its line than any other hole's
+  const framed = HOLES.every(h => h.frame), toW = F => { const a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
+    return (x, z) => [F.x + x * rx - z * fx, F.z + x * rz - z * fz]; };
+  const WL = framed ? HOLES.map(h => { const W = toW(h.frame); return lineOf(h).map(p => W(...p)); }) : null;
+  const dLine = (L, x, z) => { let d = Infinity; for (let i = 0; i < L.length - 1; i++) { const [ax, az] = L[i], [bx, bz] = L[i + 1], dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz))); d = Math.min(d, Math.hypot(x - ax - dx * t, z - az - dz * t)); } return d; };
+  const own = (i, W) => (x, z) => { if (!WL) return true; const [X, Z] = W(x, z), d = dLine(WL[i], X, Z); return WL.every((L, j) => j === i || dLine(L, X, Z) >= d); };
   return HOLES.map((h, i) => ({ h, i })).filter(o => o.h.par > 3).map(({ h, i }) => {
-    const T = createTerrain(h), pin = h.green?.pins?.[0] || h.pin;
-    const line = h.line || [h.tees[back], ...(h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]), pin];
-    return { n: i + 1, name: h.name, par: h.par, sig: signature(line, (x, z) => T.groundAt(x, z) !== null && T.surfaceAt(x, z) === 'fairway') };
+    const T = createTerrain(h), mine = own(i, framed ? toW(h.frame) : null);
+    return { n: i + 1, name: h.name, par: h.par, sig: signature(lineOf(h), (x, z) => T.groundAt(x, z) !== null && T.surfaceAt(x, z) === 'fairway' && mine(x, z)) };
   });
 }
 

@@ -114,3 +114,24 @@ test("the longship's bow stands out of the ice off the right of the 3rd: solid, 
   const free = shoot(createTerrain({ ...h, rocks: h.rocks.filter(r => r !== hull) }), from, [bx + 20, bz], { Speed: 30, VLA: 3, TotalSpin: 300 }, () => 'ice').at(-1);
   assert.ok(end.x < bx + 1 && free.x > bx + 4, `a skating ball stops at the hull (ends ${(end.x - bx).toFixed(1)} m past its foot; ${(free.x - bx).toFixed(1)} m without it)`);
 });
+
+test('the tips tee is in the data and switched off', () => {
+  assert.ok(COURSE.tipsSet && COURSE.tipsSet.id === 'bear' && COURSE.tipsSet.minDrive >= 280);
+  assert.ok(!COURSE.teeSets.some(s => s.id === COURSE.tipsSet.id), 'not offered in the game');
+  HOLES.forEach((h, i) => {
+    assert.ok(h.tips && h.tips.tee.length === 2 && h.tips.yards > h.yards.mammoth, `${h.name} has a tips spot behind the back tee`);
+    assert.ok(!(COURSE.tipsSet.id in h.tees) && !(COURSE.tipsSet.id in h.yards), `${h.name}: tips kept out of tees and yards`);
+    const g = T[i].groundAt(...h.tips.tee); assert.ok(g !== null, `${h.name} tips on ground`);
+    assert.ok(!['fairway', 'green', 'water', 'void'].includes(T[i].surfaceAt(...h.tips.tee)), `${h.name} tips spot is ${T[i].surfaceAt(...h.tips.tee)}`);
+  });
+});
+
+test('no boulder stands in front of a tee: a forward tee\'s drive goes forward (the 9th\'s Hare tee had one 7 m out)', () => {
+  HOLES.forEach((h, i) => {
+    for (const r of h.rocks) if (r.type === 'boulder') for (const [k, t] of Object.entries(h.tees)) assert.ok(Math.hypot(r.x - t[0], r.z - t[1]) > 20, `${h.name}: a boulder ${Math.hypot(r.x - t[0], r.z - t[1]).toFixed(0)} m from the ${k} tee`);
+  });
+  const h = HOLES[8], t = T[8], tee = h.tees.hare, aim = [h.targets[0].x, h.targets[0].z];
+  const pts = shoot(t, tee, aim, { Speed: 120, VLA: 13, TotalSpin: 3200 }), end = pts.at(-1);
+  const d0 = Math.hypot(aim[0] - tee[0], aim[1] - tee[1]), on = ((end.x - tee[0]) * (aim[0] - tee[0]) + (end.z - tee[1]) * (aim[1] - tee[1])) / d0;
+  assert.ok(on > 60, `the 9th's Hare drive ends ${on.toFixed(0)} m up the hole (it used to finish behind the tee)`);
+});

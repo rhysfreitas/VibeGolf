@@ -163,7 +163,9 @@ export function buildHole(h) {
     const [X, Z] = W(x, z);
     let m = smooth((go - 4) / 8);
     for (const t of teePads) m *= smooth((Math.hypot(x - t.x, z - t.z) - 7) / 8);
-    y += m * waves(X, Z);
+    // `groomed` (0-1): how much of the waves a hole's fairway keeps. At full size (about half a metre) a ball resting
+    // in a trough on the 9th's climb clipped the next crest a few metres ahead
+    y += m * waves(X, Z) * (h.groomed == null ? 1 : lerp(h.groomed, 1, smooth((fwD(x, z) + 2) / 8)));
     if (!bare) y += crackLift(x, z) + layerLift(X, Z) * m;
     return y;
   }
@@ -222,8 +224,9 @@ export function buildHole(h) {
   const objs = [];
   const gAt = (x, z) => ground(x, z) ?? ground(x, z, true);
   for (const s of h.seracs || []) objs.push({ kind: 'serac', x: s.at[0], z: s.at[1], r: s.r, h: s.h, base: gAt(...s.at) - 1, seed: s.seed });
+  // erratics stay 22 m clear of every tee pad: one stood 7 m in front of the 9th's Hare tee and turned every drive back
   for (const b of h.boulders || []) {
-    if (surfaceOk(b.at)) objs.push({ kind: 'boulder', x: b.at[0], z: b.at[1], r: b.r, h: b.h, base: gAt(...b.at) - b.h * 0.25 });
+    if (surfaceOk(b.at) && teePads.every(t => Math.hypot(b.at[0] - t.x, b.at[1] - t.z) > 22 + b.r)) objs.push({ kind: 'boulder', x: b.at[0], z: b.at[1], r: b.r, h: b.h, base: gAt(...b.at) - b.h * 0.25 });
   }
   function surfaceOk(p) { const s = surface(...p); return !['fairway', 'green', 'fringe', 'tee', 'water', 'ice', 'void', 'sand', 'powder'].includes(s); }
   for (const t of h.trees || []) if (surfaceOk([t.x, t.z])) objs.push({ kind: 'tree', x: t.x, z: t.z, r: t.r, h: t.h, base: gAt(t.x, t.z) });

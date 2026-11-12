@@ -16,6 +16,9 @@ export const COURSE = {
     { id: 'lynx', name: 'Lynx', color: '#c94a3a', minDrive: 200 },
     { id: 'hare', name: 'Hare', color: '#e0b84a', minDrive: 0 },
   ],
+  // the tips tee, switched off: kept out of teeSets so the game doesn't offer it (docs/COURSE-DESIGN.md
+  // "The tips tee"); each hole's `tips: [s, off]` is its spot
+  tipsSet: { id: 'bear', name: 'Bear', color: '#22252b', minDrive: 290 },
 };
 
 // stunted spruce round the hot springs and down the lower valley: n trees scattered round a point
@@ -34,6 +37,11 @@ function hole(def) {
   for (const [k, v] of Object.entries(h.tees)) h.teePts[k] = typeof v === 'number' ? P(v) : P(v[0], v[1]);
   h.yards = {};
   for (const [k, v] of Object.entries(h.tees)) { const s = typeof v === 'number' ? v : v[0]; h.yards[k] = Math.round((len - s) / YD / 5) * 5; }
+  // the tips tee (switched off): its spot and card yardage, kept out of teePts and yards so no pad is drawn
+  // tips: [s, off, padH]: s metres along the line (negative: behind the tee), off to the right; padH raises its pad
+  // (where the ground in front would hide the landing area from a tee further back off a lip)
+  if (h.tips) { const [s, o = 0, ph = 0] = h.tips, p = P(s, o), first = Math.hypot(L[1][0] - L[0][0], L[1][1] - L[0][1]);
+    h.tips = { tee: p, yards: Math.round((Math.hypot(p[0] - L[1][0], p[1] - L[1][1]) + len - first) / YD / 5) * 5, ...(ph ? { pad: { h: ph } } : {}) }; }
   return { ...def, ...h };
 }
 // a crevasse along [s, off] points, w wide; lip: { h, toward: [s, off], run, fall } raises one side.
@@ -46,7 +54,7 @@ export const HOLES = [
   hole({ n: 1, name: 'The Ice Gate', par: 4, legs: [[240, 0], [126, 30]], base: 130, place: { heading: 4 },
     build: (P) => ({
       tees: { mammoth: 0, raven: 20, lynx: [80, -48], hare: [118, -46] },
-      prof: [[0, 0], [24, 0], [100, -25], [170, -28.5], [240, -29.5], [366, -30]],
+      prof: [[0, 0], [6, 0], [100, -25], [170, -28.5], [240, -29.5], [366, -30]],
       cant: [[150, 330, 2]],
       fw: [{ e: [[92, 14, 14], [120, 22, 26], [175, 30, 28], [205, 28, 21], [245, 24, 30], [275, 16, 18], [300, 13, 15], [330, 18, 22], [352, 14, 15]], wob: 6 }],
       cracks: [cv(P, [[166, 50], [190, 44], [214, 47], [240, 54]], 7, { h: 3, toward: [200, 100], run: 10, fall: 10 }),
@@ -62,6 +70,7 @@ export const HOLES = [
         { strip: [[202, 50, -29], [225, 56, -27], [255, 60, -30], [285, 52, -27], [312, 47, -29], [334, 40, -30]], wob: 4, kind: 'powder' }],
       boulders: [...erratics(P(196, -62), 18, 6, 11), ...erratics(P(150, 58), 14, 4, 12)],
       trees: [...grove(P(392, -52), 14, 6, 13)],
+      tips: [-26, 0, 3.5],   // in the cave, on a raised pad: from further back the lip hides the fairway
       targets: [{ name: 'The corner', at: P(240, -6) }],
       words: {
         plays: 'The back tees stand in the mouth of an ice cave: you hit out of blue darkness and the glacier opens up below, the aurora over it. The ledge drops 30 m to a wide fairway of packed snow that bends right round a low ice ridge. It runs: a drive that lands on the slope can roll out a long way. The green sits on a shelf by the first hot spring, steam drifting over it.',
@@ -72,26 +81,30 @@ export const HOLES = [
     }),
   }),
 
-  // 2. THE HOT SPRINGS: up four steaming travertine terraces, a dogleg left, pools down the right
+  // 2. THE HOT SPRINGS: up four steaming travertine terraces, a dogleg left. The spring's water spills down the
+  // hillside from shelf to shelf, pooling first on one side and then the other, so the fairway is scalloped: each
+  // terrace's pool bites in from alternate sides (left, right, left, right) and each shelf leans away from its pool
   hole({ n: 2, name: 'The Hot Springs', par: 4, legs: [[205, 0], [133, -34]], base: 99, place: { heading: 60, walk: [70, 10] },
     build: (P) => ({
-      tees: { mammoth: 0, raven: 20, lynx: [62, 42], hare: [98, 42] },
+      tees: { mammoth: 0, raven: 20, lynx: [62, 40], hare: [118, 34] },
       prof: [[0, 0], [85, 0], [105, 3.5], [150, 3.5], [170, 7], [222, 7], [242, 10.5], [282, 10.5], [302, 14], [338, 14.5]],
-      cant: [[60, 300, 1.5]], rims: true,
-      fw: [{ e: [[58, 16, 16], [85, 24, 24], [130, 30, 24], [175, 28, 21], [205, 34, 22], [240, 26, 20], [275, 18, 18], [300, 20, 16], [326, 13, 13]], wob: 5.5 }],
+      cant: [[100, 150, 2], [176, 222, -3], [246, 282, 2.5]], rims: true,
+      // the left edge pulls in by the first and third pools, the right by the second and the green's
+      fw: [{ e: [[58, 16, 18], [88, 24, 26], [112, 8, 32], [132, 6, 34], [150, 16, 28], [178, 34, 18], [200, 38, 8], [218, 36, 12], [238, 26, 24], [258, 14, 30], [276, 9, 29], [292, 18, 18], [308, 22, 7], [326, 13, 11]], wob: 4 }],
       corridor: 18, steep: 'travertine',
       green: { lobes: [[0, -4, 11, 10, 0], [2, 13, 12, 10, 12]], join: 6, tier: { s: 340, h: 0.6 }, contour: [{ fall: 0, pct: 1.5 }], style: 'A peanut along the line, pinched at the waist, two tiers on the top terrace (the upper at the back, 0.6 m up), falling 1.5% toward the front' },
-      water: [{ at: P(126, 52), rx: 24, rz: 15, label: 'warm pool' }, { at: P(194, 50), rx: 22, rz: 14, label: 'warm pool' },
-        { at: P(262, 44), rx: 20, rz: 13, label: 'warm pool' }, { at: P(312, 40), rx: 14, rz: 10 }],
-      bunkers: [{ at: P(214, -40), rx: 18, rz: 10, rot: -0.3 }, { at: P(322, -22), rx: 8, rz: 6 }],
-      boulders: [...erratics(P(150, -64), 16, 5, 21)],
-      trees: [...grove(P(230, -66), 16, 7, 22), ...grove(P(90, 70), 12, 4, 23)],
-      targets: [{ name: 'The second terrace', at: P(200, 4) }],
+      water: [{ at: P(128, -30), rx: 17, rz: 18, label: 'first pool' }, { at: P(199, 33), rx: 19, rz: 21, label: 'second pool' },
+        { at: P(274, -38), rx: 13, rz: 15, rot: -0.59, label: 'third pool' }, { at: P(312, 25), rx: 12, rz: 9, rot: -0.59, label: 'the green\'s pool' }],
+      bunkers: [{ at: P(206, -46), rx: 16, rz: 10, rot: -0.3 }, { at: P(322, -22), rx: 8, rz: 6 }],
+      boulders: [...erratics(P(150, -66), 14, 4, 21)],
+      trees: [...grove(P(232, -74), 14, 7, 22), ...grove(P(96, 72), 12, 4, 23)],
+      targets: [{ name: 'The second terrace', at: P(205, -12) }],
+      tips: [-28, 0],
       words: {
-        plays: 'The hole climbs a hillside of white travertine, the mineral terraces a hot spring builds, in four steps of about 3.5 m. Warm blue pools steam on the shelves down the right, and the fairway leans 1.5% toward them. Where the ball stops sets the lie: on a shelf it is flat, short of a step it is uphill. The green sits on the top terrace in two tiers.',
-        safe: 'Drive to the second terrace (200 m), at the bend, and play up to the green.',
-        bold: 'Drive over the bend on the left to the third terrace: a wedge in, but a powder bunker sits in the corner.',
-        miss: 'Right is the pools: a stroke and a drop. Left is powder and spruce on the slope.',
+        plays: 'The hole climbs a hillside of white travertine, the mineral terraces a hot spring builds, in four steps of about 3.5 m. The spring\'s warm water spills from shelf to shelf, pooling first on one side and then the other, and each blue pool bites into the fairway: left on the first terrace, right on the second where drives land, left again at the corner, right beside the green. Each shelf leans away from its pool. On a shelf the lie is flat; short of a step it is uphill. The green sits on the top terrace in two tiers.',
+        safe: 'Drive to the left half of the second terrace (205 m), away from its pool, and play up past the third pool to the green.',
+        bold: 'Hug the corner on the left for a shorter second, with the third pool waiting at the end of the shelf.',
+        miss: 'Right off the tee is the second pool, a stroke and a drop; the shelf leans away from it, toward the corner. Left of the corner is a powder bunker and spruce. On the way in, the third pool sits left, the green\'s pool short right.',
       },
     }),
   }),
@@ -109,6 +122,7 @@ export const HOLES = [
       extraFw: [{ at: P(108, -56), rx: 14, rz: 26 }],
       bunkers: [{ at: P(162, -18), rx: 7, rz: 5 }, { at: P(145, 0), rx: 5, rz: 3.5 }],
       boulders: [...erratics(P(20, -40), 16, 5, 31), ...erratics(P(40, 44), 14, 4, 32)],
+      tips: [-10, 0],
       targets: [],
       words: {
         plays: 'From a bluff of moraine 14 m above the lake. Off to the right a Viking longship rears its dragon prow out of the ice, its stern still frozen in below. The ice is fast: a ball that lands on it skates on toward the shore. Short of the green a hole of open black water lies in the ice, about 20 m before the front: a topped or thin shot that would have skated up to the shore can run into it. The green sits up on the far shore with a false front, so a shot that comes up short rolls back onto the ice.',
@@ -140,6 +154,7 @@ export const HOLES = [
       green: { lobes: [[0, -3, 9, 14, 0], [-10, 8, 10, 6, 0]], tilt: { front: 1, pct: 2 }, contour: [{ ridge: [[-4, 2], [-6, 12]], h: 0.3, w: 2 }], style: 'An L: a long front leg and a wing at the back left behind a low spine, tilted 2% toward the front, on the shelf under the ice cliff' },
       bunkers: [{ at: P(470, -22), rx: 9, rz: 6 }],
       boulders: [...erratics(P(220, 62), 16, 5, 41)],
+      tips: [-34, 0],
       targets: [{ name: 'The trough', at: P(205, -4) }, { name: 'Short of the crevasse', at: P(378, 4) }],
       words: {
         plays: 'The fairway weaves through a field of crevasses. The drive drops 8 m into a snow trough; from there two ramps climb with a blind crest between them, and the second leg leans away from the crevasses on its left. A last crevasse 12 m wide cuts across the line short of the green, and its far side is a shelf 4 m higher: a jagged ice face you play up onto. An ice bridge arches over its left end, and the way round on the right climbs a ramp onto the shelf. The green sits on the shelf under an ice cliff.',
@@ -159,7 +174,7 @@ export const HOLES = [
         [232, -21, 3, 9], [241, -18, 2.6, 7.5], [248, -24, 3, 10], [229, 15, 3, 9], [237, 18, 2.6, 8]];
       return {
         tees: { mammoth: 0, raven: 14, lynx: [92, -36], hare: [130, -24] },
-        prof: [[0, 0], [10, 0], [68, -28], [105, -30.5], [150, -31.2], [172, -31.8], [274, -35]],
+        prof: [[0, 0], [4, 0], [68, -28], [105, -30.5], [150, -31.2], [172, -31.8], [274, -35]],
         fw: [{ e: [[96, -24, 58], [130, -24, 68], [170, -25, 72], [200, -24, 70], [230, -14, 54], [246, -2, 30]], wob: 5.5 },
           { e: [[224, 12, 10], [242, 16, 16], [262, 14, 14]], wob: 3 },
           { e: [[243, -6, 16], [256, -8, 22], [268, -9, 21], [276, -7, 16]], wob: 3, seed: 7 }],
@@ -170,7 +185,8 @@ export const HOLES = [
         bunkers: [{ at: P(256, -21), rx: 8, rz: 6 }, { at: P(284, 17), rx: 7, rz: 5 }, { at: P(220, -4), rx: 12, rz: 9, rot: 0.15 },
           { at: P(213, 75), rx: 11, rz: 13, rot: 0.2 }, { at: P(179, 84), rx: 7.5, rz: 8 }],
         boulders: [...erratics(P(120, -60), 18, 6, 51)],
-        targets: [{ name: 'Right of the seracs', at: P(195, 36) }],
+        tips: [-22, 0, 3],   // a raised pad, for the same reason as the 1st's
+        targets: [{ name: 'Right of the seracs', at: P(195, 36) }, { name: 'Through the gap', at: P(240, 0), bold: true }],
         boldNote: 'the gap in the seracs, on the line',
         words: {
           plays: 'The tee stands on the lip of the icefall, looking straight down on the hole 35 m below. The landing area is two benches split by a jagged ice scarp, 3.5 m high, that zigzags right across the hole: a drive that runs over it drops to the lower bench. A stand of seracs, tall pillars of ice, guards the straight line to the green, with a gap about 15 m wide on the line itself, and a few shorter ones stand on either side of the approach, closer to the green. Right of the green a pod of short grass gives the long bench a way in.',
@@ -196,6 +212,7 @@ export const HOLES = [
       green: { lobes: [[-7, -3, 8, 8, 0], [7, -3, 8, 8, 0], [0, 6, 8, 8, 0], [0, 0, 6, 6, 0]], crown: 0.12, contour: [{ fall: 0, pct: 1 }], apron: 12, style: 'A three-leaf clover, gently crowned (0.12 m), with short grass all round it on the shelf' },
       bunkers: [{ wrap: { from: -155, to: 45, d: 3.5, w: 10 } }],
       boulders: [...erratics(P(60, 46), 16, 5, 61), ...erratics(P(70, -50), 14, 4, 62)],
+      tips: [-22, 0],
       targets: [],
       words: {
         plays: 'The green sits on a shelf 18 m up, on top of a cliff of dark rock: a craggy, broken face that wanders in bays and buttresses right across the view, with rock tors along its lip. In the middle of it a waterfall froze as it fell, pale columns of ice down the black rock, with icicles at its edges and a skirt of ice at its foot. You can\'t see the putting surface from the tee, only the lip and the steam rising off the green behind it. A long black-sand bunker wraps the green from its front left round the back; short grass in front and on the right keeps a near miss up.',
@@ -221,6 +238,7 @@ export const HOLES = [
       green: { lobes: [[0, 0, 8, 19, -40], [-7, 10, 8, 7, 0]], redan: 2, style: 'A Redan: long, set diagonally from front right to back left, and falling away 2% that way' },
       bunkers: [{ at: P(394, -20), rx: 9, rz: 6 }, { at: P(368, 20), rx: 8, rz: 5 }],
       boulders: [...erratics(P(150, -60), 16, 6, 71)],
+      tips: [-45, 0],
       targets: [{ name: 'Left of the crest', at: P(205, -12) }, { name: 'Over the moulin', at: P(268, 6), bold: true }],
       boldLine: [[0, 0], P(290)],
       words: {
@@ -252,6 +270,7 @@ export const HOLES = [
       bunkers: [{ at: P(352, -30), rx: 16, rz: 10.5 }, { at: P(250, 33), rx: 15, rz: 9 }],
       boulders: [...erratics(P(330, 20), 20, 8, 81), ...erratics(P(160, -64), 14, 4, 82)],
       trees: [...grove(P(390, 70), 16, 7, 83), ...grove(P(470, 64), 12, 5, 84)],
+      tips: [-45, 0],
       targets: [{ name: 'The esker', at: P(245, -4) }, { name: 'The high side', at: P(392, -14) }, { name: 'The low side', at: P(412, 26), bold: true }],
       words: {
         plays: 'The drive runs along the broad back of an esker, a long ridge a river under the ice left behind, leaning 2% into the dogleg. The second drops 11 m down a valley step to the valley floor, where a long crevasse splits the fairway in two: the left side rides 3 m up on the crevasse\'s lip, wide and flat, with a view down into the green; the right side is lower and narrower but runs 15 m closer. In the valley wall on the left a woolly mammoth lies frozen in the ice, its tusks breaking out near the green. The last 100 m rises to level ground, then the green sits down in a true punchbowl.',
@@ -266,19 +285,22 @@ export const HOLES = [
   hole({ n: 9, name: 'The Aurora Hall', par: 4, legs: [[215, 6], [160, -12]], base: 82, place: { heading: 358, walk: [60, 110] },
     build: (P) => ({
       tees: { mammoth: 0, raven: 22, lynx: [64, 46], hare: [104, 48] },
-      prof: [[0, 0], [30, 0], [150, 15], [195, 17], [308, 33], [330, 34.5], [342, 38], [375, 38.5]],
-      cant: [[30, 320, 3]],
+      prof: [[0, 0], [30, 0], [198, 17], [310, 33], [330, 34.5], [342, 38], [375, 38.5]],
+      cant: [[30, 320, 3]], groomed: 0.33,   // the climb's fairway is groomed smooth: a third of the snow waves
       walls: [{ side: -1, s0: -40, s1: 460, off: 66, h: 22, bank: 32, label: 'the ridge' }],
-      fw: [{ e: [[66, 18, 20], [95, 24, 28], [140, 26, 32], [180, 28, 30], [210, 30, 26], [240, 26, 24], [270, 20, 22], [300, 18, 20], [328, 13, 15]], wob: 5.5 }],
-      cracks: [cv(P, [[252, -47], [278, -53], [306, -47]], 5, { h: 3, toward: [280, -100], run: 10, fall: 10 })],
-      voidLabels: [[[280, -52], 'crevasse']],
+      // an hourglass: the wide shelf at the top of the first ramp, a bottle neck at the foot of the second between the
+      // ridge's crevasse (left) and a big powder bunker (right), then the second ramp opening again below the hall
+      fw: [{ e: [[66, 18, 20], [100, 24, 28], [150, 32, 32], [190, 36, 34], [222, 32, 28], [242, 14, 12], [257, 8, 8], [271, 12, 11], [290, 22, 20], [306, 22, 22], [328, 13, 15]], wob: 4.5 }],
+      cracks: [cv(P, [[246, -38], [258, -27], [274, -27], [297, -38], [315, -50]], 6, { h: 3, toward: [270, -100], run: 10, fall: 10 })],
+      voidLabels: [[[262, -30], 'crevasse']],
       corridor: 22, steep: 'rock',
       green: { lobes: [[0, 8, 16, 7, 0], [0, -2, 8, 9, 0]], apron: 6, contour: [{ fall: 0, pct: 1.5 }, { tier: [0, 4], up: 180, h: 0.4, w: 4 }], style: 'A T: wide across the back below the hall, narrower at the front, the bar on a tier 0.4 m above the stem; raised, with a false front' },
       hall: { at: P(418, 2), w: 58, d: 18, h: 7, roof: 9, label: 'the hall (clubhouse)' },
-      bunkers: [{ at: P(236, -38), rx: 18, rz: 10.5 }, { at: P(320, -24), rx: 12, rz: 9 }],
+      bunkers: [{ at: P(261, 25), rx: 13, rz: 19, rot: 0.1 }, { at: P(176, -45), rx: 15, rz: 10 }, { at: P(320, -24), rx: 12, rz: 9 }],
       boulders: [...erratics(P(120, 60), 18, 5, 91)],
       trees: [...grove(P(260, 66), 14, 5, 92)],
-      targets: [{ name: 'The first ramp', at: P(205, -4) }],
+      tips: [-38, -22],
+      targets: [{ name: 'The first ramp', at: P(200, -4) }, { name: 'Through the neck', at: P(270, 0), bold: true }],
       words: {
         plays: 'The finish climbs 38 m across the side of a ridge to the hall, a Norse longhouse of timber and stone lit gold, with carved heads on its gables. The fairway climbs in two ramps and leans 3% toward the low side on the right. The green is raised with a false front. The aurora is brightest straight overhead.',
         safe: 'Drive up the left half of the first ramp (205 m) and let the lean bring it back; then a club more for the climb.',
