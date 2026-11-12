@@ -77,7 +77,7 @@ export const HOLES = [
         { at: P(395, 10), w: 70, d: 30, h: 28, broken: true }, { at: P(330, 78), w: 40, d: 50, h: 42, broken: true },
       ],
       cant: [[150, 290, 3]],   // the boulevard falls toward the corner
-      targets: [{ name: 'Past the El', at: P(226, -6) }, { name: 'Round the low end', at: P(262, -14), bold: true }],
+      targets: [{ name: 'Past the El', at: P(226, -6) }, { name: 'Round the low end', at: P(262, -14) }],
       words: {
         plays: 'Tee off the broken platform of the elevated line, 12 m above the boulevard. The track runs on down the left on its girders and ends in mid-air, a carriage hanging off the break. Round the bend a skyscraper lies on its side across the street: its body off to the right, its broken top end buried in a ridge of grassed rubble 11 m high. The green is out of sight behind it.',
         safe: 'Drive at the end of the El, 225 m, and play the second blind over the ridge (the corner map shows the line).',
@@ -277,7 +277,7 @@ export const HOLES = [
         { at: P(300, 86), w: 50, d: 60, h: 26, broken: true, vines: true }, { at: P(430, 90), w: 60, d: 50, h: 18, broken: true }, { at: P(560, 40), w: 40, d: 60, h: 34, broken: true }],
       wrecks: [{ type: 'car', at: P(150, -40), rot: 0.3 }, { type: 'bus', at: P(330, 40), rot: 2.8 }, { type: 'car', at: P(460, -22), rot: 1.0 }],
       trees: [...grove(P(220, 56), 14, 4, 71), ...grove(P(380, 50), 16, 5, 72)],
-      targets: [{ name: 'Riverside', at: P(250, -6) }, { name: 'Short of the inlet', at: P(362, 6) }, { name: 'Over the inlet', at: P(452), bold: true }],
+      targets: [{ name: 'Riverside', at: P(250, -6) }, { name: 'Short of the inlet', at: P(362, 6) }, { name: 'Over the inlet', at: P(452) }],
       words: {
         plays: 'Tee off the broken end of the riverside expressway ramp, 10 m up, and play along the river toward the suspension bridge. The quake tipped the street\'s slab: it falls 3% to the right, away from the water, and its raised river-side edge breaks off in a 5 m drop just past the rough. The bridge\'s middle span fell into the river, and where it hit, the bank broke away into an inlet that cuts across the second leg. The green sits under the north tower.',
         safe: 'Lay up short of the inlet (360 m) and pitch over it, or go round its end on the right on the strip of rubble.',
