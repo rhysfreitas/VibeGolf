@@ -16,7 +16,7 @@ or up from tee to green.
 | Hollowmere | 4R ↓ | 3 | 5L ↑ | 4L ↓ | 3 | 4R | 5S | 4R | 4R | 36 |
 | The Reclaim | 4R | 4L | 3 | 5S | 3 ↓ | 4 d | 5L | 4R | 4 ↑ | 36 |
 | Rimeholm | 4R ↓ | 4L | 3 | 5S | 4 d ↓ | 3 | 4R | 5L | 4L ↑ | 36 |
-| Emberfell (planned) | 4L | 4 | 3 | 5S | 3 ↓ | 4R d | 5L | 4R | 4R | 36 |
+| Emberfell (planned, round 6) | 5L | 4 | 4L | 3 ↓ | 4R d | 5L | 4R | 3 | 4R | 36 |
 | The Lost Valley (planned) | 4R ↓ | 4L | 3 | 5S | 3 | 4 d | 4R | 5L | 4 ↑ | 36 |
 
 What repeats (11 November 2026):
@@ -39,11 +39,12 @@ course against these two rows as well; replace them with the measured rows when 
 
 | Course | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | Par |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Emberfell | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
+| Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
 | The Lost Valley | 4 Cycad Grove | 5 Floodplain | 4 Bone Bed | 3 Tar Pit | 5 Swamp | 4 ↑ The Nest | 3 ↓ The Overlook | 4 d Strangler | 5 Plunge Pool | 37 |
 
 - Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
-  island finish stays. Same par as another course on four holes at most (Rimeholm).
+  island finish stays. Same par as another course on four holes at most (Rimeholm). Drawn in round 6 (11 November):
+  3,395 yd from the Obsidian tees, 3,680 from the Magma tips (switched off in the data).
 - The Lost Valley: starts on the valley floor; the climb to the ledge is the 6th and the drop off it the 7th (the
   first view of the valley from above); the drivable par 4 is the 8th; a reachable par 5 finishes at the shelf
   green under the Great Falls. First par 37, first with three par 5s, first not to finish with a climb. Same par
@@ -68,7 +69,7 @@ middle; a long par 3 early.
 | **Hollowmere** | Walls soak a ball; lit play in the dark | Punchbowl (5, 8) | Bite the corner (1, 4), thread the stalagmites (3), over the trestle (7), drivable through the eyelet (9) | Ore cart that moves (1), Mirror Lake (2), terraces (3), the Deep and its falls (4, 6, 7), geode green (5), glowworm grotto (8), cenote (9) | None |
 | **The Reclaim** | Facades soak a ball; streets are native ground | Punchbowl (3), Redan and plateau greens | Through the lobby (2), over the crest (4), drivable over the fountain (6), go or lay up at the inlet (7), across the basin (8) | The El (1, 6), gutted tower (2), subway cave-in (3), propped tower (4), stadium and sinkhole (5), fallen bridge (7), rift and leaning clubhouse (9) | None |
 | **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8) | Cape over the moulin (7), split fairway (8), drivable through the seracs (5) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
-| **Emberfell** (planned) | Lava plays as water | Punchbowl in a crater ringed with sand (3), Cape (8) | Drivable down the columns (6), go or lay up at the rill (7), split and long way round (9) | Kipuka and lava river (1), geysers (2), cinder cone (3), tube bridge (4), the Notch reveal (5), basalt columns (6), lavafall (7), lava lake (8), island clubhouse (9) | Cross bunker (2), ring (3), beach (9) |
+| **Emberfell** (planned, round 6) | Lava plays as water | Leven (5), Long (6), Cape (7), Punchbowl in a crater ringed with sand (8) | Drivable down the columns (5), go or lay up at the rill (6), bite off the cape (7), split (9) | Kipuka and lava river (1), geysers (2), tube bridge and a double fairway either side of its trench (3), the Notch reveal (4), basalt columns (5), lavafall in its bay (6), lava lake (7), cinder cone on the caldera floor (8), island clubhouse (9) | Cross bunker (2), ring (8), beach (9) |
 | **The Lost Valley** (planned) | Animals are scenery; tar plays as water | Cape (7) | Split round the giant (2), over the channel (4), drivable under the arch (6), centre-line bluff (7), stepping stones or the dry way (8) | Camp ledge (1, 9), monkey-puzzle (2), tar pit and bones (3), braided river (4), Great Falls (5), strangler fig arch (6), Bone Bluff (7), swamp (8), nests (9) | Gravel bars |
 
 Classics no course has used yet: **Eden, Road, Bottle, Channel, Leven, Double Plateau, Hog's Back, Sahara, Long,
@@ -111,13 +112,14 @@ each is next touched; The Reclaim and Hollowmere have the most to gain.
 | Terraces to play up or down | Hollowmere, Rimeholm, Emberfell | 3 |
 | A green inside a shell (a geode, a crater) | Hollowmere, Emberfell | 2 |
 | An island green | Emberfell | 1 |
+| A double fairway either side of a hazard | Emberfell (the Lava Tube) | 1 |
+| A hole along a shoreline with a beach as the miss | Emberfell (the Heart) | 1 |
 | Stepping-stone fairway | The Lost Valley | 1 |
 
 **Over-used (on three or more): a new course takes two of these at most.** Everything from "a relic" up.
 
 **Never used, to start from:** a fairway along a ridge crest; a hole round the rim of something, playing
-clockwise; a green in a natural amphitheatre; a green hidden behind a wall or bank; a hole along a shoreline with
-a beach as the miss; a causeway or dam to play along; a zigzag down a slope in switchbacks; an up-and-over
+clockwise; a green in a natural amphitheatre; a green hidden behind a wall or bank; a causeway or dam to play along; a zigzag down a slope in switchbacks; an up-and-over
 saddle between two peaks; a hole through a tunnel of trees; a shared double green; a tee you reach the fairway
 from across still water with a bail-out beach; dunes and blowouts; a quarry with benches; a canal with locks; a
 tide or a level that changes between shots.
