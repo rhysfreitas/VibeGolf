@@ -29,7 +29,7 @@ past the peaks, and everything drawn) for `src/course/ice-world.js`. Rerun it af
 **Rework, 11 November 2026** (from `claude/brief-rimeholm-rework.md`, Rhys approved the proposal): the 2nd scalloped (pools left, right, left,
 right up the terraces; `cant` per shelf leans each away from its pool), the 9th an hourglass with one first ramp to the shelf and
 `groomed: 0.33` (its fairway keeps a third of the snow waves), the drops on the 1st and 5th starting at the back tee's pad, erratics
-kept 22 m off every tee pad, bold targets on 5 and 9. A hole's `tips: [s, off, padH]` is its switched-off tips tee (Bear, in
+kept 22 m off every tee pad, bold targets on 5 and 9; the 7th's Lynx tee on the moulin's side, the 8th's low side 16 m longer. A hole's `tips: [s, off, padH]` is its switched-off tips tee (Bear, in
 `COURSE.tipsSet`); `emit.mjs` writes it as `tips: { tee, yards, pad? }` and `COURSE.tipsSet`, and `node tools/review/tips.mjs rimeholm`
 checks the spots. Proposals are built in a scratch copy first (a git worktree of the repo), emitted and checked there, and shown to
 Rhys before they go in.

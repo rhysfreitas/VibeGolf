@@ -251,11 +251,13 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
 - **Fairways:** the 2nd scalloped (its pools alternate sides), the 9th an hourglass; 0 pairs alike, two plain
   strips (1, 7). The 4th and 5th are both islands, back to back (the 5th as stepping stones was offered, not taken).
 - **Decisions:** four marked, four types. Through the gap (5th): 58 yd less, pays the long hitter 0.7 and the
-  short one 0.6. Over the moulin (7th): 69 yd less, no difference for the long hitter, pays the short one 0.2:
-  the wrong way round. The low side (8th, a second-shot choice): only 18 yd less than the high side, with the crevasse
-  between; costs the long hitter 0.7 (against going for the bowl) and makes no difference to the short one.
+  short one 0.6. Over the moulin (7th): 69 yd less, no difference for the long hitter (3.92 / 4.00, the tool pars
+  the safe line from the crest); from the Lynx tee, now on the moulin's side (a 194 yd carry), it's out of reach and
+  costs the short hitter 0.8. Before, the Lynx tee sat left of the moulin with no carry, and it paid the short one.
+  The low side (8th, a second-shot choice): now 46 yd less than the high side (its fairway runs on to the bowl's bank,
+  target 28 m nearer); pays the short hitter 0.25 and costs the long one 0.3 (he should go for the bowl in two).
+  Was 18 yd, no difference / costs.
   Through the neck (9th): 75 yd less, no difference for the long hitter (0.1), costs the short one 0.3.
-  Fixes for 7 and 8 are Rhys's pick for the next round.
 - **Tips:** the Bear set, switched off, 3,605 yd: 430, 400, 175, 575, 325, 205, 470, 570, 455 (28, 31, 11, 37,
   24, 24, 49, 49, 48 yd behind the back tees). The 1st's and 5th's sit behind a lip and carry `pad.h` 3.5 and 3 m,
   so they see the landing area; when turned on they want a built tee (ice blocks, a rock knoll), not the engine's

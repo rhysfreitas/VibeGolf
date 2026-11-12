@@ -226,7 +226,7 @@ export const HOLES = [
   // 7. THE MOULIN: a par 4 cape right round a great meltwater shaft, up to a crest and down to a Redan
   hole({ n: 7, name: 'The Moulin', par: 4, legs: [[200, 0], [184, 40]], base: 93, place: { heading: 262, walk: [60, -20] },
     build: (P) => ({
-      tees: { mammoth: 0, raven: 22, lynx: [70, -50], hare: [110, -50] },
+      tees: { mammoth: 0, raven: 15, lynx: [30, 34], hare: [110, -50] },   // the Lynx tee on the moulin's side, so its bold line carries the moulin too (194 yd)
       prof: [[0, 0], [50, 0], [195, 8.5], [232, 11], [262, 8], [330, 0], [384, -2]],
       cant: [[232, 340, -1.5]],
       fw: [{ e: [[68, 22, 14], [100, 32, 20], [150, 36, 17], [170, 36, 14], [190, 34, 17], [215, 30, 20], [245, 26, 20], [280, 22, 24], [320, 24, 26], [350, 20, 22], [372, 14, 15]], wob: 5.5 }],
@@ -244,7 +244,7 @@ export const HOLES = [
       words: {
         plays: 'A moulin is a shaft that meltwater bores down through a glacier: here a round pit 84 m across, glowing blue far down. The fairway capes round its left side, climbing 11 m to a crest where the drives land, then falls 13 m round the pit to a Redan green. From short of the crest the green is hidden. The second leg leans away from the pit.',
         safe: 'Drive left, up to the crest (205 m), and play the second blind over it.',
-        bold: 'Carry the near side of the moulin (about 210 m) onto the second leg: a shorter, open shot in.',
+        bold: 'Carry the near side of the moulin (about 210 m from the back tee, 175 m from the Lynx tee) onto the second leg: a shorter, open shot in.',
         miss: 'Right is the moulin: open air, a stroke and a drop, with cracks splitting off it into the snow. Left of the second leg, a crevasse with a raised lip waits for a hook.',
       },
     }),
@@ -260,7 +260,7 @@ export const HOLES = [
       walls: [{ side: -1, s0: 250, s1: 540, off: 84, h: 32, bank: 22, label: 'the valley wall' }, { side: 1, s0: 270, s1: 540, off: 100, h: 24, bank: 26 }],
       fw: [{ e: [[68, 18, 18], [110, 26, 24], [160, 28, 28], [210, 30, 26], [250, 28, 22], [280, 22, 20], [298, 16, 16]], wob: 5.5 },
         { e: [[344, 30, 1], [380, 36, 2], [415, 32, 1], [436, 22, 2]], wob: 4.5 },
-        { e: [[346, -19, 38], [385, -18, 46], [425, -17, 44], [450, -15, 30]], wob: 4.5 }],
+        { e: [[346, -19, 38], [385, -18, 46], [425, -17, 44], [455, -15, 36], [466, -13, 24]], wob: 4.5 }],
       cracks: [cv(P, [[336, 11], [365, 7], [395, 11], [425, 8], [442, 10]], 6, { h: 3, toward: [390, -20], run: 30, fall: 10, end: 25 })],
       voidLabels: [[[400, 10], 'the split']],
       corridor: 20, steep: 'ice',
@@ -271,11 +271,11 @@ export const HOLES = [
       boulders: [...erratics(P(330, 20), 20, 8, 81), ...erratics(P(160, -64), 14, 4, 82)],
       trees: [...grove(P(390, 70), 16, 7, 83), ...grove(P(470, 64), 12, 5, 84)],
       tips: [-45, 0],
-      targets: [{ name: 'The esker', at: P(245, -4) }, { name: 'The high side', at: P(392, -14) }, { name: 'The low side', at: P(412, 26), bold: true }],
+      targets: [{ name: 'The esker', at: P(245, -4) }, { name: 'The high side', at: P(392, -14) }, { name: 'The low side', at: P(440, 24), bold: true }],
       words: {
-        plays: 'The drive runs along the broad back of an esker, a long ridge a river under the ice left behind, leaning 2% into the dogleg. The second drops 11 m down a valley step to the valley floor, where a long crevasse splits the fairway in two: the left side rides 3 m up on the crevasse\'s lip, wide and flat, with a view down into the green; the right side is lower and narrower but runs 15 m closer. In the valley wall on the left a woolly mammoth lies frozen in the ice, its tusks breaking out near the green. The last 100 m rises to level ground, then the green sits down in a true punchbowl.',
+        plays: 'The drive runs along the broad back of an esker, a long ridge a river under the ice left behind, leaning 2% into the dogleg. The second drops 11 m down a valley step to the valley floor, where a long crevasse splits the fairway in two: the left side rides 3 m up on the crevasse\'s lip, wide and flat, with a view down into the green; the right side is lower and narrower but runs on 40 m closer, to the bowl\'s bank. In the valley wall on the left a woolly mammoth lies frozen in the ice, its tusks breaking out near the green. The last 100 m rises to level ground, then the green sits down in a true punchbowl.',
         safe: 'Drive along the esker (245 m), lay up on the high side (about 390 m), and pitch into the bowl.',
-        bold: 'Lay up on the low side, closer but narrower, or take on the bowl in two: anything near it feeds in.',
+        bold: 'Lay up on the low side (about 440 m), 40 m nearer and left with a short pitch, but narrower and with the crevasse beside it; or take on the bowl in two: anything near it feeds in.',
         miss: 'Off the esker the ball runs down its side into powder. Between the two halves of the second leg is the crevasse. Left of it all is the valley wall: a wall of ice that drops a ball dead at its foot.',
       },
     }),
