@@ -117,14 +117,16 @@ export const CREEK = { pts: [[748, -698], [728, -714], [709, -730], [690, -746],
 // sill, braids south, bends west round the Bone Bluff and spreads into the swamp
 export const POOL = { c: [492, -1582], rx: 74, rz: 50, rot: 0.35, level: 406 };
 // the 9th's green stands on a shelf of rock jutting into the pool from its south-east shore, beside the outflow
-export const SHELF = { c: [534, -1534], r: 19, neck: [[548, -1514], [559, -1495]], y: 407.6 };
+export const SHELF = { c: [530, -1536], r: 29, neck: [[548, -1514], [559, -1495]], y: 407.6 };
 export const GREAT_FALLS = { lip: [560, -1790], foot: [520, -1625], w: 44 };
 export const RIVER = { pts: [
   [486, -1556, 8, 405.6], [482, -1505, 8, 404.6], [476, -1455, 9, 403.8], [468, -1395, 24, 403.2], [462, -1320, 38, 402.6],
   [458, -1240, 44, 402.0], [450, -1160, 42, 401.4], [444, -1080, 34, 400.8], [462, -1000, 22, 400.3], [512, -956, 18, 399.9],
   [498, -894, 17, 399.5], [470, -838, 18, 399.1], [430, -778, 20, 398.7], [400, -715, 24, 398.3]] };
-// the back channel: a braid that leaves the river and crosses the 2nd about 380 m out, ending in an oxbow pond
-export const BACKCH = { pts: [[462, -830], [425, -812], [385, -800], [345, -790], [305, -784], [268, -786], [238, -790]], w: 6, pond: { c: [205, -796], rx: 30, rz: 17, rot: -0.2 } };
+// the back channel, the 2nd's burn: a narrow braid that leaves the river at the foot of the upper terrace, crosses
+// the 2nd's line three times (just under the bank at the bend, on a diagonal through the lower terrace, and at the
+// foot of the green's bank) and ends in an oxbow pond. Its water stands level, a metre under the lower terrace
+export const BACKCH = { pts: [[490.5, -854.2], [431.4, -867.2], [382.7, -879.6], [344.1, -890.5], [314.5, -897], [292.7, -895.4], [282.2, -884.3], [291.5, -862.8], [312, -837.3], [319.5, -822.8], [331.6, -803.5], [337.4, -784.4], [327.7, -775.1], [309.9, -773.1], [300.7, -771.1], [280.5, -774.2], [253.8, -782.8], [225.1, -797.6]], w: 3.6, level: 399.4, pond: { c: [205, -796], rx: 30, rz: 17, rot: -0.2 } };
 // the gorge: where the river cuts through the sill, its walls stand sheer
 export const GORGE = { from: 0.2, to: 2.6 };   // between these river points (by index, fractional)
 export const BRIDGE = { a: [454, -1452], b: [498, -1447] };   // the rope bridge across the gorge, rim to rim, left of the 9th's approach
@@ -136,7 +138,9 @@ export const POOLS5 = [[305, -426, 40, 11, 1.33], [384, -446, 40, 11, 1.33]];
 export const POOLS8 = POOLS5;   // the old name
 export const SWAMP = { level: 397.4, blobs: [[372, -668, 52], [392, -598, 60], [342, -560, 62], [398, -540, 46], [384, -500, 48], [330, -505, 44], [296, -540, 58], [436, -530, 24]], seed: 41 };
 // the tar pit: a black seep in a hollow west of the swamp; its three pools wrap the 4th green's front and right
-export const TAR = { c: [-75, -522], rx: 30, rz: 19, rot: 0.85, level: 395.2, seed: 51, blobs: [[-75, -522, 26, 17, 0.85], [-61, -493, 18, 12, 1.3], [-48, -474, 13, 8, 0.8]] };
+export const TAR = { c: [-75, -522], rx: 30, rz: 19, rot: 0.85, level: 395.2, seed: 51, blobs: [[-75, -522, 26, 17, 0.85], [-61, -493, 18, 12, 1.3], [-48, -474, 13, 8, 0.8],
+  // the 4th's postage stamp: pools close in front of the green and behind it, so the tar rings it but for the left
+  [-42.2, -502.9, 8, 6.5, 0.79], [-50, -493.7, 7, 6, 0.79], [-16.8, -463.3, 7.5, 6, 0.79], [-5.4, -471.8, 7, 5.5, 0.79], [-33.7, -463.3, 6.5, 6, 0.79]] };
 // the Bone Bluff: a sandstone outcrop 30 m high standing in the middle of the 3rd's fairway at the corner, a
 // long-neck's skeleton half out of its east face, toward the tee
 export const BLUFF = { c: [-6, -673], rx: 22, rz: 15, rot: 0.03, h: 30, seed: 61 };
@@ -166,7 +170,7 @@ const pondE = (P, X, Z) => seDist({ x: P.c[0], z: P.c[1], rx: P.rx, rz: P.rz, ro
 // the creek's water falls evenly from the cascade's foot to the hollow pond; the back channel's follows the floor
 // down from the river into the trough, falling only
 const CRK = (() => { const L = lengthOf(CREEK.pts); return { L, lv: s => lerp(CREEK.from, CREEK.to, clamp(s / L, 0, 1)) }; })();
-const BCK = (() => { const L = lengthOf(BACKCH.pts), out = []; let lo = Infinity; for (let s = 0; s <= L + 2; s += 2) { const [x, z] = at(BACKCH.pts, Math.min(s, L)); lo = Math.min(lo, floorAt(x, z) - 0.5); out.push(lo); }
+const BCK = BACKCH.level != null ? { L: lengthOf(BACKCH.pts), end: BACKCH.level, lv: () => BACKCH.level } : (() => { const L = lengthOf(BACKCH.pts), out = []; let lo = Infinity; for (let s = 0; s <= L + 2; s += 2) { const [x, z] = at(BACKCH.pts, Math.min(s, L)); lo = Math.min(lo, floorAt(x, z) - 0.5); out.push(lo); }
   return { L, end: lo, lv: s => out[Math.min(out.length - 1, Math.max(0, Math.round(s / 2)))] }; })();
 const bluffE = (X, Z) => seDist({ x: BLUFF.c[0], z: BLUFF.c[1], rx: BLUFF.rx, rz: BLUFF.rz, rot: BLUFF.rot, p: 2.6 }, X, Z) + 0.16 * noise2(X / 24, Z / 24, BLUFF.seed) + 0.05 * noise2(X / 7, Z / 7, BLUFF.seed + 1);
 

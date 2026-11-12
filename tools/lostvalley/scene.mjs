@@ -30,6 +30,18 @@ const PROF = HOLES.map((h, k) => {
   const st = 2, n = Math.ceil(h.len / st) + 1, y = [];
   for (let i = 0; i < n; i++) y.push(V(...WOR[k](...at(h.line, Math.min(i * st, h.len))), true));
   for (const [a, b] of h.ramps || []) { const ia = Math.round(a / st), ib = Math.min(n - 1, Math.round(b / st)), ya = y[ia], yb = y[ib]; for (let i = ia; i <= ib; i++) y[i] = lerp(ya, yb, smooth((i - ia) / (ib - ia))); }
+  // a designed profile: `prof` knots [[s, y], ...] from the tee (s 0, y 0 = the tee's height) to the green replace
+  // the valley under the line, through a monotone cubic (level where the knots level off or turn, no overshoot), so
+  // terraces, steps and falls are drawn
+  if (h.prof) {
+    const K = h.prof, m = K.length, d = K.slice(0, -1).map(([sa, ya], j) => (K[j + 1][1] - ya) / (K[j + 1][0] - sa));
+    const t = K.map((_, j) => j === 0 ? d[0] : j === m - 1 ? d[m - 2] : d[j - 1] * d[j] <= 0 ? 0 : 2 / (1 / d[j - 1] + 1 / d[j]));
+    t[0] = t[m - 1] = 0;
+    const y0 = y[0];
+    for (let i = 0; i < n; i++) { const s = i * st; let j = 0; while (j < m - 2 && s > K[j + 1][0]) j++;
+      const [sa, ya] = K[j], [sb, yb] = K[j + 1], hh = sb - sa, u = clamp((s - sa) / hh, 0, 1), u2 = u * u, u3 = u2 * u;
+      y[i] = y0 + (2 * u3 - 3 * u2 + 1) * ya + (u3 - 2 * u2 + u) * hh * t[j] + (-2 * u3 + 3 * u2) * yb + (u3 - u2) * hh * t[j + 1]; }
+  }
   const sm = y.map((_, i) => { let s = 0, c = 0; for (let j = -3; j <= 3; j++) { const q = y[clamp(i + j, 0, n - 1)]; s += q; c++; } return s / c; });
   return { st, y: sm, at: s => { const f = clamp(s / st, 0, n - 1), i = Math.floor(f), t = f - i; return lerp(sm[i], sm[Math.min(n - 1, i + 1)], t); } };
 });
@@ -77,7 +89,7 @@ export function buildHole(h) {
     if (b.strip) { const fd = makeFairway(h.line, [{ e: b.strip, wob: b.wob ?? 3, seed: 90 + i }]), sx = b.strip.map(([s, L, R]) => at(h.line, s, (R - L) / 2));
       return { strip: true, kind: b.waste ? 'waste' : 'sand', depth: b.waste ? 0.35 : 0.9, edgeM: fd, job: b.job, x: sx[0][0], z: sx[0][1], box: [Math.min(...sx.map(p => p[0])) - 70, Math.min(...sx.map(p => p[1])) - 70, Math.max(...sx.map(p => p[0])) + 70, Math.max(...sx.map(p => p[1])) + 70] }; }
     const side = Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45;
-    return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, kind: 'sand', side, job: b.job, pot: !!b.pot, depth: b.pot ? 1.2 : side ? 0.8 : 0.9 }; });
+    return { x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, kind: b.waste ? 'waste' : 'sand', side, job: b.job, pot: !!b.pot, depth: b.waste ? 0.35 : b.pot ? 1.2 : side ? 0.8 : 0.9 }; });
   const bunkerE = (b, x, z) => seDist(b, x, z) + 0.13 * noise2(x / 4, z / 4, b.seed);
   for (const b of bunkers) {   // a greenside bunker sits at least 2.5 m outside the green's edge
     if (!b.side || b.strip || b.ring) continue;
@@ -105,6 +117,13 @@ export function buildHole(h) {
     const gap = smooth((off - S.gap[0]) / 8) * (1 - smooth((off - S.gap[1]) / 8)), f = lerp(S.face, 34, gap);
     return S.h * (smooth((s - S.s) / f + 0.5) - clamp((s - S.from) / (S.to - S.from), 0, 1));
   };
+  // across the line: `cross` [[s0, s1, h, w]] raises the sides (h > 0: banked both ways, a half-pipe) or lowers them
+  // (h < 0: crowned, a hog's back), full height w metres off the line; `table` { s0, s1, L, R, h, face } lifts a
+  // level top h metres between s0..s1 along the line and L..R across it (L < 0 left), its banks `face` metres wide
+  const crossAt = (s, off) => { let g = 0; for (const [a, b, hh, w] of h.cross || []) g += hh * smooth(Math.abs(off) / w) * span(s, a, b); return g; };
+  const tableAt = (s, off) => { const T = h.table; if (!T) return 0; const e = v => smooth(v / T.face + 0.5);
+    return T.h * e(s - T.s0) * (1 - e(s - T.s1)) * e(off - T.L) * (1 - e(off - T.R)); };
+  const lineExtra = (s, off) => stepAt(s, off) + crossAt(s, off) + tableAt(s, off);
   const teePads = Object.entries(h.teePts).map(([key, p]) => ({ k: key, x: p[0], z: p[1] }));
   const teeHead = headingAt(h.line, 1), tc = Math.cos(teeHead), ts = Math.sin(teeHead);
   const onPad = (t, x, z) => { const [u, v] = [(x - t.x) * tc + (z - t.z) * ts, (x - t.x) * ts - (z - t.z) * tc]; return Math.abs(u) < 6 && Math.abs(v) < 5; };
@@ -135,7 +154,7 @@ export function buildHole(h) {
   // where the valley is within a few metres of it)
   function baseAbs(x, z) {
     const pr = along(x, z), kk = smooth((Math.abs(pr.off) - (h.flat ?? 30)) / (h.fade ?? 36));
-    const line = PR.at(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -90, 90) + stepAt(pr.s, pr.off);
+    const line = PR.at(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -90, 90) + lineExtra(pr.s, pr.off);
     const [X, Z] = W(x, z);
     if (kk >= 1) return V(X, Z);
     const v = V(X, Z, true), gap = Math.abs(v - line), keep = h.hold ? 0 : smooth((gap - 4) / 6) * smooth((Math.abs(pr.off) - 14) / 10);
@@ -158,7 +177,7 @@ export function buildHole(h) {
     return y;
   }
   // the green's own surface is levelled to the pin's height before tilts (the collar blends it back over 9 m)
-  const pinBase = (() => { const pr = along(...h.pin); return PR.at(pr.s) + stepAt(pr.s, 0) - h.base + shapesAt(...W(...h.pin)); })();
+  const pinBase = (() => { const pr = along(...h.pin); return PR.at(pr.s) + lineExtra(pr.s, 0) - h.base + shapesAt(...W(...h.pin)); })();
   const level = (x, z, y) => { const go = gm(x, z); if (go > 9) return y; const raw = baseAbs(x, z) - h.base + shapesAt(...W(x, z)); return y + (pinBase - raw) * (1 - smooth((go + 1) / 10)); };
   for (const t of teePads) t.y = level(t.x, t.z, base(t.x, t.z)) + 0.4;
 

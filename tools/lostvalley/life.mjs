@@ -16,6 +16,10 @@ export const CAMP = [
   // on stilts with a telescope and the expedition's flag
   { kind: 'hut', at: [808, -738], w: 4.5, l: 5, h: 2.4, stilt: 4.5, rot: -0.87, label: 'the lookout' },
   { kind: 'flag', at: [812, -742], h: 12 },
+  // the 8th's table top (Rhys's pick, 12 November): the expedition's survey pole on the lip, 8 m left of the line
+  // and 189 m from the Titan tee, banded red and white with the camp's pennant, so the drive up to the top isn't
+  // blind (scenery only: the ball passes through it)
+  { kind: 'flag', at: [668.8, -1023.6], h: 9, survey: true, label: 'the survey pole' },
 ];
 
 // the falls: the Great Falls (behind the 9th green) and Nest Falls (behind the 6th green) have their own data in

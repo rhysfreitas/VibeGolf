@@ -37,13 +37,13 @@ test('nine holes, par 37 (4 5 4 3 5 4 3 4 5), a valley theme with four tee sets'
   assert.equal(COURSE.theme, 'valley');
   assert.deepEqual(COURSE.teeSets.map(s => s.id), ['titan', 'rex', 'raptor', 'compy']);
   for (const h of HOLES) for (const s of COURSE.teeSets) assert.ok(h.tees[s.id] && h.yards[s.id] > 50, `${h.name} ${s.id}`);
-  assert.equal(HOLES.reduce((a, h) => a + h.yards.titan, 0), 3395);
+  assert.equal(HOLES.reduce((a, h) => a + h.yards.titan, 0), 3455);
 });
 
 test('the tips tee (Brachio) is in the data and switched off', () => {
   assert.ok(COURSE.tipsSet && COURSE.tipsSet.id === 'brachio' && COURSE.tipsSet.minDrive >= 280);
   assert.ok(!COURSE.teeSets.some(s => s.id === COURSE.tipsSet.id), 'not offered in the game');
-  assert.equal(HOLES.reduce((a, h) => a + h.tips.yards, 0), 3670);
+  assert.equal(HOLES.reduce((a, h) => a + h.tips.yards, 0), 3690);
   HOLES.forEach((h, i) => {
     assert.ok(h.tips && h.tips.tee.length === 2 && h.tips.yards > h.yards[BACK], `${h.name} has a tips spot behind the back tee`);
     assert.ok(!(COURSE.tipsSet.id in h.tees) && !(COURSE.tipsSet.id in h.yards), `${h.name}: tips kept out of tees and yards`);
@@ -115,7 +115,10 @@ test('water and tar play as water: the tar round the 4th, the swamp\'s pools on 
   // the pool is level
   const F = HOLES[pp].field, ys = [];
   for (let z = F.z0; z < F.z0 + F.nz * 2; z += 6) for (let x = F.x0; x < F.x0 + F.nx * 2; x += 6) if (Math.hypot(x - HOLES[pp].pin[0], z - HOLES[pp].pin[1]) < 70 && T[pp].surfaceAt(x, z) === 'water') ys.push(T[pp].groundAt(x, z));
-  ys.sort((a, b) => a - b); assert.ok(ys.length > 20 && ys[Math.floor(ys.length * 0.9)] - ys[Math.floor(ys.length * 0.1)] < 1, 'the pool is level');
+  // the pool is level: most of the water round the shelf stands within 0.3 m of one height (the river below the sill,
+  // also within 70 m since the shelf grew, is lower)
+  ys.sort((a, b) => a - b); const mid = ys[Math.floor(ys.length / 2)];
+  assert.ok(ys.length > 20 && ys.filter(y => Math.abs(y - mid) < 0.3).length > ys.length * 0.75, 'the pool is level');
 });
 
 test('the Bone Bluff stands 25 m or more in the 3rd\'s fairway at the corner, its top rock, both lanes round it fairway', () => {
@@ -168,4 +171,58 @@ test('a pitch at the 9th\'s shelf from the neck lay-up holds the green', () => {
   for (let sp = 40; sp <= 90; sp += 2) { const e = shoot(i, [neck.x, neck.z], h.pin, { Speed: sp, VLA: 30, TotalSpin: 9000 }).at(-1), d = Math.hypot(e.x - h.pin[0], e.z - h.pin[1]); if (!best || d < best.d) best = { d, e }; }
   assert.ok(best.d < 12, `the best pitch finishes ${best.d.toFixed(1)} m from the pin`);
   assert.notEqual(T[i].surfaceAt(best.e.x, best.e.z), 'water');
+});
+
+// ---- the height forms and the dials (Rhys's picks, 12 November 2026)
+const along = (h, s, off = 0) => at(h.line, s, off);
+const fieldFace = (h, t, s0, s1, step = 2) => { const out = []; for (let s = s0; s <= s1; s += step) out.push(t.groundAt(...along(h, s))); return out; };
+
+test('the 1st bends 70° round the giant, which stands at the inside of the corner', () => {
+  const i = H('Cycad Grove'), h = HOLES[i], [a, b, c] = h.line;
+  const turn = Math.abs(Math.atan2(c[0] - b[0], -(c[1] - b[1])) - Math.atan2(b[0] - a[0], -(b[1] - a[1]))) * 180 / Math.PI;
+  assert.ok(Math.abs(turn - 70) < 2, `bend ${turn.toFixed(0)}°`);
+  const giant = T[i].trees.find(t => t.type === 'giant');
+  assert.ok(giant && Math.hypot(giant.x - b[0], giant.z - b[1]) < 45, 'the giant at the corner');
+});
+
+test('the 2nd: 610 yd, the burn crosses its line three times, between level terraces', () => {
+  const i = H('The Floodplain'), h = HOLES[i], t = T[i], L = lenOf(h.line);
+  assert.equal(h.yards[BACK], 610);
+  let crossings = 0, wet = false;
+  for (let s = 0; s < L; s += 1) { const w = t.surfaceAt(...along(h, s)) === 'water'; if (w && !wet) crossings++; wet = w; }
+  assert.equal(crossings, 3, 'the burn crosses three times');
+  // the upper terrace holds the drive: level but for the hog's back's crown (1.4 m) from 200 to 320 m, then 4 m down
+  const up = fieldFace(h, t, 200, 320); assert.ok(Math.max(...up) - Math.min(...up) < 2.2, `the upper terrace: ${(Math.max(...up) - Math.min(...up)).toFixed(1)} m`);
+  const y = s => t.groundAt(...along(h, s)); assert.ok(y(322) - y(352) > 3.5, 'the bank down at the bend');
+});
+
+test('the 3rd: nine dig pits round the bluff and down the left lane', () => {
+  const i = H('The Bone Bed'), h = HOLES[i];
+  const far = h.bunkers.filter(b => Math.hypot(b.x - h.pin[0], b.z - h.pin[1]) > 60);
+  assert.ok(far.length >= 9, `${far.length} bunkers out in the fairway`);
+});
+
+test('the 4th is a postage stamp: about 320 m², 115 yd, the tar close in front, right and behind, open on the left', () => {
+  const i = H('The Tar Pit'), h = HOLES[i], t = T[i], [px, pz] = h.pin, [tx, tz] = h.tees[BACK];
+  assert.equal(h.yards[BACK], 115);
+  let n = 0; for (let dx = -25; dx <= 25; dx += 1) for (let dz = -25; dz <= 25; dz += 1) if (t.surfaceAt(px + dx, pz + dz) === 'green') n++;
+  assert.ok(n > 260 && n < 380, `green ${n} m²`);
+  const fx = (px - tx), fz = (pz - tz), l = Math.hypot(fx, fz), ux = fx / l, uz = fz / l, rx = -uz, rz = ux;   // forward, right
+  const tarNear = (a, r) => { for (let d = 10; d <= 22; d += 1) if (t.surfaceAt(px + (ux * Math.cos(a) + rx * Math.sin(a)) * d, pz + (uz * Math.cos(a) + rz * Math.sin(a)) * d) === 'water') return true; return false; };
+  assert.ok(tarNear(Math.PI), 'tar in front'); assert.ok(tarNear(Math.PI / 2), 'tar right'); assert.ok(tarNear(0), 'tar behind');
+  assert.ok(!tarNear(-Math.PI / 2), 'the left is open');
+});
+
+test('the 8th: a table top, a 5 m face inside 25 m under a level top, the survey pole on its lip', () => {
+  const i = H('The Strangler'), h = HOLES[i], t = T[i];
+  const y = s => t.groundAt(...along(h, s));
+  assert.ok(y(188) - y(163) >= 5, `face ${(y(188) - y(163)).toFixed(1)} m`);
+  const top = fieldFace(h, t, 192, 252); assert.ok(Math.max(...top) - Math.min(...top) <= 1.5, 'the top is level');
+  assert.ok(COURSE.valley.camp.some(c => c.survey && Math.hypot(...(([x, z]) => [x - 668.8, z + 1023.6])(c.at)) < 1), 'the survey pole');
+});
+
+test('the 9th\'s green fills the shelf: over 1,200 m², past anything on a real course', () => {
+  const i = H('The Plunge Pool'), h = HOLES[i], t = T[i], [px, pz] = h.pin;
+  let n = 0; for (let dx = -50; dx <= 50; dx += 1) for (let dz = -50; dz <= 50; dz += 1) if (t.surfaceAt(px + dx, pz + dz) === 'green') n++;
+  assert.ok(n > 1200, `green ${n} m²`);
 });
