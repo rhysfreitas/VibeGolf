@@ -149,30 +149,50 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
 - **Rhythm, measured, all five playable:** holes face all four quarters of the compass on every course; par 3s
   and par 5s are never back to back.
 
-### The Aerie
+### The Aerie (re-measured 11 November, 12 rounds gate, 24 decisions)
 
-- **Gate:** passes. Worst hole +1.2 (the 1st, back tees). No hole fails to finish.
+- **Gate:** passes. Worst hole +0.3 (Lantern and the Cape, back tees). No hole fails to finish.
 - **Forced carries (Must):** four holes break the 60% rule from the back tees: the 3rd and 5th 166 yd, the 9th
   179 yd, the 8th 199 yd; the 8th also from the second and third tee sets (162 and 118 yd) and the 9th from the
-  second (133 yd). It is a course of islands, so some carry is the point, but the 8th asks 118 yd of the third
-  tee set's 185 yd drive. Worth a forward landing island or a nearer tee on 8 and 9.
-- **View:** one blind tee shot (the 3rd). Fine.
-- **Decisions:** one marked by name (the Cape's cove, 5th), and it measures as a real choice: 39 yd less, a
-  quarter of a stroke better for the long hitter, no better for the short one. The 3rd (Long Way Round) is a
-  second by design. Two is inside the range; the 4th (320 yd) could carry a bold target to make three.
+  second (133 yd). Kept, on purpose: carries between islands are what the course is, and the clouds give a drop,
+  not a lost ball. On the 8th (Long Roll), a player 80% as long as each set's drive carries about 185, 150 and
+  120 yd in the game's physics, so each has the next tee forward to carry from (the Swift-length player is close
+  even from the Swift tee: 120 against 118).
+- **View:** one blind tee shot (the 3rd, over the crest at the balloon). Fine.
+- **Decisions:** two marked `bold: true`. The Cape's cove (5th, bite off a carry): 39 yd less, pays the long
+  hitter 0.25 and the short one 0.29 with no penalty, so it is close to simply the line. The Ascent (9th, go or
+  lay up, added 11 November on the fairway short of the green): a second-shot choice 246 yd from the drive, 70 yd
+  less than the lay-up; pays the long hitter 0.5 (reaches in two) and the short one 0.37 (it goes as far as it
+  reaches). The 3rd's "Round the right" is unmarked: it costs both players over a stroke with 0.6–0.8 penalties
+  (the tool can't bend a ball round the pinnacle). The 4th is not a decision: every bold spot tried on its top
+  terrace costs the long hitter 0.75–1.7 (its card: "no hero carry, just a climb"). Marking 3, 4 and 5 would be
+  three in a row.
+- **Tips:** none yet. No back tee has ground behind it (the tee islands end 12–26 m behind the Eagle tees); a
+  small tee island behind each (the Condor set, 3,692 yd) is proposed and waits on Rhys.
 - **Rhythm:** five straight holes (three at most); par 4s 320–457 yd, a good spread; par 3s 126 and 171.
 - **Classics:** two (Cape, punchbowl). Short of four or five.
 
-### Red Mesa
+### Red Mesa (re-measured 11 November, 12 rounds gate, 24 decisions)
 
-- **Gate:** one hole flagged. The 1st (Rimrock) didn't finish on one of eight from the back tees (the known
-  sand-to-canyon trap).
-- **View:** three blind tee shots, one over the limit: the 2nd (the drop off the lip hides the landing area by
-  4.7 m), the 6th and the 8th. The 2nd is the one to look at in a tee render.
-- **Decisions:** four by name. Rimrock's corner pays the short hitter 0.75 and the long hitter nothing. Needle's
-  Eye through the arch leaves the ball 22 yd *further* from the pin and costs the long hitter half a stroke: it
-  needs the arch line to gain something. Hoodoos' "Go for it" costs both players. Switchback's is a second shot.
-  By the tool, one of three tee-shot choices is real.
+- **Gate:** passes. The 1st (Rimrock) trap was the review tool, not the hole: a bunker shot against the lip by
+  the raised green made the shot solver flip its aim 180° and hit a driver backwards into the canyon (fixed in
+  `src/minigames/aim.js`). Rimrock +0.6 → +0.0, finishes every round. Worst hole now Kestrel +0.8 from the back
+  tees, because the tool (and the game's auto-aim) reads the 242 m to the pin on the flat, beyond 90% of reach,
+  and lays up to "Bail out short"; the 70 m drop isn't counted.
+- **View:** three blind tee shots by the check. By eye: the 2nd is blind by design (the 34 m drop); the 6th reads
+  as in sight (the green shows over the tee mesa's lip); the 8th (Dry Wash) is the one to fix: a 2 m raised
+  Canyon tee brings it from 1.8 m to 0.4 m and waits on Rhys.
+- **Decisions:** three marked `bold: true`. Rimrock's corner: 57 yd less, no difference for either player
+  (3.96 / 4.00 long, 3.92 / 4.00 short). Switchback's "Over the waste" (second shot, 190 yd from the drive, 86 yd
+  less than the lay-up): pays the long hitter 0.13, costs the short one 0.58: real. Hoodoos' "Go for it": pays the
+  long hitter 0.13, costs the short one 0.54; the table rock's cap knocks down five long drives in twelve, and
+  moving it 8 m left makes it pay half a stroke (proposed, waits on Rhys). Needle's Eye is unmarked: both tee
+  targets pass under the arch, and "Through the arch" is just the left side, 22 yd further; the right side (22 yd
+  closer, opens the back tier) pays the long hitter 0.12. Rhys picks: the right side as the bold line, or a
+  one-line hole.
+- **Tips:** the Butte set, switched off, 3,680 yd, all on existing mesa ground: 419, 440, 287, 400, 565, 190,
+  350, 480, 545 (24, 30, 25, 30, 30, 15, 30, 30, 30 yd behind the back tees). The 2nd's and 6th's are blind like
+  their back tees.
 - **Rhythm:** four straight holes; par 4s 320–450; par 3s 175 and 265 (far apart on the card, close plays-like
   because of the 70 m drop, as the shape review found).
 - **Classics:** five. The model for the rule.
