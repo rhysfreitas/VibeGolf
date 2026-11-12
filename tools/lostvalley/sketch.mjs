@@ -589,7 +589,7 @@ export function viewsFor(hi) {
   if (h.strangler) labelSet.push(L3(h.strangler.trunk, 'the Strangler', -80, 40));
   if (h.spire) labelSet.push(L3(h.spire.at, 'the spire', -40, h.spire.h - 26));
   for (const [wp, t, up] of [[[TAR.c[0], TAR.c[1]], 'the tar pit', 1], [POOL.c, 'the plunge pool', 1], [[BLUFF.c[0], BLUFF.c[1]], 'the Bone Bluff', 34], [[690, -756], 'the creek', 2], [BACKCH.pond.c, 'the oxbow', 2], [[(BRIDGE.a[0] + BRIDGE.b[0]) / 2, (BRIDGE.a[1] + BRIDGE.b[1]) / 2], 'the rope bridge', 3],
-    [[360, -580], 'the swamp', 1], [[455, -1200], 'the river', 1], [[520, -940], 'the river', 1], [[-120, -1180], 'the camp', 4], [[952, -694], 'Nest Falls', 30], [[520, -1630], 'the Great Falls', 80]]) {
+    [[360, -580], 'the swamp', 1], [[455, -1200], 'the river', 1], [[520, -940], 'the river', 1], [[-120, -1180], 'the camp', 4], [[952, -694], 'Nest Falls', 30], [[808, -738], 'the lookout', 10], [[520, -1630], 'the Great Falls', 80]]) {
     const p = here(...wp), pr = project(h.line, ...p); if (pr.d < 300 && pr.s > -80 && pr.s < h.len + 120) labelSet.push(L3(p, t, -40, up));
   }
   // the herd and the hunter, labelled wherever they show

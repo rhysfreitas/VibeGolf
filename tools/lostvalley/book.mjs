@@ -7,10 +7,11 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { viewsFor } from './sketch.mjs';
+import { COURSE as CRS } from './holes.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out');
 const D = JSON.parse(fs.readFileSync(`${OUT}/grid/holes.json`)), TEES = D.teeSets, YD = 0.9144;
-const ROUND = process.env.ROUND || '1', DATE = process.env.DATE || '10 November 2026', BACK = D.back;
+const ROUND = process.env.ROUND || '1', DATE = process.env.DATE || '11 November 2026', BACK = D.back;
 const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : null;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const img = f => `file://${OUT}/${f}`;
@@ -50,21 +51,21 @@ p { font-size: 8.6pt; line-height: 1.34; margin: 0 0 4pt; }
 .head .facts { font-size: 8.6pt; color: #333; display: flex; gap: 12pt; margin-top: 2pt; }
 .head .facts b { font-weight: 600; }
 .views { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.1in; margin-top: 0.08in; }
-.view img { width: 100%; border: 0.6pt solid #333; display: block; }
+.view img { width: 100%; height: 1.36in; object-fit: cover; object-position: center 60%; border: 0.6pt solid #333; display: block; }
 .view .cap { font-size: 7.2pt; margin-top: 1.5pt; color: #333; }
 .view .cap b { font-weight: 600; }
-.body { display: grid; grid-template-columns: 3.5in 1fr; gap: 0.2in; margin-top: 0.08in; height: 5.0in; }
-.plan img { width: 3.5in; height: 4.91in; border: 0.6pt solid #888; display: block; }
+.body { display: grid; grid-template-columns: 3.3in 1fr; gap: 0.2in; margin-top: 0.06in; height: 4.62in; }
+.plan img { width: 3.3in; height: 4.55in; object-fit: contain; object-position: center top; border: 0.6pt solid #888; display: block; }
 .side { display: flex; flex-direction: column; min-height: 0; }
-.side p { font-size: 7.7pt; line-height: 1.26; margin-bottom: 2.5pt; }
+.side p { font-size: 7.2pt; line-height: 1.22; margin-bottom: 2pt; }
 .side p.small { font-size: 7pt; }
-.side p.kv { font-size: 7.5pt; line-height: 1.24; margin: 0 0 2pt; }
+.side p.kv { font-size: 7pt; line-height: 1.2; margin: 0 0 1.5pt; }
 .kv b { display: inline-block; min-width: 0.5in; font-weight: 600; }
-.side img.prof { width: 100%; max-height: 1.3in; object-fit: contain; object-position: left top; border: 0.6pt solid #ddd; margin-top: 3pt; display: block; }
-.notes { border: 0.6pt solid #333; padding: 3pt 8pt; margin-top: 5pt; flex: 1; min-height: 0.45in; overflow: hidden; }
+.side img.prof { width: 100%; max-height: 1.05in; object-fit: contain; object-position: left top; border: 0.6pt solid #ddd; margin-top: 3pt; display: block; }
+.notes { border: 0.6pt solid #333; padding: 3pt 8pt; margin-top: 5pt; flex: 1; min-height: 0.36in; overflow: hidden; }
 .gn { display: flex; gap: 6pt; flex: none; margin-top: 4pt; }
-.gn .gimg { width: 1.3in; flex: none; }
-.gn .gimg img { width: 1.3in; height: 1.3in; border: 0.6pt solid #ddd; display: block; }
+.gn .gimg { width: 1.15in; flex: none; }
+.gn .gimg img { width: 1.15in; height: 1.15in; border: 0.6pt solid #ddd; display: block; }
 .gn .gimg .cap { font-size: 6.3pt; color: #555; line-height: 1.2; margin-top: 1.5pt; }
 .gn img.prof { flex: 1; min-width: 0; width: auto; margin-top: 0; }
 .notes .t { font-size: 7.4pt; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
@@ -75,6 +76,14 @@ table.sc td.l, table.sc th.l { text-align: left; }
 table.sc td.l b { white-space: nowrap; }
 .legend { display: flex; flex-wrap: wrap; gap: 4pt 12pt; font-size: 7.4pt; margin-top: 4pt; }
 .tips { color: #777; font-style: italic; }
+table.cc { border-collapse: collapse; width: 100%; margin-top: 8pt; }
+table.cc th { text-align: left; vertical-align: top; width: 1.35in; font-size: 8.4pt; font-weight: 600; padding: 5pt 8pt 5pt 0; border-top: 0.6pt solid #bbb; text-transform: uppercase; letter-spacing: 0.04em; color: #444; }
+table.cc td { font-size: 8.8pt; line-height: 1.36; padding: 5pt 0; border-top: 0.6pt solid #bbb; }
+.hc { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1pt 12pt; margin-top: 4pt; padding: 3pt 0; border-top: 0.8pt solid #444; border-bottom: 0.6pt solid #bbb; }
+.hc p { font-size: 6.9pt; line-height: 1.22; margin: 0; }
+.hc p.st { grid-column: 1 / -1; font-size: 7.6pt; font-style: italic; }
+.hc b { font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 6.3pt; color: #444; margin-right: 3pt; font-style: normal; }
+.hc p.dec { color: #8a2d1c; }
 .legend span i { display: inline-block; width: 12pt; height: 8pt; border: 0.5pt solid #777; margin-right: 3pt; vertical-align: -1pt; }
 `;
 const SW = { fairway: '#9ecc80', rough: '#c2d699', green: '#99db7a', fringe: '#8cc773', meadow: '#d6e0b3', jungle: '#618f61', sand: '#f2e8c7', waste: '#dccfae', bar: '#e6dbbd', water: '#9ec7e6', tar: '#242121', cliff: '#a8947f', mud: '#9e9475', rubble: '#b3a899' };
@@ -90,8 +99,14 @@ pages.push(`<div class="page">
   <div class="foot"><span>The Lost Valley · VibeGolf</span><span>The holes in the valley, north up. Dashed: the playing lines. Contours every 5 m on the floor. Blue: water. Brown dots: the herds; red: the hunter.</span></div>
 </div>`);
 
-if (NEW) pages.push(`<div class="page"><h2>New in round ${ROUND}</h2><div style="columns:2; column-gap:0.3in; margin-top:6pt">${NEW.map(t => `<p>${t}</p>`).join('')}</div>
+const C = CRS.card || {};
+const cardRows = [['Hook', C.hook], ['Skeleton', C.skeleton], ['Classics', C.classics], ['Decisions', C.decisions], ['Landmarks', C.landmarks], ['Rhythm', C.rhythm], ['Fairway forms', C.forms], ['New and borrowed', C.newBorrowed], ['Tips tee', `The ${CRS.tipsSet ? CRS.tipsSet.name : 'tips'} tees, a fifth set at tour length (${tips.toLocaleString()} yd), in the data on every hole and switched off: nothing shows in the game until it is turned on.`]].filter(r => r[1]);
+pages.push(`<div class="page"><h2>The course card</h2>
+  <table class="cc">${cardRows.map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join('')}</table>
+  <div class="notes" style="margin-top:8pt"><div class="t">Notes</div>${lines(3)}</div>
   <div class="foot"><span>The Lost Valley · plan book round ${ROUND}</span><span>2</span></div></div>`);
+if (NEW) pages.push(`<div class="page"><h2>New in round ${ROUND}</h2><div style="columns:2; column-gap:0.3in; margin-top:6pt">${NEW.map(t => `<p>${t}</p>`).join('')}</div>
+  <div class="foot"><span>The Lost Valley · plan book round ${ROUND}</span><span>3</span></div></div>`);
 
 const side = g => g.angle > 8 ? `${g.angle}° R` : g.angle < -8 ? `${-g.angle}° L` : 'straight';
 const rows = D.holes.map(h => `<tr><td>${h.n}</td><td class="l"><b>${esc(h.name)}</b></td><td>${h.par}</td>${TEES.map(t => `<td>${h.yards[t.id]}</td>`).join('')}<td class="tips">${h.tipsYards}</td><td>${height(h)}</td><td>+${h.rise} / −${h.fall}</td><td class="l">${shape(h)}</td>
@@ -101,32 +116,34 @@ pages.push(`<div class="page">
   <h2>The course at a glance</h2>
       <table class="sc" style="margin-top:4pt"><tr><th>#</th><th class="l">Hole</th><th>Par</th>${TEES.map(t => `<th><span class="dot" style="background:${t.color}"></span>${t.name}</th>`).join('')}<th class="tips">Tips*</th><th>Tee to green</th><th>Climbs / drops</th><th class="l">Shape</th><th>Green (m), angle</th><th class="l">Landing areas (fairway width)</th></tr>${rows}
       <tr><td></td><td class="l"><b>Total</b></td><td><b>${par}</b></td>${TEES.map(t => `<td><b>${tot(t.id).toLocaleString()}</b></td>`).join('')}<td class="tips"><b>${tips.toLocaleString()}</b></td><td></td><td></td><td></td><td></td><td></td></tr></table>
-  <p class="small" style="margin-top:3pt">* Tips: a fifth set of tees at tour length, not built yet. Each hole keeps a spot for it (the hollow ring on the plans), 35–40 yd behind the back tee on the par 4s and 5s and 15 yd on the par 3s. Green: depth along the approach × width, and which way its long axis turns from the approach.</p>
+  <p class="small" style="margin-top:3pt">* Tips: the Brachio tees, a fifth set at tour length, in the data and switched off (nothing shows in the game until it is turned on): 30–40 yd behind the back tee on the par 4s and 5s, 10–15 yd on the par 3s, the hollow ring on the plans. Green: depth along the approach × width, and which way its long axis turns from the approach.</p>
   <div class="ov" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.3in">
     <div>
       <h3>The idea</h3>
       <p>A hidden valley where time stopped about 70 million years ago: the classic lost world, after the table mountains (tepuis) of Venezuela and Guyana. Sheer sandstone walls 380–470 m high close it in on every side, jungle on their talus and ledges, falls pouring off them into the mist; other table mountains stand beyond the rim. The floor is a plain of ferns and horsetails with stands of monkey-puzzles, cycads and tree ferns, a braided river, a swamp and a tar pit. Long-necks graze the plain and wade the river, small plant-eaters drink at its edge, pterosaurs wheel along the walls and nest on them, and one hunter watches from the herd's far edge: scenery only, slow, well off the play.</p>
-      <p><b>The round.</b> It starts and ends at the expedition camp on a ledge 30 m up the south wall: canvas tents, a hut on stilts, a cook fire. The 1st drops off the ledge's bluff to the floor; on the round's very first shot a crested pterosaur launches off the spire beside the tee and glides out below you. Holes 2–8 loop round the floor: the cycad grove, the tar pit, the river, the plunge pool under the Great Falls, the Strangler fig, the Bone Bluff, the swamp. The 9th climbs a broad ramp back to the ledge, beside Camp Falls and under the pterosaurs' nests.</p>
+      <p><b>The round.</b> It starts at the expedition camp on a knoll on the valley floor: canvas tents, a hut on stilts, a cook fire. Holes 1–5 loop the floor: the cycad grove, the river's floodplain, the Bone Bluff, the tar pit, the swamp. Halfway round, the 6th climbs a broad ramp to a ledge 27 m up the east wall, under the pterosaurs' nests and beside Nest Falls; the 7th drops off its bluff, the first look at the whole valley from above, and on its first tee shot a crested pterosaur launches off the spire beside the tee. The 8th climbs the Strangler's knoll, and the 9th runs down the east bank to a green on a shelf of rock in the plunge pool under the Great Falls, the landmark the round has walked toward. The walk back to camp crosses the gorge on the rope bridge.</p>
       <p><b>Opens on:</b> golden afternoon after rain: low warm sun from the west-south-west, steam off the jungle, mist in the falls, wet leaves glinting; calm.</p>
       <h3>Height, hole by hole</h3>
-      <p>Off the bluff, 27 m down (1), 9 m down to the grove's hollow (2), up 6 past the tar pit (3), down 9 to the shallows and up 14 onto the gravel terrace (4), 9 m down off the sill to the pool (5), up 11 onto the Strangler's knoll (6), over a blind crest and 20 m down to the river's bend (7), gently down through the swamp (8), and up 30 on the ramp to the ledge (9). The walks climb to the sill before the 5th and cross the rope bridge to the 6th.</p>
+      <p>Off the camp's knoll, 10 m down to the grove's hollow (1), gently down the floodplain to a raised gravel terrace (2), over a crest and 9 m down into the bone bed's hollow (3), up 4 past the tar pit (4), gently down along the swamp (5), up 31 on the ramp to the ledge (6), off the bluff 26 m down (7), up 13 onto the Strangler's knoll (8), and 12 m down the east bank to the pool (9). The 2nd and 5th are nearly level: in this round they still want more height.</p>
     </div>
     <div>
       <h3>Reading the plans</h3>
       <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', fringe: 'Short grass', rough: 'Rough', meadow: 'Fern meadow (native)', jungle: 'Jungle (the walls\' talus)', sand: 'Bunker (river sand)', waste: 'Waste (sand and gravel, a shallow bunker)', bar: 'Sandbar in the river (plays as a bunker)', water: 'Water: river, creek, pools, swamp (a stroke and a drop)', tar: 'The tar pit (plays as water)', mud: 'Swamp hummocks (mud)', cliff: 'Rock: walls, bluffs, banks', rubble: 'Steep banks, rubble' }).map(([k, v]) => `<span><i style="background:${SW[k]}"></i>${v}</span>`).join('')}</div>
       <p class="small" style="margin-top:6pt">Tee at the bottom. Dots: the four tees; the hollow ring behind them is the tips spot. Blue dots: course-management targets (red: the bold one), with their yardage from the Titan tee. Numbers along the line: yards to the green. Contours every 2 m, labelled every 10 (none up the walls). Stars: cycads and tree ferns; circles: monkey-puzzles, broadleaves and swamp cypresses (a white ring: standing in water). The Strangler: its trunk, its canopy (shaded) and the root arch (the dotted bar).</p>
       <h3>Reading the profiles</h3>
-      <p class="small">The ground along the playing line, coloured by surface, from the back tee. Grey bars: anything solid over the line (the root arch on the 6th). Red: a tour drive (167 mph); dotted red: a high drive; blue: a 150 mph drive. All flown with the game's physics at the valley's 1,320 ft over this ground.</p>
+      <p class="small">The ground along the playing line, coloured by surface, from the back tee. Grey bars: anything solid over the line (the Bone Bluff on the 3rd, the root arch on the 8th). Red: a tour drive (167 mph); dotted red: a high drive; blue: a 150 mph drive. All flown with the game's physics at the valley's 1,320 ft over this ground.</p>
       <h3>Reading the sketches</h3>
-      <p class="small">Plain shapes from the plan data, drawn through a real camera: from the back tee, from the landing area (on a par 3, the forward tee) and from just short of the green, 5 m up (9 m short of the green). The walls are drawn from the same ground out to 2.7 km, the table mountains beyond as silhouettes. The animals are true-shape silhouettes. Drawn light so the book prints; in the game it is a warm, misty afternoon.</p>
+      <p class="small">Plain shapes from the plan data through a real camera, 5 m up (9 m short of the green): from the back tee, the landing area (on a par 3, the forward tee) and short of the green. Walls drawn from the same ground to 2.7 km, the table mountains beyond as silhouettes. Drawn light so the book prints.</p>
       <h3>Decided so far</h3>
-      <p>The Lost Valley. Tees Titan, Rex, Raptor, Compy. Gentle giants and one distant hunter, scenery only, with true shapes and simple detail. The Overlook's pterosaur, once a round, on the very first shot. Golden afternoon after rain. The expedition camp as the only human touch. The rope bridge is the walk from the 5th to the 6th. Room for a tips tee on every hole. Par 3s: ${p3}.</p>
+      <p>Tees Titan, Rex, Raptor, Compy; Brachio tips switched off. Animals as scenery, true shapes. Golden afternoon after rain. Par 37: camp on the floor, the east ledge (climb 6th, drop 7th), the finish under the Great Falls. A lookout by the 7th tee; the rope bridge beside the 9th. Decisions on 3, 5, 8, 9: proposed. Par 3s: ${p3}.</p>
     </div>
   </div>
-  <div class="foot"><span>The Lost Valley · plan book round ${ROUND}</span><span>${NEW ? 3 : 2}</span></div>
+  <div class="foot"><span>The Lost Valley · plan book round ${ROUND}</span><span>${NEW ? 4 : 3}</span></div>
 </div>`);
 
-let pg = NEW ? 4 : 3;
+let pg = NEW ? 5 : 4;
+const hcard = h => { const c = h.card || {}, w = h.words || {}; if (!h.card) return '';
+  return `<div class="hc"><p class="st"><b>Story</b>${esc(w.story || '')}</p><p><b>Type</b>${esc(c.type)}; ${esc(c.form)}</p><p><b>Feature</b>${esc(c.feature)}: ${esc(c.job)}</p><p class="${/^None/.test(c.decision) ? '' : 'dec'}"><b>Decision${/^None/.test(c.decision) ? '' : ' (proposed)'}</b>${esc(c.decision)}</p><p><b>Miss map</b>${esc(c.miss)}</p><p><b>Tee view</b>${esc(c.view)}</p><p><b>Ground</b>${esc(c.ground)}</p></div>`; };
 for (const h of D.holes) {
   const w = h.words, dr = h.drives || {};
   const drv = h.par === 3 ? '' : `<p class="small">Drives from the Titan tee down the line: tour ${Math.round(dr.tour.carry / YD)} yd carry${dr.tour.hit ? ', hits ' + dr.tour.hit.what : ''}, 150 mph ${Math.round(dr.mid.carry / YD)}.${h.bold ? ` Along the bold line: ${Object.entries(h.bold.drives).map(([k, v]) => `${k === 'mid' ? '150 mph' : k} ${v.rest === 'water' ? 'in the water' : v.hit ? 'hits ' + v.hit.what : 'finishes on ' + v.rest}`).join(', ')}.` : ''}</p>`;
@@ -136,6 +153,7 @@ for (const h of D.holes) {
   pages.push(`<div class="page">
     <div class="head"><div><div class="small">Hole ${h.n}</div><h2>${esc(h.name)}</h2>
       <div class="facts"><span><b>Par ${h.par}</b></span><span>${shape(h)}</span><span>${height(h)} tee to green (climbs ${h.rise} m, drops ${h.fall} m)</span></div></div>${card(h)}</div>
+    ${hcard(h)}
     <div class="views">${vs.map(v => `<div class="view"><img src="${img('views/h' + h.n + '_' + v.id + '.png')}"><div class="cap">${cap(v)}</div></div>`).join('')}</div>
     <div class="body">
       <div class="plan"><img src="${img('plan' + h.n + '.png')}"></div>

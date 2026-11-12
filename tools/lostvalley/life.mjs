@@ -4,7 +4,7 @@
 import { footR, topY, polar, VALLEY, BAYS, NEST_FALLS, GREAT_FALLS } from './world.mjs';
 
 // the camp: canvas tents, a mess fly, a hut on stilts at the back, the cook fire, crates, the flag; on the knoll
-// behind and left of the 1st tee
+// behind and left of the 1st tee. Last in the list, the lookout on the ledge
 export const CAMP = [
   { kind: 'tent', at: [-118, -1190], w: 4.2, l: 5.2, h: 2.8, rot: 1.8 }, { kind: 'tent', at: [-136, -1172], w: 4.2, l: 5.2, h: 2.8, rot: 1.4 },
   { kind: 'tent', at: [-150, -1202], w: 4.6, l: 6, h: 3, rot: 1.9 }, { kind: 'tent', at: [-104, -1214], w: 4.2, l: 5.2, h: 2.8, rot: 1.65 },
@@ -12,6 +12,10 @@ export const CAMP = [
   { kind: 'hut', at: [-172, -1186], w: 9, l: 12, h: 4, stilt: 3.2, rot: 1.6 },
   { kind: 'fire', at: [-112, -1168] }, { kind: 'crates', at: [-140, -1220] }, { kind: 'crates', at: [-92, -1196] },
   { kind: 'flag', at: [-88, -1172], h: 9 },
+  // the lookout on the east ledge, at the bluff's lip beside the 7th tee (Rhys's pick, round 3): a timber platform
+  // on stilts with a telescope and the expedition's flag
+  { kind: 'hut', at: [808, -738], w: 4.5, l: 5, h: 2.4, stilt: 4.5, rot: -0.87, label: 'the lookout' },
+  { kind: 'flag', at: [812, -742], h: 12 },
 ];
 
 // the falls: the Great Falls (behind the 9th green) and Nest Falls (behind the 6th green) have their own data in

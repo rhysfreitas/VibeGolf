@@ -51,7 +51,9 @@ course against these two rows as well; replace them with the measured rows when 
   as another course on four holes at most (Red Mesa).
   Routing check sent 11 November 2026 (`tools/lostvalley/`): the ledge moved to the east wall with its ramp at the
   south end; Titan 3,395 yd, 4R 5R 4L 3 5L 4↑ 3↓ 4d 5L, forms fan, broken, island, split, funnel, split,
-  scalloped; classics Long (2), Short (4), Eden (7), Leven (8). The measured row replaces this one when Rhys
+  scalloped; classics Long (2), Short (4), Eden (7), Leven (8); tips (Brachio, switched off) 3,670 yd. Rhys's
+  picks: the ledge on the east wall, a lookout on it by the 7th tee, the rope bridge across the gorge beside the
+  9th. Plan book round 3 has the decisions (3, 5, 8, 9) as proposed. The measured row replaces this one when Rhys
   approves the layout.
 - Against each other they share a par on two holes.
 
