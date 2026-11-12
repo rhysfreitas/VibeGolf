@@ -108,6 +108,39 @@ of fairways on different courses measure as alike.
 The two planned courses fix theirs in their re-lay (their briefs say so). The playable five keep theirs until
 each is next touched; The Reclaim and Hollowmere have the most to gain.
 
+## Height forms, counted (`node tools/review/relief.mjs all`, 12 November 2026)
+
+What the ground does on each hole (`docs/COURSE-DESIGN.md` "Elevation and height forms"). 72 holes on eight
+courses (Halcyon Ring from its plan data).
+
+| Form | Holes | |
+|---|---|---|
+| Ramp down, ramp up, level (plain) | 26 of 56 par 4s and 5s | The stock shape |
+| Drop par 3 | 12 of 16 par 3s | One a course from now on |
+| Tee shot off a height (12 m or more) | 10 (five of them 25 m or more) | Hollowmere has four |
+| Big climb (25 m or more) | 5 | Four are finishes or near it |
+| Perched green | 4 | |
+| Uphill par 3 | 4 | |
+| Stepped | 2 | |
+| Hillside bench | 2 | The Reclaim 8, Halcyon Ring 6 |
+| Crest and run | 2 | |
+| Fall-away | 2 | |
+| Table top | 1 | The Reclaim 2 |
+| Dip in front | 1 | |
+| Level par 3 | 1 | |
+| **Valley carry, hog's back, half-pipe, a par 3 across a gulf** | **0** | Never used |
+
+By course, what the check flags:
+
+- The Aerie: one bold hole; both par 3s drops.
+- Red Mesa: both par 3s drops.
+- Hollowmere: four tee shots off a height (1, 4, 6, 9).
+- The Reclaim: four plain par 4s and 5s (1, 4, 6, 7); both par 3s drops.
+- Rimeholm: every landing area leans 1.4–2.8%.
+- Emberfell: no bold hole; five plain (1, 2, 3, 5, 6), two pairs back to back.
+- The Lost Valley: one bold hole (the Nest's climb); five plain (1, 2, 5, 8, 9).
+- Halcyon Ring: two of three par 3s drops (5, 9).
+
 ## Set pieces, counted (from the course notes; approximate)
 
 | Kind | Courses | Count |

@@ -48,7 +48,7 @@ formality: Lost Valley round 1 met every outline and slope rule and still read a
 | **Decision** | The type and the two routes with their numbers (what the bold line gains, what each risks), or "none: one clear line". |
 | **Miss map** | Where the small miss, the medium miss and the big miss finish on each side, and which side is the safe miss at the green. |
 | **Tee view** | What is in front, in the middle and beyond; whether the landing area shows; the marker if it doesn't. |
-| **Ground** | Net height change and its kind (drop off a ledge, terraces, a climb), the fairway's lean and its purpose, the one contour that matters, the green's feature. |
+| **Ground** | **The height form, chosen from `docs/height-forms.png`** (table top, hillside bench, valley carry, stepped, crest and run, hog's back, half-pipe, perched green, dip in front, fall-away; a par 3's: drop, uphill, across a gulf, level) and what it asks of the shot; the net height change; the fairway's lean and its purpose; the green's feature. "Ramp" or "level" needs a reason. |
 
 # Part 2: the nine, as a checklist
 
@@ -73,8 +73,8 @@ The plan-book tools (`tools/<course>/sample.mjs`) carry the same checks for a co
 | 13 | Par 4s from 340 yd or less to 420 or more; par 3s 25 yd or more apart (plays-like), facing different ways | Should | `design.mjs` rhythm, `analyse.mjs` |
 | 14 | Holes face three or more quarters of the compass; bends within two of each other left and right; three straight holes at most | Should | `design.mjs` rhythm |
 | 15 | No two holes in a row with the same par and bend, the same fairway structure, or the same kind of height change | Should | `design.mjs`, the hole cards |
-| 16 | Every hole goes up or down; several 8–15 m, two or three of 25–35 m | Should | `analyse.mjs` |
-| 17 | Most par 4/5 landing areas lean 2–5%; a strong 6–8% sidehill once or twice | Should | `analyse.mjs` |
+| 16 | Height forms: two or three bold holes a nine; no form more than twice or twice running; three plain holes (ramp or level) at most among the par 4s and 5s; two tee shots off a height at most; one drop par 3 a course | Should | `relief.mjs` |
+| 17 | Landing areas don't all lean alike: some near level, most 2–5%, and a hillside bench of 8–12% once or twice | Should | `relief.mjs`, `analyse.mjs` |
 | 18 | Greens fall 1.5–2.5%, six or seven with one feature, three or four pin areas each | Should | `analyse.mjs` |
 | 19 | Greens deeper than wide, angled both ways; three of a style at most | Should | `analyse.mjs` |
 | 20 | Fairway width changes 30% or more along a par 4/5 | Should | `analyse.mjs` |
@@ -217,6 +217,10 @@ from about 19° above level to 31° below. Nothing in the rules allowed for that
   routes and the hazard between them. `design.mjs` checks the angle and the sight line from the back tee.
 - **Two blind tee shots a nine at most**, each on purpose (an Alps, a crest), each with a marker on the line.
   Blind approaches count toward the same two.
+- **A drive up to a table top or a shelf is not blind when its face and its top edge are in the frame** and
+  something on top marks the line (the flag, a tree, a post on the lip). The player can see where the ball has
+  to get to, which is what the rule protects. The surface itself being out of sight is the point of the hole.
+  The second shot from below the face is a blind approach, and counts.
 - **A tee on a lip hides what is below it.** From 3.2 m behind a ball at the edge of a ledge, the ledge itself
   hides the ground in front. Set the pad so the lip is under the ball (a pad stops at a ledge's lip in the
   engine), or bring the landing area further out, and check the tee render.
@@ -425,10 +429,17 @@ hole that already plays hard, away from it.**
   bunker and leaves the harder approach), or a reverse camber leans against the shape the hole asks for (a
   dogleg left that leans right). Vary which way across the nine. A hole that's already hard leans away from
   its trouble (toward safety or into a catch bunker), never toward a penalty.
-- **Now and then, a strong one.** Once or twice a nine, a side slope of 6–8% across the landing area: a
-  sidehill fairway along a hillside, the ball above or below your feet for the second. Keep it under about
-  7% on a level landing area, 4–5% where the fairway also runs downhill (it adds roll), and give the low
-  side a wide rough or a catch bunker so the slope sets the lie rather than the score.
+- **Don't give every hole the same lean.** Measured 12 November 2026: 37 of 49 landing areas leaned under 4%,
+  and on two courses nearly every one sat between 2.4% and 3.0%. Across the par 4s and 5s of a nine: one or two
+  near level, most 2–5%, and the strong ones below. `relief.mjs` flags a course whose leans all sit within three
+  points of each other.
+- **Once or twice a nine, a hillside bench** (the owner, 12 November 2026: "hitting out to a fairway that is
+  significantly sloped sideways and up"): a fairway cut along a slope, leaning **8–12%** across the landing area
+  and climbing along the line, the ball above or below your feet for the second. The old cap of about 7% is
+  lifted for these. What makes one fair: 55 m or more of fairway, since the ball will finish well below where it
+  lands; the low side a wide first cut, a catch bunker or a bank, never a penalty; the high side the better
+  angle in; and only 4–6% where the fairway also runs downhill (it adds roll). A plain strong lean of 6–8%
+  that isn't a bench still has its place.
 - **Lean the ground, not just the line.** A lean runs 60–120 m along the hole and right across the fairway
   into the rough, blending out beyond; it moves the ball, it doesn't bounce it. (Since 11 November 2026 the
   physics bounces the ball off the ground's own slope, so a lean is felt from the first bounce: a tour drive
@@ -499,16 +510,57 @@ slopes for strategy" (cross slopes to about 7% on level zones, 4–5% when also 
   revetted sod face toward the green, a flat sand floor, the back easing in from grade so you can walk in.
   No raised lip round it; only flashed bunkers build a lip up their face.
 
-## Elevation (Should)
+## Elevation and height forms (Should, measured; rewritten 12 November 2026)
 
-- **Every hole goes up or down.** Several holes 8–15 m, two or three big ones (25–35 m: a drive off a
-  ledge, a climb to the last green). Never a run of flat holes.
-- Within holes, use tilted fairways (see "Fairway ground" for which way they lean), terraces (rimstone banks), crests with blind
-  shots, raised greens with false fronts, punchbowls and bowls that gather the ball.
-- **Mix the kinds of height change across the nine**: a drop off a ledge (the Adit's tee at the mine
-  mouth), a long fall to a lake (Mirror Lake), terraces stepping down (the Stalagmite Forest), a climb
-  out of a bowl (the Geode), and a finish that rises into the light (the Cenote). No two holes in a row
-  should use the same kind.
+The owner, 12 November 2026: "the up/down elevation stuff gets a little repetitive ... slightly up, slightly
+down, bigger drop if it's a par 3 and that's it for the most part", and he wants what real courses do: "hitting
+up to a table top fairway where you might be able to clear it if you are a big hitter, or hitting out to a
+fairway that is significantly sloped sideways and up." Measured across 72 holes on eight courses: 26 of 56 par 4s
+and 5s were a plain ramp or level; 12 of 16 par 3s were drops; one table top, two hillside benches, no valley
+carry, no hog's back, no half-pipe. The old rule counted only the net height from tee to green, so a steady ramp
+passed, and the rules against slab edges and steep climbs quietly ruled out anything with a face.
+
+- **Every hole names a height form on its card, chosen from `docs/height-forms.png` before the ground is
+  shaped**, the same way it names a fairway form. The form says where the height changes and what that asks of
+  the shot. The net figure (several holes of 8–15 m, two or three of 25–35 m) still holds, but it is no longer
+  the rule.
+
+| Form | What it is | What it asks |
+|---|---|---|
+| **Table top** (bold) | A drive up onto a plateau: a face of 5–8 m inside 25 m, level ground on top. | Short of the face: a blind uphill second from below. On top: a flat lie and the view. A big hitter can carry right over the back, to a lower fairway or the green. |
+| **Hillside bench** (bold) | A fairway cut along a slope, 8–12% across and climbing. | Everything feeds low; the high side has the angle; the stance is never level. |
+| **Valley carry** (bold) | Tee and landing area both high, a dip of 6 m or more between. | The drive that doesn't carry rolls back to the bottom and plays up. |
+| **Stepped** (bold) | Two or three levels with banks of 3 m or more between. | The upper level sees the green; the lower is easier to hit and leaves it blind (a high road and a low road). |
+| **Big drop, big climb** (bold) | 25 m or more from tee to green. | Club and distance judgement. Two or three a course at most, as before. |
+| **Crest and run** | A crest on the way to the landing area with a slope beyond. | Carry the crest and gain 30–40 yd; land short and stop on the upslope. |
+| **Hog's back** | A fairway crowned across the line. | Only the spine holds; a loose drive sheds to the side it leans to. |
+| **Half-pipe** | A valley fairway banked on both sides. | The banks feed a loose drive back. A helper: suits an opener or a breather. |
+| **Perched green** | A green 4 m or more up in the last 45 m, a steep front. | The shot must carry all the way; short rolls back 20 yd. |
+| **Dip in front** | A swale of 2.5 m or more just short of the green. | Carry it, or run the ball down and up through it. |
+| **Fall-away** | The ground runs away from the player into the green. | Land short and let it release. |
+| **Saddle, reverse camber, kick plate** | A notch between two knolls; a dogleg leaning out of its bend; a bank that feeds a green. | Not measured by the check; write them on the card. |
+| **Par 3s** | Drop, uphill to a shelf, level across a gulf, along a sidehill. | See the budget below. |
+| **Ramp, level** (plain) | A steady rise or fall, or neither. | Nothing. Needs a reason on the card. |
+
+- **The budget** (`node tools/review/relief.mjs <course>` names each hole's form and flags these):
+  - **Two or three bold holes a nine** (the owner's number), each on purpose, each with a way to play it that a
+    short hitter can manage. The other holes stay moderate, but not plain.
+  - **No form more than twice, never twice running.**
+  - **Three plain holes at most** among the par 4s and 5s.
+  - **Two tee shots off a height at most** (12 m or more down to the landing area). It was the stock opener.
+  - **One drop par 3 a course** (the owner's number; 12 of 16 were drops). The others play uphill to a shelf,
+    level across something, or along a slope.
+- **A table top needs:** a face steep enough to stop a ball (20% or more: since 11 November 2026 an upslope
+  kills the run in the physics), mown or rough, never a wall the ball bounces back off; a landing area short of
+  the face for the player who can't reach the top (the forced-carry rule is met by that lower landing area, at
+  the cost of a longer, blind second); 60 m or more of level top, 45 m or more wide; a marker on the lip; and,
+  where the hole wants a decision, somewhere for the longest drive to go beyond it. A table top is a designed
+  plateau: the rule against accidental plateaus doesn't apply, but its edges are banks, not slab sides.
+- **The 15% limit on climbs is for the way the hole walks up** (a ramp the ball rolls on). A face, a bank
+  between steps, the front of a perched green and the side of a valley are features, and can be 20–40%.
+- **Pair the height form with the fairway form**, and don't pair them the same way twice: a fan on a table top,
+  a hook round the foot of a bench, a broken fairway across a valley.
+- **Mix the kinds of height change across the nine.** No two holes in a row use the same kind.
 - **Let the height tell the player where to go.** A green set level with a pool behind it reads as safe
   ground in the right place; a fairway that climbs to it makes the approach a little longer without
   punishing a miss. A tee high over the landing area shows the whole hole; a blind crest hides it, so
@@ -614,7 +666,7 @@ What the engine and the tools taught us. Read the part for the kind of course yo
   and a slope up to a wall are fine. Avoid sharp rises or plateaus along the edges of lots of fairways
   and greens: a raised shelf beside the short grass, or a green on a table with drops on every side.
   These usually come from a slab or a ramp that ends short of the wall, not from a decision, and the
-  owner reads them as weird drop-offs. Fix the shape instead of leaving it. A plateau is fine as a
+  owner reads them as weird drop-offs. Fix the shape instead of leaving it. (A table top fairway or a perched green chosen as the hole's height form is not one of these: see "Elevation and height forms".) A plateau is fine as a
   thought-out feature on one hole, chosen for how it plays (a raised green with a false front, the
   5th's blind shot over a mound), with a rim or bowl where a near miss should stay at green level.
   Ask of each one: did we mean this, and does it make the shot better?
