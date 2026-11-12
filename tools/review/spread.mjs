@@ -98,7 +98,7 @@ export async function courseFacts(c) {
   }
   const { COURSE, HOLES } = await loadCourse(c), back = COURSE.teeSets[0].id, xz = p => Array.isArray(p) ? p : [p.x, p.z];
   return { name: COURSE.name, holes: HOLES.map((h, i) => {
-    const T = createTerrain(h), mids = h.line && h.line.length > 2 ? h.line.slice(1, -1) : (h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]);
+    const T = createTerrain(h), mids = h.line && h.line.length >= 2 ? h.line.slice(1, -1) : (h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]);
     return { n: i + 1, name: h.name, ...holeFacts([xz(h.tees[back]), ...mids, xz(h.green?.pins?.[0] || h.pin)], T.groundAt, T.surfaceAt, h.par, h.yards[back]) };
   }) };
 }

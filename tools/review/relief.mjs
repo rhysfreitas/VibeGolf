@@ -93,7 +93,7 @@ export async function courseRelief(c) {
   const { COURSE, HOLES } = await loadCourse(c), back = COURSE.teeSets[0].id;
   return { name: COURSE.name, holes: HOLES.map((h, i) => {
     const T = createTerrain(h), xz = p => Array.isArray(p) ? p : [p.x, p.z], pin = xz(h.green?.pins?.[0] || h.pin), tee = xz(h.tees[back]);
-    const mids = h.line && h.line.length > 2 ? h.line.slice(1, -1) : (h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]);
+    const mids = h.line && h.line.length >= 2 ? h.line.slice(1, -1) : (h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]);
     return { n: i + 1, name: h.name, r: heightForm([tee, ...mids, pin], T.groundAt, (x, z) => T.groundAt(x, z) !== null && T.surfaceAt(x, z) === 'fairway', h.par) };
   }) };
 }
