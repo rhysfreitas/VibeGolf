@@ -299,7 +299,7 @@ export const HOLES = [
       green: { lobes: [[-4, 2, 9, 12, -20], [6, -3, 8, 9, 10], [0, 10, 6, 5, 0]], join: 5, apron: 4, contour: [{ fall: 0, pct: 2.4 }], style: 'A wide kidney set square to the tee, tilted hard from back to front (2.4%, the Eden\'s slope), with bunkers short left and short right: above the hole every putt is fast' },
       trees: [...stand(P(110, -70), 20, 10, 101, [['fern', 0.6], ['broad', 0.4]]), ...stand(P(250, -10), 22, 8, 102, [['broad', 0.5], ['fern', 0.5]]), ...stand(P(130, 60), 18, 6, 103, [['cycad', 0.5], ['fern', 0.5]])],
       boulders: [...blocks(P(30, -30), 14, 6, 105, [3, 7]), ...blocks(P(36, 40), 12, 5, 106, [3, 6])],
-      spire: { at: P(58, -52), h: 40, label: 'the spire (the pterosaur)' },
+      spire: { at: P(70, -34), h: 25, label: 'the spire (the pterosaur)' },   // its top just over the lip, a quarter of the way into the tee view (was P(58, -52), 40 m: at the frame's edge)
       targets: [],
       words: {
         story: 'The overlook: the first time the round sees the whole valley from above, from a tee on the lip of the ledge.',

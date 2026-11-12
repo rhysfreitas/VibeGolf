@@ -949,7 +949,7 @@ function buildHole(h) {
       iceU.uWind.value.set(windVec.x, windVec.z); if (iceU.uWind.value.lengthSq() < 1e-4) iceU.uWind.value.set(0.6, 0.8);
       iceU.uPoolN.value = Math.min(24, mesaCtx.pools.length); mesaCtx.pools.slice(0, 24).forEach((q, i) => iceU.uPools.value[i].set(...q)); }
     else if (EMBER) { mesaCtx = EW.buildEmber(h, T, box, COURSE.ember, HOLES.indexOf(h), { group: holeGroup, coarse, sunDir, dusk: cond.time === 'golden' ? emberStage : -1, farMat: emberFarMat }); trees.push(...mesaCtx.trees); }
-    else if (VALLEY) { mesaCtx = VW.buildValley(h, T, box, COURSE.valley, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
+    else if (VALLEY) { mesaCtx = VW.buildValley(h, T, box, COURSE.valley, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir, perch: !state.once.has('ptero') }); trees.push(...mesaCtx.trees); }
     else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
     else {
       MW.talus(talusPts, coarse, holeGroup); talusPts = null;
@@ -1116,6 +1116,8 @@ function drawMinimap() {
 
 /* ===================== game state ===================== */
 const state = {
+  // once: what has happened once this round and doesn't come back (the Lost Valley's pterosaur, 'ptero'); saved with the round
+  once: new Set(),
   holeIdx: 0, strokes: 0, scores: [], ball: new THREE.Vector3(), lie: 'tee', yaw: 0, camYaw: 0, aimPoint: null,
   club: 0, k: 1, target: 0, tracks: [], previewAim: null, aimCustom: null, phase: 'intro', cam: 'tv', sound: true,
   flight: null, t: 0, restTimer: 0, preview: null, lastShot: null, puttAnim: null, flyT: 0, lastLie: null,
@@ -1482,6 +1484,8 @@ function launch(raw) {
   r.apexT = W.reduce((b, p) => p.w.y > b.y ? { y: p.w.y, t: p.t } : b, { y: -1e9, t: 0 }).t;
   state.flight = { r, shot, raw, W, from: state.ball.clone(), fromLie: state.lie, arr: [], aim: state.previewLand ? state.previewLand.clone() : null, k: state.k };
   state.t = 0; state.phase = 'flight'; state.strokes++;
+  // the Overlook's pterosaur takes off from its spire with the round's first tee shot on its hole, once a round
+  if (VALLEY && mesaCtx && mesaCtx.ptero && mesaCtx.ptero.atTee && state.strokes === 1 && !state.once.has('ptero')) { mesaCtx.ptero.launch(); state.once.add('ptero'); }
   for (const m of [aimRing, aimFill, restDot]) m.visible = false; previewArc.visible = false;
   oldTracers.forEach(l => { l.material.opacity *= 0.5; });
   setPhaseUI();
@@ -1957,7 +1961,7 @@ const adaptRes = window.__lowq ? null : attachAdaptiveRes(renderer, scene, () =>
 function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); if (adaptRes && !document.hidden) adaptRes.tick(now - last); last = now; fitToScreen(); step(dt); updateMirror(dt); renderer.render(scene, camera); requestAnimationFrame(frame); }
 // test hooks: step the sim; pass everyFrame=N to render every Nth step like real play
 window.__advance = (sec, everyFrame) => { for (let i = 0; i < sec * 30; i++) { step(1 / 30); if (everyFrame && i % everyFrame === 0) { updateMirror(1 / 30); renderer.render(scene, camera); } } updateMirror(1 / 30); renderer.render(scene, camera); };
-window.__state = state; window.__startHole = i => startHole(i); window.__scene = scene;
+window.__state = state; window.__startHole = i => startHole(i); window.__scene = scene; window.__camera = camera;
 
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; fitW = w; fitH = h; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeLines(); minimap.resize(); }
 // Fit the renderer to the screen. Phones (iOS especially) fire 'resize' on rotation before
@@ -1990,14 +1994,14 @@ const TEE_KEY = `vibegolf.course.${CID}.tee`;
 const ROUND_KEY = `vibegolf.course.${CID}.round`;
 function saveRound(holed = false) {
   if (!HOLE || state.phase === 'setup') return;
-  try { localStorage.setItem(ROUND_KEY, JSON.stringify(packRound({ courseId: CID, cond, windRoll, pinPick: state.pinPick, scores: state.scores, holeIdx: state.holeIdx, strokes: state.strokes, ball: [state.ball.x, state.ball.y, state.ball.z], lie: state.lie, holed }))); } catch (e) { /* storage off */ }
+  try { localStorage.setItem(ROUND_KEY, JSON.stringify(packRound({ courseId: CID, cond, windRoll, pinPick: state.pinPick, scores: state.scores, holeIdx: state.holeIdx, strokes: state.strokes, ball: [state.ball.x, state.ball.y, state.ball.z], lie: state.lie, holed, once: [...state.once] }))); } catch (e) { /* storage off */ }
 }
 function clearRound() { try { localStorage.removeItem(ROUND_KEY); } catch (e) { /* storage off */ } }
 function savedRound() { try { return readRound(localStorage.getItem(ROUND_KEY), { id: CID, holes: HOLES.length, teeIds: TEE_SETS.map(t => t.id) }); } catch (e) { return null; } }
 function resumeRound(r) {
   Object.assign(cond, r.cond); cond.teeChosen = true;
   try { localStorage.setItem(TEE_KEY, cond.tee); } catch (e) { /* storage off */ }
-  $('setup').hidden = true; windRoll = r.windRoll; state.scores = r.scores.slice(); state.pinPick = r.pinPick.slice();
+  $('setup').hidden = true; windRoll = r.windRoll; state.scores = r.scores.slice(); state.pinPick = r.pinPick.slice(); state.once = new Set(r.once || []);
   startHole(r.holed ? r.holeIdx + 1 : r.holeIdx); initAudio();
   if (r.holed) return;                       // holed out before leaving: the next hole from its tee
   const g = groundAt(r.ball[0], r.ball[2]);
@@ -2040,7 +2044,7 @@ function openSetup() {
 $('suSig').onclick = () => { Object.assign(cond, COURSE.signature); openSetup(); };
 $('suGo').onclick = () => {
   try { localStorage.setItem(TEE_KEY, cond.tee); } catch (e) { /* storage off */ }
-  $('setup').hidden = true; windRoll = rollWind(cond); state.scores = [];
+  $('setup').hidden = true; windRoll = rollWind(cond); state.scores = []; state.once = new Set();
   state.pinPick = HOLES.map(h => (h.green && h.green.pins && !window.__noVar ? Math.floor(Math.random() * h.green.pins.length) : 0));
   startHole(0); initAudio();
 };

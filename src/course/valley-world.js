@@ -9,6 +9,7 @@
 // and trees.js; everything here is drawn only.
 import { rng, fbm } from './noise.js';
 import { unpackHeights } from './field-code.js';
+import { makeFlight } from './ptero-flight.js';
 
 const lin = c => c.map(v => Math.pow(v / 255, 2.2));
 const dec = (b64, T) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
@@ -122,7 +123,49 @@ function shapes() {
   return (SH = { trunk, cycad: crown(14, 0.55), fern: crown(11, 0.9), disc, blob, cone });
 }
 
-export function buildValley(hole, T, box, E, hi, { group, coarse, groundMat, rockMat, sunDir = null }) {
+/* ---------- the Overlook's pterosaur: a giant crested pterosaur, about 12 m across the wings ---------- */
+// root at its feet (its position and heading from ptero-flight.js); body, neck, a long beak and a crest swept back;
+// each wing a shoulder joint (flap, fold down and forward) holding the arm's membrane and a wrist joint holding the
+// long outer membrane, which folds back along the arm when it perches
+function pteranodon() {
+  const skin = new THREE.MeshStandardMaterial({ color: 0x7a6452, roughness: 0.85 });
+  // the wing membranes glow warm where the low sun comes through them
+  const memb = new THREE.MeshStandardMaterial({ color: 0xb08660, roughness: 0.8, side: THREE.DoubleSide, emissive: 0x6a3212, emissiveIntensity: 0.55 });
+  const crestM = new THREE.MeshStandardMaterial({ color: 0x9c3a20, roughness: 0.7 }), beakM = new THREE.MeshStandardMaterial({ color: 0xcbb48a, roughness: 0.6 });
+  const root = new THREE.Group(); root.rotation.order = 'YXZ'; root.name = 'ptero';
+  const body = new THREE.Group(); body.position.y = 0.9; body.scale.setScalar(1.6); root.add(body);   // 1.6 x a Pteranodon
+  const add = (geo, mat, pos, rot, g = body) => { const m = new THREE.Mesh(geo, mat); m.position.set(...pos); if (rot) m.rotation.set(...rot); m.castShadow = true; g.add(m); return m; };
+  add(new THREE.SphereGeometry(1, 10, 8).scale(0.32, 0.34, 0.75), skin, [0, 0, 0.1]);
+  add(new THREE.CylinderGeometry(0.1, 0.14, 0.75, 6), skin, [0, 0.28, -0.62], [-0.75, 0, 0]);
+  const head = new THREE.Group(); head.position.set(0, 0.55, -0.95); body.add(head);
+  add(new THREE.SphereGeometry(0.17, 8, 6), skin, [0, 0, 0], null, head);
+  add(new THREE.ConeGeometry(0.12, 1.35, 6), beakM, [0, -0.05, -0.72], [-Math.PI / 2 - 0.08, 0, 0], head);
+  add(new THREE.ConeGeometry(0.11, 1.05, 4).scale(0.35, 1, 1.6), crestM, [0, 0.22, 0.48], [Math.PI / 2 + 0.55, 0, 0], head);
+  for (const sx of [-0.14, 0.14]) add(new THREE.CylinderGeometry(0.04, 0.06, 0.8, 5), skin, [sx, -0.3, 0.75], [0.9, 0, 0]);
+  const tri = (pts, mat, g) => { const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pts.flat(), 3)); geo.computeVertexNormals(); const m = new THREE.Mesh(geo, mat); m.castShadow = true; g.add(m); return m; };
+  const wings = [-1, 1].map(sg => {
+    const shoulder = new THREE.Group(); shoulder.position.set(sg * 0.24, 0.12, -0.35); body.add(shoulder);
+    tri([[0, 0, 0], [sg * 1.35, 0.05, -0.05], [sg * 1.35, 0, 0.55], [0, 0, 0], [sg * 1.35, 0, 0.55], [sg * 0.05, -0.1, 0.95]], memb, shoulder);
+    add(new THREE.CylinderGeometry(0.05, 0.07, 1.35, 5), skin, [sg * 0.68, 0.03, -0.03], [0, 0, Math.PI / 2], shoulder);
+    const wrist = new THREE.Group(); wrist.position.set(sg * 1.35, 0.05, -0.05); shoulder.add(wrist);
+    tri([[0, 0, 0], [sg * 2.25, 0.1, 0.62], [sg * 0.05, 0, 0.6]], memb, wrist);
+    add(new THREE.CylinderGeometry(0.025, 0.05, 2.3, 4), skin, [sg * 1.12, 0.05, 0.3], [0, sg * -0.27, Math.PI / 2], wrist);
+    return { sg, shoulder, wrist };
+  });
+  return { root, body, head, wings };
+}
+function poseModel(M, s) {
+  M.root.position.set(s.p[0], s.p[1], s.p[2]);
+  M.root.rotation.set(s.pitch, s.yaw, s.bank);
+  M.body.position.y = 1.45 * (0.35 + 0.65 * s.fold) - 0.4 * s.crouch;
+  M.head.rotation.x = -0.25 * s.fold;   // head held up on the perch
+  for (const W of M.wings) {
+    W.shoulder.rotation.set(0, W.sg * 0.55 * s.fold, W.sg * (s.flap - 1.25 * s.fold));
+    W.wrist.rotation.set(0, -W.sg * 2.75 * s.fold, 0);
+  }
+}
+
+export function buildValley(hole, T, box, E, hi, { group, coarse, groundMat, rockMat, sunDir = null, perch = true }) {
   if (!TEX) TEX = makeTextures();
   const S = shapes();
   const F = hole.frame, a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
@@ -132,6 +175,7 @@ export function buildValley(hole, T, box, E, hi, { group, coarse, groundMat, roc
   const Fd = hole.field, inField = (x, z) => Fd && x > Fd.x0 && z > Fd.z0 && x < Fd.x0 + (Fd.nx - 1) * Fd.cell && z < Fd.z0 + (Fd.nz - 1) * Fd.cell;
   const footY = (x, z, y) => { if (inField(x, z)) { const g = T.groundAt(x, z); if (g !== null) return g; } return y; };
   const R = rng(hi * 131 + 7), trees = [], anims = [];
+  let ptero = null;
   const far = coarse ? 1900 : 2800;
   const vc = (o = {}) => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, ...o });
   const shrink = 6, inPlay = (x, z) => x > box.x0 + shrink && x < box.x1 - shrink && z > box.z0 + shrink && z < box.z1 - shrink;
@@ -143,6 +187,8 @@ export function buildValley(hole, T, box, E, hi, { group, coarse, groundMat, roc
   // playfield). Drawn in the ground shader (aW: x jungle, y mud, z gravel, w rock), so the faces get the sandstone
   const WM = E.world; if (!WM.hDec) { WM.hDec = dec(WM.h, Int16Array); if (WM.pred) unpackHeights(WM.hDec, WM.nx); WM.mDec = dec(WM.m, Uint8Array); }
   const wH = (i, j) => WM.hDec[j * WM.nx + i] / WM.scale + WM.y0;
+  // the valley's ground at a point in this hole's frame, from the 10 m map (null off it)
+  const worldFloor = (x, z) => { const X = F.x + x * rx - z * fx, Z = F.z + x * rz - z * fz, i = Math.round((X - WM.x0) / WM.cell), j = Math.round((Z - WM.z0) / WM.cell); return i < 0 || j < 0 || i >= WM.nx || j >= WM.nz ? null : LY(wH(i, j)); };
   const groundMesh = (Vt, Wt, idx) => {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(Vt, 3)); g.setAttribute('aW', new THREE.BufferAttribute(Wt, 4));
     g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(Vt.length / 3), 1)); g.setIndex(idx); g.computeVertexNormals();
@@ -287,9 +333,16 @@ export function buildValley(hole, T, box, E, hi, { group, coarse, groundMat, roc
     for (let i = 0; i < p.count; i++) { const yy = p.getY(i), n = 1 + 0.22 * Math.sin(yy * 0.55 + 1.3) * (fbm(yy * 0.2, 4) > 0.5 ? 1 : 0.4) + 0.2 * (fbm(p.getX(i) * 0.5 + yy * 0.1, p.getZ(i) * 0.5) - 0.5); p.setX(i, p.getX(i) * n); p.setZ(i, p.getZ(i) * n); }
     g.computeVertexNormals(); const n4 = p.count; g.setAttribute('aW', new THREE.BufferAttribute(new Float32Array(n4 * 4).map((_, i) => (i % 4 === 3 ? 1 : 0)), 4)); g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(n4), 1));
     const m = new THREE.Mesh(g, rockMat); m.position.set(x, LY(y) - 1, z); m.castShadow = m.receiveShadow = true; group.add(m);
-    const pg = new THREE.BufferGeometry(), py = LY(y) + top + 1.6;
-    pg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, -2.4, 1.6, -0.4, -0.4, 0.2, 0.5, 0, 0, 0, 0.4, 0.2, 0.5, 2.4, 1.6, -0.4, 0, 0.4, -0.4, 0, 0.9, -1.4, 0, 1.2, -0.2], 3)); pg.computeVertexNormals();
-    const pm = new THREE.Mesh(pg, new THREE.MeshStandardMaterial({ color: 0x4a3a2e, side: THREE.DoubleSide })); pm.position.set(x, py, z); pm.rotation.y = 0.6; group.add(pm);
+    // the Overlook's pterosaur, perched until the round's first tee shot on the 7th sends it off (main.js keeps the
+    // once-a-round flag; a hole built after it has flown gets an empty spire)
+    if (perch && !ptero) {
+      const feet = [x, LY(y) + top + 2, z], model = pteranodon();
+      const floor = (qx, qz) => { if (inField(qx, qz)) { const g = T.groundAt(qx, qz); if (g !== null) return g; } return worldFloor(qx, qz); };
+      ptero = { model, feet, flight: null, t: 0, atTee: Math.hypot(x, z) < 160, launch() { if (this.flight) return; this.flight = makeFlight({ perch: feet, floor }); this.t = 0; } };
+      poseModel(model, makeFlight({ perch: feet }).at(0));
+      group.add(model.root);
+      anims.push(dt => { if (!ptero.flight) return; ptero.t += Math.min(dt, 0.1); const s = ptero.flight.at(ptero.t); if (s.gone) { model.root.visible = false; return; } poseModel(model, s); });
+    }
   }
   const Br = batch();   // wood, canvas, bone and built things, one merged mesh
   // ---- the Strangler's root arch: a buttress root arching right across the fairway, and lesser roots beside it
@@ -407,5 +460,5 @@ export function buildValley(hole, T, box, E, hi, { group, coarse, groundMat, roc
   { const m = Ba.mesh(vc({ roughness: 0.95 })); if (m) group.add(m); }
   if (birds.length) anims.push((dt, t) => { for (const b of birds) { const an = b.ph + t * b.w * 6; b.m.position.set(b.x + Math.cos(an) * b.rad, b.y + Math.sin(t * 0.3 + b.ph) * 6, b.z + Math.sin(an) * b.rad); b.m.rotation.set(0, -an, Math.sin(t * 1.4 + b.ph) * 0.25); } });
 
-  return { trees, anims };
+  return { trees, anims, ptero };
 }

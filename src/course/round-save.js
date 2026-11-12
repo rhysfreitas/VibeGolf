@@ -11,6 +11,7 @@ export function packRound(s, now = Date.now()) {
     v: VERSION, at: now, course: s.courseId, cond, windRoll: s.windRoll, pinPick: s.pinPick || [],
     scores: Array.from(s.scores || [], x => (x == null ? null : x)),
     holeIdx: s.holeIdx, strokes: s.strokes, ball: s.ball.map(n => Math.round(n * 100) / 100), lie: s.lie, holed: !!s.holed,
+    once: Array.isArray(s.once) ? s.once.filter(k => typeof k === 'string') : [],   // once-a-round events already seen (the Lost Valley's pterosaur)
   };
 }
 
@@ -28,6 +29,8 @@ export function readRound(raw, course, now = Date.now()) {
   if (!Number.isInteger(r.strokes) || r.strokes < 0 || typeof r.lie !== 'string') return null;
   if (!r.windRoll || !Number.isFinite(r.windRoll.mph) || !Array.isArray(r.windRoll.holes)) return null;
   if (!Array.isArray(r.scores) || !Array.isArray(r.pinPick)) return null;
+  if (r.once !== undefined && (!Array.isArray(r.once) || !r.once.every(k => typeof k === 'string'))) return null;
+  if (r.once === undefined) r.once = [];                                       // saved before once-a-round events
   if (!r.holed && r.strokes === 0 && r.holeIdx === 0) return null;            // nothing played yet
   return r;
 }

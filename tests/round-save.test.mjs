@@ -35,3 +35,11 @@ test('a save is refused when it is stale, for another course, for tees that no l
   assert.equal(readRound({ ...p, ball: [1, NaN, 2] }, course, 1), null);
   assert.equal(readRound(packRound(live({ holeIdx: 0, strokes: 0, scores: [] }), 0), course, 1), null, 'nothing played yet');
 });
+
+test('once-a-round events (the Lost Valley\'s pterosaur) are kept with the round, and an older save has none', () => {
+  const r = readRound(JSON.stringify(packRound(live({ once: ['ptero'] }), 0)), course, 1);
+  assert.deepEqual(r.once, ['ptero']);
+  const old = packRound(live(), 0); delete old.once;
+  assert.deepEqual(readRound(JSON.stringify(old), course, 1).once, []);
+  assert.equal(readRound({ ...packRound(live(), 0), once: 'ptero' }, course, 1), null, 'a broken list is refused');
+});
