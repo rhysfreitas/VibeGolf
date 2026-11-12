@@ -13,7 +13,7 @@ import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES, BACK, FRONT } from './holes.mjs';
 import { BUILT, worldAt, LOC, WOR, STEE, waterW, shapesAt } from './scene.mjs';
-import { R as RR, HALF, WALL, H, nativeAt, inWindow, TERMINATOR, SPOKE, AQUEDUCT, WINDOWS, CLUBHOUSE, CANAL } from './world.mjs';
+import { R as RR, HALF, WALL, RIM, ribY, H, nativeAt, inWindow, TERMINATOR, SPOKE, AQUEDUCT, WINDOWS, CLUBHOUSE, CANAL } from './world.mjs';
 import { at, clamp, rnd, project, distLine, headingAt } from './geo.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out/views');
@@ -87,7 +87,7 @@ function renderView(hi, view) {
   { const half = []; let d = 0, st = 4; while (d < 4200) { half.push(d); d += st; st = Math.min(st * 1.07, 140); }
     for (let i = half.length - 1; i > 0; i--) sRows.push(camS - half[i]); for (const v of half) sRows.push(camS + v); }
   { const half = []; let d = 0, st = 4; while (d < 940) { half.push(d); d += st; st = Math.min(st * 1.1, 60); }
-    const set = new Set(); for (const v of half) { set.add(clamp(camA - v, -HALF, HALF)); set.add(clamp(camA + v, -HALF, HALF)); } aCols.push(...[...set].sort((p, q) => p - q)); }
+    const set = new Set(); for (const v of half) { set.add(clamp(camA - v, -HALF, HALF)); set.add(clamp(camA + v, -HALF, HALF)); } for (const e of [-HALF + RIM.w, HALF - RIM.w, -HALF + RIM.w / 2, HALF - RIM.w / 2]) set.add(e); aCols.push(...[...set].sort((p, q) => p - q)); }
   const nodeY = new Map(), key = (i, j) => i * 10000 + j;
   const nodeAt = (i, j) => {
     const k = key(i, j); if (nodeY.has(k)) return nodeY.get(k);
@@ -131,16 +131,29 @@ function renderView(hi, view) {
       const q = [ringP(p0[0] - 0.4 * c, p0[1] - 0.4 * sn, g), ringP(p0[0] + 0.4 * c, p0[1] + 0.4 * sn, g), ringP(p1[0] + 0.4 * c, p1[1] + 0.4 * sn, g), ringP(p1[0] - 0.4 * c, p1[1] - 0.4 * sn, g)];
       add(q, '#c4cad4', { d: 1e7 }); }
   }
-  // the rim walls: glass from the terraces' tops up, ribs every 120 m, horizontal mullions; a pale base
+  // the rim walls: glass from the rim glass in the floor up, ribs every 120 m, horizontal mullions
   for (const side of [-1, 1]) {
     const a = side * HALF;
     for (let i = 0; i + 2 < sRows.length; i += 2) {
       const sA = sRows[i], sB = sRows[i + 2], gA = H(a - side * 2, -sA), gB = H(a - side * 2, -sB);
-      const base = [ringP(a, sA, gA), ringP(a, sB, gB), ringP(a, sB, gB + 10), ringP(a, sA, gA + 10)], dv = Math.hypot(...cam.view(base[0]));
-      add(base, hex(mix([232, 232, 226], fogAt(dv))));
-      const g = [ringP(a, sA, gA + 10), ringP(a, sB, gB + 10), ringP(a, sB, WALL), ringP(a, sA, WALL)];
+      const g = [ringP(a, sA, gA - 3.5), ringP(a, sB, gB - 3.5), ringP(a, sB, WALL), ringP(a, sA, WALL)], dv = Math.hypot(...cam.view(g[0]));
       add(g, hex(mix([196, 214, 232], fogAt(dv) * 0.6)), { op: 0.42 });
     }
+    // the supports over the rim glass: a rib every RIM.rib.every m, a quarter arch from a footing on the floor's
+    // edge up into the wall; drawn as its inner face and the side toward the camera
+    { const RB = RIM.rib, n = 10, dd = k => RB.foot * (1 - Math.cos(k / n * Math.PI / 2));
+      for (let s = Math.ceil((camS - 3000) / RB.every) * RB.every; s < camS + 3200; s += RB.every) {
+        const dv = Math.hypot(...cam.view(ringP(a - side * 12, s, 20))); if (dv < 6) continue;
+        const col = hex(mix([238, 240, 244], fogAt(dv) * 0.55)), sideC = hex(mix([206, 210, 218], fogAt(dv) * 0.55)), ss = s + (camS > s ? RB.w / 2 : -RB.w / 2);
+        for (let k = 0; k < n; k++) {
+          const d0 = dd(k), d1 = dd(k + 1), a0 = a - side * (RB.foot - d0) , a1 = a - side * (RB.foot - d1);
+          const y0 = ribY(RB.foot - d0), y1 = ribY(RB.foot - d1);
+          add([ringP(a0, s - RB.w / 2, y0 + RB.t / 2), ringP(a1, s - RB.w / 2, y1 + RB.t / 2), ringP(a1, s + RB.w / 2, y1 + RB.t / 2), ringP(a0, s - RB.w / 2 + RB.w, y0 + RB.t / 2)], col, { stroke: '#9aa0aa', sw: 0.4, d: dv - 1 });
+          add([ringP(a0, ss, y0 - RB.t / 2), ringP(a1, ss, y1 - RB.t / 2), ringP(a1, ss, y1 + RB.t / 2), ringP(a0, ss, y0 + RB.t / 2)], sideC, { stroke: '#9aa0aa', sw: 0.4, d: dv - 1.2 });
+        }
+        const fa = a - side * RB.foot, gy = RIM.y;   // the footing: a block on the floor's edge
+        for (const [u0, u1] of [[-RB.w, RB.w]]) add([ringP(fa, s + u0, gy), ringP(fa, s + u1, gy), ringP(fa, s + u1, gy + 6), ringP(fa, s + u0, gy + 6)], sideC, { stroke: '#8a909a', sw: 0.5, d: dv - 1.4 });
+      } }
     for (let s = Math.ceil((camS - 4000) / 120) * 120; s < camS + 4200; s += 120) {
       const g = H(a - side * 2, -s), q = [ringP(a, s - 2.5, g), ringP(a, s + 2.5, g), ringP(a, s + 2.5, WALL), ringP(a, s - 2.5, WALL)], dv = Math.hypot(...cam.view(ringP(a, s, 60)));
       add(q, hex(mix([250, 250, 252], fogAt(dv) * 0.5)), { stroke: '#a8aeb8', sw: 0.5 });

@@ -28,8 +28,13 @@ export function greenStats(B, opt = {}) {
   const steep = pts.filter(p => p.s > 3).length / n;
   let cup = 0; for (const p of pts) { if (p.e > -3) continue; let ok = true; for (let dx = -1; dx <= 1 && ok; dx++) for (let dz = -1; dz <= 1; dz++) { const q = M.get(key(p.x + dx, p.z + dz)); if (!q || q.s > 3) { ok = false; break; } } if (ok) cup++; }
   const med = pts.map(p => p.s).sort((a, b) => a - b)[Math.floor(n / 2)];
+  // one piece? (a flood fill over the 1 m cells; two lobes that don't meet make two greens) and the pin on the green
+  let pieces = 0; const seen = new Set();
+  for (const p of pts) { const k0 = key(p.x, p.z); if (seen.has(k0)) continue; pieces++; const st = [p]; seen.add(k0);
+    while (st.length) { const q = st.pop(); for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = key(q.x + dx, q.z + dz); if (M.has(k) && !seen.has(k)) { seen.add(k); st.push(M.get(k)); } } } }
+  const pinIn = -B.gm(...h.pin);
   return { area: n, cup: cup / n, median: med, fall: Math.hypot(a, c) * 100, fallDir: Math.atan2(-a, -c), relief: hi - lo, raw: Math.max(...pts.map(p => p.y)) - Math.min(...pts.map(p => p.y)),
-    pinSlope: slope(...h.pin), areas, steep, maxSlope: Math.max(...pts.map(p => p.s)) };
+    pinSlope: slope(...h.pin), pieces, pinIn, areas, steep, maxSlope: Math.max(...pts.map(p => p.s)) };
 }
 // lean across the fairway (positive = falls to the right of the line), every 5 m along it
 export function leanAlong(B, s0 = 40, s1 = B.h.len - 50, half = 12, off = 0) {

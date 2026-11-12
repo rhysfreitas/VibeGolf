@@ -231,8 +231,8 @@ for (const [i, B] of BUILT.entries()) {
     const pa = gs.areas.map(q => { const dx = q.x - h.pin[0], dz = q.z - h.pin[1]; return [+(dx * rx + dz * rz).toFixed(1), +(dx * fx + dz * fz).toFixed(1)]; });
     fs.writeFileSync(`${OUT}/green${h.n}.json`, JSON.stringify({ N, step: 0.5, h: hg, gm: gmv, s: sf, areas: pa }));
   }
-  const badG = gs.pinSlope > 3 || gs.areas.length < 2 || gs.median < 1 || gs.median > 3;
-  R_(`${badG ? '!' : ' '} ${h.n} green contour: typical slope ${gs.median.toFixed(1)}%, ${gs.relief.toFixed(2)} m beyond its plane (${feat}), pin ${gs.pinSlope.toFixed(1)}%, ${gs.areas.length} pin areas, ${Math.round(gs.cup * 100)}% cuppable`);
+  const badG = gs.pinSlope > 3 || gs.areas.length < 2 || gs.median < 1 || gs.median > 3 || gs.pieces !== 1 || gs.pinIn < 3;
+  R_(`${badG ? '!' : ' '} ${h.n} green contour: typical slope ${gs.median.toFixed(1)}%, ${gs.relief.toFixed(2)} m beyond its plane (${feat}), pin ${gs.pinSlope.toFixed(1)}%, ${gs.areas.length} pin areas, ${Math.round(gs.cup * 100)}% cuppable${gs.pieces !== 1 ? `, IN ${gs.pieces} PIECES` : ''}${gs.pinIn < 3 ? `, the pin ${gs.pinIn < 0 ? 'OFF the green' : gs.pinIn.toFixed(1) + ' m inside the edge'}` : ''}`);
   // the fairway's lean across the line where drives land: round each fairway target, 30 m either side
   if (h.par > 3) {
     const ws = [];

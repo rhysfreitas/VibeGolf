@@ -43,7 +43,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Course | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | Par |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
-| Halcyon Ring (plan book round 2) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
+| Halcyon Ring (plan book round 3) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
 
 - Halcyon Ring (Rhys's picks, 11 November 2026; `claude/brief-halcyon-ring.md`): a pristine garden colony
   inside a ring space station; floor windows onto space are the penalty area; the ball flies as on Earth. The
@@ -51,7 +51,8 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   Same par as another course on four holes at most (Hollowmere, The Reclaim, Rimeholm).
   Routing check sent 11 November 2026 (`tools/halcyon/`, page "Halcyon Ring Routing"); plan book round 1
   12 November 2026; round 2 the same day (`out/halcyon-plan-book-r2.pdf`), from the height-forms and dials
-  addenda, every change Rhys's pick: R = 5 km, 900 m wide; the curve plays as it looks; windows are glass, a
+  addenda, every change Rhys's pick; round 3 the same day (`out/halcyon-plan-book-r3.pdf`): the rim glass a band
+  24 m wide round both rims with arched ribs every 60 m (Rhys's idea), the 1st's green one piece: R = 5 km, 900 m wide; the curve plays as it looks; windows are glass, a
   penalty area. Zenith 3,105 yd: 1 The Promenade 4 380 (a 90 m half-pipe lawn, Double Plateau), 2 The Walled
   Garden 3 115 (the postage stamp, a 290 m² green; an Eden until it shrank), 3 The Terminator 4 430 (Road, the
   church pews in the pinch, eleven bunkers), 4 The Long Window 5 545 (cape over a floor window, +26 m in three

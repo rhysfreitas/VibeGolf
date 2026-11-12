@@ -43,8 +43,9 @@ for x in (-H, H):
 ax.text(-H + 4, S1 - 30, 'west rim glass', fontsize=6, color=(0.2, 0.32, 0.5), rotation=90, va='top', zorder=20)
 ax.text(H - 14, S1 - 30, 'east rim glass', fontsize=6, color=(0.2, 0.32, 0.5), rotation=90, va='top', zorder=20)
 ax.text(-430, -95, 'west terraces', fontsize=6, color=(0.45, 0.38, 0.28)); ax.text(330, -95, 'east terraces', fontsize=6, color=(0.45, 0.38, 0.28))
-# rim glass under the 5th's balcony
-rg = Wd['RIM_GLASS']; ax.add_patch(Rectangle((rg['a0'], rg['s0']), rg['a1'] - rg['a0'], rg['s1'] - rg['s0'], fc=(0.10, 0.12, 0.22), ec='white', lw=0.6, zorder=6))
+# the rim glass: a band along the foot of each rim wall, all the way round (round 3)
+rg = Wd['RIM_GLASS']
+for x in (-H, H - rg['w']): ax.add_patch(Rectangle((x, S0), rg['w'], S1 - S0, fc=(0.10, 0.12, 0.22), ec='white', lw=0.6, zorder=6))
 # the valley (8th)
 V = Wd['VALLEY']; ax.add_patch(Polygon(band(V['pts'], [V['half'] * 2] * len(V['pts'])), fc=(0.62, 0.74, 0.55), alpha=0.35, ec='none', zorder=3))
 # lake and canal

@@ -24,12 +24,28 @@ export const WINDOWS = [
   { name: 'The Long Window', a: -179, s: 176, ra: 25, rs: 45, rot: 1.309, p: 3.2, hole: 4 },
   { name: 'The Great Window', a: 242.4, s: 1767.7, ra: 22, rs: 40, rot: -0.17, p: 3.4, hole: 9 },   // in the floor of the amphitheatre
 ];
-// the rim glass strip at the foot of the west wall below the 5th's balcony: a ball off the balcony's left edge falls
-// to it (a penalty area, like the windows)
-export const RIM_GLASS = { a0: -450, a1: -426, s0: 590, s1: 720 };
+// the rim glass: a band of glass 24 m wide all the way round the ring along the foot of each rim wall, flush with
+// the rim's ground (9 m), where the floor's hull gives way to the glass of the walls (a penalty area, like the
+// windows; Rhys, 12 November: "a full glass ring all the way around either side of the station"). Ground higher
+// than the band (a villa terrace) ends in a retaining wall at its edge, `kerb` m across. Ribs cross it every
+// `every` m: arched supports springing from a footing on the floor's edge (`foot` m from the wall) and curving up
+// into the wall's mullions `top` m up, `w` m wide, `t` m deep. The wall's own ribs are every 120 m, so every
+// other support meets one
+export const RIM = { w: 24, kerb: 3, y: 9, rib: { every: 60, foot: 27, top: 34, w: 3, t: 2.4 } };
+export const RIM_GLASS = RIM;   // the old name (routing.mjs)
+// a rib's arc: its height (above the cylinder's floor) at d m from the wall, a quarter ellipse from the footing
+// (d = foot, at the band's height) to the wall (d = 0, top); null beyond the footing
+export const ribY = d => d > RIM.rib.foot ? null : RIM.y + (RIM.rib.top - RIM.y) * Math.sqrt(Math.max(0, 1 - (d / RIM.rib.foot) ** 2));
+// the rib at a ring point, if any: [lo, hi] heights of solid rib there (the footing solid down to the ground)
+export function ribAt(a, s) {
+  const d = HALF - Math.abs(a), R_ = RIM.rib; if (d < 0 || d > R_.foot) return null;
+  const k = Math.round(s / R_.every); if (Math.abs(s - k * R_.every) > R_.w / 2) return null;
+  const y = ribY(d), dy = R_.foot - d < 4 ? 99 : R_.t / 2 / Math.max(0.15, Math.sqrt(Math.max(0, 1 - (d / R_.foot) ** 2)));   // thicker in plan where it plunges
+  return [Math.max(RIM.y - 0.5, y - Math.min(dy, 99)), y + R_.t / 2];
+}
 
 // the long lake along the west side, curving up the ring at both ends (its far ends are scenery); level 3.2 m down
-export const LAKE = { pts: [[-418, 700], [-405, 800], [-380, 900], [-372, 980], [-392, 1060], [-405, 1180], [-418, 1400], [-415, 1800], [-405, 2300]], w: [44, 70, 92, 96, 80, 62, 50, 52, 48], level: -3.2 };
+export const LAKE = { pts: [[-392, 760], [-387, 800], [-369, 900], [-364, 980], [-378, 1060], [-389, 1180], [-384, 1400], [-384, 1800], [-384, 2300]], w: [24, 34, 70, 80, 52, 30, 40, 40, 40], level: -3.2 };   // its west shore 20 m in from the rim glass, the rim walk between (12 November: it ran to the wall); the east shore where it was along the 6th, its head an inlet by the balcony
 // the canal: out of the lake's east bay, along the north side of the 7th, behind the 8th tee, then up the right of
 // the 8th's valley to a lock at its bend, and on north-east to the aqueduct over the east terraces
 export const CANAL = { pts: [[-372, 1150], [-120, 1168], [60, 1172], [118, 1170], [150, 1150], [232, 1150], [238, 1300], [236, 1450], [240, 1545], [262, 1582], [300, 1606], [440, 1640]], w: 14, lock: [240, 1545], depth: 1.6 };
@@ -55,9 +71,9 @@ export const PLATEAUS = [
   { id: 'garden', a: 372, s: 163, ra: 44, rs: 46, p: 3, top: 6, edge: 12 },                 // the walled garden (the 2nd green)
   { id: 'e-terrace', a: 412, s: 92, ra: 30, rs: 34, p: 3, top: 12, edge: 11 },              // the 3rd tee's terrace
   { id: 'w-low', a: -340, s: 398, ra: 44, rs: 40, p: 3, top: 5, edge: 30 },                // the lowest villa terrace (the 4th green)
-  { id: 'w-fall', a: -416, s: 520, ra: 40, rs: 92, p: 3, top: 36, fall: [446, 36, 610, 13], edge: 12 }, // the long lawn falling from the high terrace toward the balcony
+  { id: 'w-fall', a: -416, s: 520, ra: 40, rs: 92, p: 3, top: 36, fall: [446, 36, 610, 19], edge: 12 }, // the long lawn falling from the high terrace toward the balcony
   { id: 'w-high', a: -414, s: 421, ra: 62, rs: 25, p: 3, top: 36, edge: 8 },                // the high west terrace (the 5th tee at its north lip)
-  { id: 'balcony', a: -397, s: 650, ra: 30, rs: 34, rot: 0.2, p: 2.6, top: 10, edge: 5 },  // the balcony over the rim glass (the 5th green)
+  { id: 'balcony', a: -397, s: 650, ra: 30, rs: 34, rot: 0.2, p: 2.6, top: 17, edge: 5 },  // the balcony over the rim glass (the 5th green), 8 m above it
   { id: 'falls', a: -200, s: 1114, ra: 38, rs: 26, p: 3, top: 12, edge: 10 },               // the waterfall's villa terrace (behind the 6th green; the 7th's back tee 3 m short of its east lip)
   { id: 'plinth', a: 151, s: 1122, ra: 139, rs: 96, p: 4, top: 7.5, edge: 25 },             // the spoke's plinth, a table 7.5 m up behind a grass face (the 7th's landing
   // area for the long hitter and its green, the 8th tee); its west face 170–195 m from the 7th's back tee
@@ -105,6 +121,8 @@ export function H(X, Z, noCanal = false) {
   // the lake's basin and the canal's cut
   { const L = lakeAt(a, s); if (L.d < L.hw + 16) y = lerp(y, LAKE.level - 1.6, 1 - smooth((L.d - L.hw + 2) / 14)); }
   if (!noCanal) { const d = canalD(a, s); if (d < CANAL.w / 2 + 6) y = Math.min(y, lerp(y - CANAL.depth - 0.8, y, smooth((d - CANAL.w / 2 + 1) / 6))); }
+  // the rim glass: flush at the rim's height; higher ground ends in a retaining wall at its edge, lower in a bank
+  { const d = HALF - Math.abs(a) - RIM.w; if (d < RIM.kerb) y = lerp(y, RIM.y, 1 - smooth(d / RIM.kerb)); }
   return y;
 }
 // water: the lake (level), the canal (1.4 m below the bank either side), the falls pool by the 6th green
@@ -115,7 +133,7 @@ export function waterAt(X, Z) {
   return null;
 }
 export function inWindow(a, s) { for (const w of WINDOWS) if (seDist({ x: w.a, z: w.s, rx: w.ra, rz: w.rs, rot: w.rot, p: w.p }, a, s) < 1) return w;
-  if (a > RIM_GLASS.a0 && a < RIM_GLASS.a1 && s > RIM_GLASS.s0 && s < RIM_GLASS.s1) return { name: 'the rim glass', rim: true };
+  if (Math.abs(a) > HALF - RIM.w && Math.abs(a) <= HALF) return { name: 'the rim glass', rim: true };
   return null; }
 export const windowD = w => (a, s) => (seDist({ x: w.a, z: w.s, rx: w.ra, rz: w.rs, rot: w.rot, p: w.p }, a, s) - 1) * Math.min(w.ra, w.rs);
 

@@ -8,7 +8,7 @@
 import { project, seDist, seOutline, smooth, clamp, at, rnd, distLine, headingAt, lerp } from './geo.mjs';
 import { makeGreen, makeFairway, noise2 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { H, R, curveRise, waterAt, inWindow, nativeAt, LAKE, SPOKE } from './world.mjs';
+import { H, R, HALF, RIM, ribAt, curveRise, waterAt, inWindow, nativeAt, LAKE, SPOKE } from './world.mjs';
 
 // a green's contour, in its own frame (u right, v toward the back, metres from the pin). Directions are degrees
 // clockwise from the front: 0 = toward the tee, 90 = right, 180 = the back (as tools/lostvalley).
@@ -166,6 +166,7 @@ export function buildHole(h) {
   function surface(x, z) {
     const [X, Z] = W(x, z), go = gm(x, z);
     if (go < 0) return 'green';
+    if (Math.abs(X) > HALF) return 'stone';   // past the rim wall
     if (waterW(X, Z)) return 'water';
     if (inWindow(X, -Z)) return 'window';
     for (const b of bunkers) if (inBunker(b)(x, z)) return 'sand';
@@ -192,6 +193,11 @@ export function buildHole(h) {
   for (const g of h.feet || []) objs.push({ kind: 'leg', x: g.at[0], z: g.at[1], w: g.w, h: g.h, base: gAt(...g.at) - 0.5, rot: headingAt(h.line, 1), label: g.label });
   if (h.bridge) objs.push({ kind: 'bridge', a: h.bridge.a, b: h.bridge.b, label: h.bridge.label });
   for (const f of h.falls || []) objs.push({ kind: 'falls', x: f.at[0], z: f.at[1], w: f.w, h: f.h, base: gAt(...f.at) - f.h });
+  // the rim glass's ribs within 260 m of the line (in ring space every RIM.rib.every m along each rim)
+  { const ss = h.line.map(p => -W(...p)[1]), lo = Math.min(...ss) - 300, hi = Math.max(...ss) + 300, toL = LOC[k];
+    for (const side of [-1, 1]) for (let sr = Math.ceil(lo / RIM.rib.every) * RIM.rib.every; sr <= hi; sr += RIM.rib.every) {
+      const foot = toL(side * (HALF - RIM.rib.foot), -sr), wall = toL(side * HALF, -sr);
+      if (distLine(h.line, ...foot) < 260) objs.push({ kind: 'rib', a: foot, b: wall, w: RIM.rib.w, s: sr, side }); } }
 
   const TREE_LOW = { lime: 0.3, plane: 0.3, yew: 0, poplar: 0.15, willow: 0.15 };
   const inBox = (o, x, z) => { const c = Math.cos(o.rot), s = Math.sin(o.rot), dx = x - o.x, dz = z - o.z, u = dx * c + dz * s, v = dx * s - dz * c; return Math.abs(u) < (o.kind === 'leg' ? o.w : o.w) / 2 && Math.abs(v) < (o.kind === 'leg' ? o.w : o.l) / 2; };
@@ -201,8 +207,10 @@ export function buildHole(h) {
       if (TREE_LOW[o.kind] !== undefined && Math.hypot(x - o.x, z - o.z) < o.r) out.push([o.base + o.h * TREE_LOW[o.kind], o.base + o.h, 'a tree']);
       else if ((o.kind === 'villa' || o.kind === 'clubhouse') && inBox(o, x, z)) out.push([o.base, o.base + o.h, o.kind === 'clubhouse' ? 'the clubhouse' : 'a villa']);
       else if (o.kind === 'leg' && inBox(o, x, z)) out.push([o.base, o.base + o.h, 'the spoke\'s foot']);
+      else if (o.kind === 'rib') continue;
       else if (o.kind === 'wall' && distLine([o.a, o.b], x, z) < o.t) { const t = clamp(((x - o.a[0]) * (o.b[0] - o.a[0]) + (z - o.a[1]) * (o.b[1] - o.a[1])) / ((o.b[0] - o.a[0]) ** 2 + (o.b[1] - o.a[1]) ** 2), 0, 1), y = lerp(o.a[2], o.b[2], t); out.push([y - 0.5, y + o.h, 'a wall']); }
     }
+    { const [X, Z] = W(x, z); if (Math.abs(X) > HALF - RIM.rib.foot - 1) { const r = ribAt(X, -Z); if (r) { const d = curveAt(X, Z) - h.base; out.push([r[0] + d, r[1] + d, 'a rib of the rim glass']); } } }
     return out;
   }
   return { h, ground, surface, objs, solids, gm, gUV, fairwayD, inBunker, bunkers, teePads, base: h.base, baseAbs, along, curveAt, s0 };
