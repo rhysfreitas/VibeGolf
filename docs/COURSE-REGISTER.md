@@ -52,7 +52,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   Routing check sent 11 November 2026 (`tools/halcyon/`, page "Halcyon Ring Routing"); plan book round 1
   12 November 2026; round 2 the same day (`out/halcyon-plan-book-r2.pdf`), from the height-forms and dials
   addenda, every change Rhys's pick; round 3 the same day (`out/halcyon-plan-book-r3.pdf`): the rim glass a band
-  24 m wide round both rims with arched ribs every 60 m (Rhys's idea), the 1st's green one piece: R = 5 km, 900 m wide; the curve plays as it looks; windows are glass, a
+  24 m wide round both rims with arched ribs every 120 m on the wall's ribs (Rhys's idea), the 1st's green one piece: R = 5 km, 900 m wide; the curve plays as it looks; windows are glass, a
   penalty area. Zenith 3,105 yd: 1 The Promenade 4 380 (a 90 m half-pipe lawn, Double Plateau), 2 The Walled
   Garden 3 115 (the postage stamp, a 290 m² green; an Eden until it shrank), 3 The Terminator 4 430 (Road, the
   church pews in the pinch, eleven bunkers), 4 The Long Window 5 545 (cape over a floor window, +26 m in three
@@ -183,8 +183,8 @@ since 12 November.)
 
 **Famous-hole set pieces used:** the lone tree twice (the Lost Valley's giant and its fig); an island green of a
 kind (Emberfell's Heart, the Aerie's island greens); a chute of a kind (The Reclaim's Atrium nave). Halcyon Ring: the postage stamp (2) and church pews (3). The Lost Valley (built 12 November): the postage stamp
-(4, ringed by tar) and the burn (2, crossing the line three times). **The postage stamp was taken by both on the
-same day, Halcyon Ring planned and the Lost Valley built; one of them should change (Rhys to decide).** Never used:
+(4, ringed by tar) and the burn (2, crossing the line three times). The postage stamp was taken by both on the
+same day, Halcyon Ring planned and the Lost Valley built; Rhys kept both (12 November: "The postage stamp is fine"). Never used:
 bunker in the green, shared green, shared fairway, hell bunker, the wall,
 lion's mouth, skyline green, sleepers.
 

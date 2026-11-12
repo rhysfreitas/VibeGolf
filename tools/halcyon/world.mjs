@@ -28,10 +28,9 @@ export const WINDOWS = [
 // the rim's ground (9 m), where the floor's hull gives way to the glass of the walls (a penalty area, like the
 // windows; Rhys, 12 November: "a full glass ring all the way around either side of the station"). Ground higher
 // than the band (a villa terrace) ends in a retaining wall at its edge, `kerb` m across. Ribs cross it every
-// `every` m: arched supports springing from a footing on the floor's edge (`foot` m from the wall) and curving up
-// into the wall's mullions `top` m up, `w` m wide, `t` m deep. The wall's own ribs are every 120 m, so every
-// other support meets one
-export const RIM = { w: 24, kerb: 3, y: 9, rib: { every: 60, foot: 27, top: 34, w: 3, t: 2.4 } };
+// `every` m (120: on the wall's own ribs, each running on up the wall as its mullion; Rhys, 12 November): arched supports springing from a footing on the floor's edge (`foot` m from the wall) and curving up
+// into the wall's mullions `top` m up, `w` m wide, `t` m deep.
+export const RIM = { w: 24, kerb: 3, y: 9, rib: { every: 120, foot: 27, top: 34, w: 3, t: 2.4 } };
 export const RIM_GLASS = RIM;   // the old name (routing.mjs)
 // a rib's arc: its height (above the cylinder's floor) at d m from the wall, a quarter ellipse from the footing
 // (d = foot, at the band's height) to the wall (d = 0, top); null beyond the footing
@@ -45,7 +44,7 @@ export function ribAt(a, s) {
 }
 
 // the long lake along the west side, curving up the ring at both ends (its far ends are scenery); level 3.2 m down
-export const LAKE = { pts: [[-392, 760], [-387, 800], [-369, 900], [-364, 980], [-378, 1060], [-389, 1180], [-384, 1400], [-384, 1800], [-384, 2300]], w: [24, 34, 70, 80, 52, 30, 40, 40, 40], level: -3.2 };   // its west shore 20 m in from the rim glass, the rim walk between (12 November: it ran to the wall); the east shore where it was along the 6th, its head an inlet by the balcony
+export const LAKE = { pts: [[-392, 690], [-391, 740], [-387, 800], [-369, 900], [-364, 980], [-378, 1060], [-389, 1180], [-384, 1400], [-384, 1800], [-384, 2300]], w: [24, 26, 34, 70, 80, 52, 30, 40, 40, 40], level: -3.2 };   // its west shore 20 m in from the rim glass, the rim walk between (12 November: it ran to the wall); the east shore where it was along the 6th; its head comes round behind the 5th green (the balcony's back wall drops into it)
 // the canal: out of the lake's east bay, along the north side of the 7th, behind the 8th tee, then up the right of
 // the 8th's valley to a lock at its bend, and on north-east to the aqueduct over the east terraces
 export const CANAL = { pts: [[-372, 1150], [-120, 1168], [60, 1172], [118, 1170], [150, 1150], [232, 1150], [238, 1300], [236, 1450], [240, 1545], [262, 1582], [300, 1606], [440, 1640]], w: 14, lock: [240, 1545], depth: 1.6 };
