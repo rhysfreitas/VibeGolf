@@ -17,7 +17,7 @@ or up from tee to green.
 | The Reclaim | 4R | 4L d | 3 | 5S | 3 ↓ | 4 d | 5L | 4R | 4 ↑ | 36 |
 | Rimeholm | 4R ↓ | 4L | 3 | 5S | 4 d ↓ | 3 | 4R | 5L | 4L ↑ | 36 |
 | Emberfell (playable blockout, round 7) | 5L | 4 | 4L | 3 ↓ | 4R d | 5L | 4R | 3 | 4R | 36 |
-| The Lost Valley (playable blockout, after plan book round 3) | 4R | 5R | 4L | 3 | 5L | 4 ↑ | 3 ↓ | 4 d | 5L | 37 |
+| The Lost Valley (playable blockout, reshaped 12 November) | 4R | 5R | 4L | 3 | 5L | 4 ↑ | 3 ↓ | 4 d | 5L | 37 |
 
 What repeats (11 November 2026):
 
@@ -69,7 +69,8 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 - The Lost Valley (approved and built as a blockout, 11 November): starts on the valley floor; the climb to the
   ledge is the 6th and the drop off it the 7th; the drivable par 4 is the 8th; a reachable par 5 finishes at the
   shelf green under the Great Falls. First par 37, first with three par 5s, first not to finish with a climb.
-  Titan 3,395 yd, Brachio tips (switched off) 3,670.
+  Titan 3,395 yd, Brachio tips (switched off) 3,670. Reshaped 12 November (height forms and dials, Rhys's picks): the
+  1st bends 70°, the 2nd is 610 yd with a burn, the 4th a 115 yd postage stamp; Titan 3,455 yd, tips 3,690.
 - Against each other they share a par on two holes.
 
 **Not yet used, so open to the next course (after those two):** par 35; one or three par 3s; one par 5; a par 3
@@ -87,10 +88,10 @@ middle; a long par 3 early.
 | **The Reclaim** | Facades soak a ball; streets are native ground | Punchbowl (3), Redan and plateau greens, Bottle (4) | Drivable through the lobby (2, a great drive from the back tee only), the bottle at the crest (4), drivable, running on from the right (6), bite off the basin (8); two drivable par 4s on purpose (Rhys, 11 November): a thread and a carry up 9 m on the 2nd, a running shot on the 6th | The El (1, 6), gutted tower (2), subway cave-in (3), propped tower (4), stadium and sinkhole (5), fallen bridge (7), rift and leaning clubhouse (9) | None |
 | **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8), Bottle (9) | Drivable through the seracs (5), cape over the moulin (7), split fairway (8), bottle through the neck (9) (all `bold: true`, 11 November) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
 | **Emberfell** (playable blockout, round 7) | Lava plays as water | Leven (5), Long (6), Cape (7), Punchbowl in a crater ringed with sand (8) | Drivable down the columns (5), go or lay up at the rill (6), bite off the cape (7), split (9) | Kipuka and lava river (1), geysers (2), tube bridge and a double fairway either side of its trench (3), the Notch reveal (4), basalt columns (5), lavafall in its bay (6), lava lake (7), cinder cone on the caldera floor (8), island clubhouse (9) | Cross bunker (2), ring (8), beach (9) |
-| **The Lost Valley** (playable blockout) | Animals are scenery; tar plays as water; the river's gravel bars play as bunkers | Long (2), Short (4), Eden (7), Leven (8) | Centre-line hazard (3, the Bone Bluff), the long way round (5, the stepping stones or the dry way), drivable (8, under the root arch), go or lay up (9, the shelf in two) | The camp on its knoll (1), the giant monkey-puzzle (1), braided river and back channel (2), Bone Bluff and its skeleton (3), tar pit and bones (4), swamp and stepping stones (5), the ramp to the east ledge and Nest Falls (6), the ledge's bluff, the lookout and the spire (7), the Strangler's root arch (8), the Great Falls, the plunge pool and the rope bridge (9); long-necks and pterosaurs as scenery | Sand ring round the 3rd green, the 1st's waste strip, gravel bars |
+| **The Lost Valley** (playable blockout) | Animals are scenery; tar plays as water; the river's gravel bars play as bunkers | Long (2, 610 yd), Short (4, a postage stamp), Eden (7), Leven (8), Hog's Back (5: the crowned causeway) | Centre-line hazard (3, the Bone Bluff), the long way round (5, the stepping stones or the dry way), drivable (8, under the root arch), go or lay up (9, the shelf in two) | The camp on its knoll (1), the giant monkey-puzzle (1), braided river and its burn (2), Bone Bluff, its skeleton and the dig pits (3), tar pit and bones (4), swamp and stepping stones (5), the ramp to the east ledge and Nest Falls (6), the ledge's bluff, the lookout and the spire (7), the table top, the survey pole and the Strangler's root arch (8), the Great Falls, the plunge pool, the two-part green on its shelf and the rope bridge (9); long-necks and pterosaurs as scenery | Sand ring round the 3rd green, nine dig pits (3), the 1st's waste strip and the waste through its corner, gravel bars |
 
 Classics no course has used yet: **Eden, Road, Bottle, Channel, Leven, Double Plateau, Hog's Back, Sahara, Long,
-Dell.** A punchbowl is on six of seven courses: give it a rest.
+Dell.** (The Lost Valley has since used a Long, an Eden, a Leven and a Hog's Back.) A punchbowl is on six of seven courses: give it a rest.
 
 ## Fairway forms, counted (`node tools/review/alike.mjs all`, 11 November 2026)
 
@@ -107,7 +108,7 @@ of fairways on different courses measure as alike.
 | The Reclaim | broken 2, island, spindle, hourglass, hook, fan (reshaped 11 November; the 2nd reads as an island since its courtyard approach became a second lane) | 0 | Inside it; six fairways match another course's (three Hollowmere's, three Rimeholm's), was 26. Was spindle 5, broken 2, six pairs alike |
 | Rimeholm | reworked 11 November: spindle, scalloped (2), island 2 (4, 5), uneven, broken, hourglass (9) | 0 | Inside it but for the islands back to back (4, 5). Was: four plain strips and five pairs alike, once the check counted only each hole's own ground (it had read the 8th's fairway beside the 9th's tees as an island) |
 | Emberfell (playable blockout) | round 6: scalloped, funnel, split (a double fairway), hourglass, broken, fan, island | 0 | Inside it; two fairways match another course's (the Barranco and Rimeholm's Ice Gate, the Heart and the Lost Valley's Bone Bed). Was spindle 3, hourglass 3, island, five pairs alike |
-| The Lost Valley (playable blockout) | fan, broken, island, split (stones beside the dry way), funnel, split, scalloped | 0 of 21 | Inside it; none matches another course's. Was split 4, broken 3 |
+| The Lost Valley (playable blockout) | scalloped (1: a fan into a big elbow), stepping stones (2: three pieces between the burn's crossings), island, split (stones beside the dry way), funnel, split, scalloped (12 November; was fan, broken, island, split, funnel, split, scalloped) | 0 of 21 | Inside it; none matches another course's. Was split 4, broken 3 |
 
 The two planned courses fix theirs in their re-lay (their briefs say so). The playable five keep theirs until
 each is next touched; The Reclaim and Hollowmere have the most to gain.
@@ -120,22 +121,23 @@ reported every landing area's lean on the wrong side (the sizes were right).
 
 | Form | Holes | |
 |---|---|---|
-| Ramp down, ramp up, level (plain) | 24 of 56 par 4s and 5s | The stock shape |
+| Ramp down, ramp up, level (plain) | 24 of 56 par 4s and 5s (18 after the Lost Valley's reshape and the check reading straight holes along their line) | The stock shape |
 | Drop par 3 | 11 of 16 par 3s | One a course from now on |
 | Tee shot off a height (12 m or more) | 10 (five of them 25 m or more) | Hollowmere has four |
 | Big climb (25 m or more) | 4 | Four are finishes or near it |
 | Perched green | 4 | |
 | Uphill par 3 | 4 | |
-| Stepped | 3 | Halcyon Ring 4 among them |
-| Hillside bench | 2 | The Reclaim 8, Halcyon Ring 6 |
+| Stepped | 3 (4) | Halcyon Ring 4 and the Lost Valley 2 among them |
+| Hillside bench | 2 (3) | The Reclaim 8, Halcyon Ring 6, the Lost Valley 6 (9%) |
 | Crest and run | 2 | |
-| Fall-away | 2 | |
-| Table top | 2 | The Reclaim 2, Halcyon Ring 7 |
+| Fall-away | 2 (3: the Lost Valley 9) | |
+| Table top | 2 (3) | The Reclaim 2, Halcyon Ring 7, the Lost Valley 8 |
 | Dip in front | 1 | |
 | Level par 3 | 1 | |
-| Half-pipe | 1 | Halcyon Ring 1 |
+| Half-pipe | 1 (2) | Halcyon Ring 1, the Lost Valley 1 |
 | Par 3 across a gulf | 1 | Halcyon Ring 9 |
-| **Valley carry, hog's back** | **0** | Never used |
+| Hog's back | 0 (1) | The Lost Valley 5 |
+| **Valley carry** | **0** | Never used |
 
 By course, what the check flags:
 
@@ -145,7 +147,9 @@ By course, what the check flags:
 - The Reclaim: four plain par 4s and 5s (1, 4, 6, 7); both par 3s drops.
 - Rimeholm: every landing area leans 1.4–2.8%.
 - Emberfell: no bold hole; five plain (1, 2, 3, 5, 6), two pairs back to back.
-- The Lost Valley: one bold hole (the Nest's climb); five plain (1, 2, 5, 8, 9).
+- The Lost Valley: one bold hole (the Nest's climb); five plain (1, 2, 5, 8, 9). Reshaped 12 November (Rhys's picks):
+  nothing flagged; every form once (half-pipe, stepped, crest and run, level across the tar, hog's back, hillside
+  bench and the big climb, the drop par 3, table top, fall-away); bold 2, 6, 8; none plain.
 - Halcyon Ring (round 2): nothing flagged; nine forms, none twice; bold 4, 6, 7; one drop par 3 (5).
 
 ## Dials, counted (`node tools/review/spread.mjs all`, 12 November 2026)
@@ -170,15 +174,17 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 | The Reclaim | greens (8 of 9), par 5s, widths, bunker counts | a 300 yd par 4, an 85° bend | none |
 | Rimeholm | greens (6 of 9), par 3s, par 5s, widths, bends | a 300 yd par 4, a 3,600 m² powder strip | none |
 | Emberfell | greens (5 of 9), par 4s, par 5s, bunker counts | a 240 yd par 3, a 70 m fairway, a 1,700 m² bunker, a straight hole | none |
-| The Lost Valley | greens (6 of 9), par 5s, widths, bends | a 215 yd par 3, a 300 yd par 4, a 490 yd par 5, no bunker, a field, a 3,800 m² bar, a straight hole | none |
+| The Lost Valley (reshaped 12 November) | none (was greens 6 of 9, par 5s, widths, bends) | a 324 m² green, a 1,323 m² green, a 115 yd and a 215 yd par 3, a 300 yd par 4, a 490 and a 610 yd par 5, a 35 m fairway, no bunker, a field of pits, a 70° bend, a straight hole | the 9th's green (1,323 m², in two parts) |
 | Halcyon Ring (round 2) | none | a 293 m² green, a 115 yd par 3, a 230 yd par 3, a 310 yd par 4, a 490 yd par 5, a 74 m fairway, no bunker, a field (the pews), a straight hole | the Spoke's 1,400 m² green |
 
-Edges nobody has touched: a par 4 over 465; a par 5 over 580; a fairway
-over 75 m.
+Edges nobody has touched: a par 4 over 465; a fairway over 75 m. (A par 5 over 580: the Lost Valley's 2nd, 610 yd,
+since 12 November.)
 
 **Famous-hole set pieces used:** the lone tree twice (the Lost Valley's giant and its fig); an island green of a
-kind (Emberfell's Heart, the Aerie's island greens); a chute of a kind (The Reclaim's Atrium nave). Halcyon Ring: the postage stamp (2) and church pews (3). Never used:
-bunker in the green, shared green, shared fairway, hell bunker, the burn, the wall,
+kind (Emberfell's Heart, the Aerie's island greens); a chute of a kind (The Reclaim's Atrium nave). Halcyon Ring: the postage stamp (2) and church pews (3). The Lost Valley (built 12 November): the postage stamp
+(4, ringed by tar) and the burn (2, crossing the line three times). **The postage stamp was taken by both on the
+same day, Halcyon Ring planned and the Lost Valley built; one of them should change (Rhys to decide).** Never used:
+bunker in the green, shared green, shared fairway, hell bunker, the wall,
 lion's mouth, skyline green, sleepers.
 
 ## Set pieces, counted (from the course notes; approximate)
