@@ -49,7 +49,7 @@ course against these two rows as well; replace them with the measured rows when 
   Same par as another course on four holes at most (Hollowmere, The Reclaim, Rimeholm).
 - Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
   island finish stays. Same par as another course on four holes at most (Rimeholm). Drawn in round 6 (11 November):
-  3,395 yd from the Obsidian tees, 3,670 from the Magma tips (switched off in the data; round 7 moved the Lake's spot off the Lavafall's approach, 410 yd).
+  3,435 yd from the Obsidian tees, 3,695 from the Magma tips (switched off in the data; round 7 moved the Lake's spot off the Lavafall's approach, and the Terraces went from 300 to 340 yd so a hybrid no longer reaches the green).
 - The Lost Valley: starts on the valley floor; the climb to the ledge is the 6th and the drop off it the 7th (the
   first view of the valley from above); the drivable par 4 is the 8th; a reachable par 5 finishes at the shelf
   green under the Great Falls. First par 37, first with three par 5s, first not to finish with a climb. Same par

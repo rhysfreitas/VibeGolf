@@ -34,10 +34,10 @@ export const CARD = {
   classics: 'Four: a Leven (5, the Terraces: the lava pool sits on the side that opens the green, and from the safe terrace the green is below the crag), a Long (6, the Lavafall: the rill crosses where the second wants to finish), a Cape (7, the Lake) and a Punchbowl (8, the Cinder Cone). The Lava Tube\'s double fairway is the course\'s own; the Crown keeps its crescent.',
   decisions: 'Four, of four kinds: 5 drivable (carry the columns or lay up on the terrace), 6 go or lay up (the rill), 7 bite off what you dare (the cape), 9 split fairway (the beach lane or the left). 5, 6 and 7 come in a row, which the rules avoid; Rhys kept the Lake\'s cape on purpose, and each asks a different shot. The Lava Tube is not a decision: its channel is the forward tees\' lane.',
   landmarks: 'The plume (seen from the Crown\'s tee, the Terraces\' landing, the Lake\'s tee and landing, the Cone\'s tee), the lavafall (the Terraces\' tee, the Lavafall\'s tee and landing), the island clubhouse (the Crown\'s tee, the Terraces\' landing, the Lake\'s landing, the Heart\'s tee and landing) and the cinder cone on the floor (the Crown\'s tee, the Terraces\' tee and landing, the Lavafall\'s tee, the Lake\'s tee straight ahead, its own tee). The one reveal is the caldera from the Crown\'s tee: from every tee and landing area on 1–3 nothing inside shows, the cone included.',
-  rhythm: 'A gentle opener: wide, no carry, the river 40 m off the line at its nearest. The hardest run is 3–7; the short cone hole is the breather; the finish is a decision and the course\'s set piece. Par 4s 300, 385, 405, 430 and 455 yd; par 3s 34 yd apart plays-like, facing north-north-west and north-east. Three bends left, three right, three straight; all four quarters of the compass.',
+  rhythm: 'A gentle opener: wide, no carry, the river 40 m off the line at its nearest. The hardest run is 3–7; the short cone hole is the breather; the finish is a decision and the course\'s set piece. Par 4s 340, 385, 405, 430 and 455 yd; par 3s 34 yd apart plays-like, facing north-north-west and north-east. Three bends left, three right, three straight; all four quarters of the compass.',
   fairways: 'Seven par 4 and 5 fairways, seven forms: scalloped (1), funnel (2), double (3), hourglass (5), broken (6), fan (7), split (9). The check finds none alike; two match a fairway on another course, inside the budget.',
   borrowed: 'New to the register: a double fairway either side of a lava tube; a shoreline hole with a beach as the miss (the Heart); an island green with lava all round (Emberfell\'s alone); a green in an amphitheatre, the Lavafall\'s bay under the fall. Borrowed from the over-used list, all approved before the rules review: the fall as a backdrop, the tee shot off the rim, the punchbowl, the bridges, the terraces.',
-  tips: 'The Magma tees, switched off in the data (COURSE.tipsSet, hole.tips): 3,680 yd, 15–40 yd behind the back tee, every spot checked for a 280–300 yd drive.',
+  tips: 'The Magma tees, switched off in the data (COURSE.tipsSet, hole.tips): 3,695 yd, 15–40 yd behind the back tee, every spot checked for a 280–300 yd drive.',
 };
 
 // trees scattered round a point: the kipuka's old forest (ohia), tree ferns
@@ -226,11 +226,15 @@ export const HOLES = [
   }),
 
   // 5. THE TERRACES (was the 6th): a drivable par 4 along the first terrace, then down its edge to the second
-  hole({ n: 5, name: 'The Terraces', seedN: 6, par: 4, legs: [[110, 0], [164, 66]], place: { at: [-160, -160], heading: 262 },
+  hole({ n: 5, name: 'The Terraces', seedN: 6, par: 4, legs: [[110, 0], [164, 66]], place: { at: [-160, -160], heading: 262 }, tips: [-64, -30],
     build: (P) => ({
-      tees: { obsidian: 0, basalt: 14, pumice: [52, -30], ash: [92, -34] },
+      // round 7 (Rhys: "too short, shouldn't be able to reach the green on a par 4 with a hybrid"): the tees go back
+      // and left along the floor, so the bold line over the corner is about 305 yd from the back tee (253 before): a
+      // tour driver reaches the green, a 3 wood and a hybrid don't
+      tees: { obsidian: [-36, -28], basalt: [-22, -15], pumice: [20, -36], ash: [92, -34] },
       ramps: [[164, 226]],
-      fw: [{ e: [[52, 13, 13], [88, 20, 22], [125, 25, 26], [160, 24, 22], [186, 14, 14], [208, 15, 16], [230, 24, 24], [252, 20, 20]], wob: 5 }],
+      // round 7: wider all through (the tees went back, so the forward sets' drives land on the neck at the crag)
+      fw: [{ e: [[40, 13, 13], [88, 22, 24], [125, 30, 30], [160, 28, 25], [186, 20, 20], [208, 20, 21], [230, 32, 27], [252, 22, 22]], wob: 5 }],
       corridor: 16,
       cant: [[115, 200, 3]],   // the upper terrace leans toward its edge and the lower terrace
       columns: { from: [150, 40], to: [230, 120], label: 'basalt columns' },
@@ -245,7 +249,7 @@ export const HOLES = [
         form: 'hourglass',
         type: 'Leven: a short par 4 whose hazard (the lava pool) sits on the side that opens the green; from the safe terrace the green is below the crag',
         feature: 'The crag of basalt columns: an obstacle to carry on the bold line and a frame for the green below it. The lava pool at its foot: the hazard. The upper terrace\'s lean: a lie-setter.',
-        decision: 'Drivable par 4: carry the columns and finish by the green (about 255 m), or lay up on the upper terrace (150 m) and play a short iron down.',
+        decision: 'Drivable par 4: carry the columns and finish by the green (about 275 m, a driver from the back tees), or lay up on the upper terrace (150 m) and play a short iron down.',
         teeView: 'Near: the wall rising on the left. Middle: the upper terrace and its lip at the corner, the columns\' crag. Beyond: the green on the lower terrace, the pool\'s glow right of it, the lake and the floor beyond.',
         ground: 'Down 11 m, stepping off the crag. The upper terrace leans 2.4% right toward its edge. The green: a back-left tier 0.6 m up.',
         plays: 'When the caldera collapsed, its walls slumped in rings of terraces. This drivable par 4 runs along the first one, the wall rising 170 m on the left, then bends right and steps down its edge, a 12 m crag of basalt columns, to the second terrace and the green. A pool of lava lies at the foot of the crag and runs on toward the green in a long tongue, just right of the straight line to it: a drive at the green that leaks right, or comes up short on the right, finds it. The fairway eases down a gully in the edge. Where the drive stops sets the lie: the upper terrace leans 2–3% toward its edge, so a drive there kicks right toward the corner; on the way down, a downslope.',
@@ -396,7 +400,7 @@ export const HOLES = [
 {
   const at_ = (h, s, o = 0) => at(h.line, s, o);
   const H = name => HOLES.find(h => h.name === name);
-  H('The Terraces').boldLine = [[0, 0], H('The Terraces').pin];
+  H('The Terraces').boldLine = [H('The Terraces').teePts.obsidian, H('The Terraces').pin];
   H('The Lavafall').boldLine = [at_(H('The Lavafall'), 218), H('The Lavafall').pin];
   H('The Lake').boldLine = [[0, 0], H('The Lake').targets[1].at];
   H('The Heart').boldLine = [at_(H('The Heart'), 236), H('The Heart').pin];
