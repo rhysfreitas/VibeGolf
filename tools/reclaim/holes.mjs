@@ -16,6 +16,10 @@ export const COURSE = {
     { id: 'ivy', name: 'Ivy', color: '#c94a3a', minDrive: 200 },
     { id: 'moss', name: 'Moss', color: '#e0b84a', minDrive: 0 },
   ],
+  // the tips tee, switched off (docs/COURSE-DESIGN.md "The tips tee: an option in the data"): kept out of teeSets,
+  // and each hole's `tips` kept out of its tees and yards. Turning it on: put this first in teeSets and copy every
+  // hole's tips.tee and tips.yards into its tees and yards under 'girder'
+  tipsSet: { id: 'girder', name: 'Girder', color: '#3b4148', minDrive: 290 },
 };
 
 // a tree stand (in play): n trees scattered round a point
@@ -32,6 +36,12 @@ function hole(def) {
   for (const [k, v] of Object.entries(h.tees)) h.teePts[k] = typeof v === 'number' ? P(v) : P(v[0], v[1]);
   h.yards = {};
   for (const [k, v] of Object.entries(h.tees)) { const s = typeof v === 'number' ? v : v[0]; h.yards[k] = Math.round((len - s) / YD / 5) * 5; }
+  // the tips tee (switched off): `tips: [s, off]`, s behind the back tee; its card adds the distance behind it
+  const tp = def.tips || h.tips;
+  if (tp) {
+    const [s, o] = tp, p = P(s, o), b = h.teePts[COURSE.teeSets[0].id];
+    h.tipsPt = p; h.tipsYards = h.yards[COURSE.teeSets[0].id] + Math.round(Math.hypot(p[0] - b[0], p[1] - b[1]) / YD);
+  }
   return { ...def, ...h };
 }
 
@@ -77,7 +87,7 @@ export const HOLES = [
   }),
 
   // 2. THE ATRIUM: a dogleg left round a gutted office tower whose lower floors are blown out
-  hole({ n: 2, name: 'The Atrium', par: 4, legs: [[200, 0], [148, -62]], place: { at: [-10, -690], heading: 32 }, base: 0,
+  hole({ n: 2, name: 'The Atrium', par: 4, legs: [[200, 0], [148, -62]], place: { at: [-10, -690], heading: 32 }, base: 0, tips: [-35, 0],
     build: (P, L) => {
       // the bold line: straight from the tee through the atrium to the second leg, 90 m past the corner
       const land = P(290), dir = Math.atan2(land[0], -land[1]);
@@ -118,7 +128,7 @@ export const HOLES = [
   }),
 
   // 3. THE STATION: a par 3 into the concourse of a collapsed subway station
-  hole({ n: 3, name: 'The Station', par: 3, legs: [[151, 0]], place: { at: [230, -770], heading: 82 }, base: 8,
+  hole({ n: 3, name: 'The Station', par: 3, legs: [[151, 0]], place: { at: [230, -770], heading: 82 }, base: 8, tips: [4, 0],
     build: (P) => ({
       tees: { spire: 28, brick: 38, ivy: 50, moss: 62 },
       prof: [[0, 0], [151, 0]],
@@ -185,7 +195,7 @@ export const HOLES = [
   }),
 
   // 5. THE STADIUM: a par 3 from the broken upper deck down to the overgrown pitch
-  hole({ n: 5, name: 'The Stadium', par: 3, legs: [[178, 0]], place: { at: [955, -735], heading: 186 }, base: -10,
+  hole({ n: 5, name: 'The Stadium', par: 3, legs: [[178, 0]], place: { at: [955, -735], heading: 186 }, base: -10, tips: [-24, 0],
     build: (P) => ({
       tees: { spire: 0, brick: [14, -6], ivy: [32, 8], moss: [52, -10] },
       prof: [[0, 28], [178, 0]],
@@ -240,7 +250,7 @@ export const HOLES = [
   }),
 
   // 7. THE BRIDGE: off the broken end of the expressway ramp, along the river to the suspension bridge
-  hole({ n: 7, name: 'The Bridge', par: 5, legs: [[262, 0], [250, -30]], place: { at: [690, -160], heading: 262 }, base: 2,
+  hole({ n: 7, name: 'The Bridge', par: 5, legs: [[262, 0], [250, -30]], place: { at: [690, -160], heading: 262 }, base: 2, tips: [-16, -22],
     build: (P) => ({
       tees: { spire: 0, brick: 26, ivy: [72, -34], moss: [118, -36] },
       prof: [[0, 10], [40, 10], [110, 0], [512, 0]],

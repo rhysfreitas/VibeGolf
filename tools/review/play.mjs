@@ -34,7 +34,8 @@ function clear(T, o, x, z) {
   return true;
 }
 // opts: scale (a shorter hitter: every reach times this), first ([x, z]: where the first shot is aimed, for playing one
-// route), skip (targets left out, e.g. the bold ones when playing the safe route), max (strokes before giving up)
+// route), firstAt (the shot `first` applies to: 0 the tee shot, 1 the second, for a choice made on the second shot),
+// skip (targets left out, e.g. the bold ones when playing the safe route), max (strokes before giving up)
 function playHole(h, T, set, seed, opts = {}) {
   const scale = opts.scale ?? 1, skip = opts.skip || [];
   const R = rng(seed), back = h.tees[set], pin = h.pin, pinY = T.groundAt(pin[0], pin[1]);
@@ -46,7 +47,7 @@ function playHole(h, T, set, seed, opts = {}) {
     }
     const reach = (REACH[ball.surf] ?? 190) * scale, dp = Math.hypot(pin[0] - ball.x, pin[1] - ball.z);
     let aim;
-    if (n === 0 && opts.first) { const d = Math.hypot(opts.first[0] - ball.x, opts.first[1] - ball.z), f = Math.min(1, reach / d); aim = [ball.x + (opts.first[0] - ball.x) * f, ball.z + (opts.first[1] - ball.z) * f]; }
+    if (n === (opts.firstAt ?? 0) && opts.first) { const d = Math.hypot(opts.first[0] - ball.x, opts.first[1] - ball.z), f = Math.min(1, reach / d); aim = [ball.x + (opts.first[0] - ball.x) * f, ball.z + (opts.first[1] - ball.z) * f]; }
     else if (dp <= reach * 0.9 && clear(T, ball, pin[0], pin[1])) aim = pin;
     else {
       // as the game's auto-aim (nextLie in main.js): the first clear target in reach that is a real shot (60% of reach

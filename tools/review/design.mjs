@@ -10,7 +10,9 @@
 //   decisions  for each hole with a bold target: what the bold line gains, and the strokes each route takes for a
 //              long hitter (the back tees, 10% longer than the tool's stock player: about 295 yd) and a short one
 //              (the third tee set, 82%); a choice is real when the bold line pays for one and not the other.
-//              Use --seeds=24 or more here: at 6 seeds a difference under 0.3 strokes is noise
+//              Use --seeds=24 or more here: at 6 seeds a difference under 0.3 strokes is noise. A bold target out of
+//              reach from the tee is scored as a second-shot choice (the drive plays safe, the second goes at it); a
+//              Green target marked bold is a drivable green
 // Playable courses come from src/course; planned ones (emberfell, lostvalley) give a skeleton row from their plan data.
 // Lines starting `!` break a rule. Seconds a course without the play, a few minutes with it.
 import path from 'path';
@@ -71,9 +73,13 @@ for (const c of names) {
 
   // --- per hole: view, carry, gate, decisions ---
   let blind = 0;
+  const marked = HOLES.some(h => (h.targets || []).some(x => x.bold));
   for (const [i, h] of HOLES.entries()) {
     const t = T[i], pin = h.green?.pins?.[0] || h.pin, tg = (h.targets || []).filter(x => !x.pin), notes = [];
-    const inferred = !tg.some(x => x.bold), bold = tg.filter(x => x.bold || (inferred && BOLD_NAME.test(x.name))), safe = tg.filter(x => !bold.includes(x));
+    // a pin target marked bold is a drivable green: the bold line is the green itself
+    const gBold = (h.targets || []).find(x => x.pin && x.bold);
+    // names only stand in for marks on a course that marks none (the Aerie, Red Mesa, Hollowmere)
+    const inferred = !marked, bold = [...tg.filter(x => x.bold || (inferred && BOLD_NAME.test(x.name))), ...(gBold ? [{ name: 'Drive the green', x: pin[0], z: pin[1], green: true }] : [])], safe = tg.filter(x => !bold.includes(x));
     const aimFrom = (tee, reach, list) => { // the tee shot's target, as auto-aim picks it
       if (h.par === 3 || dist(tee, pin) <= reach) return pin;
       const dp = dist(tee, pin), ok = list.map(x => [x.x, x.z]).filter(p => dist(p, pin) < dp - 5 && dist(p, tee) <= reach);
@@ -111,11 +117,20 @@ for (const c of names) {
         for (const [s, scale, who] of [[sets[0], 1.1, 'long'], [sets[Math.min(2, sets.length - 1)], 0.82, 'short']]) {
           const tee = h.tees[s.id], reach = 245 * scale, sAim = aimFrom(tee, reach, safe), gain = yd(dist(sAim, pin) - dist(bp, pin));
           const run = o => { let n = 0, pen = 0; for (let k = 0; k < SEEDS; k++) { const r = playHole(h, t, s.id, 503 + k * 29 + i * 7, { scale, ...o }); n += r.n; pen += r.pen; } return [n / SEEDS, pen / SEEDS]; };
-          const can = dist(tee, bp) <= reach * 1.05, [sn, sp] = run({ skip: bold }), [bn, bpn] = can ? run({ first: bp }) : [NaN, NaN];
-          notes.push(`"${B.name}"${inferred ? ' (bold by its name: mark it bold in the data)' : ''}, ${who} hitter from ${s.name}: ` + (can
-            ? `leaves ${gain} yd less; safe ${sn.toFixed(2)} strokes (${sp.toFixed(2)} pen), bold ${bn.toFixed(2)} (${bpn.toFixed(2)} pen): ${bn < sn - 0.1 ? 'the bold line pays' : bn > sn + 0.1 ? 'the bold line costs' : 'no difference'}`
-            : `out of reach (${yd(dist(tee, bp))} yd); safe ${sn.toFixed(2)}`));
-          if (can && who === 'long' && gain < 25) notes.push(`! "${B.name}" gains only ${gain} yd on the safe target: it needs 25 yd or a better angle to be a choice`);
+          const can = dist(tee, bp) <= reach * 1.05, [sn, sp] = run({ skip: bold }), verdict = (bn, sn) => bn < sn - 0.1 ? 'the bold line pays' : bn > sn + 0.1 ? 'the bold line costs' : 'no difference';
+          if (can) {
+            const [bn, bpn] = run({ first: bp });
+            notes.push(`"${B.name}"${inferred ? ' (bold by its name: mark it bold in the data)' : ''}, ${who} hitter from ${s.name}: leaves ${gain} yd less; safe ${sn.toFixed(2)} strokes (${sp.toFixed(2)} pen), bold ${bn.toFixed(2)} (${bpn.toFixed(2)} pen): ${verdict(bn, sn)}`);
+            if (who === 'long' && gain < 25) notes.push(`! "${B.name}" gains only ${gain} yd on the safe target: it needs 25 yd or a better angle to be a choice`);
+          } else if (B.green) notes.push(`"${B.name}", ${who} hitter from ${s.name}: out of reach (${yd(dist(tee, bp))} yd); safe ${sn.toFixed(2)}`);
+          else {
+            // out of reach from the tee: a choice made with the second shot. The tee shot plays the safe line, then the
+            // second goes at the bold target (as far as that lie reaches) against the safe lay-up, the nearest safe
+            // target to the pin that is further from it than the bold one
+            const r2 = 225 * scale, land = sAim, lay = safe.map(x => [x.x, x.z]).filter(p => dist(p, pin) > dist(bp, pin)).sort((a, b) => dist(a, pin) - dist(b, pin))[0];
+            const [bn, bpn] = run({ skip: bold, first: bp, firstAt: 1 }), g2 = lay ? yd(dist(lay, pin) - dist(bp, pin)) : null;
+            notes.push(`"${B.name}"${inferred ? ' (bold by its name: mark it bold in the data)' : ''}, ${who} hitter from ${s.name}: a second-shot choice (${yd(dist(land, bp))} yd from the drive${dist(land, bp) > r2 * 1.05 ? ', out of reach' : ''})${g2 !== null ? `, leaves ${g2} yd less than the lay-up` : ''}; safe ${sn.toFixed(2)} strokes (${sp.toFixed(2)} pen), bold ${bn.toFixed(2)} (${bpn.toFixed(2)} pen): ${verdict(bn, sn)}`);
+          }
         }
       }
     }
@@ -123,7 +138,7 @@ for (const c of names) {
     console.log(`${i + 1} ${h.name}: par ${h.par}, ${r.yards} yd, ${r.dy >= 0 ? '+' : ''}${r.dy} m, bend ${r.bend}${r.tags.length ? ', ' + r.tags.join(', ') : ''}${bold.length ? '' : h.par > 3 ? ', no bold target' : ''}`);
     for (const n of notes) console.log('   ' + n);
   }
-  const dec = HOLES.filter(h => (h.targets || []).some(x => !x.pin && (x.bold || BOLD_NAME.test(x.name)))).length;
+  const dec = HOLES.filter(h => (h.targets || []).some(x => x.pin ? x.bold : (x.bold || (!HOLES.some(k => (k.targets || []).some(y => y.bold)) && BOLD_NAME.test(x.name))))).length;
   console.log(`${blind > 2 ? '! ' : ''}blind tee shots: ${blind} (two a nine at most); holes with a bold target: ${dec} (two to four a nine)`);
 }
 
