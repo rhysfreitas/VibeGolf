@@ -20,3 +20,14 @@ sampled every 2 m into a field, the green and bunkers as shaped features, the bu
 towers, chunks and cars as rocks the ball hits, the trees as plants, and the city once in world space for
 `src/course/city-world.js` to draw. Rerun it after any change here, then `npm test` and
 `node tools/review/playthrough.mjs reclaim`.
+
+Fairway pieces can be ribbons or free shapes (`{ lobes }`, `{ bite }`), as in the other plan tools; a hole whose
+playing line moved keeps the old line as `cityLine` so the city, the river and the other holes stay put (the city
+fill draws from one random sequence). The tips tee: `COURSE.tipsSet` and `tips: [s, off]` per hole, switched off.
+
+`proposal/` has the scripts behind the reshape proposal of 11 November (round 4): `dump.mjs` (a hole's surfaces and
+ground on a 2 m grid from the plan data of a given checkout), `plan.py` (now beside proposed at one scale),
+`xsec.py` (cross sections now against proposed), `land.mjs` (each tee set's landing width), `moddiff.mjs` (which
+holes of the emitted module differ from main's) and `book.py` (the white-page PDF). Run them from a scratch
+folder, with a worktree of main as "now".
+
