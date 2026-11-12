@@ -27,21 +27,13 @@ export const WINDOWS = [
 // the rim glass: a band of glass 24 m wide all the way round the ring along the foot of each rim wall, flush with
 // the rim's ground (9 m), where the floor's hull gives way to the glass of the walls (a penalty area, like the
 // windows; Rhys, 12 November: "a full glass ring all the way around either side of the station"). Ground higher
-// than the band (a villa terrace) ends in a retaining wall at its edge, `kerb` m across. Ribs cross it every
-// `every` m (120: on the wall's own ribs, each running on up the wall as its mullion; Rhys, 12 November): arched supports springing from a footing on the floor's edge (`foot` m from the wall) and curving up
-// into the wall's mullions `top` m up, `w` m wide, `t` m deep.
-export const RIM = { w: 24, kerb: 3, y: 9, rib: { every: 120, foot: 27, top: 34, w: 3, t: 2.4 } };
+// than the band (a villa terrace) ends in a retaining wall at its edge, `kerb` m across. The band is segmented
+// like the wall: a `beam` every 120 m, on each of the wall's own ribs, carries the rib down and across the glass to
+// the floor's edge (flush, `w` m wide, standing `h` proud), and a `sill` runs along the foot of the wall where the
+// floor glass meets the wall glass (Rhys, 12 November, in place of the arched supports he found too busy). Both
+// are part of the penalty area: a ball on them is on the glass
+export const RIM = { w: 24, kerb: 3, y: 9, beam: { every: 120, w: 5, h: 0.4 }, sill: { w: 2.5, h: 1.2 } };
 export const RIM_GLASS = RIM;   // the old name (routing.mjs)
-// a rib's arc: its height (above the cylinder's floor) at d m from the wall, a quarter ellipse from the footing
-// (d = foot, at the band's height) to the wall (d = 0, top); null beyond the footing
-export const ribY = d => d > RIM.rib.foot ? null : RIM.y + (RIM.rib.top - RIM.y) * Math.sqrt(Math.max(0, 1 - (d / RIM.rib.foot) ** 2));
-// the rib at a ring point, if any: [lo, hi] heights of solid rib there (the footing solid down to the ground)
-export function ribAt(a, s) {
-  const d = HALF - Math.abs(a), R_ = RIM.rib; if (d < 0 || d > R_.foot) return null;
-  const k = Math.round(s / R_.every); if (Math.abs(s - k * R_.every) > R_.w / 2) return null;
-  const y = ribY(d), dy = R_.foot - d < 4 ? 99 : R_.t / 2 / Math.max(0.15, Math.sqrt(Math.max(0, 1 - (d / R_.foot) ** 2)));   // thicker in plan where it plunges
-  return [Math.max(RIM.y - 0.5, y - Math.min(dy, 99)), y + R_.t / 2];
-}
 
 // the long lake along the west side, curving up the ring at both ends (its far ends are scenery); level 3.2 m down
 export const LAKE = { pts: [[-392, 690], [-391, 740], [-387, 800], [-369, 900], [-364, 980], [-378, 1060], [-389, 1180], [-384, 1400], [-384, 1800], [-384, 2300]], w: [24, 26, 34, 70, 80, 52, 30, 40, 40, 40], level: -3.2 };   // its west shore 20 m in from the rim glass, the rim walk between (12 November: it ran to the wall); the east shore where it was along the 6th; its head comes round behind the 5th green (the balcony's back wall drops into it)

@@ -44,10 +44,11 @@ def draw_objs(ax, objs):
             ax.plot([o['a'][0], o['b'][0]], [o['a'][1], o['b'][1]], color='white', lw=1.4, zorder=10)
         elif k == 'falls':
             ax.add_patch(Polygon(np.array([[o['x'] - o['w'] / 2, o['z'] - 2], [o['x'] + o['w'] / 2, o['z'] - 2], [o['x'] + o['w'] / 2, o['z'] + 2], [o['x'] - o['w'] / 2, o['z'] + 2]]), fc=(0.80, 0.90, 0.98), ec=(0.30, 0.50, 0.70), lw=0.5, zorder=9))
-        elif k == 'rib':   # a rib of the rim glass: footing (a) to the wall (b), a solid block at the footing
+        elif k == 'beam':   # a beam across the rim glass on a wall rib: the floor's edge (a) to the wall (b)
             a, b = np.array(o['a']), np.array(o['b']); d = b - a; n = np.array([-d[1], d[0]]) / np.hypot(*d) * o['w'] / 2
             ax.add_patch(Polygon(np.array([a - n, b - n, b + n, a + n]), fc=(0.86, 0.88, 0.92), ec=INK, lw=0.5, zorder=9))
-            ax.add_patch(Polygon(np.array([a - n * 1.6, a + n * 1.6, a + n * 1.6 + d / np.hypot(*d) * 3, a - n * 1.6 + d / np.hypot(*d) * 3]), fc=(0.70, 0.72, 0.78), ec=INK, lw=0.5, zorder=9))
+        elif k == 'sill':   # the sill along the wall's foot
+            P = np.array(o['pts']); ax.plot(P[:, 0], P[:, 1], color=(0.80, 0.82, 0.87), lw=2.4, solid_capstyle='butt', zorder=9); ax.plot(P[:, 0], P[:, 1], color=INK, lw=0.4, zorder=9)
         elif k == 'window':
             P = np.array(o['pts']); ax.add_patch(Polygon(P, fc='none', ec='white', lw=1.4, zorder=6)); ax.add_patch(Polygon(P, fc='none', ec=INK, lw=0.5, zorder=6))
 

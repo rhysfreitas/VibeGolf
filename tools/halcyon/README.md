@@ -38,20 +38,22 @@ spoke, whose foot moved 30 m west; the shots asked for and the hazard and surrou
 Plan book round 3 (12 November 2026), from Rhys's notes on round 2: the rim glass, a 24 × 130 m strip of floor
 glass beside the 5th's balcony, read as an anomaly; he asked for "a full glass ring all the way around either side
 of the station" with "decent supports". Now `RIM` in `world.mjs`: a band of glass 24 m wide along the foot of
-each rim wall all the way round, flush with the rim's ground (9 m), with a rib every 120 m on the wall's own ribs (a quarter arch from a
-footing 27 m out to the wall 34 m up; `ribAt` gives its solid, `ribY` its arc); ground higher than the band ends in
+each rim wall all the way round, flush with the rim's ground (9 m), segmented every 120 m by a beam on each of the wall's ribs (round 5: first arched ribs every
+60 m, then 120, then Rhys found them too busy), and a sill where the floor glass meets the wall; ground higher than the band ends in
 a retaining wall at its edge. The long lake's west shore moved in off the glass (the rim walk between), the
 balcony rose 7 m so it stands 8 m over the glass (the 5th now drops 15 m), and the 3rd's tips tee came 17 m behind
 its back tee. The 1st's green had come out as two pieces with the pin between them; it is one green now, and
-`sample.mjs` flags a green in pieces or a pin less than 3 m inside its edge. The book is
-`out/halcyon-plan-book-r3.pdf`.
+`sample.mjs` flags a green in pieces or a pin less than 3 m inside its edge. Rounds 4 and 5 the same day, from his notes: the supports
+halved and put on the wall's ribs, then the arches taken out ("too busy") for flat beams across the glass on the
+wall's ribs and a sill along the wall's foot; the lake's head back behind the 5th green; the postage stamp kept.
+The book is `out/halcyon-plan-book-r5.pdf`.
 
 Run order for the book: `node sample.mjs` (about 20 s), `python3 plans.py`, `node sketch.mjs` (a few seconds),
 `node book.mjs` (`ROUND=n DATE='…' NEW=new.json` optional).
 
 | Step | What it does |
 |---|---|
-| `world.mjs` | The floor in ring space (`a` across, east +; `s` along, north/spinward +; plan X = a, Z = -s): the rims at a = ±450, the day/night line (`TERMINATOR`, the night side south of it), villa terraces toward each rim (`PLATEAUS`, eased edges, applied in order; `fall: [s0, y0, s1, y1]` tilts a top along the ring), the 9th's amphitheatre (`bowl` and its steps), the floor windows (`WINDOWS`: the Long Window on 4, the Great Window on 9), the rim glass (`RIM`: a band along the foot of each rim wall, ribs every 120 m), the long lake along the west side, the canal with its lock and aqueduct, the spoke's A-frame foot astride the 7th, the clubhouse, the tram stop, the 8th's valley. `curveRise(s, s0)` is the curve's lift from a hole's low line. |
+| `world.mjs` | The floor in ring space (`a` across, east +; `s` along, north/spinward +; plan X = a, Z = -s): the rims at a = ±450, the day/night line (`TERMINATOR`, the night side south of it), villa terraces toward each rim (`PLATEAUS`, eased edges, applied in order; `fall: [s0, y0, s1, y1]` tilts a top along the ring), the 9th's amphitheatre (`bowl` and its steps), the floor windows (`WINDOWS`: the Long Window on 4, the Great Window on 9), the rim glass (`RIM`: a band along the foot of each rim wall, beams every 120 m on the wall's ribs, a sill at the wall), the long lake along the west side, the canal with its lock and aqueduct, the spoke's A-frame foot astride the 7th, the clubhouse, the tram stop, the 8th's valley. `curveRise(s, s0)` is the curve's lift from a hole's low line. |
 | `holes.mjs` | `COURSE` (tee sets, the Kingfisher tips set switched off, the course card `card`) and `HOLES`: each hole from `legs` in its own frame, `place: { at, heading }` on the floor, tee spots, the tips spot (`tips`, default 34 m behind on par 4s and 5s, 14 m on par 3s) and its hole card (`card`: story, type, form, feature and job, decision, miss map, tee view, ground). |
 | `scene.mjs` | Each hole built in its own frame (`buildHole`): ground = the floor (`H`) + the curve from its back tee + the shared landforms + its cant and ramps near the line, the green levelled to the pin (a shelf cut into the curve), `pipe: [[s0, s1, height, halfWidth]]` (embankments rising (|off|/hw)^1.5 to `height` either side, the line unchanged), `levels: [[s0, s1], ...]` (terraces levelled at the line's mid-height with banks between), bunkers carved in, tee pads (`padL` shortens them so one stops short of a lip; a pad never blends down over a drop); `surface` (fairway, rough, the native park, woods only 70 m or more off the line, gardens, plaza, terrace walls, water, window); trees, villas, walls, the spoke's feet, the footbridge and the falls as objects and solids. `worldAt` is the floor between the holes for the map. |
 | `shapes.mjs`, `greens.mjs` | Fairways (ribbons `{ e }`, free shapes `{ lobes }`, cut-outs `{ bite }`), greens from lobes with designed contour, green stats and leans (as `tools/lostvalley/`). |
