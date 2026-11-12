@@ -46,6 +46,7 @@ export function solveCustom(sim, clubs, target, { club = null, traj = 'normal', 
   for (let pass = 0; pass < 3; pass++) {
     l = land(toolBall(c, 1, hla, o)); k = 1;
     if (l.d > dist) { let lo = 0.3, hi = 1; for (let i = 0; i < 12; i++) { k = (lo + hi) / 2; l = land(toolBall(c, k, hla, o)); if (l.d > dist) hi = k; else lo = k; } }
+    if (l.d < 1) break; // it meets the ground at the ball (a lip in front of it): no bearing to correct toward
     const err = bearing - Math.atan2(l.x, -l.z);
     if (Math.abs(err) < 0.0015) break;
     hla += err * 180 / Math.PI;

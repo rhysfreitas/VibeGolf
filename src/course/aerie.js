@@ -246,7 +246,7 @@ export const HOLES = [
     corridor: 9999,
     native: [0,0],
     drops: [],
-    targets: [{"name":"Safe fairway","x":0,"z":-230},{"name":"Over the cove","x":104,"z":-214},{"name":"Green","pin":true}],
+    targets: [{"name":"Safe fairway","x":0,"z":-230},{"name":"Over the cove","x":104,"z":-214,"bold":true},{"name":"Green","pin":true}],
     scenery: [],
     distant: [
       {"id":"veil","x":-893.2,"z":-273.8,"rot":-154},
@@ -442,7 +442,7 @@ export const HOLES = [
     corridor: 9999,
     native: [0,0],
     drops: [],
-    targets: [{"name":"Fairway","x":-4,"z":-230},{"name":"Upper fairway","x":-24,"z":-392},{"name":"Green","pin":true}],
+    targets: [{"name":"Fairway","x":-4,"z":-230},{"name":"Upper fairway","x":-24,"z":-392},{"name":"Go for it","x":-15,"z":-455,"bold":true},{"name":"Green","pin":true}],
     scenery: [],
     props: [{"type":"clubhouse","x":36,"z":-502,"rot":-1.14}],
     distant: [

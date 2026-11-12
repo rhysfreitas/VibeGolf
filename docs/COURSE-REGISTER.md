@@ -66,8 +66,8 @@ middle; a long par 3 early.
 
 | Course | Its logic | Classics | Decision types | Set pieces and landmarks | Big sand |
 |---|---|---|---|---|---|
-| **The Aerie** | Clouds are a penalty area; islands drift between shots | Cape (5), punchbowl (6) | Bite off a carry (5), the long way round (3) | Waterfall that knocks a ball down (1), drifting island, hot-air balloon, rock pinnacle on the line (3), climb to the clubhouse (9) | None |
-| **Red Mesa** | A miss off the top plays from the canyon floor | Cape (1), speed slot to a punchbowl (2), Redan (3), Biarritz (6), Alps (9) | Bite the corner (1), through or round the arch (4), go or lay up (5), drivable (7) | 70 m drop par 3 (3), natural arch (4), trestle and steam train (6), hoodoos (7), cliff dwellings, climb through the tiers (9) | Waste on 5 |
+| **The Aerie** | Clouds are a penalty area; islands drift between shots | Cape (5), punchbowl (6) | Bite off a carry (5), go or lay up (9) (both `bold: true`, 11 November); the long way round (3) is a showpiece, its right route measures as a trap | Waterfall that knocks a ball down (1), drifting island, hot-air balloon, rock pinnacle on the line (3), climb to the clubhouse (9) | None |
+| **Red Mesa** | A miss off the top plays from the canyon floor | Cape (1), speed slot to a punchbowl (2), Redan (3), Biarritz (6), Alps (9) | Bite the corner (1), go or lay up (5), drivable (7) (all `bold: true`, 11 November); the arch (4) is a frame, its choice waits on Rhys | 70 m drop par 3 (3), natural arch (4), trestle and steam train (6), hoodoos (7), cliff dwellings, climb through the tiers (9) | Waste on 5 |
 | **Hollowmere** | Walls soak a ball; lit play in the dark | Punchbowl (5, 8) | Bite the corner (1, 4), thread the stalagmites (3), over the trestle (7), drivable through the eyelet (9) | Ore cart that moves (1), Mirror Lake (2), terraces (3), the Deep and its falls (4, 6, 7), geode green (5), glowworm grotto (8), cenote (9) | None |
 | **The Reclaim** | Facades soak a ball; streets are native ground | Punchbowl (3), Redan and plateau greens | Through the lobby (2), over the crest (4), drivable over the fountain (6), go or lay up at the inlet (7), across the basin (8) | The El (1, 6), gutted tower (2), subway cave-in (3), propped tower (4), stadium and sinkhole (5), fallen bridge (7), rift and leaning clubhouse (9) | None |
 | **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8) | Cape over the moulin (7), split fairway (8), drivable through the seracs (5) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
@@ -136,7 +136,7 @@ first run had flagged seven holes, and four of those were the tool. The decision
 and want re-running (`--only=decisions --seeds=24`) before anyone acts on them. *Read* means taken from
 the course's data and cards. *Not audited* means nobody has written it down yet: the miss maps, the helper
 features and the landmark tables don't exist for any course, so those rules start with the next round of each.
-The tool measures a bold line only from the tee; a choice on the second shot shows as "out of reach".
+A bold target out of reach from the tee is now scored as a second-shot choice (11 November).
 
 ### Every course
 
@@ -144,8 +144,8 @@ The tool measures a bold line only from the tee; a choice on the second shot sho
   stay as they are. Emberfell and the Lost Valley are the two that can still change: see their rows.
 - **Hole cards:** only Emberfell and the Lost Valley carry a story for every hole; none has a feature job, a
   miss map or a tee-view line.
-- **`bold: true`:** only Rimeholm (two holes), Emberfell (two) and the Lost Valley (four) mark a bold target. The
-  Aerie, Red Mesa, Hollowmere and The Reclaim have bold lines by name only; the tool guessed them from the names.
+- **`bold: true`:** every course now marks its bold targets in the data (Red Mesa three, the Aerie two, marked
+  11 November with Hollowmere and The Reclaim); the tool no longer has to guess them from the names.
 - **Rhythm, measured, all five playable:** holes face all four quarters of the compass on every course; par 3s
   and par 5s are never back to back.
 
@@ -241,8 +241,9 @@ The tool measures a bold line only from the tee; a choice on the second shot sho
 
 1. Done 11 November: the tool and the game disagreed on Rimeholm because the tool's player aimed differently
    (fixed in `tools/review/play.mjs`), and a topped shot ran for ever (fixed in `src/physics.js`).
-2. Mark `bold: true` in the four courses that lack it, then fix the choices that measure backwards or as traps:
-   The Reclaim's 2nd and 8th, Red Mesa's 4th and 7th.
+2. Mark `bold: true` in the courses that lack it, then fix the choices that measure backwards or as traps:
+   The Reclaim's 2nd and 8th. Red Mesa and the Aerie marked 11 November; Red Mesa's 4th (the arch) and 7th (the
+   table rock) wait on Rhys's picks in their review page.
 3. Look at the drop-off-a-lip tee views (Red Mesa 2, Rimeholm 1 and 5) in a render.
 4. Done 11 November: Rhys picked new skeletons for Emberfell and the Lost Valley (see "Assigned" above).
 5. Write hole cards (feature job, miss map, tee view) for the playable courses as each next gets touched.
