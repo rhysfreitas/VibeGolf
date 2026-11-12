@@ -41,7 +41,12 @@ course against these two rows as well; replace them with the measured rows when 
 |---|---|---|---|---|---|---|---|---|---|---|
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
 | The Lost Valley | 4 Cycad Grove | 5 Floodplain | 4 Bone Bed | 3 Tar Pit | 5 Swamp | 4 ↑ The Nest | 3 ↓ The Overlook | 4 d Strangler | 5 Plunge Pool | 37 |
+| Halcyon Ring (new, concept only) | 4 | 3 | 4 | 5 | 3 | 4 | 4 | 5 | 3 the Great Window | 35 |
 
+- Halcyon Ring (Rhys's picks, 11 November 2026; `claude/brief-halcyon-ring.md`): a pristine garden colony
+  inside a ring space station; floor windows onto space are the penalty area; the ball flies as on Earth. The
+  first par 35, the first with three par 3s, the first par-3 finish (across the Great Window to the clubhouse).
+  Same par as another course on four holes at most (Hollowmere, The Reclaim, Rimeholm).
 - Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
   island finish stays. Same par as another course on four holes at most (Rimeholm). Drawn in round 6 (11 November):
   3,395 yd from the Obsidian tees, 3,670 from the Magma tips (switched off in the data; round 7 moved the Lake's spot off the Lavafall's approach, 410 yd).
