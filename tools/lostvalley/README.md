@@ -1,6 +1,6 @@
 # The Lost Valley: plan book tools
 
-The Lost Valley is a course in planning: nine holes in a hidden valley where time stopped, walled in by the sheer
+The Lost Valley is a playable blockout (since 11 November 2026, after plan book round 3): nine holes in a hidden valley where time stopped, walled in by the sheer
 cliffs of a table mountain (a tepui), on a golden afternoon after rain. Round 3 (11 November 2026) re-laid it to the
 skeleton Rhys picked: par 37, 4 5 4 3 5 4 3 4 5. The round starts at the expedition camp on a knoll on the valley
 floor; 1 Cycad Grove (a giant monkey-puzzle at the inside of the corner), 2 The Floodplain (a Long: the back channel
@@ -27,8 +27,22 @@ views always agree. They follow `tools/emberfell/` (geo.mjs and shapes.mjs are c
 
 Fairways aren't only ribbons: in `holes.mjs` a piece of `fw` is `{ e: [[s, L, R] ...] }` (two edges along the line), `{ lobes: [[s, off, along, across, rot] ...] }` (a free shape: a bowl, a fan, a hook, an island of fairway) or `{ bite: [...] }` (the same shapes cut out of the rest: an island in the middle, a scalloped edge). `docs/fairway-forms.svg` shows twelve forms and `tools/review/forms.mjs` has the data for each; `node tools/review/alike.mjs lostvalley` names each fairway's form and flags repeats (`docs/COURSE-DESIGN.md` "Sameness" and "Fairway forms").
 
-Run them in that order. Output goes to `out/` (ignored by git). No emitter to the engine format yet.
+Run them in that order. Output goes to `out/` (ignored by git).
 
-Things the engine will need that it doesn't have (from `claude/course-brief-lost-valley.md`): the jungle look fast
-on phones, the animals as instanced herds, the Overlook's pterosaur (perched, launched by the round's first tee
-shot, once a round), the tar pit as a water-like hazard, the root arch as a solid arch, the golden after-rain sky.
+`node emit.mjs` writes the playable course, `src/course/lostvalley.js` (`course.html?c=lostvalley`), from the same
+data (about 2 minutes; don't hand-edit the module): each hole's ground sampled every 2 m from `worldAt` (so it meets
+its neighbours as the book draws them) with the engine's surface codes and a paint byte (meadow, jungle floor, rock,
+rubble, mud, gravel, the camp, tar, water); water and tar play as `water` (their bed 0.8 m under the drawn level; the
+toast says "Into the tar" in the tar), the river's gravel bars near the play as `sand`; the green and bunkers as
+outlines over the field (`features.js` `outline` + `keepGround`; river sand, and the 1st's strip as `waste`);
+boulders, the 7th's spire (a hoodoo, `draw: false`: valley-world.js draws it), the Strangler's root arch (wedges along
+its curve), the camp's hut and the lookout (boxes that soak) as rocks; every tree as a plant with its own body
+(`h`, `cr`, `low`, `tr`: trees.js), including the giant on the 1st, the fig and a jungle of about 4,000 on the talus,
+kept 60 m off every line; and `COURSE.valley`: the valley once in world space (a 10 m map over the floor and walls, a
+50 m one out to the far mesas, the falls, camp, bridge, bones and animals) for `src/course/valley-world.js`. Rerun it
+after any change here, then `node --test tests/lostvalley.test.mjs` and
+`node tools/review/playthrough.mjs lostvalley --render=120`.
+
+Still to come from `claude/course-brief-lost-valley.md` (the art pass): the jungle look (the blockout's trees are
+plain shapes), the animals beyond blocks, the Overlook's pterosaur (perched, launched by the round's first tee shot,
+once a round), the after-rain light and mist worked up.

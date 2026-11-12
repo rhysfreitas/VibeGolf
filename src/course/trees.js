@@ -11,9 +11,16 @@ import { rng } from './noise.js';
 // renderer's shapes; pines are cones and are handled apart)
 export const TREE_SHAPES = { oak: [2.5, 3, 1], juniper: [0.5, 1.5, 0.6], pinyon: [1.2, 1.9, 0.7], cotton: [4.5, 3.6, 1.4], mushroom: [3.2, 2.4, 1.8] };
 // chance per metre of hitting a branch inside the canopy
-const DENSITY = { pine: 0.34, oak: 0.3, juniper: 0.5, pinyon: 0.42, cotton: 0.28, mushroom: 0.6 }; // a giant mushroom's cap is dense
+const DENSITY = { pine: 0.34, oak: 0.3, juniper: 0.5, pinyon: 0.42, cotton: 0.28, mushroom: 0.6, // a giant mushroom's cap is dense
+  cycad: 0.45, fern: 0.35, conifer: 0.3, giant: 0.32, broad: 0.32, cypress: 0.36, fig: 0.38 };   // The Lost Valley's
 
 export function treeBody(t) {
+  // a tree with its own body (The Lost Valley's): h tall, its canopy from h * low up to h, cr across in radius, a
+  // trunk tr thick under it
+  if (t.cr != null && t.h != null) {
+    const low = t.low ?? 0.35, y0 = t.y + t.h * low;
+    return { x: t.x, z: t.z, y: t.y, cy: (y0 + t.y + t.h) / 2, rh: t.cr, rv: Math.max(0.6, t.h * (1 - low) / 2), top: y0, tr: t.tr ?? 0.3, density: DENSITY[t.type] ?? 0.3 };
+  }
   if (t.type === 'pine') {
     const H = 7 * t.s + 4 * t.r;
     return { x: t.x, z: t.z, y: t.y, cy: t.y + H * 0.55, rh: 1.7 * t.s, rv: H * 0.42, top: t.y + H * 0.4, tr: Math.max(0.15, 0.22 * t.s), density: DENSITY.pine };

@@ -156,6 +156,7 @@ function waterfall(p, T, ctx) {
 export function buildRocks(T, hole, mat, group) {
   const capMat = new THREE.MeshStandardMaterial({ color: 0x5f4a3c, roughness: 0.95 });
   for (const R of T.rocks) {
+    if (R.draw === false) continue;   // drawn by its course's own world (The Lost Valley's spire)
     if (R.type === 'arch') {
       const geo = rockAttrs(roughen(archGeometry(R), 1.1, 9, R.x));
       const m = new THREE.Mesh(geo, mat); m.position.set(R.x, R.y, R.z); m.rotation.y = -(R.rot || 0);

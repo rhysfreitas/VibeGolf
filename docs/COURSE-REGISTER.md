@@ -17,7 +17,7 @@ or up from tee to green.
 | The Reclaim | 4R | 4L | 3 | 5S | 3 ↓ | 4 d | 5L | 4R | 4 ↑ | 36 |
 | Rimeholm | 4R ↓ | 4L | 3 | 5S | 4 d ↓ | 3 | 4R | 5L | 4L ↑ | 36 |
 | Emberfell (playable blockout, round 7) | 5L | 4 | 4L | 3 ↓ | 4R d | 5L | 4R | 3 | 4R | 36 |
-| The Lost Valley (planned) | 4R ↓ | 4L | 3 | 5S | 3 | 4 d | 4R | 5L | 4 ↑ | 36 |
+| The Lost Valley (playable blockout, after plan book round 3) | 4R | 5R | 4L | 3 | 5L | 4 ↑ | 3 ↓ | 4 d | 5L | 37 |
 
 What repeats (11 November 2026):
 
@@ -25,22 +25,24 @@ What repeats (11 November 2026):
 - Every course opens with a par 4, and six of seven open bending right.
 - The 3rd is a par 3 on five of seven; the 4th is an S-bend par 5 on the last four.
 - A drivable par 4 sits 5th or 6th on the last four.
-- The Reclaim and Emberfell have the same par order; the Lost Valley shares seven of nine pars with each of The
-  Reclaim, Rimeholm and Emberfell.
+- The Reclaim and Emberfell have the same par order. The re-laid Lost Valley (par 37) shares a par with another
+  course on four holes at most (Red Mesa).
 - Every course finishes by climbing to a clubhouse or camp (the Aerie +5 m, Red Mesa +29, Hollowmere up into the
-  cenote's light, The Reclaim +28, Rimeholm +38, Emberfell +17, the Lost Valley +30).
-- Four open with a drop off a ledge (Hollowmere −32 m, The Reclaim −12, Rimeholm −30, the Lost Valley −27).
+  cenote's light, The Reclaim +28, Rimeholm +38, Emberfell +17), except the re-laid Lost Valley, which finishes down
+  to the shelf green in the plunge pool (−12).
+- Three open with a drop off a ledge (Hollowmere −32 m, The Reclaim −12, Rimeholm −30); the re-laid Lost Valley
+  opens off a low knoll (−10) and drops off its ledge at the 7th.
 
 ### Assigned on 11 November 2026 (Rhys's picks; not yet drawn)
 
-Emberfell and the Lost Valley are being re-laid to new skeletons, each in its own chat
-(`claude/brief-emberfell-skeleton.md` and `claude/brief-lost-valley-skeleton.md` in the project). Check a new
-course against these two rows as well; replace them with the measured rows when the plan books are approved.
+Emberfell and the Lost Valley were re-laid to new skeletons, each in its own chat
+(`claude/brief-emberfell-skeleton.md` and `claude/brief-lost-valley-skeleton.md` in the project). The Lost
+Valley's measured row is in the table above (Rhys approved plan book round 3 on 11 November: "looks good, let's
+build"); Emberfell's row stays here until its layout is approved. Check a new course against these rows as well.
 
 | Course | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | Par |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
-| The Lost Valley | 4 Cycad Grove | 5 Floodplain | 4 Bone Bed | 3 Tar Pit | 5 Swamp | 4 ↑ The Nest | 3 ↓ The Overlook | 4 d Strangler | 5 Plunge Pool | 37 |
 | Halcyon Ring (new, concept only) | 4 | 3 | 4 | 5 | 3 | 4 | 4 | 5 | 3 the Great Window | 35 |
 
 - Halcyon Ring (Rhys's picks, 11 November 2026; `claude/brief-halcyon-ring.md`): a pristine garden colony
@@ -50,16 +52,10 @@ course against these two rows as well; replace them with the measured rows when 
 - Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
   island finish stays. Same par as another course on four holes at most (Rimeholm). Drawn in round 6 (11 November):
   3,435 yd from the Obsidian tees, 3,695 from the Magma tips (switched off in the data; round 7 moved the Lake's spot off the Lavafall's approach, and the Terraces went from 300 to 340 yd so a hybrid no longer reaches the green).
-- The Lost Valley: starts on the valley floor; the climb to the ledge is the 6th and the drop off it the 7th (the
-  first view of the valley from above); the drivable par 4 is the 8th; a reachable par 5 finishes at the shelf
-  green under the Great Falls. First par 37, first with three par 5s, first not to finish with a climb. Same par
-  as another course on four holes at most (Red Mesa).
-  Routing check sent 11 November 2026 (`tools/lostvalley/`): the ledge moved to the east wall with its ramp at the
-  south end; Titan 3,395 yd, 4R 5R 4L 3 5L 4↑ 3↓ 4d 5L, forms fan, broken, island, split, funnel, split,
-  scalloped; classics Long (2), Short (4), Eden (7), Leven (8); tips (Brachio, switched off) 3,670 yd. Rhys's
-  picks: the ledge on the east wall, a lookout on it by the 7th tee, the rope bridge across the gorge beside the
-  9th. Plan book round 3 has the decisions (3, 5, 8, 9) as proposed. The measured row replaces this one when Rhys
-  approves the layout.
+- The Lost Valley (approved and built as a blockout, 11 November): starts on the valley floor; the climb to the
+  ledge is the 6th and the drop off it the 7th; the drivable par 4 is the 8th; a reachable par 5 finishes at the
+  shelf green under the Great Falls. First par 37, first with three par 5s, first not to finish with a climb.
+  Titan 3,395 yd, Brachio tips (switched off) 3,670.
 - Against each other they share a par on two holes.
 
 **Not yet used, so open to the next course (after those two):** par 35; one or three par 3s; one par 5; a par 3
@@ -77,7 +73,7 @@ middle; a long par 3 early.
 | **The Reclaim** | Facades soak a ball; streets are native ground | Punchbowl (3), Redan and plateau greens, Bottle (4) | Through the lobby (2, long way round), the bottle at the crest (4), drivable, running on from the right (6), bite off the basin (8) | The El (1, 6), gutted tower (2), subway cave-in (3), propped tower (4), stadium and sinkhole (5), fallen bridge (7), rift and leaning clubhouse (9) | None |
 | **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8), Bottle (9) | Drivable through the seracs (5), cape over the moulin (7), split fairway (8), bottle through the neck (9) (all `bold: true`, 11 November) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
 | **Emberfell** (playable blockout, round 7) | Lava plays as water | Leven (5), Long (6), Cape (7), Punchbowl in a crater ringed with sand (8) | Drivable down the columns (5), go or lay up at the rill (6), bite off the cape (7), split (9) | Kipuka and lava river (1), geysers (2), tube bridge and a double fairway either side of its trench (3), the Notch reveal (4), basalt columns (5), lavafall in its bay (6), lava lake (7), cinder cone on the caldera floor (8), island clubhouse (9) | Cross bunker (2), ring (8), beach (9) |
-| **The Lost Valley** (planned) | Animals are scenery; tar plays as water | Cape (7) | Split round the giant (2), over the channel (4), drivable under the arch (6), centre-line bluff (7), stepping stones or the dry way (8) | Camp ledge (1, 9), monkey-puzzle (2), tar pit and bones (3), braided river (4), Great Falls (5), strangler fig arch (6), Bone Bluff (7), swamp (8), nests (9) | Gravel bars |
+| **The Lost Valley** (playable blockout) | Animals are scenery; tar plays as water; the river's gravel bars play as bunkers | Long (2), Short (4), Eden (7), Leven (8) | Centre-line hazard (3, the Bone Bluff), the long way round (5, the stepping stones or the dry way), drivable (8, under the root arch), go or lay up (9, the shelf in two) | The camp on its knoll (1), the giant monkey-puzzle (1), braided river and back channel (2), Bone Bluff and its skeleton (3), tar pit and bones (4), swamp and stepping stones (5), the ramp to the east ledge and Nest Falls (6), the ledge's bluff, the lookout and the spire (7), the Strangler's root arch (8), the Great Falls, the plunge pool and the rope bridge (9); long-necks and pterosaurs as scenery | Sand ring round the 3rd green, the 1st's waste strip, gravel bars |
 
 Classics no course has used yet: **Eden, Road, Bottle, Channel, Leven, Double Plateau, Hog's Back, Sahara, Long,
 Dell.** A punchbowl is on six of seven courses: give it a rest.
@@ -97,7 +93,7 @@ of fairways on different courses measure as alike.
 | The Reclaim | broken 2, spindle 2, hourglass, hook, fan (reshaped 11 November) | 0 | Inside it; six fairways match another course's (three Hollowmere's, three Rimeholm's), was 26. Was spindle 5, broken 2, six pairs alike |
 | Rimeholm | reworked 11 November: spindle, scalloped (2), island 2 (4, 5), uneven, broken, hourglass (9) | 0 | Inside it but for the islands back to back (4, 5). Was: four plain strips and five pairs alike, once the check counted only each hole's own ground (it had read the 8th's fairway beside the 9th's tees as an island) |
 | Emberfell (playable blockout) | round 6: scalloped, funnel, split (a double fairway), hourglass, broken, fan, island | 0 | Inside it; two fairways match another course's (the Barranco and Rimeholm's Ice Gate, the Heart and the Lost Valley's Bone Bed). Was spindle 3, hourglass 3, island, five pairs alike |
-| The Lost Valley (planned) | split 4, broken 3 | 0 | Every hole split or broken: two forms, and three splits in a row |
+| The Lost Valley (playable blockout) | fan, broken, island, split (stones beside the dry way), funnel, split, scalloped | 0 of 21 | Inside it; none matches another course's. Was split 4, broken 3 |
 
 The two planned courses fix theirs in their re-lay (their briefs say so). The playable five keep theirs until
 each is next touched; The Reclaim and Hollowmere have the most to gain.
@@ -277,15 +273,25 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
 - **Reveal:** has one (the Notch), the model for the rule.
 - **Not audited until it is in the engine:** gate, carries, view.
 
-### The Lost Valley (planned, round 2)
+### The Lost Valley (playable blockout, 11 November 2026)
 
-- **Skeleton:** opens with a drop off a ledge and finishes with a sidehill climb, S-bend par 5 fourth, drivable
-  sixth: the fourth course on that layout. It shares seven pars with three other courses. It is early enough to
-  change: a different opener or finish, or a par 3 moved off the 3rd.
-- **Decisions:** five (split 2nd, the channel on the 4th, drivable 6th, the bluff on the 7th, stepping stones
-  on the 8th), and three in a row at 6, 7, 8. Over the range of two to four: drop one, and break up the run.
-- **Classics:** one named (Cape).
-- **Not audited until it is in the engine:** gate, carries, view.
+- **Skeleton:** re-laid to Rhys's pick (par 37, 4 5 4 3 5 4 3 4 5): shares a par with another course on four holes
+  at most; no set-piece slot shared. Its finish (down to the shelf green under the Great Falls) and its mid-round
+  climb are new.
+- **Gate:** passes. Long hitter from Titan / short hitter from Compy, to par a hole: 1 −0.2/−0.2, 2 −0.1/−0.2,
+  3 +0.5/+0.4, 4 −0.2/−0.2, 5 0.0/0.0, 6 +0.8/0.0, 7 +0.3/−0.2 (0.2 penalties, the creek long), 8 −0.2/−0.2,
+  9 −1.0/−0.6. The first build failed the 3rd (+2.6/+3.8, never finished): from the old safe target the bluff stood
+  29 m tall 25 m in front of the approach; the target moved to the right half of its lane (232 m, 44 right), where
+  the green shows past the rock.
+- **View:** two blind tee shots by the check (the 2nd, 3.2 m; the 3rd, 3.8 m), at the limit.
+- **Decisions:** four, each a different type, bold targets on 3, 5, 8 and 9 (the 9th's Green). Under the arch (8)
+  pays both players about half a stroke to two thirds. The stepping stones (5, a second shot) cost the long hitter
+  0.25 and pay the short one 0.25. Left of the bluff (3) gains 29 yd and makes no difference to either: the bold
+  side wants more reward (a better angle into the ring's opening, or a shorter lane). The 9th is scored as out of
+  reach from the tee; the tool doesn't yet score a par 5's second-shot go at a Green target.
+- **Rhythm:** four straight holes (both par 3s, the 6th and the 8th), par 4s 300–425, par 3s 145 and 215, all
+  four quarters of the compass.
+- **Classics:** four (Long, Short, Eden, Leven), all new to the register.
 
 ### What I'd do first
 

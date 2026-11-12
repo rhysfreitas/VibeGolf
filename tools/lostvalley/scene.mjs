@@ -183,6 +183,7 @@ export function buildHole(h) {
     if (go < (h.green.apron || 3)) return 'fringe';
     for (const t of teePads) if (onPad(t, x, z)) return 'tee';
     const sl = slopeAt(x, z), fd = fairwayD(x, z);
+    if (standAt(X, Z) > 3) return sl > 0.5 ? 'cliff' : 'rubble';   // the Bone Bluff: its broken top is rock, not fairway
     if (fd < 0 && sl < 0.35) return 'fairway';
     if (sl > 0.9) return 'cliff';
     const nat = nativeAt(X, Z);
