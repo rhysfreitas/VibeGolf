@@ -119,7 +119,7 @@ function holeOut(hi) {
   for (const [X, Z, y, r, hh] of EMB.lavaTrees) { const [x, z] = L(X, Z); if (inBox(x, z)) rocks.push({ type: 'box', x: r1(x), z: r1(z), w: r1(r * 1.7), d: r1(r * 1.7), rot: r2((X * 0.71 + Z * 0.3) % 6.28), y: r1(footBase(X, Z, r * 0.85, y) - base), h: r1(hh), soak: 0.3 }); }
   for (const H of EMB.halls) { const p = H.p.map(v => L(...v)), c = [p.reduce((s, v) => s + v[0], 0) / 4, p.reduce((s, v) => s + v[1], 0) / 4];
     if (inBox(c[0], c[1], 40)) rocks.push({ type: 'box', x: r1(c[0]), z: r1(c[1]), w: r1(Math.hypot(p[1][0] - p[0][0], p[1][1] - p[0][1])), d: r1(Math.hypot(p[3][0] - p[0][0], p[3][1] - p[0][1])), rot: r2(Math.atan2(p[1][1] - p[0][1], p[1][0] - p[0][0])), y: r1(H.y - base), h: r1(H.h + H.roof * 0.6), soak: 0.45 }); }
-  for (const [X, Z, y, r, hh] of EMB.trees) { const [x, z] = L(X, Z); if (inBox(x, z)) plants.push({ x: r1(x), z: r1(z), s: r2(hh / 9), type: 'oak', r: r2(((X * 7.3 + Z * 3.1) % 1 + 1) % 1) }); }
+  for (const [X, Z, y, r, hh] of EMB.trees) { const [x, z] = L(X, Z); if (inBox(x, z)) plants.push({ x: r1(x), z: r1(z), s: r2(hh / 9), type: 'ohia', r: r2(((X * 7.3 + Z * 3.1) % 1 + 1) % 1) }); }
 
   const heading = Math.round((h.place.heading + Math.atan2(h.pin[0], -h.pin[1]) * 180 / Math.PI + 360) % 360);
   const tees = Object.fromEntries(Object.entries(h.teePts).map(([k, p]) => [k, [r1(p[0]), r1(p[1])]]));

@@ -12,8 +12,8 @@ const lin = c => c.map(v => Math.pow(v / 255, 2.2));
 const dec = (b64, T) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
 function batch() {
   const pos = [], col = [];
-  const tri = (a, b, c, k) => { pos.push(...a, ...b, ...c); for (let i = 0; i < 3; i++) col.push(k[0], k[1], k[2]); };
-  const quad = (a, b, c, d, k) => { tri(a, b, c, k); tri(a, c, d, k); };
+  const tri = (a, b, c, k, k2 = k, k3 = k) => { pos.push(...a, ...b, ...c); col.push(...k, ...k2, ...k3); };
+  const quad = (a, b, c, d, k, kb = k, kc = k, kd = k) => { tri(a, b, c, k, kb, kc); tri(a, c, d, k, kc, kd); };
   const mesh = (mat, shadow = true) => {
     if (!pos.length) return null;
     const g = new THREE.BufferGeometry();
@@ -21,7 +21,7 @@ function batch() {
     g.computeVertexNormals();
     const m = new THREE.Mesh(g, mat); m.castShadow = shadow; m.receiveShadow = true; return m;
   };
-  return { tri, quad, mesh };
+  return { tri, quad, mesh, get n() { return pos.length; } };
 }
 // the paint byte: 0 ash, 1 fresh flow, 2 rock, 3 rubble, 4 red cinder, 5 forest floor, 6 sulfur, 7 the clubhouse's
 // floor, 8 crust, 9 sinter, 10 lava, 11 open air
@@ -40,6 +40,17 @@ function heatField(F) {
   for (let j = 0; j < F.nz; j++) for (let i = 0; i < F.nx; i++) { const k = j * F.nx + i; let v = d[k]; if (i) v = Math.min(v, d[k - 1] + c); if (j) { v = Math.min(v, d[k - F.nx] + c); if (i) v = Math.min(v, d[k - F.nx - 1] + dg); if (i < F.nx - 1) v = Math.min(v, d[k - F.nx + 1] + dg); } d[k] = v; }
   for (let j = F.nz - 1; j >= 0; j--) for (let i = F.nx - 1; i >= 0; i--) { const k = j * F.nx + i; let v = d[k]; if (i < F.nx - 1) v = Math.min(v, d[k + 1] + c); if (j < F.nz - 1) { v = Math.min(v, d[k + F.nx] + c); if (i < F.nx - 1) v = Math.min(v, d[k + F.nx + 1] + dg); if (i) v = Math.min(v, d[k + F.nx - 1] + dg); } d[k] = v; }
   return (F.heat = d);
+}
+
+// metres from each lava cell to the nearest ground that isn't lava (0 off the lava): the margins glow brighter, the
+// middle of the lake crusts over
+function intoLava(F) {
+  if (F.into) return F.into;
+  const cw = F.codes.indexOf('water'), n = F.nx * F.nz, d = new Float32Array(n), c = F.cell, dg = c * Math.SQRT2;
+  for (let k = 0; k < n; k++) d[k] = F.s[k] === cw ? 999 : 0;
+  for (let j = 0; j < F.nz; j++) for (let i = 0; i < F.nx; i++) { const k = j * F.nx + i; if (!d[k]) continue; let v = d[k]; if (i) v = Math.min(v, d[k - 1] + c); if (j) { v = Math.min(v, d[k - F.nx] + c); if (i) v = Math.min(v, d[k - F.nx - 1] + dg); if (i < F.nx - 1) v = Math.min(v, d[k - F.nx + 1] + dg); } d[k] = v; }
+  for (let j = F.nz - 1; j >= 0; j--) for (let i = F.nx - 1; i >= 0; i--) { const k = j * F.nx + i; if (!d[k]) continue; let v = d[k]; if (i < F.nx - 1) v = Math.min(v, d[k + 1] + c); if (j < F.nz - 1) { v = Math.min(v, d[k + F.nx] + c); if (i < F.nx - 1) v = Math.min(v, d[k + F.nx + 1] + dg); if (i) v = Math.min(v, d[k + F.nx - 1] + dg); } d[k] = v; }
+  return (F.into = d);
 }
 
 /* ---------- the paint: two textures the ground shader reads (main.js, EMBER) ---------- */
@@ -68,7 +79,7 @@ export function surfaceTextures(T, hole, box, mPerTexel) {
     } else {
       a[o] = s === 'tee' ? 255 : 0; a[o + 1] = s === 'green' ? 255 : 0; a[o + 2] = s === 'sand' ? 255 : s === 'waste' ? 128 : 0; a[o + 3] = s === 'void' || s === 'water' ? 0 : 255;
     }
-    b[o] = m === 1 ? 255 : m === 8 ? 180 : m === 3 ? 120 : m === 2 ? 200 : 0;
+    b[o] = m === 1 || m === 8 ? 255 : m === 3 || m === 2 ? 120 : 0;   // R: pahoehoe 1 (fresh flow, crust), aa clinker 0.47 (rubble, rock)
     b[o + 1] = m === 4 ? 255 : 0;
     b[o + 2] = m === 9 ? 255 : m === 6 ? 150 : 0;
     b[o + 3] = Math.round(Math.min(1, own[3]) * 255);
@@ -87,18 +98,23 @@ export function mapPaint(T, hole) {
 let TEX = null;
 function makeTextures() {
   const glow = stops => { const S = 64, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d'), gr = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2); for (const [t, c] of stops) gr.addColorStop(t, c); g.fillStyle = gr; g.fillRect(0, 0, S, S); const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return t; };
-  // lava: dark crust plates with glowing seams, brighter where the crust is thin (tiles seamlessly)
+  // lava (art pass 1, after Halemaʻumaʻu): dark crust plates, glowing seams between them (orange to a yellow core),
+  // finer cracks across each plate, molten patches where the crust is thin; a jittered grid of cells, so it tiles
   const lava = (() => {
-    const S = 256, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d'), im = g.createImageData(S, S), R = rng(5);
-    const pts = Array.from({ length: 34 }, () => [R() * S, R() * S]);
+    const S = 512, N = 9, cs = S / N, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d'), im = g.createImageData(S, S), R = rng(5);
+    const jit = Array.from({ length: N * N }, () => [0.15 + R() * 0.7, 0.15 + R() * 0.7]), jit2 = Array.from({ length: 4 * N * 4 * N }, () => [R(), R()]);
+    const vor = (x, y, n, J, c) => { const gx = Math.floor(x / c), gy = Math.floor(y / c); let d1 = 1e9, d2 = 1e9, id = 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const cx = gx + ox, cy = gy + oy, wx = ((cx % n) + n) % n, wy = ((cy % n) + n) % n, q = J[wy * n + wx], px = (cx + q[0]) * c, py = (cy + q[1]) * c, d = Math.hypot(x - px, y - py); if (d < d1) { d2 = d1; d1 = d; id = wy * n + wx; } else if (d < d2) d2 = d; }
+      return [d2 - d1, id]; };
+    const ramp = h => [Math.min(255, 30 + 330 * h), Math.min(255, 10 + 230 * h * h), Math.min(255, 6 + 150 * h * h * h * h)];
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-      let d1 = 1e9, d2 = 1e9;
-      for (const [px, py] of pts) for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) { const d = Math.hypot(x - px - ox, y - py - oy); if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d; }
-      const seam = Math.max(0, 1 - (d2 - d1) / 7), thin = fbm(x / 22, y / 22), hot = Math.min(1, seam * 1.2 + Math.max(0, thin - 0.55) * 1.6);
-      const r = 40 + 215 * hot, gg = 14 + 150 * hot * hot, bb = 8 + 60 * hot * hot * hot, o = (y * S + x) * 4;
-      im.data[o] = r; im.data[o + 1] = gg; im.data[o + 2] = bb; im.data[o + 3] = 255;
+      const [e1, id] = vor(x, y, N, jit, cs), [e2] = vor(x, y, 4 * N, jit2, cs / 4);
+      const seam = Math.max(0, 1 - e1 / 9), crack = Math.max(0, 1 - e2 / 2.2) * 0.45, thin = fbm(x / 40, y / 40), plate = 0.5 + 0.5 * Math.sin(id * 12.9);
+      const hot = Math.min(1, seam * seam * 1.15 + crack * (0.4 + 0.6 * plate) + Math.max(0, thin - 0.62) * 2.2);
+      const [r, gg, bb] = ramp(hot), crust = 0.75 + 0.5 * fbm(x / 9 + id, y / 9), o = (y * S + x) * 4;
+      im.data[o] = Math.max(r, 34 * crust); im.data[o + 1] = Math.max(gg, 22 * crust); im.data[o + 2] = Math.max(bb, 22 * crust); im.data[o + 3] = 255;
     }
-    g.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+    g.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
   })();
   return {
     lava,
@@ -109,7 +125,7 @@ function makeTextures() {
   };
 }
 
-export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }) {
+export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null, dusk = -1, farMat = null }) {
   if (!TEX) TEX = makeTextures();
   const F = hole.frame, a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
   const L = (X, Z) => { const dx = X - F.x, dz = Z - F.z; return [dx * rx + dz * rz, -(dx * fx + dz * fz)]; };
@@ -120,13 +136,13 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
   const R = rng(hi * 131 + 7), trees = [], anims = [];
   const far = coarse ? 1800 : 2600;
   const vc = (o = {}) => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, ...o });
-  const lavaMat = new THREE.MeshBasicMaterial({ map: TEX.lava, color: 0xffffff, toneMapped: false, fog: true });
-  const lavaUV = g => { const p = g.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { uv[i * 2] = (p.getX(i) + F.x) / 22; uv[i * 2 + 1] = (p.getZ(i) + F.z) / 22; } g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); };
+  const lavaMat = new THREE.MeshBasicMaterial({ map: TEX.lava, color: 0xffffff, vertexColors: true, toneMapped: false, fog: true });
+  const lavaUV = g => { const p = g.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { uv[i * 2] = (p.getX(i) + F.x) / 34; uv[i * 2 + 1] = (p.getZ(i) + F.z) / 34; } g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); };
   anims.push((dt, t) => { TEX.lava.offset.set(Math.sin(t * 0.05) * 0.04, t * 0.006); });
   const shrink = 6, inPlay = (x, z) => x > box.x0 + shrink && x < box.x1 - shrink && z > box.z0 + shrink && z < box.z1 - shrink;
   // what each paint byte looks like from afar
-  const MC = { 0: lin([84, 80, 78]), 1: lin([38, 36, 38]), 2: lin([58, 52, 50]), 3: lin([70, 64, 60]), 4: lin([118, 52, 36]), 5: lin([52, 74, 44]), 6: lin([190, 170, 90]), 7: lin([60, 58, 60]), 8: lin([40, 36, 38]), 9: lin([226, 220, 204]), 10: lin([255, 110, 30]), 11: lin([12, 10, 10]) };
-  const rockK = lin([58, 52, 50]);
+  const MC = { 0: lin([72, 66, 63]), 1: lin([34, 33, 36]), 2: lin([52, 47, 46]), 3: lin([62, 56, 52]), 4: lin([80, 50, 42]), 5: lin([52, 74, 44]), 6: lin([190, 170, 90]), 7: lin([60, 58, 60]), 8: lin([40, 36, 38]), 9: lin([226, 220, 204]), 10: lin([255, 110, 30]), 11: lin([12, 10, 10]) };
+  const rockK = lin([50, 45, 44]);
 
   // ---- the near mountain, from the 10 m map: this hole's field where it has one (so the edges meet the playfield)
   const WM = E.world; if (!WM.hDec) { WM.hDec = dec(WM.h, Int16Array); if (WM.pred) unpackHeights(WM.hDec, WM.nx); WM.mDec = dec(WM.m, Uint8Array); }
@@ -157,9 +173,9 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
       idx.push(k, k2, k1, k1, k2, k3);
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(Vt, 3)); g.setAttribute('color', new THREE.BufferAttribute(C, 3)); g.setIndex(idx); g.computeVertexNormals();
-    const N = g.attributes.normal;   // steep faces of the far ground go to dark basalt
-    for (let k = 0; k < N.count; k++) { const ny = N.getY(k); if (ny < 0.75 && Mk[k] !== 10) { const t = Math.min(1, (0.75 - ny) / 0.3), c = C.subarray(k * 3, k * 3 + 3); for (let q = 0; q < 3; q++) c[q] += (rockK[q] - c[q]) * t; } }
-    const m = new THREE.Mesh(g, vc({ roughness: 0.94 })); m.receiveShadow = true; group.add(m);
+    if (!farMat) { const N = g.attributes.normal;   // steep faces of the far ground go to dark basalt (the ground shader does it when it draws this)
+      for (let k = 0; k < N.count; k++) { const ny = N.getY(k); if (ny < 0.75 && Mk[k] !== 10) { const t = Math.min(1, (0.75 - ny) / 0.3), c = C.subarray(k * 3, k * 3 + 3); for (let q = 0; q < 3; q++) c[q] += (rockK[q] - c[q]) * t; } } }
+    const m = new THREE.Mesh(g, farMat || vc({ roughness: 0.94 })); m.receiveShadow = true; group.add(m);
   }
   // ---- out to the sea: the mountain from the 50 m map past the near one, the lower slopes green, and the sea
   {
@@ -181,9 +197,10 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
   }
 
   // ---- the near lava: the field's lava cells as a sheet at the lava's level (rivers follow their slope)
-  const Bn = batch();
+  const Bn = batch(), spatter = [];
   if (Fd && Fd.ready) {
-    const cw = Fd.codes.indexOf('water'), Hh = Fd.h;
+    const cw = Fd.codes.indexOf('water'), Hh = Fd.h, din = intoLava(Fd);
+    const kOf = q => { const d = din[q]; const v = d < 3 ? 1.3 - d * 0.03 : d < 12 ? 1.18 : Math.max(0.78, 1.18 - (d - 12) * 0.025); return [v, v, v]; };
     for (let j = 0; j < Fd.nz - 1; j++) for (let i = 0; i < Fd.nx - 1; i++) {
       const k = j * Fd.nx + i, ks = [k, k + 1, k + Fd.nx + 1, k + Fd.nx], w = ks.filter(q => Fd.s[q] === cw);
       if (!w.length) continue;
@@ -191,7 +208,8 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
       if (!(x > box.x0 && x < box.x1 && z > box.z0 && z < box.z1)) continue;
       const mean = w.reduce((s, q) => s + Hh[q], 0) / w.length + 0.8, Y = q => (Fd.s[q] === cw && !Number.isNaN(Hh[q]) ? Hh[q] + 0.8 : mean);
       const c = Fd.cell;
-      Bn.quad([x, Y(ks[0]), z], [x, Y(ks[3]), z + c], [x + c, Y(ks[2]), z + c], [x + c, Y(ks[1]), z], [1, 1, 1]);
+      Bn.quad([x, Y(ks[0]), z], [x, Y(ks[3]), z + c], [x + c, Y(ks[2]), z + c], [x + c, Y(ks[1]), z], kOf(ks[0]), kOf(ks[3]), kOf(ks[2]), kOf(ks[1]));
+      if (din[k] > 0.5 && din[k] < 2.5 && R() < 0.004 && spatter.length < 8) spatter.push([x + c / 2, Y(k) + 0.2, z + c / 2]);
     }
   }
   for (const B of [Bn, Bl]) { const m = B.mesh(lavaMat, false); if (m) { lavaUV(m.geometry); m.receiveShadow = false; m.renderOrder = 1; group.add(m); } }
@@ -233,8 +251,61 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
   inst(new THREE.CylinderGeometry(1, 1, 1, 6).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0x302c2e, roughness: 0.85, flatShading: true }),
     E.columns.map(([X, Z, y0, y1, r]) => { const [x, z] = L(X, Z); return near(x, z, far) ? [x, z, LY(y0), LY(y1), r] : null; }).filter(Boolean),
     ([x, z, y0, y1, r], pv, e, sv) => { pv.set(x, y0, z); e.set(0, (x * 3.1 + z) % 1.05, 0); sv.set(r, Math.max(1, y1 - y0), r); });
-  // ---- the forest beyond this hole's field (this hole's own is hole.plants, drawn and played by main.js)
-  for (const [X, Z, y, r, H] of E.trees) { const [x, z] = L(X, Z); if (inField(x, z) || !near(x, z, far * 0.7)) continue; trees.push({ x, z, y: LY(y), s: H / 9, type: 'oak', r: ((X * 7.3 + Z * 3.1) % 1 + 1) % 1 }); }
+  // ---- the kipuka's forest (art pass 1): ohia lehua, gnarled stems under a clumpy grey-green crown dotted with red
+  // blossom, and hapuu tree ferns beneath. They play as trees (this hole's own are hole.plants; those beyond its field
+  // go to main.js's tree list too, type 'ohia', which main.js leaves for this module to draw)
+  for (const [X, Z, y, r, H] of E.trees) { const [x, z] = L(X, Z); if (inField(x, z) || !near(x, z, far * 0.7)) continue; trees.push({ x, z, y: LY(y), s: H / 9, type: 'ohia', r: ((X * 7.3 + Z * 3.1) % 1 + 1) % 1 }); }
+  const ohia = [...trees, ...(hole.plants || []).filter(t => t.type === 'ohia').map(t => ({ ...t, y: T.groundAt(t.x, t.z) ?? 0 }))];
+  const ferns = [];   // [x, y, z, scale, rot, tilt]
+  if (ohia.length) {
+    const Ro = rng(hi * 53 + 11), stems = [], clumps = [], blooms = [];
+    for (const t of ohia) {
+      const H = 2.5 * t.s, cs = 3 * t.s, cy = t.y + H + cs * 0.55, lean = Ro() * 6.28;
+      for (let k = 0, n = 2 + Math.floor(Ro() * 2); k < n; k++) { const a = lean + k * 2.1 + Ro(); stems.push([t.x + Math.cos(a) * 0.3 * t.s, t.y - 0.2, t.z + Math.sin(a) * 0.3 * t.s, (0.13 + Ro() * 0.09) * t.s * 1.6, H + cs * 0.45, Math.cos(a) * 0.22, Math.sin(a) * 0.22]); }
+      for (let k = 0; k < 8; k++) { const a = Ro() * 6.28, rr = Math.sqrt(Ro()) * cs * 0.75, cr = cs * (0.38 + Ro() * 0.26);
+        clumps.push([t.x + Math.cos(a) * rr, cy + (Ro() - 0.35) * cs * 0.5, t.z + Math.sin(a) * rr, cr, Ro()]);
+        if (Ro() < 0.75) { const b = Ro() * 6.28; blooms.push([t.x + Math.cos(a) * rr + Math.cos(b) * cr * 0.85, cy + (Ro() - 0.1) * cs * 0.45 + cr * 0.35, t.z + Math.sin(a) * rr + Math.sin(b) * cr * 0.85, 0.3 + Ro() * 0.25]); } }
+      if (Ro() < 0.75) { const a = Ro() * 6.28, d = 2.5 + Ro() * 2.5, fx2 = t.x + Math.cos(a) * d, fz2 = t.z + Math.sin(a) * d, fy = T.groundAt(fx2, fz2) ?? t.y, th = 1.2 + Ro() * 1.6;
+        stems.push([fx2, fy - 0.1, fz2, 0.22, th, 0, 0, 1]); ferns.push([fx2, fy + th, fz2, 1 + Ro() * 0.4, Ro() * 6.28, 0]); }
+    }
+    const geoS = new THREE.CylinderGeometry(0.6, 1, 1, 6, 1).translate(0, 0.5, 0);
+    inst(geoS, new THREE.MeshStandardMaterial({ color: 0x3a312b, roughness: 0.95 }), stems, ([x, y, z, r, h, lx, lz, fern], pv, e, sv) => { pv.set(x, y, z); e.set(lz, 0, -lx); sv.set(r, h, r); });
+    const geoC = new THREE.IcosahedronGeometry(1, 1), cp = geoC.attributes.position; for (let i = 0; i < cp.count; i++) { const n = 1 + (fbm(cp.getX(i) * 2.3 + 5, cp.getZ(i) * 2.3 + cp.getY(i)) - 0.5) * 0.7; cp.setXYZ(i, cp.getX(i) * n, cp.getY(i) * n * 0.7, cp.getZ(i) * n); } geoC.computeVertexNormals();
+    const leaf = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, flatShading: true });
+    const imC = new THREE.InstancedMesh(geoC, leaf, clumps.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), cc = new THREE.Color(), PAL = [0x2f4a2a, 0x3b5530, 0x44593a, 0x56664c];
+    clumps.forEach(([x, y, z, r, k], i) => { e3.set(0, k * 6.28, 0); q.setFromEuler(e3); m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(r, r, r)); imC.setMatrixAt(i, m4); cc.set(PAL[Math.floor(k * 4) % 4]).offsetHSL(0, -0.05, (k - 0.5) * 0.05); imC.setColorAt(i, cc); });
+    imC.castShadow = imC.receiveShadow = true; group.add(imC);
+    inst(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xb02f26, roughness: 0.7, emissive: 0x3a0806 }), blooms, ([x, y, z, r], pv, e, sv) => { pv.set(x, y, z); e.set(0, x, 0); sv.set(r, r * 0.8, r); });
+  }
+  // ferns: in the cracks of the older flows on the shoulder, and round the steaming vents inside the caldera
+  {
+    const Rf = rng(hi * 71 + 5), shoulder = dusk <= 0 && hi < 3;
+    const okAt = (x, z) => { const s = T.surfaceAt(x, z); return s === 'desert' || s === 'rough' && Rf() < 0.25; };
+    if (shoulder) for (let k = 0; k < 2600 && ferns.length < 520; k++) {
+      const x = box.x0 + Rf() * (box.x1 - box.x0), z = box.z0 + Rf() * (box.z1 - box.z0), m = matAt(hole, x, z);
+      if (!(m === 3 || m === 5 || (m === 1 && Rf() < 0.15) || (m === 0 && Rf() < 0.05)) || !okAt(x, z)) continue;
+      if (fbm(x / 23, z / 23) < 0.48) continue;   // patchy
+      const y = T.groundAt(x, z); if (y === null) continue;
+      ferns.push([x, y, z, (m === 5 ? 0.55 : 0.32) + Rf() * 0.3, Rf() * 6.28, 0.25]);
+    }
+    for (const [X, Z, y, r] of [...E.steam, ...E.vents.map(v => [v[0], v[1], v[2], v[3]])]) { const [x0, z0] = L(X, Z); if (!near(x0, z0, 700)) continue;
+      for (let k = 0; k < 14; k++) { const a = Rf() * 6.28, d = r + 2 + Rf() * 7, x = x0 + Math.cos(a) * d, z = z0 + Math.sin(a) * d, gy = T.groundAt(x, z); if (gy === null || !inField(x, z) || !okAt(x, z)) continue; ferns.push([x, gy, z, 0.3 + Rf() * 0.35, Rf() * 6.28, 0.2]); } }
+    if (ferns.length) {
+      // one rosette of fronds: each a tapering strip arching out and down
+      const fp = [], NF = 9, SEG = 5;
+      for (let f = 0; f < NF; f++) { const a = f / NF * 6.283, ca = Math.cos(a), sa = Math.sin(a), len = 2.2 * (0.85 + 0.3 * ((f * 7) % 3) / 2);
+        let prev = null;
+        for (let i = 0; i <= SEG; i++) { const t = i / SEG, r = len * t, y = 0.9 * t - 1.3 * t * t, w = 0.32 * Math.sin(Math.PI * Math.min(1, t * 1.15)) + 0.02, cx = ca * r, cz = sa * r, px = -sa * w, pz = ca * w;
+          const Lp = [cx + px, y, cz + pz], Rp = [cx - px, y, cz - pz];
+          if (prev) fp.push(...prev[0], ...prev[1], ...Rp, ...prev[0], ...Rp, ...Lp);
+          prev = [Lp, Rp]; } }
+      const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3)); fg.computeVertexNormals();
+      const imF = new THREE.InstancedMesh(fg, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, side: THREE.DoubleSide }), ferns.length), FP = [0x3d5a2c, 0x46632f, 0x51693a, 0x5a6a34];
+      const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), cc = new THREE.Color();
+      ferns.forEach(([x, y, z, sc, rot, tl], i) => { e3.set((Rf() - 0.5) * tl, rot, (Rf() - 0.5) * tl); q.setFromEuler(e3); m4.compose(new THREE.Vector3(x, y + 0.05, z), q, new THREE.Vector3(sc, sc, sc)); imF.setMatrixAt(i, m4); cc.set(FP[i % 4]).offsetHSL(0, -0.04, (Rf() - 0.5) * 0.06); imF.setColorAt(i, cc); });
+      imF.castShadow = false; imF.receiveShadow = true; group.add(imF);
+    }
+  }
 
   // ---- the clubhouse on the island: a long, low lodge of black basalt, flat roofed, its windows lit warm
   for (const Hc of E.halls) {
@@ -255,15 +326,20 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
   if (E.fall) {
     const P = E.fall.pts.map(([X, Z, y]) => { const [x, z] = L(X, Z); return [x, LY(y) + 1.5, z]; });
     if (near(P[0][0], P[0][2], far * 2)) {
-      const d = [P.at(-1)[0] - P[0][0], P.at(-1)[2] - P[0][2]], l = Math.hypot(...d), n = [-d[1] / l, d[0] / l], w = E.fall.w / 2, pos = [], uv = [];
+      const d = [P.at(-1)[0] - P[0][0], P.at(-1)[2] - P[0][2]], l = Math.hypot(...d), n = [-d[1] / l, d[0] / l], w = E.fall.w / 2, pos = [], uv = [], cols = [];
       for (let i = 0; i < P.length - 1; i++) {   // a strip of quads down the path, u across, v down
         const p = P[i], q = P[i + 1], wp = w * (0.8 + 0.3 * i / P.length), wq = w * (0.8 + 0.3 * (i + 1) / P.length), v0 = i / 6, v1 = (i + 1) / 6;
         const A = [p[0] - n[0] * wp, p[1], p[2] - n[1] * wp], B = [p[0] + n[0] * wp, p[1], p[2] + n[1] * wp], C = [q[0] + n[0] * wq, q[1], q[2] + n[1] * wq], D = [q[0] - n[0] * wq, q[1], q[2] - n[1] * wq];
-        pos.push(...A, ...B, ...C, ...A, ...C, ...D); uv.push(0, v0, 1, v0, 1, v1, 0, v0, 1, v1, 0, v1);
+        // three bands across: crusted edge, bright core, crusted edge
+        const Mq = (U, V) => [U[0] + (V[0] - U[0]) * 0.5, U[1] + (V[1] - U[1]) * 0.5, U[2] + (V[2] - U[2]) * 0.5];
+        const AB = Mq(A, B), DC = Mq(D, C), core = 1.35, edge = 0.55;
+        pos.push(...A, ...AB, ...DC, ...A, ...DC, ...D, ...AB, ...B, ...C, ...AB, ...C, ...DC);
+        uv.push(0, v0, 0.5, v0, 0.5, v1, 0, v0, 0.5, v1, 0, v1, 0.5, v0, 1, v0, 1, v1, 0.5, v0, 1, v1, 0.5, v1);
+        for (const e of [edge, core, core, edge, core, edge, core, edge, edge, core, edge, core]) cols.push(e, e * 0.92, e * 0.85);
       }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
       const tex = TEX.lava.clone(); tex.needsUpdate = true; tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      const fallMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, side: THREE.DoubleSide, color: 0xffd8b0 });
+      const fallMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, side: THREE.DoubleSide, color: 0xffd8b0, vertexColors: true });
       group.add(new THREE.Mesh(g, fallMat)); anims.push((dt, t) => { tex.offset.y = -t * 0.35; });
       // steam where it meets the pool
       const foot = P.at(-1); for (let s = 0; s < 4; s++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.steam, transparent: true, depthWrite: false, opacity: 0.45 })); const sz = 30 + s * 14; sp.scale.set(sz, sz, 1); sp.position.set(foot[0], foot[1] + 10 + s * 16, foot[2]); group.add(sp); }
@@ -296,6 +372,43 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
       anims.push((dt, t) => { sp.material.rotation = p.ph + t * 0.01; });
     }
     const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.glow, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending, toneMapped: false })); gl.scale.set(420, 240, 1); gl.position.set(px, py + 40, pz); group.add(gl);
+    // lightning in the plume (Rhys's art pass pick): every few seconds a jagged bolt forks through the lower column,
+    // flickering two or three times, and lights the ash round it violet-white
+    const MAXV = 160, bpos = new Float32Array(MAXV * 3), bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(bpos, 3)); bg.setDrawRange(0, 0);
+    const bolt = new THREE.LineSegments(bg, new THREE.LineBasicMaterial({ color: 0xe8dcff, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    bolt.frustumCulled = false; bolt.renderOrder = 2; bolt.visible = false; group.add(bolt);
+    const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.glow, color: 0xb8a8ff, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0 }));
+    flash.scale.set(900, 900, 1); flash.renderOrder = 1; group.add(flash);
+    const plumeSprites = group.children.filter(ch => ch.isSprite && ch.material.map === TEX.smoke && ch.position.y > py);
+    plumeSprites.forEach(ch => { ch.userData.base = ch.material.color.clone(); });
+    const Rl = rng(hi * 7 + 3); let next = 2 + Rl() * 4, seq = [], lit = false;
+    const makeBolt = () => {
+      let v = 0; const seg = (x0, y0, z0, x1, y1, z1, depth, n) => {
+        let ax = x0, ay = y0, az = z0;
+        for (let i = 1; i <= n && v < MAXV - 2; i++) { const t = i / n, j = (1 - t) * 0.5 + 0.2, bx = x0 + (x1 - x0) * t + (Rl() - 0.5) * 70 * j, by = y0 + (y1 - y0) * t + (Rl() - 0.5) * 30, bz = z0 + (z1 - z0) * t + (Rl() - 0.5) * 70 * j;
+          bpos.set([ax, ay, az, bx, by, bz], v * 3); v += 2; if (depth < 2 && Rl() < 0.22) seg(bx, by, bz, bx + (Rl() - 0.5) * 260, by - 80 - Rl() * 160, bz + (Rl() - 0.5) * 260, depth + 1, 5); ax = bx; ay = by; az = bz; }
+      };
+      const hx = px + 60 + (Rl() - 0.5) * 260, hz = pz + (Rl() - 0.5) * 260, top = py + 450 + Rl() * 500;
+      seg(hx, top, hz, hx + (Rl() - 0.5) * 300, top - 300 - Rl() * 250, hz + (Rl() - 0.5) * 300, 0, 12);
+      bg.setDrawRange(0, v); bg.attributes.position.needsUpdate = true; flash.position.set(hx, top - 180, hz);
+    };
+    anims.push((dt, t) => {
+      if (t >= next && !seq.length) { makeBolt(); seq = [[t, t + 0.07], [t + 0.13, t + 0.2]]; if (Rl() < 0.5) seq.push([t + 0.3, t + 0.42]); next = t + 3 + Rl() * 8; }
+      const on = seq.some(([a, b]) => t >= a && t < b);
+      bolt.visible = on; flash.material.opacity = on ? 0.7 : 0;
+      if (on !== lit) { lit = on; plumeSprites.forEach(ch => { const b = ch.userData.base; ch.material.color.setRGB(b.r + (on ? 0.5 : 0), b.g + (on ? 0.45 : 0), b.b + (on ? 0.7 : 0)); }); }
+      if (seq.length && t > seq.at(-1)[1]) seq = [];
+    });
+  }
+
+  // ---- spatter: bursts of molten rock thrown up where the lake and the rivers lap their banks (one points draw)
+  if (spatter.length) {
+    const per = 26, n = spatter.length * per, list = Array.from({ length: n }, (_, i) => ({ s: spatter[Math.floor(i / per)], a: R() * 6.28, v: 2 + R() * 4, up: 4 + R() * 6, ph: R(), w: 0.6 + R() * 0.8 }));
+    const g = new THREE.BufferGeometry(), pos = new Float32Array(n * 3); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({ map: TEX.ember, size: 0.9, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, color: 0xffc070 }));
+    pts.frustumCulled = false; group.add(pts);
+    const step = t => { list.forEach((p, i) => { const f = ((t * 0.45 * p.w + p.ph) % 1) * 1.4, hz = p.v * f, y = p.up * f - 4.9 * f * f; pos.set([p.s[0] + Math.cos(p.a) * hz, p.s[1] + Math.max(-0.5, y), p.s[2] + Math.sin(p.a) * hz], i * 3); }); g.attributes.position.needsUpdate = true; };
+    step(0); anims.push((dt, t) => step(t));
   }
 
   // ---- embers: sparks rising off the lava in view (one points draw)
@@ -313,5 +426,29 @@ export function buildEmber(hole, T, box, E, hi, { group, coarse, sunDir = null }
   }
 
   { const m = Br.mesh(vc({ roughness: 0.92 })); if (m) group.add(m); }
+
+  // ---- the dusk over THREE.Sky: violet climbing the sky as the round goes on, a magenta band, and opposite the sun
+  // the earth's shadow rising with the pink belt of Venus over it (dusk 0 the shoulder, 1 the Notch, 2 the caldera)
+  if (dusk >= 0 && sunDir) {
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(11000, 48, 24), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, transparent: true,
+      uniforms: { uSun: { value: sunDir.clone() }, uK: { value: [0.5, 0.68, 0.9][dusk] } },
+      vertexShader: `varying vec3 vD; void main(){ vD = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: `uniform vec3 uSun; uniform float uK; varying vec3 vD;
+        vec3 L(vec3 c){ return pow(c, vec3(2.2)); }
+        void main(){
+          vec3 d = normalize(vD); float h = d.y;
+          vec2 a = normalize(d.xz + 1e-5), b = normalize(uSun.xz + 1e-5); float away = clamp(-dot(a, b), 0.0, 1.0), toward = clamp(dot(a, b), 0.0, 1.0);
+          vec3 col = L(vec3(0.24, 0.17, 0.37)); float al = smoothstep(0.06, 0.55, h) * uK * (1.0 - 0.35 * toward);
+          float band = smoothstep(0.03, 0.14, h) * (1.0 - smoothstep(0.18, 0.42, h));
+          col = mix(col, L(vec3(0.62, 0.34, 0.47)), band * (1.0 - al)); al = max(al, band * 0.32 * uK * (0.6 + 0.4 * away));
+          float shadow = (1.0 - smoothstep(0.0, 0.07, h)) * pow(away, 1.5);
+          float belt = smoothstep(0.05, 0.1, h) * (1.0 - smoothstep(0.12, 0.22, h)) * pow(away, 1.5);
+          col = mix(col, L(vec3(0.84, 0.56, 0.62)), belt); al = max(al, belt * 0.42 * uK);
+          col = mix(col, L(vec3(0.3, 0.29, 0.42)), shadow); al = max(al, shadow * 0.6 * uK);
+          gl_FragColor = vec4(col, al * smoothstep(-0.04, 0.0, h));
+          #include <encodings_fragment>
+        }` }));
+    dome.position.set(cx, 0, cz); dome.renderOrder = -3; dome.frustumCulled = false; group.add(dome);
+  }
   return { trees, anims };
 }

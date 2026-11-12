@@ -121,6 +121,10 @@ const stars = (() => {
 })();
 // Light for the round's time of day and weather, with the sun placed for this hole's heading.
 // (The Aerie's morning is the light it always had.)
+// Emberfell's dusk fades through the round (Rhys's art pass pick): 0 the shoulder (1-3), the low sun raking the black
+// flows; 1 the Notch (4), the sun on the rim; 2 inside the caldera (5-9), the sun just down, violet dusk, the lava the light
+let emberStage = 0;
+const EMBER_SUN = [7, 2.2, 0.4];
 function lightPreset() {
   const t = cond.time, w = cond.weather;
   const L = {
@@ -135,7 +139,11 @@ function lightPreset() {
   if (ICE && t === 'night') return { ...P, sun: 0xa9bcff, si: 0.75, hs: 0x48699a, hg: 0x1c2640, hi: 0.6, exp: 0.88, fog: w === 'overcast' ? 0x1a2230 : 0x0d1828, near: w === 'overcast' ? 200 : 600, far: w === 'overcast' ? 2200 : 6000 };
   if (ICE) { P.fog = w === 'overcast' ? 0xb8c2cc : 0xc8d6e4; }
   // the volcano at dusk: the sun low and red through the fume, violet haze, the shadows warm with the lava's glow
-  if (EMBER && t === 'golden') Object.assign(P, { sun: 0xffa26a, si: 2.1, hs: 0xa08eb4, hg: 0x5a3426, hi: 0.72, exp: 0.66, turb: 5, ray: 2.4, mie: 0.009, fog: 0x86686a, near: 380, far: 5200 });
+  if (EMBER && t === 'golden') Object.assign(P, [
+    { sun: 0xffa868, si: 2.5, hs: 0xb6a2bc, hg: 0x5a3a2a, hi: 0.62, exp: 0.62, turb: 4.5, ray: 2.6, mie: 0.010, fog: 0x9c7c72, near: 420, far: 5600 },
+    { sun: 0xff8c50, si: 2.0, hs: 0xa68eb8, hg: 0x5e3426, hi: 0.7, exp: 0.66, turb: 5.5, ray: 3.0, mie: 0.012, fog: 0x8a6a6e, near: 400, far: 5200 },
+    { sun: 0xff7a56, si: 1.15, hs: 0x8e7cb4, hg: 0x7a3a22, hi: 0.95, exp: 0.78, turb: 7, ray: 3.6, mie: 0.014, fog: 0x6e5466, near: 360, far: 4800 },
+  ][emberStage]);
   else if (EMBER && t !== 'night') { P.fog = 0x9a8278; P.turb += 3; }
   // the valley on a golden afternoon after rain: the low sun warm across a washed sky, the air clear and damp, the
   // shadows under the walls cool and green
@@ -153,7 +161,7 @@ function lightPreset() {
 }
 function applySky(heading = 0) {
   const T0 = TIMES[cond.time] || TIMES.morning, P = lightPreset();
-  const a = skyAngles(T0.sunAz, T0.sunEl, MESA ? heading : 333);
+  const a = skyAngles(T0.sunAz, EMBER && cond.time === 'golden' ? EMBER_SUN[emberStage] : T0.sunEl, MESA ? heading : 333);
   sunDir.setFromSphericalCoords(1, a.polar, a.azimuth);
   const skySun = T0.night ? new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(96), skyAngles(300, 0, MESA ? heading : 333).azimuth) : sunDir;
   skyU.turbidity.value = P.turb; skyU.rayleigh.value = P.ray; skyU.mieCoefficient.value = P.mie; skyU.mieDirectionalG.value = 0.85;
@@ -282,7 +290,7 @@ uniform sampler2D uSurf2; uniform vec3 uMoon; uniform vec2 uWind; uniform vec4 u
 #endif
 #ifdef EMBER
 uniform sampler2D uSurf2;
-float emberHeat = 0.0;
+float emberHeat = 0.0, emberGloss = 0.0;
 #endif
 #ifdef VALLEY
 uniform sampler2D uSurf2;
@@ -297,7 +305,11 @@ float strataLine(float y){ return smoothstep(0.0, 0.25, abs(fract(y*0.11) - 0.5)
 for (int i = 0; i < 24; i++) { if (i >= uPoolN) break; vec4 L = uPools[i]; float d = length(vWPos.xz - L.xy); float f = 1.0 - smoothstep(0.0, L.z, d); totalEmissiveRadiance += vec3(1.0, 0.6, 0.28) * f * f * L.w * diffuseColor.rgb; }
 #endif
 #ifdef EMBER
-totalEmissiveRadiance += vec3(1.0, 0.32, 0.08) * emberHeat * emberHeat * 0.9 * (0.4 + diffuseColor.rgb * 2.0);   // the lava's glow on the ground round it
+totalEmissiveRadiance += vec3(1.0, 0.26, 0.06) * emberHeat * emberHeat * 0.5 * (0.35 + diffuseColor.rgb * 1.5);   // the lava's glow on the ground round it
+#endif`)
+    .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+#ifdef EMBER
+roughnessFactor = mix(roughnessFactor, 0.62, emberGloss * 0.7);
 #endif`)
     .replace('#include <map_fragment>', `
 vec3 p = vWPos;
@@ -354,20 +366,42 @@ scrub = mix(scrub, lin(vec3(0.3,0.4,0.2)), smoothstep(0.5, 0.78, fb(p.xz*0.05)) 
 dirt = scrub;
 #endif
 #ifdef EMBER
-// a volcano: grey-brown ash, fresh black flows (ropy, glinting), red cinder, pale sinter and sulfur round the vents
+// Hawaiian (art pass 1): warm grey-brown ash with wind ripples; fresh pahoehoe in glassy near-black lobes with ropes
+// curving round them, dark seams at the lobe margins and gun-metal blue patches (it catches the sky: emberGloss);
+// aa clinker, matte and rusting; red scoria; pale sinter and sulfur round the vents
 vec4 s2 = mix(vec4(0.0), texture2D(uSurf2, clamp(st, 0.0, 1.0)), inTex);
-vec3 ash = mix(lin(vec3(0.3,0.29,0.29)), lin(vec3(0.37,0.35,0.34)), mid) * (0.82 + 0.3*fine);
-ash = mix(ash, lin(vec3(0.3,0.27,0.26)), smoothstep(0.55, 0.8, fb(p.xz*0.05 + 3.0)) * 0.5);
-float rope = 0.9 + 0.1*sin(dot(p.xz, vec2(0.9, 0.4)) * 3.0 + fb(p.xz*0.3)*8.0);
-vec3 flow = mix(lin(vec3(0.1,0.095,0.1)), lin(vec3(0.17,0.16,0.17)), fb(p.xz*0.4)) * rope;
-vec3 cinder = mix(lin(vec3(0.38,0.15,0.1)), lin(vec3(0.5,0.22,0.14)), mid) * (0.8 + 0.3*fine);
-vec3 pale = mix(lin(vec3(0.78,0.7,0.36)), lin(vec3(0.9,0.87,0.8)), smoothstep(0.6, 0.95, s2.b));
+float nearR = 1.0 - smoothstep(10.0, 40.0, camD);
+vec3 ash = mix(lin(vec3(0.3,0.28,0.27)), lin(vec3(0.36,0.33,0.31)), mid) * (0.84 + 0.28*fine);
+float rip = 0.5 + 0.5*sin(dot(p.xz, vec2(0.83, 0.56))*7.5 + fb(p.xz*0.2)*6.0);
+ash *= 1.0 - 0.08*rip*nearR;
+ash = mix(ash, lin(vec3(0.23,0.21,0.2)), smoothstep(0.55, 0.8, fb(p.xz*0.05 + 3.0))*0.45);
+float lobe = fb(p.xz*0.32);
+float ropes = 0.5 + 0.5*sin(lobe*72.0 + vn(p.xz*2.0)*1.5);
+vec3 pah = mix(lin(vec3(0.07,0.07,0.08)), lin(vec3(0.15,0.15,0.17)), smoothstep(0.3, 0.7, vn(p.xz*0.9)));
+pah *= 1.0 - 0.28*ropes*nearR;
+float seam = 1.0 - smoothstep(0.0, 0.025, abs(fb(p.xz*0.11 + 7.0) - 0.5));
+pah *= 1.0 - 0.55*seam;
+pah = mix(pah, lin(vec3(0.24,0.26,0.36)), smoothstep(0.62, 0.9, vn(p.xz*0.45 + 5.0))*0.4);
+float clink = vn(p.xz*2.6)*0.6 + vn(p.xz*6.0)*0.4;
+vec3 aa = mix(lin(vec3(0.16,0.14,0.13)), lin(vec3(0.3,0.25,0.22)), clink) * (0.8 + 0.3*fine);
+aa = mix(aa, lin(vec3(0.38,0.2,0.13)), smoothstep(0.55, 0.8, fb(p.xz*0.12 + 2.0))*0.5);
+aa = mix(aa, lin(vec3(0.5,0.52,0.46)), smoothstep(0.72, 0.9, vn(p.xz*1.7 + 3.0))*0.25);   // pale lichen on the old rubble
+vec3 cinder = mix(lin(vec3(0.29,0.16,0.13)), lin(vec3(0.38,0.21,0.16)), mid) * (0.8 + 0.3*fine) * (0.9 + 0.2*vn(p.xz*4.0));
+vec3 pale = mix(lin(vec3(0.76,0.68,0.34)), lin(vec3(0.85,0.82,0.74)), smoothstep(0.6, 0.95, s2.b));
+float isPah = smoothstep(0.6, 0.9, s2.r), isAa = smoothstep(0.25, 0.5, s2.r) * (1.0 - isPah);
 scrub = ash;
-scrub = mix(scrub, flow, s2.r);
+scrub = mix(scrub, aa, isAa);
+scrub = mix(scrub, pah, isPah);
 scrub = mix(scrub, cinder, s2.g);
 scrub = mix(scrub, pale * (0.85 + 0.2*fine), smoothstep(0.3, 0.7, s2.b));
 dirt = scrub;
+emberGloss = isPah * (1.0 - 0.5*ropes) * (1.0 - seam) * nearR;   // a glint close by only: far off, a glossy flow mirrored the low sun like water
+#ifdef USE_COLOR
+// the far mountain (ember-world.js): its paint comes in its vertex colours, the walls still get the benches below
+scrub = mix(vColor.rgb, scrub, inTex); dirt = scrub;
+#endif
 emberHeat = s2.a;
+grn = lin(vec3(0.4,0.57,0.26)) * (0.95 + 0.1*vn(p.xz*0.8)) * (0.97 + 0.06*fine);
 #endif
 #ifdef VALLEY
 // a lost valley after rain: fern and horsetail meadow on the open floor, dark leaf litter under the jungle, wet
@@ -479,8 +513,10 @@ mcut = mix(lin(vec3(0.26,0.43,0.15)), lin(vec3(0.31,0.48,0.17)), mid) * (0.88 + 
 msand = mix(lin(vec3(0.8,0.5,0.33)), lin(vec3(0.86,0.6,0.42)), mid) * (0.9 + 0.14*fine) * (0.94 + 0.06*sin(p.x*3.0 + p.z*1.7));
 #endif
 #ifdef EMBER
-// ash-grey sand by the greens, red scoria out in the fairways; the rough thin and dry on the black ground
-msand = mix(lin(vec3(0.42,0.13,0.08)), lin(vec3(0.5,0.47,0.44)) * (0.94 + 0.06*sin(p.x*3.0 + p.z*1.7)), smoothstep(0.6, 0.9, sf.b)) * (0.9 + 0.14*fine);
+// irrigated turf: the one soft green, a little muted; ash-grey sand by the greens, red scoria out in the fairways; the rough thin and dry on the black ground
+mfair = mix(lin(vec3(0.36,0.47,0.2)), lin(vec3(0.43,0.54,0.24)), stripe) * (0.9 + 0.18*mid) * (0.92 + 0.16*fine);
+mcut = mix(lin(vec3(0.32,0.41,0.18)), lin(vec3(0.36,0.45,0.2)), mid) * (0.88 + 0.2*fine);
+msand = mix(lin(vec3(0.38,0.15,0.1)), lin(vec3(0.38,0.36,0.34)) * (0.94 + 0.06*sin(p.x*3.0 + p.z*1.7)), smoothstep(0.6, 0.9, sf.b)) * (0.9 + 0.14*fine);
 mrough = mix(lin(vec3(0.3,0.31,0.17)), lin(vec3(0.38,0.36,0.2)), mid) * (0.7 + 0.5*fine);
 mrough = mix(mrough, scrub, smoothstep(0.45, 0.75, fb(p.xz*0.5)) * 0.45);
 #endif
@@ -529,10 +565,15 @@ rock = mix(rock, lin(vec3(0.78,0.72,0.6)), smoothstep(0.55, 0.8, fb(vec2((p.x+p.
 rock *= (0.8 + 0.2*fine) * (0.9 + 0.1*strataLine(p.y));
 #endif
 #ifdef EMBER
-// basalt: near-black, in jointed columns on the high faces, red-brown oxidised bands
-rock = mix(lin(vec3(0.15,0.14,0.14)), lin(vec3(0.26,0.24,0.23)), band) * (0.8 + 0.3*fine);
-rock = mix(rock, lin(vec3(0.3,0.14,0.1)), smoothstep(0.6, 0.8, fb(vec2(p.y*0.3, (p.x+p.z)*0.01))) * 0.5);
-rock *= 0.85 + 0.15*smoothstep(0.1, 0.3, abs(fract((p.x*0.7 + p.z*0.7)*0.8) - 0.5));
+// the caldera's walls: stacked lava benches 3-10 m thick (the lake's history), each a shade of its own, now and then
+// an oxidised red layer, a dark undercut at each bench's foot, and columns jointed down some benches
+float bench = p.y*0.17 + fb(p.xz*0.008)*2.2, bi = floor(bench), bf = fract(bench), sheer = smoothstep(0.6, 0.85, steep);   // the benches show on sheer walls, not the cone's slopes
+rock = mix(lin(vec3(0.2,0.185,0.18)), mix(lin(vec3(0.14,0.13,0.13)), lin(vec3(0.27,0.24,0.22)), h21(vec2(bi, 3.7))), sheer) * (0.8 + 0.3*fine);
+rock = mix(rock, lin(vec3(0.32,0.19,0.14)), step(0.88, h21(vec2(bi, 9.1))) * 0.6 * sheer);
+rock *= 1.0 - 0.3*sheer*(1.0 - smoothstep(0.0, 0.08, bf));
+vec2 hz = normalize(vec2(-vWN.z, vWN.x) + vec2(1e-4)); float wu = dot(p.xz, hz)*1.3;
+rock *= 1.0 - step(0.55, h21(vec2(bi, 1.3))) * 0.32 * sheer * smoothstep(0.36, 0.5, abs(fract(wu + h21(vec2(floor(wu), bi))*0.3) - 0.5));
+rock = mix(rock, lin(vec3(0.42,0.4,0.36)), smoothstep(0.75, 0.92, vn(vec2(wu*0.6, p.y*0.4)))*0.18);   // pale sublimate streaks
 #endif
 #ifdef VALLEY
 // the table mountain's quartzite sandstone: grey-pink, black where the algae streak down from the rim, ochre and
@@ -683,6 +724,8 @@ const groundAt2 = (I, x, z) => islandH(I, x, z, Math.min(1, islandF(I, x, z)));
 let playBox = null;
 const LEVELS = MESA && !CAVE && !FIELD; // Red Mesa: the playfield draws each cliff's levels to the island's outline
 const inBox = (x, z) => playBox && x > playBox.x0 && x < playBox.x1 && z > playBox.z0 && z < playBox.z1;
+// Emberfell's far mountain: the ground shader with its paint from vertex colours (the caldera walls get their lava benches)
+const emberFarMat = EMBER ? (() => { const m = islandMat.clone(); m.vertexColors = true; m.onBeforeCompile = sh => { islandMat.onBeforeCompile(sh); sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', ''); }; m.customProgramCacheKey = () => 'emberFar'; return m; })() : null;
 const playMat = islandMat.clone(); playMat.onBeforeCompile = islandMat.onBeforeCompile; playMat.polygonOffset = true; playMat.polygonOffsetFactor = -1; playMat.polygonOffsetUnits = -2;
 function buildMesa(I, N, rings, group, trees) {
   const K = coarse ? 9 : 12, rows = rings.length + K;
@@ -799,7 +842,7 @@ const trunkGeo = new THREE.CylinderGeometry(0.12, 0.22, 1, 6); trunkGeo.translat
 const foliageMat = new THREE.MeshStandardMaterial({ roughness: 0.92, envMapIntensity: 0.5 });
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 });
 function buildTrees(list, group) {
-  list = list.filter(t => t.type !== 'mushroom' && !(VALLEY && VW.TYPES.has(t.type))); // cave-world.js draws the giant mushrooms, valley-world.js the valley's trees (they still play)
+  list = list.filter(t => t.type !== 'mushroom' && t.type !== 'ohia' && !(VALLEY && VW.TYPES.has(t.type))); // cave-world.js draws the giant mushrooms, ember-world.js the ohia, valley-world.js the valley's trees (they still play)
   if (!MESA) return skyPines(list, group);
   const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type !== 'pine');
   const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * (ICE ? 6 : 3));
@@ -879,6 +922,7 @@ function buildHole(h) {
   const pin = h.pin || ISL.find(I => I.kind === 'green').pin;
   h.pinPos = new THREE.Vector3(pin[0], groundAt(pin[0], pin[1]), pin[1]);
   wind = holeWind(windRoll, HOLES.indexOf(h)); windVec = windVector(wind, h.heading ?? 0);
+  if (EMBER) emberStage = Math.min(2, Math.max(0, HOLES.indexOf(h) - 2));   // the dusk deepens through the round: the shoulder, the Notch, the caldera
   applySky(h.heading ?? 0);
   const trees = [];
   talusPts = REDROCK ? [] : null;
@@ -904,7 +948,7 @@ function buildHole(h) {
     else if (ICE) { mesaCtx = IW.buildIce(h, T, box, COURSE.ice, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir, night: !!TIMES[cond.time]?.night }); trees.push(...mesaCtx.trees);
       iceU.uWind.value.set(windVec.x, windVec.z); if (iceU.uWind.value.lengthSq() < 1e-4) iceU.uWind.value.set(0.6, 0.8);
       iceU.uPoolN.value = Math.min(24, mesaCtx.pools.length); mesaCtx.pools.slice(0, 24).forEach((q, i) => iceU.uPools.value[i].set(...q)); }
-    else if (EMBER) { mesaCtx = EW.buildEmber(h, T, box, COURSE.ember, HOLES.indexOf(h), { group: holeGroup, coarse, sunDir }); trees.push(...mesaCtx.trees); }
+    else if (EMBER) { mesaCtx = EW.buildEmber(h, T, box, COURSE.ember, HOLES.indexOf(h), { group: holeGroup, coarse, sunDir, dusk: cond.time === 'golden' ? emberStage : -1, farMat: emberFarMat }); trees.push(...mesaCtx.trees); }
     else if (VALLEY) { mesaCtx = VW.buildValley(h, T, box, COURSE.valley, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
     else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
     else {
