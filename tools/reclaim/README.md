@@ -22,8 +22,10 @@ towers, chunks and cars as rocks the ball hits, the trees as plants, and the cit
 `node tools/review/playthrough.mjs reclaim`.
 
 Fairway pieces can be ribbons or free shapes (`{ lobes }`, `{ bite }`), as in the other plan tools; a hole whose
-playing line moved keeps the old line as `cityLine` so the city, the river and the other holes stay put (the city
-fill draws from one random sequence). The tips tee: `COURSE.tipsSet` and `tips: [s, off]` per hole, switched off.
+playing line moved keeps the old line as `cityLine`, its old pin as `cityPin` and its old building footprints as
+`cityOcc`, so the city, the river and the other holes stay put (the city fill draws from one random sequence, so
+anything that changes which lots it tries reshuffles every block after); after the fill, only the filler within 60 m
+of the moved hole's new line or pin, or on its new buildings, is dropped. The tips tee: `COURSE.tipsSet` and `tips: [s, off]` per hole, switched off.
 
 `proposal/` has the scripts behind the reshape proposal of 11 November (round 4): `dump.mjs` (a hole's surfaces and
 ground on a 2 m grid from the plan data of a given checkout), `plan.py` (now beside proposed at one scale),

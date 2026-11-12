@@ -342,9 +342,12 @@ export const BUILT = HOLES.map(buildHole);
 // the city between the holes: blocks of ruined buildings filling the gaps, off every hole's play (world)
 export function cityFill() {
   const R = rnd(77), keep = [];
-  const play = HOLES.map(h => { const W = toWorld(h); return { line: (h.cityLine || h.line).map(p => W(...p)), pin: W(...h.pin), h }; });
+  const play = HOLES.map(h => { const W = toWorld(h); return { line: (h.cityLine || h.line).map(p => W(...p)), pin: W(...(h.cityPin || h.pin)), h }; });
   const occupied = [];
-  for (const [i, B] of BUILT.entries()) { const W = toWorld(HOLES[i]); for (const o of B.objs) if (o.kind === 'bldg') occupied.push(o.pts.map(p => W(...p))); }
+  // a moved hole's buildings count where they stood when the city was laid (`cityOcc`)
+  for (const [i, B] of BUILT.entries()) { const W = toWorld(HOLES[i]), co = HOLES[i].cityOcc;
+    if (co) for (const b of co) occupied.push(rectPts(b.at[0], b.at[1], b.w, b.d, b.rot || 0).map(p => W(...p)));
+    else for (const o of B.objs) if (o.kind === 'bldg') occupied.push(o.pts.map(p => W(...p))); }
   const riverD = (x, z) => distLine(RIVER.pts, x, z);
   for (let X = -900; X <= 1500; X += 46) for (let Z = -1400; Z <= 600; Z += 46) {
     if (R() < 0.18) continue;                       // a cross street or a lot gone back to trees
@@ -366,6 +369,17 @@ export function cityFill() {
     if ([[x, z], ...pts].some(p => BUILT[bi].surface(...toLocal(HOLES[bi])(...p)) === 'water')) continue;
     const base = HOLES[bi].base + (gy ?? 0) - 1;
     keep.push({ kind: collapsed ? 'heap' : 'bldg', pts, base, h: collapsed ? 6 + R() * 6 : hgt, broken: R() < 0.75, vines: R() < 0.4, seed: Math.round(R() * 1e6), x, z, w, d });
+  }
+  // then a moved hole clears its own play: nothing on its buildings, within 60 m of its line or 60 m of its pin
+  for (const [i, h] of HOLES.entries()) {
+    if (!h.cityOcc) continue;
+    const W = toWorld(h), line = h.line.map(p => W(...p)), pin = W(...h.pin);
+    const mine = BUILT[i].objs.filter(o => o.kind === 'bldg').map(o => o.pts.map(p => W(...p)));
+    for (let k = keep.length - 1; k >= 0; k--) {
+      const o = keep[k], q = [[o.x, o.z], ...o.pts];
+      if (q.some(p => distLine(line, p[0], p[1]) < 60 || Math.hypot(p[0] - pin[0], p[1] - pin[1]) < 60)
+        || mine.some(m => m.some(p => inPoly(o.pts, p[0], p[1])) || o.pts.some(p => inPoly(m, p[0], p[1])))) keep.splice(k, 1);
+    }
   }
   return keep;
 }

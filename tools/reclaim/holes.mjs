@@ -5,7 +5,7 @@
 // compass heading. World: x east, -z north; heights are absolute (the riverside street is 0).
 // This is plan data for the book (plans, profiles, sketch views), written to convert to the engine format
 // later: islands/landforms/fairways/green/bunkers/water/rocks/groves/props.
-import { lineOf, lengthOf, at, project, YD, rnd } from './geo.mjs';
+import { lineOf, lengthOf, at, project, headingAt, YD, rnd } from './geo.mjs';
 
 export const COURSE = {
   id: 'reclaim', name: 'The Reclaim', theme: 'city', altFt: 300,
@@ -88,41 +88,53 @@ export const HOLES = [
   }),
 
   // 2. THE ATRIUM: a dogleg left round a gutted office tower whose lower floors are blown out
-  hole({ n: 2, name: 'The Atrium', par: 4, legs: [[200, 0], [148, -62]], place: { at: [-10, -690], heading: 32 }, base: 0, tips: [-35, 0],
+  hole({ n: 2, name: 'The Atrium', par: 4, legs: [[200, 0], [148, -85]], place: { at: [-10, -690], heading: 32 }, base: 0, tips: [-35, 0],
     build: (P, L) => {
-      // the bold line: straight from the tee through the atrium to the second leg, 90 m past the corner
-      const land = P(290), dir = Math.atan2(land[0], -land[1]);
+      // Drivable through the lobby (Rhys, 11 November): the dogleg turns 85° (it was 62°), so the green sits straight
+      // behind the tower, 283 yd from the back tee, and the tower's nave points at it. A great drive from the back tee
+      // runs up the mown courtyard onto the green; the forward tees play the corner. The 6th is the nine's other
+      // drivable par 4 (a running shot up an apron); here it's a thread through the lobby and up 9 m, a different shot.
+      const land = L.at(-1), dir = Math.atan2(land[0], -land[1]);
       const along = d => [Math.sin(dir) * d, -Math.cos(dir) * d];
       const c = along(168);
+      const Lo = lineOf([[200, 0], [148, -62]]), Q = (s, o = 0) => at(Lo, s, o), landO = Q(290), dirO = Math.atan2(landO[0], -landO[1]);
+      const alongO = d => [Math.sin(dirO) * d, -Math.cos(dirO) * d];
+      // a free shape centred on the bold line `d` metres out, as [s, off] on the hole's line
+      const onBold = (d, ra, rc) => { const p = along(d), r = project(L, p[0], p[1]); return [r.s, r.off, ra, rc, (dir - headingAt(L, r.s)) * 180 / Math.PI]; };
       return {
+        // the city was laid round the old hole (62° dogleg): its line, pin and buildings, so the blocks don't reshuffle
+        cityLine: Lo, cityPin: Lo.at(-1),
+        cityOcc: [{ at: alongO(168), w: 46, d: 40, rot: dirO }, { at: Q(350, 40), w: 60, d: 26 }, { at: Q(378, -10), w: 30, d: 70, rot: 0.5 }, { at: Q(272, -98), w: 50, d: 30 },
+          { at: P(80, 70), w: 40, d: 60 }, { at: P(170, 84), w: 40, d: 56 }, { at: P(60, -66), w: 30, d: 50 }],
         tees: { spire: 0, brick: 22, ivy: 48, moss: [78, 34] },
         prof: [[0, 0], [130, 0], [205, 3], [250, 5], [348, 8]],
         // the subway under the avenue caved in: a trench 7 m deep down the first leg's landing area
         sketch: { extra: [{ title: 'Hole 2: the tunnel cave-in under the first leg, from its lip', from: [126, 14, 3], to: [200, 0, -5] }] },
         trench: { s0: 140, s1: 236, depth: 7, w: 62, ramp: 26, bank: 9, label: 'the tunnel cave-in' },
-        fairway: [{ e: [[60, 16, 18], [110, 22, 28], [170, 26, 30], [205, 24, 22], [240, 18, 20], [290, 22, 24], [336, 15, 15]] }],
+        // the courtyard between the lobby and the green, mown as an approach so a great drive through the nave runs up
+        fairway: [{ e: [[60, 16, 18], [110, 22, 28], [170, 26, 30], [205, 26, 30], [235, 20, 28], [270, 18, 22], [300, 22, 24], [336, 15, 15]] }, { lobes: [onBold(212, 22, 13), onBold(244, 20, 12)], join: 14, wob: 2 }],
         corridor: 18,
         green: { rx: 14, rz: 17, lobes: [[0, 0, 10, 16, 30], [-7, 4, 7, 6, 0], [4, -8, 5, 5, 0]], join: 3, pins: [[5, 8], [-4, -7], [-6, 4]], engine: { style: 'tiered', shape: [], tiers: [{ b: -3.5, step: 0.6 }], falseFront: 0.5 }, style: 'two tiers on a long green turned back-right, old fountain steps as a false front' },
-        bunkers: [{ at: P(332, -20), rx: 4.5, rz: 3.5, style: 'pot' }, { at: P(208, 32), rx: 14, rz: 7, rot: -0.3 }],
+        bunkers: [{ at: P(332, -20), rx: 4.5, rz: 3.5, style: 'pot' }, { at: [8, -232], rx: 14, rz: 7, rot: -0.3 }],   // in the trench floor past the corner (where it was before the turn; P(208, 32) now sits on the bank)
         rubble: [{ at: P(214, 14), rx: 30, rz: 22, rot: -0.4, h: 2.5, label: 'rubble ramp' }],
         buildings: [
           { at: c, w: 46, d: 40, rot: dir, h: 92, broken: true, open: 44, cols: 4, colsX: [-20, -10, 10, 20], name: 'the Atrium', label: 'the Atrium (open to 44 m)' },
           // the block it stands on: the courtyard walls left of the second leg and behind the green
           { at: P(350, 40), w: 60, d: 26, h: 34, broken: true, vines: true }, { at: P(378, -10), w: 30, d: 70, rot: 0.5, h: 48, broken: true },
-          { at: P(272, -98), w: 50, d: 30, h: 26, broken: true },
+          { at: [along(150)[0] - Math.cos(dir) * 58, along(150)[1] - Math.sin(dir) * 58], w: 50, d: 30, rot: dir, h: 26, broken: true },   // the courtyard's far side, beside the tower
           // right of the first leg
           { at: P(80, 70), w: 40, d: 60, h: 40, broken: true }, { at: P(170, 84), w: 40, d: 56, h: 58, broken: true },
-          { at: P(60, -66), w: 30, d: 50, h: 30, broken: true },
+          { at: P(45, -84), w: 30, d: 50, h: 30, broken: true },   // set back off the straight line from the back tee
         ],
         wrecks: [{ type: 'car', at: P(140, -30), rot: 0.4 }, { type: 'car', at: P(180, 34), rot: 1.9 }, { type: 'car', at: P(286, 34), rot: 0.8 }],
         trees: [...grove(P(300, 46), 18, 5, 21), ...grove(P(110, 44), 10, 3, 22)],
-        targets: [{ name: 'The corner', at: P(212, 8) }, { name: 'Through the Atrium', at: P(290), bold: true }],
+        targets: [{ name: 'The corner', at: P(204, 8) }, { name: 'Drive it through the Atrium', at: land, pin: true, bold: true }],
         boldLine: [[0, 0], land],
         words: {
-          plays: 'A gutted office tower stands in the inside of the dogleg. Its lower eleven floors are blown out to the columns, a lobby 44 m high you can see the second leg through. Under the first leg the subway tunnel caved in, leaving a trench 7 m deep where the drives land; the street climbs out of it up a rubble ramp to a courtyard green set on old fountain steps.',
-          safe: 'Drive down the right into the trench (210 m) and play a mid iron up and out, round the tower.',
-          bold: 'Drive straight through the atrium: about a 250 m carry to the second leg, a wedge left.',
-          miss: 'Pulled, the ball hits the tower\'s columns or facade and drops into the rubble at its foot. Right of the first leg: wrecks and a block of offices.',
+          plays: 'A gutted office tower stands in the inside of the dogleg. Its lower eleven floors are blown out to the columns, a lobby 44 m high whose 18 m nave points straight at the green. Under the first leg the subway tunnel caved in, leaving a trench 7 m deep where the drives land; the street climbs out of it up a rubble ramp to a courtyard green set on old fountain steps.',
+          safe: 'Drive down the right into the trench (190 m) and play a mid iron up the second leg, round the tower.',
+          bold: 'Drive the green: 283 yd straight down the nave from the back tee, over the El and 9 m up. A great drive runs up the mown courtyard onto the green; a good one leaves a pitch. From the forward tees the lobby still cuts the corner into the courtyard. (The nine\'s second drivable par 4 with the 6th, kept on purpose: here you thread a lobby and carry a rise, there you run it up an apron.)',
+          miss: 'Pulled or hit low, the ball hits the tower\'s columns, its facade or the El\'s deck and drops into the rubble at the foot. Through the corner: a bunker in the trench floor. Right of the first leg: wrecks and a block of offices.',
         },
       };
     },

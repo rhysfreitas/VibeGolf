@@ -80,8 +80,8 @@ for (const c of names) {
     const gBold = (h.targets || []).find(x => x.pin && x.bold);
     // names only stand in for marks on a course that marks none (the Aerie, Red Mesa, Hollowmere)
     const inferred = !marked, bold = [...tg.filter(x => x.bold || (inferred && BOLD_NAME.test(x.name))), ...(gBold ? [{ name: 'Drive the green', x: pin[0], z: pin[1], green: true }] : [])], safe = tg.filter(x => !bold.includes(x));
-    const aimFrom = (tee, reach, list) => { // the tee shot's target, as auto-aim picks it
-      if (h.par === 3 || dist(tee, pin) <= reach) return pin;
+    const aimFrom = (tee, reach, list, noPin) => { // the tee shot's target, as auto-aim picks it (noPin: round the corner)
+      if (h.par === 3 || (!noPin && dist(tee, pin) <= reach)) return pin;
       const dp = dist(tee, pin), ok = list.map(x => [x.x, x.z]).filter(p => dist(p, pin) < dp - 5 && dist(p, tee) <= reach);
       return ok.find((p, k) => dist(p, tee) >= 0.6 * reach || k === ok.length - 1) || list.map(x => [x.x, x.z])[0] || pin;
     };
@@ -115,7 +115,7 @@ for (const c of names) {
       if (bold.length && h.par > 3 && !ONLY_GATE) {
         const B = bold[0], bp = [B.x, B.z];
         for (const [s, scale, who] of [[sets[0], 1.1, 'long'], [sets[Math.min(2, sets.length - 1)], 0.82, 'short']]) {
-          const tee = h.tees[s.id], reach = 245 * scale, sAim = aimFrom(tee, reach, safe), gain = yd(dist(sAim, pin) - dist(bp, pin));
+          const tee = h.tees[s.id], reach = 245 * scale, sAim = aimFrom(tee, reach, safe, B.green), gain = yd(dist(sAim, pin) - dist(bp, pin));
           const run = o => { let n = 0, pen = 0; for (let k = 0; k < SEEDS; k++) { const r = playHole(h, t, s.id, 503 + k * 29 + i * 7, { scale, ...o }); n += r.n; pen += r.pen; } return [n / SEEDS, pen / SEEDS]; };
           const can = dist(tee, bp) <= reach * 1.05, [sn, sp] = run({ skip: bold }), verdict = (bn, sn) => bn < sn - 0.1 ? 'the bold line pays' : bn > sn + 0.1 ? 'the bold line costs' : 'no difference';
           if (can) {

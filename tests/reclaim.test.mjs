@@ -74,10 +74,11 @@ test('a tour drive from the back tee at the first target hits nothing in the air
 });
 
 test('the Atrium: a drive down the bold line flies through the open lobby; a skied one hits the floors above', () => {
-  const i = HOLES.findIndex(h => h.name === 'The Atrium'), h = HOLES[i], tg = h.targets.find(q => q.name === 'Through the Atrium');
-  const pts = flown(shoot(T[i], h.tees.spire, [tg.x, tg.z], DR));
+  const i = HOLES.findIndex(h => h.name === 'The Atrium'), h = HOLES[i], tg = h.targets.find(q => q.bold);
+  const aim = tg.pin ? h.pin : [tg.x, tg.z];
+  const pts = flown(shoot(T[i], h.tees.spire, aim, DR));
   assert.ok(!hitAny(pts), 'the bold drive passes through');
-  const hiShot = flown(shoot(T[i], h.tees.spire, [tg.x, tg.z], { Speed: 160, VLA: 24, TotalSpin: 5200 }));
+  const hiShot = flown(shoot(T[i], h.tees.spire, aim, { Speed: 160, VLA: 24, TotalSpin: 5200 }));
   assert.ok(hitAny(hiShot), 'a skied drive hits the floors above the lobby');
 });
 
