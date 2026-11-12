@@ -73,7 +73,7 @@ middle; a long par 3 early.
 |---|---|---|---|---|---|
 | **The Aerie** | Clouds are a penalty area; islands drift between shots | Cape (5), punchbowl (6) | Bite off a carry (5), go or lay up (9) (both `bold: true`, 11 November); the long way round (3) is a showpiece, its right route measures as a trap | Waterfall that knocks a ball down (1), drifting island, hot-air balloon, rock pinnacle on the line (3), climb to the clubhouse (9) | None |
 | **Red Mesa** | A miss off the top plays from the canyon floor | Cape (1), speed slot to a punchbowl (2), Redan (3), Biarritz (6), Alps (9) | Bite the corner (1), go or lay up (5), drivable (7) (all `bold: true`, 11 November); the arch (4) is a frame and an obstacle: a one-line hole (Rhys, 11 November) | 70 m drop par 3 (3), natural arch (4), trestle and steam train (6), hoodoos (7), cliff dwellings, climb through the tiers (9) | Waste on 5 |
-| **Hollowmere** | Walls soak a ball; lit play in the dark | Punchbowl (5, 8) | Bite the corner (1, 4), thread the stalagmites (3), over the trestle (7), drivable through the eyelet (9) | Ore cart that moves (1), Mirror Lake (2), terraces (3), the Deep and its falls (4, 6, 7), geode green (5), glowworm grotto (8), cenote (9) | None |
+| **Hollowmere** | Walls soak a ball; lit play in the dark | Punchbowl (5, 8) | Bite the corner (4), thread the stalagmites (3), over the trestle (7), drivable through the eyelet (9) (all `bold: true`, 11 November); the Adit (1) is one clear line | Ore cart that moves (1), Mirror Lake (2), terraces (3), the Deep and its falls (4, 6, 7), geode green (5), glowworm grotto (8), cenote (9) | None |
 | **The Reclaim** | Facades soak a ball; streets are native ground | Punchbowl (3), Redan and plateau greens, Bottle (4) | Through the lobby (2, long way round), the bottle at the crest (4), drivable, running on from the right (6), bite off the basin (8) | The El (1, 6), gutted tower (2), subway cave-in (3), propped tower (4), stadium and sinkhole (5), fallen bridge (7), rift and leaning clubhouse (9) | None |
 | **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8), Bottle (9) | Drivable through the seracs (5), cape over the moulin (7), split fairway (8), bottle through the neck (9) (all `bold: true`, 11 November) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
 | **Emberfell** (playable blockout, round 7) | Lava plays as water | Leven (5), Long (6), Cape (7), Punchbowl in a crater ringed with sand (8) | Drivable down the columns (5), go or lay up at the rill (6), bite off the cape (7), split (9) | Kipuka and lava river (1), geysers (2), tube bridge and a double fairway either side of its trench (3), the Notch reveal (4), basalt columns (5), lavafall in its bay (6), lava lake (7), cinder cone on the caldera floor (8), island clubhouse (9) | Cross bunker (2), ring (8), beach (9) |
@@ -93,7 +93,7 @@ of fairways on different courses measure as alike.
 |---|---|---|---|
 | The Aerie | broken 3, island, split, spindle, scalloped | 0 of 21 | Three broken (its islands), one over |
 | Red Mesa | spindle 2, broken 2, scalloped, hourglass, split | 0 of 21 | Inside it. The most varied course |
-| Hollowmere | spindle 4, island 2, split | 4 | Four spindles; the Adit, the Rim, the Grotto and the Cenote alike |
+| Hollowmere | fan, island 2, spindle 2, split, funnel | 0 | Inside it (11 November: the Adit a fan, the Grotto a funnel; was spindle 4, four pairs alike). Alike with other courses' fairways: 8 pairs (was 26) |
 | The Reclaim | broken 2, spindle 2, hourglass, hook, fan (reshaped 11 November) | 0 | Inside it; six fairways match another course's (three Hollowmere's, three Rimeholm's), was 26. Was spindle 5, broken 2, six pairs alike |
 | Rimeholm | reworked 11 November: spindle, scalloped (2), island 2 (4, 5), uneven, broken, hourglass (9) | 0 | Inside it but for the islands back to back (4, 5). Was: four plain strips and five pairs alike, once the check counted only each hole's own ground (it had read the 8th's fairway beside the 9th's tees as an island) |
 | Emberfell (playable blockout) | round 6: scalloped, funnel, split (a double fairway), hourglass, broken, fan, island | 0 | Inside it; two fairways match another course's (the Barranco and Rimeholm's Ice Gate, the Heart and the Lost Valley's Bone Bed). Was spindle 3, hourglass 3, island, five pairs alike |
@@ -202,18 +202,24 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
   because of the 70 m drop, as the shape review found).
 - **Classics:** five. The model for the rule.
 
-### Hollowmere
+### Hollowmere (re-measured 11 November after the rework, 12 rounds gate, 24 decisions)
 
-- **Gate:** the 6th (The Falls) fails from both ends: +1.9 from the back tees with a penalty every other time,
-  +2.4 from the forward tees with 1.3 penalties a hole, and it didn't finish on one of eight. Everything else
-  passes.
-- **Forced carries:** none over the limit on a par 4 or 5.
-- **View:** two blind tee shots (the Geode by design, the Grotto). At the limit.
-- **Decisions:** four by name. The Rim's corner (4th) pays both players a quarter of a stroke at no risk, so it
-  is simply the line; the Adit's corner (1st) makes no difference to either. The 3rd and 7th are second shots.
-  No tee-shot choice measures as real, and "bite the corner" is used twice.
-- **Rhythm:** four bends right to two left; par 4s 343–446 (no short one); par 3s 166 and 168 yd, two yards
-  apart on the card, which breaks the 25 yd rule unless they play differently (one drops 19 m, one climbs 12).
+- **Gate:** passes. The 6th failed (+2.3 from the Wren tees, 1.3 penalties, 2 of 12 unfinished): its drive target
+  sat short of a crest and the way round the top of the inlet had no target. Both fixed in the data; now +0.4.
+  Worst hole after the rework: the 3rd from the Wren tees, +0.8; no penalties anywhere.
+- **Forced carries:** none over the limit on a par 4 or 5. Mirror Lake's Hawk tee carries 133 yd of water (a par
+  3: only the forward tee is held to it; bail-out right).
+- **View:** two blind tee shots (the Geode by design, the Grotto, kept blind by Rhys). At the limit.
+- **Decisions:** four, marked `bold: true`, each a different type: thread the stalagmites (3) and over the trestle
+  (7) are second shots that pay the short hitter only (real choices); the Rim's corner (4) pays both at no risk,
+  so it is simply the line; through the eyelet (9) is within noise for the long hitter. The Adit's corner (1) was
+  removed (the type twice). In the last two holes: the 9th.
+- **Rhythm:** par 4s 343–446 (no short one; 3 yd over, left); par 3s 168 and 166 on the card but about 149 and
+  179 as they play (30 yd apart: passes).
+- **Fairway forms:** fan (1), island (3, 6), spindle (4, 9), split (7), funnel (8); 0 of 21 pairs alike.
+- **Tips:** the Condor set, switched off, 3,674 yd: 430, 181, 588, 471, 191, 435, 595, 418, 365 (24, 13, 42, 26,
+  25, 27, 48, 35, 24 yd behind the Eagle tees). The 9th's is on the eyelet line: a 290 yd drive going for it
+  finds 42 m of fairway, but `tips.mjs` measures toward the safe target and flags it.
 - **Classics:** one (punchbowl, twice).
 
 ### The Reclaim
