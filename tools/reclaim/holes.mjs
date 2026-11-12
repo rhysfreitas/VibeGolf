@@ -5,7 +5,7 @@
 // compass heading. World: x east, -z north; heights are absolute (the riverside street is 0).
 // This is plan data for the book (plans, profiles, sketch views), written to convert to the engine format
 // later: islands/landforms/fairways/green/bunkers/water/rocks/groves/props.
-import { lineOf, lengthOf, at, YD, rnd } from './geo.mjs';
+import { lineOf, lengthOf, at, project, YD, rnd } from './geo.mjs';
 
 export const COURSE = {
   id: 'reclaim', name: 'The Reclaim', theme: 'city', altFt: 300,
@@ -47,7 +47,7 @@ function hole(def) {
 
 export const HOLES = [
   // 1. THE EL: off the platform of the elevated line, down to the boulevard, round a collapsed block
-  hole({ n: 1, name: 'The El', par: 4, legs: [[232, 0], [134, 32]], place: { at: [-180, -320], heading: 8 }, base: 0,
+  hole({ n: 1, name: 'The El', par: 4, legs: [[232, 0], [134, 32]], place: { at: [-180, -320], heading: 8 }, base: 0, tips: [-24, -4],
     build: (P) => ({
       tees: { spire: 0, brick: 28, ivy: [62, 36], moss: [100, 38] },
       prof: [[0, 0], [110, 0], [170, 1.5], [260, 0.5], [366, 0]],
@@ -61,7 +61,8 @@ export const HOLES = [
       fallen: { a: P(278, 190), b: P(292, 28), w: 30, h: 30, label: 'the fallen tower (on its side)' },
       chunks: [{ a: [...P(286, 18), 7], b: [...P(296, 8), 13], w: 12, t: 3 }, { a: [...P(284, -6), 6], b: [...P(292, -14), 10], w: 10, t: 2.5 }],
       sketch: { land: { up: 4 }, extra: [{ title: 'Hole 1: the fallen tower across the second leg, from the left of the landing area', from: [250, -24, 6], to: [292, 40, 12], fov: 62 }] },
-      platform: [{ at: P(14, -4), w: 16, d: 46, y: 12, rot: 0, label: 'El station platform' }],
+      // Proposal (round 4): the station platform runs on 24 m further back, for the tips tee
+      platform: [{ at: P(2, -4), w: 16, d: 70, y: 12, rot: 0, label: 'El station platform' }],
       el: [{ pts: [P(-40, -16), P(20, -16), P(80, -40), P(205, -40)], y: 12, w: 9, broken: true, label: 'the El' }],
       wrecks: [{ type: 'bus', at: P(150, -56), rot: 0.2 }, { type: 'car', at: P(120, 38), rot: 1.2 }, { type: 'car', at: P(300, -40), rot: 2.6 },
         { type: 'car', at: P(196, 41), rot: 0.1 }],
@@ -157,13 +158,15 @@ export const HOLES = [
   }),
 
   // 4. BROKEN TOWER: an S-bend par 5 under the top of a skyscraper that snapped and fell across the street
-  hole({ n: 4, name: 'Broken Tower', par: 5, legs: [[180, 0], [160, -34], [158, 42]], place: { at: [430, -860], heading: 112 }, base: 8,
+  hole({ n: 4, name: 'Broken Tower', par: 5, legs: [[180, 0], [160, -34], [158, 42]], place: { at: [430, -860], heading: 112 }, base: 8, tips: [-35, 0],
     build: (P) => {
       const stump = P(132, 64), prop = P(150, -64);
       return {
         tees: { spire: 0, brick: 30, ivy: 64, moss: [110, 40] },
         prof: [[0, 0], [300, 0.5], [352, 3.5], [366, 6.5], [380, 5], [430, 7], [498, 10]],
-        fairway: [{ e: [[50, 14, 14], [90, 22, 24], [150, 30, 28], [190, 24, 22], [230, 25, 27], [275, 28, 24], [330, 20, 18], [360, 20, 22], [420, 24, 22], [470, 18, 18], [488, 14, 14]] }],
+        // Proposal (round 4): an hourglass, the bottle. Wide where the drive and the lay-up land on the second leg, pinched
+        // to under 20 m where rubble heaps either side of the crest leave one gap over it, wide again in the hill park
+        fairway: [{ e: [[50, 12, 12], [90, 17, 19], [150, 24, 25], [205, 26, 28], [255, 27, 33], [300, 30, 40], [328, 24, 30], [346, 10, 12], [362, 8, 8], [382, 10, 9], [400, 24, 22], [438, 30, 25], [470, 21, 22], [488, 14, 14]], wob: 1.2 }],
         corridor: 18,
         green: { rx: 16, rz: 19, lobes: [[0, 0, 8, 18, 45], [-5, 4, 6, 6, 0]], join: 4, pins: [[6, 7], [-6, -7], [-5, 5]], engine: { style: 'plateau', raise: 0.3, falseFront: 0.6, shape: [{ bowl: [6, 7], r: 9, h: 0.25 }] }, style: 'a long diagonal on the floor slab of a gutted pavilion, 2.2 m up; broken steps make a false front' },
         // the pavilion's ground floor: a raised slab in the hill park, broken steps up its front, a few columns left
@@ -171,7 +174,9 @@ export const HOLES = [
         podium: { w: 50, d: 54, h: 2.2, front: 10, label: 'the pavilion floor' },
         columns: [[-22, -24], [22, -24], [-22, -2], [22, 6], [-10, -26], [12, -26]].map(([u, v], i) => ({ rel: [u, v], h: [14, 9, 6, 11, 4, 13][i], r: 0.8 })),
         bunkers: [{ at: P(176, -30), rx: 15, rz: 7, rot: 0.2 }, { at: P(272, 33), rx: 14, rz: 7 }, { at: P(470, 22), rx: 9, rz: 6 }, { at: P(486, -20), rx: 5, rz: 4, style: 'pot' }],
-        rubble: [{ at: P(130, 40), rx: 22, rz: 28, h: 4, label: 'debris from the break' }, { at: P(362, 0), rx: 70, rz: 13, rot: 0.08, h: 0, label: 'the rubble crest' }],
+        rubble: [{ at: P(130, 40), rx: 22, rz: 28, h: 4, label: 'debris from the break' }, { at: P(362, 0), rx: 70, rz: 13, rot: 0.08, h: 0, label: 'the rubble crest' },
+          // the bottle's neck: heaps of the tower's rubble either side of the gap over the crest
+          { at: P(364, -30), rx: 16, rz: 22, rot: 0.2, h: 6, label: 'rubble heap' }, { at: P(358, 32), rx: 17, rz: 24, rot: -0.15, h: 7, label: 'rubble heap' }],
         crest: { at: P(362), length: 26, width: 140, height: 4 },
         span: { a: [stump[0], stump[1], 72], b: [prop[0], prop[1], 44], w: 30, t: 12, label: 'the fallen top of the tower' },
         buildings: [
@@ -182,12 +187,12 @@ export const HOLES = [
           { at: P(330, 76), w: 40, d: 40, h: 24, broken: true },
         ],
         wrecks: [{ type: 'car', at: P(100, -30), rot: 0.3 }, { type: 'bus', at: P(212, 40), rot: 1.0 }, { type: 'car', at: P(300, -34), rot: 2.0 }],
-        trees: [...grove(P(470, -50), 30, 10, 41, [10, 18]), ...grove(P(500, 50), 26, 8, 42, [10, 18]), ...grove(P(420, 50), 14, 4, 43), ...grove(P(320, -50), 14, 4, 44)],
-        targets: [{ name: 'Under the span', at: P(262) }, { name: 'Short of the crest', at: P(338, 4) }, { name: 'Over the crest', at: P(420), bold: true }],
+        trees: [...grove(P(366, -34), 9, 4, 45, [8, 13]), ...grove(P(357, 36), 10, 4, 46, [8, 13]), ...grove(P(470, -50), 30, 10, 41, [10, 18]), ...grove(P(500, 50), 26, 8, 42, [10, 18]), ...grove(P(420, 50), 14, 4, 43), ...grove(P(320, -50), 14, 4, 44)],
+        targets: [{ name: 'Under the span', at: P(252, -4) }, { name: 'Short of the gap', at: P(322, 4) }, { name: 'Through the gap', at: P(418), bold: true }],
         words: {
           plays: 'A skyscraper snapped at the 18th floor. Its top fell across the street and lies propped on the block opposite, a slanting span 44 to 72 m up that you drive under. Then the street bends left and climbs a crest of rubble to the hill park, where the green sits on the floor slab of a gutted pavilion among wild trees, a few columns still standing round it.',
-          safe: 'Drive under the span to the second leg, lay up short of the crest (it\'s blind), and wedge up the hill.',
-          bold: 'A big second carries the blind crest and leaves a pitch.',
+          safe: 'Drive under the span to the second leg and lay up in the wide part short of the crest, then play a blind iron up the hill.',
+          bold: 'Thread the second through the gap between the rubble heaps on the crest, 20 m wide, for a pitch to the pavilion green.',
           miss: 'The tower\'s stump and its debris on the right, wrecks on the left, trees round the green.',
         },
       };
@@ -223,12 +228,13 @@ export const HOLES = [
   }),
 
   // 6. THE SQUARE: a drivable par 4 across an overgrown city square, with the El behind it
-  hole({ n: 6, name: 'The Square', par: 4, legs: [[274, 0]], place: { at: [790, -430], heading: 224 }, base: 14,
+  hole({ n: 6, name: 'The Square', par: 4, legs: [[274, 0]], place: { at: [790, -430], heading: 224 }, base: 14, tips: [-28, 0],
     build: (P) => ({
       tees: { spire: 0, brick: 22, ivy: [50, 30], moss: [88, 32] },
       prof: [[0, 0], [120, 1], [200, 2], [240, 5], [274, 6]],
       cant: [[140, 240, 3]],   // the square leans right, away from the fountain, toward the lay-up
-      fairway: [{ e: [[64, 12, 16], [110, 16, 32], [160, 21, 42], [212, 16, 46]] }, [200, 236, 36, 30]],
+      // Proposal (round 4): an apron from the right lane up to the green's front right, so a drive can run on
+      fairway: [{ e: [[64, 12, 16], [110, 16, 32], [160, 21, 42], [212, 16, 46]] }, [200, 236, 36, 30], { lobes: [[244, 20, 16, 11, -30], [254, 12, 9, 7, -30]], join: 6, wob: 1.5 }],
       extraFw: [{ at: P(215, 34), rx: 22, rz: 26 }],
       corridor: 22,
       green: { rx: 14, rz: 16, lobes: [[0, 0, 10, 16, 30], [-6, -5, 7, 7, 0], [5, -6, 6, 6, 0]], join: 4, pins: [[5, 8], [-6, -5], [5, -6]], engine: { style: 'plateau', raise: 0.9, falseFront: 0.4, tilt: 1.4, shape: [{ ridge: [[0, -12], [0, -4]], h: 0.3, w: 2.2 }] }, style: 'a long green turned back-right, raised on the old plaza steps, tilted to the front' },
@@ -239,7 +245,7 @@ export const HOLES = [
         { at: P(100, 118), w: 80, d: 40, h: 34, broken: true }, { at: P(220, 120), w: 60, d: 40, h: 52, broken: true }, { at: P(320, 10), w: 90, d: 26, h: 30, broken: true }],
       el: [{ pts: [P(305, 170), P(305, -55)], y: 14, w: 9, broken: true, label: 'the El behind the green' }],
       wrecks: [{ type: 'car', at: P(36, -34), rot: 0.5 }],
-      targets: [{ name: 'Lay-up right', at: P(200, 30) }, { name: 'Drive the green', at: P(274), bold: true, pin: true }],
+      targets: [{ name: 'Lay-up right', at: P(200, 30) }, { name: 'Run it on from the right', at: P(248, 16), bold: true }],
       words: {
         plays: 'A city square gone wild: stands of big trees down both sides, the old fountain in front-left of a green raised on the plaza steps, and the El on its girders behind.',
         safe: 'Lay up right of the fountain, 180 to 200 m, for a straight-in wedge.',
@@ -282,43 +288,56 @@ export const HOLES = [
   }),
 
   // 8. RIVERSIDE: from the waterline, round a dock basin, up to a green on the old wharf
-  hole({ n: 8, name: 'Riverside', par: 4, legs: [[228, 0], [120, 40]], place: { at: [220, 40], heading: 286 }, base: 0,
-    build: (P) => ({
-      tees: { spire: 0, brick: 24, ivy: [58, -34], moss: [96, -34] },
-      prof: [[0, 0], [150, 0.5], [228, 3], [300, 6], [348, 8]],
-      fairway: [{ e: [[60, 18, 14], [110, 26, 22], [170, 30, 26], [215, 26, 24], [240, 20, 20], [280, 23, 22], [336, 15, 15]] }],
-      corridor: 18,
-      green: { rx: 15, rz: 16, lobes: [[0, 0, 9, 16, -25], [8, -4, 7, 7, 0], [7, 8, 6, 6, 0]], join: 3, pins: [[-5, 9], [8, -4], [-3, -5]], engine: { style: 'tilt', tilt: 1.5, side: 1, shape: [] }, style: 'a long green turned back-left on the wharf, the drop to the water on its right' },
-      bunkers: [{ at: P(338, -19), rx: 9, rz: 4, rot: 0.4, style: 'grass' }, { at: P(226, -34), rx: 14, rz: 7 }],
-      water: [{ at: P(200, 92), rx: 68, rz: 46, rot: 0.5, p: 3, y: -1, label: 'the dock basin' }],
-      wharf: { from: P(240, 30), to: P(360, 30), y: 8, label: 'the wharf wall' },
-      cranes: [P(320, 60), P(380, 30)].map(p => ({ at: p, h: 38 })),
-      buildings: [{ at: P(300, -70), w: 50, d: 40, h: 18, broken: true }, { at: P(390, -10), w: 30, d: 60, h: 22, broken: true, label: 'wharf sheds' }],
-      wrecks: [{ type: 'car', at: P(120, -40), rot: 0.2 }, { type: 'boat', at: P(170, 80), rot: 0.9 }],
-      trees: [...grove(P(260, -46), 16, 5, 81)],
-      targets: [{ name: 'Round the basin', at: P(222, -8) }, { name: 'Across the basin', at: P(270, 4), bold: true }],
-      words: {
-        plays: 'You start down at the waterline on an old quay. The dock basin sits inside the bend on the right, and the hole climbs round it to a green on the wharf, 8 m up, with the wall dropping to the water on its right.',
-        safe: 'Drive left of the basin to the bend (220 m) and play a short iron up to the wharf.',
-        bold: 'Carry the corner of the basin (about 230 m) for a wedge.',
-        miss: 'Right is the basin all the way; left is the old quay, then the river.',
-      },
-    }),
+  hole({ n: 8, name: 'Riverside', par: 4, legs: [[130, 0], [204.9, 22.1]], place: { at: [220, 40], heading: 286 }, base: 0, tips: [-35, 0],
+    build: (P, L) => {
+      // Proposal (round 4): a hook round the dock basin. The playing line now runs straight across the basin's
+      // corner to the same pin; the fairway wraps round the basin on the left. Everything that stays is placed
+      // from the old line (Q), so it doesn't move; `so` gives a hole-frame point as [s, off] on the new line.
+      const Q = (s, o = 0) => at(lineOf([[228, 0], [120, 40]]), s, o), so = p => { const r = project(L, p[0], p[1]); return [r.s, r.off]; };
+      const lobe = (p, ra, rc, rot = 0) => [...so(p), ra, rc, rot];
+      return {
+        cityLine: lineOf([[228, 0], [120, 40]]),
+        tees: { spire: 0, brick: 24, ivy: [58, -34], moss: [96, -34] },
+        prof: [[0, 0], [130, 0.4], [215, 3], [288, 6], [334.9, 8]],
+        cant: [[140, 265, -2, -60, 25]],   // the quay leans gently away from the basin (high on the water side) across the fairway: the hole asks a lot already
+        fairway: [{ lobes: [lobe([-3, -80], 30, 15), lobe([-6, -140], 36, 23), lobe([-12, -205], 40, 31, -4), lobe([-16, -238], 30, 32, 30),
+          lobe([18, -262], 30, 24, 50), lobe([44, -284], 28, 21, 40), lobe([66, -304], 18, 14, 30)], join: 18, wob: 3 }],
+        corridor: 18,
+        green: { from: Q(228), rx: 15, rz: 16, lobes: [[0, 0, 9, 16, -25], [8, -4, 7, 7, 0], [7, 8, 6, 6, 0]], join: 3, pins: [[-5, 9], [8, -4], [-3, -5]], engine: { style: 'tilt', tilt: 1.5, side: 1, shape: [] }, style: 'a long green turned back-left on the wharf, the drop to the water on its right' },
+        bunkers: [{ at: Q(338, -19), rx: 9, rz: 4, rot: 0.4, style: 'grass' }, { at: [-48, -238], rx: 13, rz: 7, rot: 0.2 }],
+        water: [{ at: Q(203, 99), rx: 68, rz: 46, rot: 0.5, p: 3, y: -1, label: 'the dock basin' },
+],
+        wharf: { from: Q(240, 30), to: Q(360, 30), y: 8, label: 'the wharf wall' },
+        cranes: [Q(320, 60), Q(380, 30)].map(p => ({ at: p, h: 38 })),
+        buildings: [{ at: Q(300, -70), w: 50, d: 40, h: 18, broken: true }, { at: Q(390, -10), w: 30, d: 60, h: 22, broken: true, label: 'wharf sheds' }],
+        wrecks: [{ type: 'car', at: Q(120, -40), rot: 0.2 }, { type: 'boat', at: Q(170, 80), rot: 0.9 }],
+        trees: [...grove(Q(260, -46), 16, 5, 81)],
+        targets: [{ name: 'Round the basin', at: [-14, -212] }, { name: 'Bite off the basin', at: [8, -247], bold: true }],
+        words: {
+          plays: 'You start down at the waterline on an old quay. The dock basin sits inside the bend on the right, and the fairway hooks round it to a green on the wharf, 8 m up, with the wall dropping to the water on its right. The straight line to the flag crosses the basin\'s corner.',
+          safe: 'Drive left, wide of the basin, to the bend (210 m) and play a mid iron round the corner and up to the wharf.',
+          bold: 'Cut the corner: drive along the basin\'s edge (about 250 m) to the far side of the hook for a wedge. The more you cut off, the more water you carry.',
+          miss: 'Right is the basin all the way; the quay leans gently away from it. Left is rough, the old quay, then the river.',
+        },
+      };
+    },
   }),
 
   // 9. THE RIFT: up a heaved street beside a chasm to the leaning clubhouse
-  hole({ n: 9, name: 'The Rift', par: 4, legs: [[250, 0], [143, 12]], place: { at: [-60, 40], heading: 318 }, base: 2,
+  hole({ n: 9, name: 'The Rift', par: 4, legs: [[250, 0], [143, 12]], place: { at: [-60, 40], heading: 318 }, base: 2, tips: [-25, 25],
     build: (P) => ({
       tees: { spire: 0, brick: 22, ivy: [56, 36], moss: [96, 38] },
       prof: [[0, 0], [130, 5], [150, 10], [262, 16], [282, 21], [393, 28]],
       cant: [[60, 330, 3]],               // the slab falls to the right, away from the rift
-      fairway: [{ e: [[70, 16, 20], [120, 22, 30], [180, 26, 30], [230, 24, 26], [260, 20, 22], [300, 24, 22], [350, 20, 18], [383, 14, 14]] }],
+      // Proposal (round 4): a fan. Narrow at the foot of the climb, squeezed between the rift and the rubble, it opens
+      // as the heaved slab flattens out into the old civic plaza at the top: the further up you drive, the more room
+      fairway: [{ e: [[70, 11, 13], [120, 13, 16], [175, 17, 21], [225, 20, 26], [255, 24, 30], [290, 30, 36], [325, 36, 40], [355, 32, 36], [374, 22, 22], [383, 14, 14]], wob: 1.4 }],
       corridor: 16,
       green: { rx: 15, rz: 17, lobes: [[0, -3, 11, 10, 0], [1, 10, 8, 8, 10]], join: 6, pins: [[1, 11], [-6, -5], [6, -4]], engine: { style: 'plateau', raise: 0.4, falseFront: 0.6, tilt: 1.5, shape: [] }, style: 'a pear up the line on a level shelf at the top, false front' },
-      bunkers: [{ at: P(242, 33), rx: 14, rz: 7, rot: -0.1 }, { at: P(376, 20), rx: 8, rz: 5 }],
+      bunkers: [{ at: P(250, 39), rx: 14, rz: 7, rot: -0.1 }, { at: P(376, 20), rx: 8, rz: 5 }],
       rift: { pts: [P(50, -64), P(140, -58), P(240, -56), P(330, -64), P(380, -84)], w: 26, label: 'THE RIFT' },
       terraces: [{ s: 140, label: 'broken pavement step' }, { s: 272, label: 'second step' }],
-      rubble: [{ at: P(180, 62), rx: 16, rz: 44, h: 3 }, { at: P(320, 56), rx: 14, rz: 34, h: 3 }],
+      rubble: [{ at: P(180, 62), rx: 16, rz: 44, h: 3 }, { at: P(326, 70), rx: 14, rz: 30, h: 3 }],
       buildings: [
         { at: P(432, -6), w: 60, d: 34, h: 30, broken: false, lean: { dir: 'back', deg: 9 }, tower: { h: 30, w: 10 }, name: 'the clubhouse', label: 'the clubhouse (leaning)' },
         { at: P(120, 84), w: 40, d: 60, h: 36, broken: true }, { at: P(230, 92), w: 40, d: 70, h: 48, broken: true, vines: true },
@@ -326,7 +345,7 @@ export const HOLES = [
       ],
       wrecks: [{ type: 'car', at: P(110, 40), rot: 0.6 }, { type: 'car', at: P(214, 34), rot: 1.8 }],
       trees: [...grove(P(400, 46), 12, 4, 91), ...grove(P(300, -36), 8, 2, 92, [7, 11])],
-      targets: [{ name: 'First terrace', at: P(232, 8) }, { name: 'Top terrace', at: P(300, 4), bold: true }],
+      targets: [{ name: 'First terrace', at: P(232, 4) }, { name: 'Top terrace', at: P(300, 4) }],
       words: {
         plays: 'The street tore open over the collapsed tunnel below and one side heaved up. You climb the tilted slab with the rift on your left, over two broken steps of pavement, to a green at the foot of the clubhouse, an old civic building that leans back on its foundations under its clock tower.',
         safe: 'Drive down the right half; the slab falls away from the rift, toward the buildings, so it never kicks you in. Second shot plays a club or two up the hill.',

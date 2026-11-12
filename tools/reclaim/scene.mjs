@@ -2,6 +2,14 @@
 // own frame, plus the world transform and the city between the holes. Shared by the plans, the profiles and
 // the sketch views, so they all show the same ground. Pure.
 import { project, seDist, rectPts, inPoly, profileFn, smooth, clamp, at, lineOf, rnd, distLine, headingAt } from './geo.mjs';
+
+// value noise in [-1, 1] and a smooth union (as tools/emberfell/shapes.mjs), for the free fairway shapes
+const h2 = (i, j, sd) => { const v = Math.sin(i * 127.1 + j * 269.5 + sd * 113.3) * 43758.5453; return (v - Math.floor(v)) * 2 - 1; };
+function noise2(x, z, sd = 0) {
+  const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz), L = (a, b, t) => a + (b - a) * t;
+  return L(L(h2(i, j, sd), h2(i + 1, j, sd), u), L(h2(i, j + 1, sd), h2(i + 1, j + 1, sd), u), v);
+}
+const smin = (a, b, k) => { const t = clamp(0.5 + 0.5 * (b - a) / k, 0, 1); return b + (a - b) * t - k * t * (1 - t); };
 import { HOLES } from './holes.mjs';
 import { prepGreen, greenRho } from '../../src/course/features.js';
 
@@ -9,15 +17,34 @@ export const SURF = ['street', 'rough', 'fairway', 'fringe', 'green', 'tee', 'sa
 // the river (world): one channel at one level, along the left of the Bridge, past Riverside's quay and the
 // foot of the Rift, coming down the east side of town
 const byN = n => HOLES.find(h => h.n === n);
-const W_ = (n, s, off) => { const h = byN(n), p = at(h.line, s, off); return toWorld(h)(...p); };
+const W_ = (n, s, off) => { const h = byN(n), p = at(h.cityLine || h.line, s, off); return toWorld(h)(...p); };
 export const RIVER = { y: -1, w: 150, pts: [[1300, -1150], [1230, -620], W_(7, -260, -175), W_(7, 0, -175), W_(7, 262, -175), W_(7, 420, -165), W_(7, 540, -150),
   W_(8, 60, -128), W_(8, 200, -155), W_(9, 40, -215), W_(9, 220, -270), [-900, 250]] };
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
 
 // a fairway piece: [s0, s1, w, off] (one width, its middle off the line) or { e: [[s, L, R], ...], wob } (how far
 // the left and right edges sit from the line at each knot, eased between, with a gentle scallop of about wob m)
+// Free shapes as in the other plan tools (tools/emberfell/shapes.mjs makeFairway): { lobes: [[s, off, along, across, rot],
+// ...], join, wob } is a smooth union of ellipses placed along the line (added to the fairway), { bite: [...] } the same
+// shapes cut out of it.
 export function fwPieces(h) {
-  return (h.fairway || []).map((f, i) => {
+  const L = h.line, len = L.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - L[i][0], p[1] - L[i][1]), 0);
+  const blob = (f, i) => ({ wob: f.wob ?? 3, seed: f.seed ?? h.n * 5.3 + i * 7, k: f.join ?? 10, L: (f.lobes || f.bite).map(([s, off, ra, rc, rot = 0]) => {
+    const c = at(L, s, off), hd = headingAt(L, clamp(s, 0.5, len - 0.5)) + rot * Math.PI / 180;
+    return { x: c[0], z: c[1], ra, rc, ux: Math.sin(hd), uz: -Math.cos(hd), m: Math.min(ra, rc) };
+  }) });
+  const F = (h.fairway || []).filter(f => !f.lobes && !f.bite);
+  const out = ribbons(h, F);
+  out.lobes = (h.fairway || []).filter(f => f.lobes).map(blob); out.bites = (h.fairway || []).filter(f => f.bite).map(blob);
+  return out;
+}
+export function blobD(B, x, z) {
+  let d = Infinity;
+  for (const o of B.L) { const dx = x - o.x, dz = z - o.z, a = dx * o.ux + dz * o.uz, b = -dx * o.uz + dz * o.ux, di = (Math.hypot(a / o.ra, b / o.rc) - 1) * o.m; d = d === Infinity ? di : smin(d, di, B.k); }
+  return d + B.wob * 0.6 * noise2(x / 19, z / 19, B.seed);
+}
+function ribbons(h, list) {
+  return list.map((f, i) => {
     const e = Array.isArray(f) ? [[f[0], f[2] / 2 - (f[3] || 0), f[2] / 2 + (f[3] || 0)], [f[1], f[2] / 2 - (f[3] || 0), f[2] / 2 + (f[3] || 0)]] : f.e;
     const wob = Array.isArray(f) ? 0 : f.wob ?? 1.6, seed = h.n * 3.7 + i * 1.3;
     const knot = (s, k) => { if (s <= e[0][0]) return e[0][k]; for (let j = 0; j < e.length - 1; j++) if (s <= e[j + 1][0]) return e[j][k] + (e[j + 1][k] - e[j][k]) * smooth((s - e[j][0]) / (e[j + 1][0] - e[j][0])); return e.at(-1)[k]; };
@@ -27,18 +54,20 @@ export function fwPieces(h) {
 }
 // signed distance outside the nearest fairway piece (negative inside)
 function fwDistance(h, P, x, z) {
-  if (!P.length) return Infinity;
+  if (!P.length && !P.lobes?.length) return Infinity;
   const pr = project(h.line, x, z); let best = Infinity;
   for (const q of P) {
     const ss = clamp(pr.s, q.s0, q.s1), lat = Math.max(-pr.off - q.L(ss), pr.off - q.R(ss)), end = Math.max(q.s0 - pr.s, pr.s - q.s1);
     const d = end > 0 && lat > 0 ? Math.hypot(end, lat) : Math.max(end, lat);
     if (d < best) best = d;
   }
+  for (const B of P.lobes || []) best = Math.min(best, blobD(B, x, z));
+  for (const B of P.bites || []) best = Math.max(best, -blobD(B, x, z));
   return best;
 }
 // the green as the engine builds it (features.js): one ellipse, or lobes, framed from the line before the pin
 export function greenFeature(h) {
-  const g = h.green, from = h.line[h.line.length - 2];
+  const g = h.green, from = g.from || h.line[h.line.length - 2];   // g.from keeps a green's frame when its line moves
   return prepGreen({ x: h.pin[0], z: h.pin[1], rx: g.rx, rz: g.rz, lobes: g.lobes, join: g.join, wob: g.wob, from }, () => 0, from);
 }
 
@@ -58,7 +87,9 @@ export function buildHole(h) {
   const rift = h.rift && { pts: h.rift.pts, w: h.rift.w };
   const inlet = h.inlet;
   const plat = (h.platform || []).map(p => ({ pts: rectPts(p.at[0], p.at[1], p.w, p.d, p.rot || 0), y: p.y }));
-  const cantAt = s => { let g = 0; for (const [a, b, gr] of h.cant || []) g += gr * smooth((s - a) / 30) * (1 - smooth((s - b) / 30)); return g; };
+  // a cant: [s0, s1, grade %(, lo, hi)]: the ground leans across the line (+ falls to the right) from s0 to s1, over
+  // offsets lo..hi (default -80..80; level beyond them, so a lean can stop at a bank)
+  const cantY = (s, off) => { let y = 0; for (const [a, b, gr, lo = -80, hi = 80] of h.cant || []) y += gr * smooth((s - a) / 30) * (1 - smooth((s - b) / 30)) * clamp(off, lo, hi) / 100; return y; };
   const st = h.stadium && { ...h.stadium, x: h.stadium.at[0], z: h.stadium.at[1] };
   const sink = h.sinkhole && { x: h.sinkhole.at[0], z: h.sinkhole.at[1], rx: h.sinkhole.rx, rz: h.sinkhole.rz, rot: 0 };
   const inVoid = (x, z) => (rift && distLine(rift.pts, x, z) < rift.w / 2) || (sink && seDist(sink, x, z) < 1);
@@ -91,7 +122,7 @@ export function buildHole(h) {
     for (const p of plat) if (inPoly(p.pts, x, z)) return p.y;
     for (const t of teePads) if (t.y !== undefined && Math.abs(x - t.x) < 6 && Math.abs(z - t.z) < 5) return t.y;
     const pr = project(h.line, x, z);
-    let y = prof(pr.s) - cantAt(pr.s) / 100 * clamp(pr.off, -80, 80);
+    let y = prof(pr.s) - cantY(pr.s, pr.off);
     if (st) y = stadiumY(x, z).y;
     // the hole's own big landforms
     if (h.trench) {   // the subway caved in under the avenue: a trench with rubble banks
@@ -249,13 +280,17 @@ export function buildHole(h) {
           const cx = x + Math.sin(yaw) * k * 6.5 + (R() - 0.5) * 1.5, cz = z - Math.cos(yaw) * k * 6.5 + (R() - 0.5) * 1.5;
           if (fwDist(cx, cz) < 4 || ground(cx, cz) === null || !['rough', 'street'].includes(surface(cx, cz))) continue;
           const col = ['cab', 'cab', 'cab', 'rust', 'green', 'white'][Math.floor(R() * 6)], yw = yaw + (R() - 0.5) * 0.6;
-          const c = { kind: 'box', pts: rectPts(cx, cz, 1.9, 4.6, yw), base: gAt(cx, cz) - 0.15, h: 1.5, color: col, car: true, moss: R() < 0.55, label: 'car' };
+          const c = { kind: 'box', pts: rectPts(cx, cz, 1.9, 4.6, yw), base: gAt(cx, cz) - 0.15, h: 1.5, color: col, car: true, moss: R() < 0.55, label: 'car', wild: true };
           objs.push(c); cars.push(c);
         }
         nC--;
       }
     }
   }
+  // the tips spot (switched off, no pad) keeps the scattered trees and cars off it as a tee would: taken out after the
+  // scatter, so the rest stay where they were
+  if (h.tipsPt) { const [tx, tz] = h.tipsPt, cx = o => o.x ?? o.pts[0][0], cz = o => o.z ?? o.pts[0][1];
+    for (let k = objs.length - 1; k >= 0; k--) { const o = objs[k]; if ((o.wild && Math.hypot(cx(o) - tx, cz(o) - tz) < 45) || (o.kind === 'box' && o.wild && Math.hypot(cx(o) - tx, cz(o) - tz) < 16)) objs.splice(k, 1); } }
   if (h.marker) objs.push({ kind: 'marker', x: h.marker[0], z: h.marker[1], base: gAt(h.marker[0], h.marker[1]) });
   if (h.ramp && h.ramp.y) objs.push({ kind: 'ramp', from: h.ramp.from, to: h.ramp.to, w: h.ramp.w, y: h.ramp.y });
 
@@ -289,7 +324,9 @@ export function toLocal(h) {
 export const BUILT = HOLES.map(buildHole);
 // a hole's plain scenery buildings give way to the next hole's play: none within 40 m of another hole's line
 {
-  const WL = HOLES.map(h => h.line.map(p => toWorld(h)(...p)));
+  // the city was laid round each hole's line; a hole whose line moved keeps the old one here (`cityLine`), so the
+  // blocks between the holes, drawn from one random sequence, don't reshuffle
+  const WL = HOLES.map(h => (h.cityLine || h.line).map(p => toWorld(h)(...p)));
   BUILT.forEach((B, i) => {
     const W = toWorld(HOLES[i]);
     const keep = B.objs.filter(o => {
@@ -305,7 +342,7 @@ export const BUILT = HOLES.map(buildHole);
 // the city between the holes: blocks of ruined buildings filling the gaps, off every hole's play (world)
 export function cityFill() {
   const R = rnd(77), keep = [];
-  const play = HOLES.map(h => { const W = toWorld(h); return { line: h.line.map(p => W(...p)), pin: W(...h.pin), h }; });
+  const play = HOLES.map(h => { const W = toWorld(h); return { line: (h.cityLine || h.line).map(p => W(...p)), pin: W(...h.pin), h }; });
   const occupied = [];
   for (const [i, B] of BUILT.entries()) { const W = toWorld(HOLES[i]); for (const o of B.objs) if (o.kind === 'bldg') occupied.push(o.pts.map(p => W(...p))); }
   const riverD = (x, z) => distLine(RIVER.pts, x, z);

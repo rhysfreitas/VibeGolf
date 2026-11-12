@@ -48,7 +48,7 @@ function holeOut(hi) {
   // g.engine: the complex's style and shaping for features.js (else a gentle tilt; a punchbowl in a pit); g.lobes: its
   // outline; g.pins: more pins as [u, b] from the first, in the green's frame (u right, b toward the back)
   const g = h.green, style = g.engine || (h.pit ? { style: 'punchbowl' } : { style: 'tilt', tilt: 0.6 });
-  const from = h.line[h.line.length - 2], rot = Math.atan2(h.pin[0] - from[0], -(h.pin[1] - from[1])), gc = Math.cos(rot), gs = Math.sin(rot);
+  const from = h.green.from || h.line[h.line.length - 2], rot = Math.atan2(h.pin[0] - from[0], -(h.pin[1] - from[1])), gc = Math.cos(rot), gs = Math.sin(rot);
   const pinAt = ([u, b]) => [r1(h.pin[0] + u * gc + b * gs), r1(h.pin[1] + u * gs - b * gc)];
   const green = { x: r1(h.pin[0]), z: r1(h.pin[1]), rx: g.rx, rz: g.rz, ...(g.lobes ? { lobes: g.lobes, join: g.join, wob: g.wob } : {}), from: [r1(from[0]), r1(from[1])], ...style,
     pins: [[0, 0], ...(g.pins || [])].map(pinAt) };
