@@ -72,8 +72,10 @@ function holeOut(hi) {
         if (nearPlay(c[0], c[1], 260)) {
           if (o.open) { box(c[0], c[1], w, d, rot, o.base + yoff + o.open, o.h - o.open, 0.45); }
           else box(c[0], c[1], w, d, rot, o.base + yoff, o.h + (o.tower ? o.tower.h : 0), 0.45);
-          if (o.open) for (let u = 0; u < (o.cols || 4); u++) for (let v = 0; v < (o.cols || 4); v++) {
-            const t = (u + 0.5) / (o.cols || 4), s2 = (v + 0.5) / (o.cols || 4), px = pts[0][0] + (pts[1][0] - pts[0][0]) * t + (pts[3][0] - pts[0][0]) * s2, pz = pts[0][1] + (pts[1][1] - pts[0][1]) * t + (pts[3][1] - pts[0][1]) * s2;
+          // the columns: a grid of cols × cols, or colsX (offsets across the lobby from its middle, m) × cols deep
+          const cx = o.colsX ? o.colsX.map(x => 0.5 + x / w) : Array.from({ length: o.cols || 4 }, (_, u) => (u + 0.5) / (o.cols || 4));
+          if (o.open) for (const t of cx) for (let v = 0; v < (o.cols || 4); v++) {
+            const s2 = (v + 0.5) / (o.cols || 4), px = pts[0][0] + (pts[1][0] - pts[0][0]) * t + (pts[3][0] - pts[0][0]) * s2, pz = pts[0][1] + (pts[1][1] - pts[0][1]) * t + (pts[3][1] - pts[0][1]) * s2;
             box(px, pz, 2.2, 2.2, rot, o.base + yoff, o.open, 0.3); city.cols.push([r1(px), r1(pz), r1(o.base + yoff), o.open, 1.1]);
           }
         }

@@ -208,7 +208,7 @@ export function buildHole(h) {
   const gAt = (x, z) => ground(x, z) ?? 0;
   for (const [i, b] of (h.buildings || []).entries()) {
     const pts = foot[i], base = Math.min(...pts.map(p => gAt(p[0], p[1]))) - 1;
-    objs.push({ kind: 'bldg', pts, base, h: b.h, broken: b.broken, open: b.open, cols: b.cols, lean: b.lean, tower: b.tower, vines: b.vines,
+    objs.push({ kind: 'bldg', pts, base, h: b.h, broken: b.broken, open: b.open, cols: b.cols, colsX: b.colsX, lean: b.lean, tower: b.tower, vines: b.vines,
       name: b.name, label: b.label, rot: b.rot || 0, seed: 1000 * h.n + i, at: b.at, w: b.w, d: b.d });
   }
   for (const t of h.trees || []) objs.push({ kind: 'tree', x: t.x, z: t.z, r: t.r, h: t.h, base: gAt(t.x, t.z) });

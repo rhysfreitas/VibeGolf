@@ -90,7 +90,9 @@ export async function courseFairways(c) {
   const lineOf = h => h.line || [h.tees[back], ...(h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]), h.green?.pins?.[0] || h.pin];
   // Generated courses (a `frame` on every hole) sample their ground from the whole world, so a hole's field also
   // holds its neighbours' fairways; count only the hole's own ground: points nearer its line than any other hole's
-  const framed = HOLES.every(h => h.frame), toW = F => { const a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
+  // (The Reclaim's fields come from each hole's own plan data, not a shared world, so they hold only its own fairway:
+  // there the filter would drop a hook's fairway that wraps out nearer another hole's line than its own.)
+  const framed = HOLES.every(h => h.frame) && !COURSE.city, toW = F => { const a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
     return (x, z) => [F.x + x * rx - z * fx, F.z + x * rz - z * fz]; };
   const WL = framed ? HOLES.map(h => { const W = toW(h.frame); return lineOf(h).map(p => W(...p)); }) : null;
   const dLine = (L, x, z) => { let d = Infinity; for (let i = 0; i < L.length - 1; i++) { const [ax, az] = L[i], [bx, bz] = L[i + 1], dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz))); d = Math.min(d, Math.hypot(x - ax - dx * t, z - az - dz * t)); } return d; };

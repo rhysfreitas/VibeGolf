@@ -277,9 +277,10 @@ function renderView(hi, view) {
         const r = 2.5 + R() * 4; tree(px, pz, top - 6, r, r * 2 + 4, o.seed + 90 + k, false, -0.3); } }
     // the open lower floors: columns
     if (o.open) {
-      const n = o.cols || 4;
-      for (let u = 0; u < n; u++) for (let v = 0; v < n; v++) {
-        const t = (u + 0.5) / n, w_ = (v + 0.5) / n, p = [0, 1].map(k => pts[0][k] + (pts[1][k] - pts[0][k]) * t + (pts[3][k] - pts[0][k]) * w_);
+      const n = o.cols || 4, wd = Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]);
+      const cx = o.colsX ? o.colsX.map(x => 0.5 + x / wd) : Array.from({ length: n }, (_, u) => (u + 0.5) / n);
+      for (const t of cx) for (let v = 0; v < n; v++) {
+        const w_ = (v + 0.5) / n, p = [0, 1].map(k => pts[0][k] + (pts[1][k] - pts[0][k]) * t + (pts[3][k] - pts[0][k]) * w_);
         column(p[0], p[1], absBase, lo, 1.1, [176, 172, 166]);
       }
     }

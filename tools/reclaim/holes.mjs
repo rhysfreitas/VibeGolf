@@ -106,10 +106,10 @@ export const HOLES = [
         bunkers: [{ at: P(332, -20), rx: 4.5, rz: 3.5, style: 'pot' }, { at: P(208, 32), rx: 14, rz: 7, rot: -0.3 }],
         rubble: [{ at: P(214, 14), rx: 30, rz: 22, rot: -0.4, h: 2.5, label: 'rubble ramp' }],
         buildings: [
-          { at: c, w: 46, d: 40, rot: dir, h: 92, broken: true, open: 44, cols: 4, name: 'the Atrium', label: 'the Atrium (open to 44 m)' },
+          { at: c, w: 46, d: 40, rot: dir, h: 92, broken: true, open: 44, cols: 4, colsX: [-20, -10, 10, 20], name: 'the Atrium', label: 'the Atrium (open to 44 m)' },
           // the block it stands on: the courtyard walls left of the second leg and behind the green
           { at: P(350, 40), w: 60, d: 26, h: 34, broken: true, vines: true }, { at: P(378, -10), w: 30, d: 70, rot: 0.5, h: 48, broken: true },
-          { at: P(260, -70), w: 50, d: 30, h: 26, broken: true },
+          { at: P(272, -98), w: 50, d: 30, h: 26, broken: true },
           // right of the first leg
           { at: P(80, 70), w: 40, d: 60, h: 40, broken: true }, { at: P(170, 84), w: 40, d: 56, h: 58, broken: true },
           { at: P(60, -66), w: 30, d: 50, h: 30, broken: true },

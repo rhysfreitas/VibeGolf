@@ -231,7 +231,7 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
   6th is real (running on from the right pays the short hitter 0.33, costs the long hitter 0.5 with 0.42
   penalties). The rest are to be judged by playing: the bottle on 4 pays both by 1.1–2.0 (a miss off the neck
   costs only a rough lie, and the tool's player has no lie costs), the bite on 8 is inside the noise (+0.17 /
-  −0.12), and the Atrium still costs the long hitter (+0.5) and pays nobody; it wants a risk added (next round).
+  −0.12), and the Atrium (built 11 November: an 18 m nave between two colonnades through the lobby, the courtyard block moved out of its back corner) now pays the long hitter 0.28 and the short one 0.17 at 64 rounds (before: cost the long hitter 0.34).
   `design.mjs` now scores second-shot choices (the 4th; the 7th's inlet before it was unmarked: pays the long
   hitter 0.2, costs the short 0.3).
 - **Rhythm:** four straight holes; par 4s 300–430 (the 8th is now 365, so only the 2nd is at 380).
