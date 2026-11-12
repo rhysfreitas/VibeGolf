@@ -43,6 +43,10 @@ kept 60 m off every line; and `COURSE.valley`: the valley once in world space (a
 after any change here, then `node --test tests/lostvalley.test.mjs` and
 `node tools/review/playthrough.mjs lostvalley --render=120`.
 
+The Overlook's pterosaur (12 November): perched on the spire off the 7th tee (moved to `P(70, -34)`, 25 m, so its
+top stands just over the lip a quarter of the way into the tee view; it was at the frame's edge), launched by the
+round's first tee shot on the 7th, once a round. The flight is `src/course/ptero-flight.js`; the animal and its
+poses are in `src/course/valley-world.js`.
+
 Still to come from `claude/course-brief-lost-valley.md` (the art pass): the jungle look (the blockout's trees are
-plain shapes), the animals beyond blocks, the Overlook's pterosaur (perched, launched by the round's first tee shot,
-once a round), the after-rain light and mist worked up.
+plain shapes), the animals beyond blocks, the after-rain light and mist worked up.
