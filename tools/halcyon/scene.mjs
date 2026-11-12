@@ -107,9 +107,35 @@ export function buildHole(h) {
   };
   // the ground without the green and bunkers (absolute, in the hole's frame): the floor, the curve from the back
   // tee, the shared forms, and this hole's cant and ramps near its line
-  function baseAbs(x, z) {
+  // a banked avenue (`pipe: [s0, s1, height, halfWidth]`): embankments either side of the line, the ground rising as
+  // (|off| / halfWidth)^1.5 to `height` at halfWidth (the line itself untouched), so a loose drive is fed back
+  const pipeAt = (s, off) => { let y = 0; for (const [a, b, dep, hw] of h.pipe || []) y += dep * Math.min(1, Math.abs(off) / hw) ** 1.5 * span(s, a, b, 40); return y; };
+  function rawAbs(x, z) {
     const [X, Z] = W(x, z), pr = along(x, z), near = 1 - smooth((Math.abs(pr.off) - 70) / 60);
-    return H(X, Z) + curveAt(X, Z) + shapesAt(X, Z) + (-cantAt(pr.s) / 100 * clamp(pr.off, -90, 90) + rampAt(pr.s, pr.off)) * near;
+    return H(X, Z) + curveAt(X, Z) + shapesAt(X, Z) + (-cantAt(pr.s) / 100 * clamp(pr.off, -90, 90) + rampAt(pr.s, pr.off) + pipeAt(pr.s, pr.off)) * near;
+  }
+  // level terraces (`levels: [[s0, s1], ...]`): the ground along the line is held level from s0 to s1 at its height
+  // half way, so the rise between (the curve, the ramps) comes as a bank between terraces, not one long ramp
+  const LV = (h.levels || []).map(([a, b]) => ({ a, b }));
+  if (LV.length) {
+    const PC = [], P0 = s => { const k = Math.round(s); if (PC[k] === undefined) PC[k] = rawAbs(...at(h.line, k)); return PC[k]; };
+    const P = s => { s = clamp(s, 0, h.len); const k = Math.floor(s), t = s - k; return t ? lerp(P0(k), P0(k + 1), t) : P0(k); };
+    for (const l of LV) { l.c = P((l.a + l.b) / 2); l.Pa = P(l.a); l.Pb = P(l.b); }
+    LV.adj = s => {
+      const F = LV[0], E = LV.at(-1);
+      if (s < F.a) return (F.c - F.Pa) * smooth((s - F.a + 25) / 25);
+      if (s > E.b) return (E.c - E.Pb) * (1 - smooth((s - E.b) / 25));
+      for (let i = 0; i < LV.length; i++) {
+        const l = LV[i]; if (s <= l.b) return l.c - P(s);
+        const m = LV[i + 1]; if (s < m.a) return lerp(l.c, m.c, smooth((s - l.b) / (m.a - l.b))) - P(s);
+      }
+      return 0;
+    };
+  }
+  function baseAbs(x, z) {
+    if (!LV.length) return rawAbs(x, z);
+    const pr = along(x, z), near = 1 - smooth((Math.abs(pr.off) - 70) / 60);
+    return rawAbs(x, z) + LV.adj(pr.s) * near;
   }
   h.base = baseAbs(...h.teePts.zenith);
   function base(x, z) {

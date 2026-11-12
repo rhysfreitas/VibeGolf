@@ -31,7 +31,7 @@ export function heightForm(line, groundAt, onFw, par, landAt = null) {
     const [ax, az] = line[k], [bx, bz] = line[k + 1], l = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / l, uz = (bz - az) / l;
     for (let s = 0; s < l; s += 5) {
       const x = ax + ux * s, z = az + uz * s, y = groundAt(x, z), q = o => groundAt(x - uz * o, z + ux * o);
-      P.push({ s: acc + s, y, l12: q(12), r12: q(-12), fw: y !== null && onFw(x, z) });
+      P.push({ s: acc + s, y, l12: q(-12), r12: q(12), fw: y !== null && onFw(x, z) });   // q(+o) is right of the line (it was read as left, so every lean was reported the wrong way round)
     }
     acc += l;
   }

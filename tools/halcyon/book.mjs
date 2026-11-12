@@ -72,13 +72,14 @@ table.sc td.l b { white-space: nowrap; }
 .legend { display: flex; flex-wrap: wrap; gap: 4pt 12pt; font-size: 7.4pt; margin-top: 4pt; }
 .tips { color: #777; font-style: italic; }
 table.cc { border-collapse: collapse; width: 100%; margin-top: 8pt; }
-table.cc th { text-align: left; vertical-align: top; width: 1.35in; font-size: 8.4pt; font-weight: 600; padding: 5pt 8pt 5pt 0; border-top: 0.6pt solid #bbb; text-transform: uppercase; letter-spacing: 0.04em; color: #444; }
-table.cc td { font-size: 8.8pt; line-height: 1.36; padding: 5pt 0; border-top: 0.6pt solid #bbb; }
+table.cc th { text-align: left; vertical-align: top; width: 1.35in; font-size: 8.4pt; font-weight: 600; padding: 3.6pt 8pt 3.6pt 0; border-top: 0.6pt solid #bbb; text-transform: uppercase; letter-spacing: 0.04em; color: #444; }
+table.cc td { font-size: 8.4pt; line-height: 1.32; padding: 3.6pt 0; border-top: 0.6pt solid #bbb; }
 .hc { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1pt 12pt; margin-top: 4pt; padding: 3pt 0; border-top: 0.8pt solid #444; border-bottom: 0.6pt solid #bbb; }
 .hc p { font-size: 6.9pt; line-height: 1.22; margin: 0; }
 .hc p.st { grid-column: 1 / -1; font-size: 7.6pt; font-style: italic; }
 .hc b { font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 6.3pt; color: #444; margin-right: 3pt; font-style: normal; }
 .hc p.dec { color: #8a2d1c; }
+.hc p.st.dl { font-style: normal; font-size: 6.9pt; }
 .legend span i { display: inline-block; width: 12pt; height: 8pt; border: 0.5pt solid #777; margin-right: 3pt; vertical-align: -1pt; }
 .cover2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3in; margin-top: 8pt; }
 `;
@@ -102,7 +103,7 @@ pages.push(`<div class="page">
 </div>`);
 
 const C = CRS.card || {};
-const cardRows = [['Hook', C.hook], ['Skeleton', C.skeleton], ['Classics', C.classics], ['Decisions', C.decisions], ['Landmarks', C.landmarks], ['Rhythm', C.rhythm], ['Fairway forms', C.forms], ['New and borrowed', C.newBorrowed],
+const cardRows = [['Hook', C.hook], ['Skeleton', C.skeleton], ['Classics', C.classics], ['Decisions', C.decisions], ['Landmarks', C.landmarks], ['Rhythm', C.rhythm], ['Set pieces', C.setPieces], ['Dials', C.dials], ['Height forms', C.heights], ['Fairway forms', C.forms], ['Shots and hazards', C.shots], ['New and borrowed', C.newBorrowed],
   ['Tips tee', `The ${tipsName} tees, a fifth set at tour length (${tips.toLocaleString()} yd), in the data on every hole and switched off: nothing shows in the game until it is turned on.`]].filter(r => r[1]);
 pages.push(`<div class="page"><h2>The course card</h2>
   <table class="cc">${cardRows.map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join('')}</table>
@@ -125,10 +126,10 @@ pages.push(`<div class="page">
     <div>
       <h3>The idea</h3>
       <p>Parkland golf in a pristine garden colony on the floor of a ring station: lime avenues, walled gardens, a long lake, a canal with a lock, white villas stepping up terraces toward the rim walls, and the station's own structure as the hazards and landmarks. Its one rule: a floor window is glass, flush with the turf, with space and the stars wheeling under it, and plays as a penalty area (a stroke and a drop beside where the ball crossed, like water). The ball flies as on Earth. The curve plays as it looks: along the ring the floor rises ahead of you and behind you; across it the floor is level.</p>
-      <p><b>The round.</b> It starts at the tram stop (the 1st tee) and plays south up the curve toward the day/night line; the 3rd runs along it with the lit villas of the night side beyond. The 4th turns west round the Long Window, the first floor window, and climbs to the west terraces; the 5th drops off them to a balcony over the rim glass with Earth beside it. The 6th follows the long lake up the ring to the falls, the 7th plays under the spoke's A-frame foot, drivable round it, and the 8th climbs the valley beside the canal and its lock. From the 9th tee, up out of the valley on three stepped terraces, the Great Window lies across the line with the clubhouse beyond it: the reveal and the finish.</p>
+      <p><b>The round.</b> It starts at the tram stop (the 1st tee) and plays south up the curve toward the day/night line; the 3rd runs along it with the lit villas of the night side beyond. The 4th turns west round the Long Window, the first floor window, and climbs to the west terraces; the 5th drops off them to a balcony over the rim glass with Earth beside it. The 6th follows the long lake up the ring on a bench to the falls, the 7th drives up onto the spoke's plinth, a table under the A-frame with the biggest green in the game on it, and the 8th climbs the valley beside the canal and its lock, reachable in two. From the 9th tee, on the rim of a sunken amphitheatre, the Great Window lies in its floor across the line with the clubhouse on the far rim: the reveal and the finish.</p>
       <p><b>Opens on:</b> evening: late light from the mirror band as it dims, warm along the ring; clear and mild; a light spinward breeze from the air handling.</p>
       <h3>Height, hole by hole</h3>
-      <p>Up 10 with the curve (1), up 6 onto the walled garden (2), 12 down off the east terrace along the day/night line (3), up 27 round the Long Window to the terraces (4), 22 down to the balcony (5), up 12 along the lake shore with the curve (6), 9 down off the falls terrace to the spoke's plinth (7), up 21 through the valley, most of it the curve (8), and 12 down off the stepped terraces to the clubhouse lawn (9).</p>
+      <p>A half-pipe up 10 with the curve between two embankments (1), up 5 into the walled garden (2), 12 down off the east terrace (3), up 26 in three terraces round the Long Window (4), 22 down to the balcony (5), a 10% bench up the lake shore (6), off the falls terrace to the floor and up a 7.5 m face onto the plinth (7), up 12 through the valley to a perched green (8), and level across the amphitheatre, 8.5 m deep, to the clubhouse lawn (9).</p>
     </div>
     <div>
       <h3>Reading the plans</h3>
@@ -139,7 +140,7 @@ pages.push(`<div class="page">
       <h3>Reading the sketches</h3>
       <p class="small">Plain shapes from the plan data through a real camera, 5 m up (9 m short of the green), drawn on the true cylinder: the floor rises along the ring, out of the top of the frame within a few kilometres. Rim walls as glass with ribs; Earth placed where the view could see it through the glass (it wheels past once a turn). Space drawn as a pale wash with grey stars so the book prints. The game's own camera is lower (1.55 m up, 3.2 m behind the ball): every tee shot's target was checked in sight from it.</p>
       <h3>Decided so far</h3>
-      <p>Radius 5 km; the curve plays as it looks; floor windows are glass and a penalty area. Tees ${TEES.map(t => t.name).join(', ')}; ${tipsName} tips switched off. Decisions on 4, 7 and 8; the classics Double Plateau, Eden, Road, Leven, Channel; landmarks the spoke, Earth through the rim glass and the clubhouse; late light with the air handling's breeze. Par 3s: ${p3}.</p>
+      <p>Radius 5 km; the curve plays as it looks; floor windows are glass and a penalty area. Tees ${TEES.map(t => t.name).join(', ')}; ${tipsName} tips switched off. Decisions on 4, 7 and 8; the classics Double Plateau, Short, Road, Leven, Channel; the set pieces the postage stamp (2) and the church pews (3); a dial pushed on every hole, the 7th's green past real golf; landmarks the spoke, Earth through the rim glass and the clubhouse; late light with the air handling's breeze. Par 3s: ${p3}.</p>
     </div>
   </div>
   <div class="foot"><span>${NAME} · plan book round ${ROUND}</span><span>${NEW ? 4 : 3}</span></div>
@@ -147,7 +148,7 @@ pages.push(`<div class="page">
 
 let pg = NEW ? 5 : 4;
 const hcard = h => { const c = h.card || {}, w = h.words || {}; if (!h.card) return '';
-  return `<div class="hc"><p class="st"><b>Story</b>${esc(w.story || '')}</p><p><b>Type</b>${esc(c.type)}; ${esc(c.form)}</p><p><b>Feature</b>${esc(c.feature)}: ${esc(c.job)}</p><p class="${/^None/.test(c.decision) ? '' : 'dec'}"><b>Decision${/^None/.test(c.decision) ? '' : ' (proposed)'}</b>${esc(c.decision)}</p><p><b>Miss map</b>${esc(c.miss)}</p><p><b>Tee view</b>${esc(c.view)}</p><p><b>Ground</b>${esc(c.ground)}</p></div>`; };
+  return `<div class="hc"><p class="st"><b>Story</b>${esc(w.story || '')}</p><p><b>Type</b>${esc(c.type)}; ${esc(c.form)}</p><p><b>Feature</b>${esc(c.feature)}: ${esc(c.job)}</p><p class="${/^None/.test(c.decision) ? '' : 'dec'}"><b>Decision</b>${esc(c.decision)}</p><p><b>Miss map</b>${esc(c.miss)}</p><p><b>Tee view</b>${esc(c.view)}</p><p><b>Ground</b>${esc(c.ground)}</p>${c.dial ? `<p class="st dl"><b>Dial</b>${esc(c.dial)}${c.setPiece ? ` · <b>Set piece</b>${esc(c.setPiece)}` : ''} · <b>Shots</b>${c.shots.tee !== '-' ? 'tee: ' + esc(c.shots.tee) + '; ' : ''}${esc(c.shots.approach)} · <b>Hazard</b>${esc(c.hazard)} · <b>Surround</b>${esc(c.surround)}</p>` : ''}</div>`; };
 const front = TEES.at(-1);
 for (const h of D.holes) {
   const w = h.words, dr = h.drives || {}, tv = VIEWS[h.n];

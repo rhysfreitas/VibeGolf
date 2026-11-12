@@ -194,10 +194,14 @@ for (const [i, B] of BUILT.entries()) {
     R_(`  ${h.n} landing widths (m): ${ws.join(', ')}`);
   }
   // fairway bunkers touch the fairway; greenside ones sit off the green
+  // (church pews are one hazard: its rungs count together, and the band touches the fairway where it crosses it)
+  const touchOf = b => { let t = Infinity; const ins = B.inBunker(b); for (let x = b.box[0]; x < b.box[2]; x += 1.5) for (let z = b.box[1]; z < b.box[3]; z += 1.5) if (ins(x, z)) t = Math.min(t, Math.max(0, B.fairwayD(x, z))); return t; };
+  const rungs = B.bunkers.filter(b => b.job === 'pews');
+  if (rungs.length) { const t = Math.min(...rungs.map(touchOf)), into = rungs.filter(b => touchOf(b) <= 0).length;
+    R_(`${t > 2 ? '!' : ' '} ${h.n} the church pews (${rungs.length} rungs) ${t > 2 ? 'are ' + t.toFixed(0) + ' m off the fairway' : 'touch the fairway; ' + into + ' rungs cut into it'}`); }
   for (const [j, b] of B.bunkers.entries()) {
-    if (b.side || b.pot) continue;
-    let touch = Infinity; const ins = B.inBunker(b);
-    for (let x = b.box[0]; x < b.box[2]; x += 1.5) for (let z = b.box[1]; z < b.box[3]; z += 1.5) if (ins(x, z)) touch = Math.min(touch, Math.max(0, B.fairwayD(x, z)));
+    if (b.side || b.pot || b.job === 'pews') continue;
+    const touch = touchOf(b);
     if (touch > 2) R_(`! ${h.n} fairway bunker ${j} is ${touch.toFixed(0)} m off the fairway`);
     else R_(`  ${h.n} fairway bunker ${j} (${b.job || '?'}) touches the fairway`);
   }
@@ -213,7 +217,7 @@ for (const [i, B] of BUILT.entries()) {
   const depth = Math.max(...along) - Math.min(...along), width = Math.max(...across) - Math.min(...across);
   m.greenShape = { depth: Math.round(depth), width: Math.round(width), angle: Math.round(ang) };
   R_(`  ${h.n} green ${m.greenArea} m2, ${Math.round(depth)} deep x ${Math.round(width)} wide (${(depth / width).toFixed(2)}), long axis ${Math.abs(Math.round(ang))}° ${ang > 8 ? 'right' : ang < -8 ? 'left' : 'straight'} of the approach`);
-  if (h.par === 3) p3.push({ n: h.n, yd: h.yards[BACK], plays: playsLike(h.len, m.pinY - m.teeY) });
+  if (h.par === 3) p3.push({ n: h.n, yd: h.yards[BACK], plays: playsLike(h.yards[BACK] * YD, m.pinY - m.teeY) });
   // the green's contour: its typical slope, relief beyond its plane, the pin, the pin areas, the cuppable share
   const gs = greenStats(B), feat = gs.relief >= 0.25 ? 'a feature' : 'flatter';
   m.contour = { median: +gs.median.toFixed(1), relief: +gs.relief.toFixed(2), areas: gs.areas.length, cup: Math.round(gs.cup * 100), feat };

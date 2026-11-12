@@ -43,22 +43,26 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Course | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | Par |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
-| Halcyon Ring (plan book round 1) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 ↑ Aqueduct | 3 the Great Window | 35 |
+| Halcyon Ring (plan book round 2) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
 
 - Halcyon Ring (Rhys's picks, 11 November 2026; `claude/brief-halcyon-ring.md`): a pristine garden colony
   inside a ring space station; floor windows onto space are the penalty area; the ball flies as on Earth. The
   first par 35, the first with three par 3s, the first par-3 finish (across the Great Window to the clubhouse).
   Same par as another course on four holes at most (Hollowmere, The Reclaim, Rimeholm).
   Routing check sent 11 November 2026 (`tools/halcyon/`, page "Halcyon Ring Routing"); plan book round 1
-  12 November 2026 (`out/halcyon-plan-book-r1.pdf`): R = 5 km, 900 m wide; the curve plays as it looks; windows
-  are glass, a penalty area. Zenith 3,225 yd: 1 The Promenade 4 380 (up the curve, S, Double Plateau), 2 The Walled
-  Garden 3 165 (Eden), 3 The Terminator 4 430 (Road, along the day/night line), 4 The Long Window 5 545 (cape over a
-  floor window, +27), 5 The Balcony 3 230 (−22, off the high terrace's lip to a green over the rim glass), 6 The Long
-  Lake 4 455, 7 The Spoke 4 310 (drivable, Leven, the spoke's foot centre-line), 8 The Aqueduct 5 560 (Channel, go
-  or lay up at the canal, +21 up the curve), 9 The Great Window 3 150 (the reveal and the finish, from tees stepping
-  down three terraces). Forms fan, hourglass, hook, scalloped, island, split (`alike.mjs halcyon`: 0 of 15 alike, none
-  like another course's). Classics Double Plateau, Eden, Road, Leven, Channel (all new); decisions 4, 7, 8. Tees
-  Zenith, Meridian, Horizon, Nadir; Kingfisher tips (switched off) 3,465 yd.
+  12 November 2026; round 2 the same day (`out/halcyon-plan-book-r2.pdf`), from the height-forms and dials
+  addenda, every change Rhys's pick: R = 5 km, 900 m wide; the curve plays as it looks; windows are glass, a
+  penalty area. Zenith 3,105 yd: 1 The Promenade 4 380 (a 90 m half-pipe lawn, Double Plateau), 2 The Walled
+  Garden 3 115 (the postage stamp, a 290 m² green; an Eden until it shrank), 3 The Terminator 4 430 (Road, the
+  church pews in the pinch, eleven bunkers), 4 The Long Window 5 545 (cape over a floor window, +26 m in three
+  terraces), 5 The Balcony 3 230 (−22, off the high terrace's lip to a green over the rim glass), 6 The Long Lake 4
+  455 (a 10% hillside bench), 7 The Spoke 4 310 (drivable up a table top round the spoke's foot, Leven, a
+  1,400 m² green: the hole past real golf), 8 The Aqueduct 5 490 (Channel, reachable, go or lay up at the canal),
+  9 The Great Window 3 150 (across the window sunk in an amphitheatre, tee and green level on its rims). Forms
+  fan, hourglass, hook, scalloped, island, split (`alike.mjs halcyon`: 0 of 15 alike, none like another
+  course's). Classics Double Plateau, Short, Road, Leven, Channel (all new); decisions 4, 7, 8; set pieces the
+  postage stamp and the church pews. Tees Zenith, Meridian, Horizon, Nadir; Kingfisher tips (switched off) 3,345
+  yd. Three from the over-used list (one over): a waterfall, a bridge and the 4th's terraces.
 - Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
   island finish stays. Same par as another course on four holes at most (Rimeholm). Drawn in round 6 (11 November):
   3,435 yd from the Obsidian tees, 3,695 from the Magma tips (switched off in the data; round 7 moved the Lake's spot off the Lavafall's approach, and the Terraces went from 300 to 340 yd so a hybrid no longer reaches the green).
@@ -111,24 +115,27 @@ each is next touched; The Reclaim and Hollowmere have the most to gain.
 ## Height forms, counted (`node tools/review/relief.mjs all`, 12 November 2026)
 
 What the ground does on each hole (`docs/COURSE-DESIGN.md` "Elevation and height forms"). 72 holes on eight
-courses (Halcyon Ring from its plan data).
+courses (Halcyon Ring from its plan data, round 2). Re-counted after the fix of 12 November: `relief.mjs` had
+reported every landing area's lean on the wrong side (the sizes were right).
 
 | Form | Holes | |
 |---|---|---|
-| Ramp down, ramp up, level (plain) | 26 of 56 par 4s and 5s | The stock shape |
-| Drop par 3 | 12 of 16 par 3s | One a course from now on |
+| Ramp down, ramp up, level (plain) | 24 of 56 par 4s and 5s | The stock shape |
+| Drop par 3 | 11 of 16 par 3s | One a course from now on |
 | Tee shot off a height (12 m or more) | 10 (five of them 25 m or more) | Hollowmere has four |
-| Big climb (25 m or more) | 5 | Four are finishes or near it |
+| Big climb (25 m or more) | 4 | Four are finishes or near it |
 | Perched green | 4 | |
 | Uphill par 3 | 4 | |
-| Stepped | 2 | |
+| Stepped | 3 | Halcyon Ring 4 among them |
 | Hillside bench | 2 | The Reclaim 8, Halcyon Ring 6 |
 | Crest and run | 2 | |
 | Fall-away | 2 | |
-| Table top | 1 | The Reclaim 2 |
+| Table top | 2 | The Reclaim 2, Halcyon Ring 7 |
 | Dip in front | 1 | |
 | Level par 3 | 1 | |
-| **Valley carry, hog's back, half-pipe, a par 3 across a gulf** | **0** | Never used |
+| Half-pipe | 1 | Halcyon Ring 1 |
+| Par 3 across a gulf | 1 | Halcyon Ring 9 |
+| **Valley carry, hog's back** | **0** | Never used |
 
 By course, what the check flags:
 
@@ -139,7 +146,7 @@ By course, what the check flags:
 - Rimeholm: every landing area leans 1.4–2.8%.
 - Emberfell: no bold hole; five plain (1, 2, 3, 5, 6), two pairs back to back.
 - The Lost Valley: one bold hole (the Nest's climb); five plain (1, 2, 5, 8, 9).
-- Halcyon Ring: two of three par 3s drops (5, 9).
+- Halcyon Ring (round 2): nothing flagged; nine forms, none twice; bold 4, 6, 7; one drop par 3 (5).
 
 ## Dials, counted (`node tools/review/spread.mjs all`, 12 November 2026)
 
@@ -147,10 +154,10 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 
 | Dial | All courses | Real courses |
 |---|---|---|
-| Green size | 80% are 475–650 m²; one over 1,000 (Red Mesa's 3rd); none under 430 | about 300 to over 1,000 |
-| Par 3s | 126–265 yd; four courses' two par 3s within 35 yd of each other | 100 to 250 |
+| Green size | 80% are 475–650 m²; over 1,000: Red Mesa's 3rd, Halcyon Ring's 7th (1,400); under 430: Halcyon Ring's 2nd (290) and 3rd (420) | about 300 to over 1,000 |
+| Par 3s | 115–265 yd; four courses' two par 3s within 35 yd of each other | 100 to 250 |
 | Par 4s | 300–457 yd | 280 to 500 |
-| Par 5s | 490–560 yd on every course; no course has 50 yd between its par 5s | 470 to 630 |
+| Par 5s | 490–560 yd on every course; only Halcyon Ring has 50 yd between its par 5s (490, 545) | 470 to 630 |
 | Fairway mean width | 34–72 m; 80% are 38–60 | 25 to 90 |
 | Bunkers | one or two by nearly every green; Emberfell exactly two on eight of nine | none to dozens |
 | Bends | 0–85°; most 20–55° | straight to 90° |
@@ -164,31 +171,31 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 | Rimeholm | greens (6 of 9), par 3s, par 5s, widths, bends | a 300 yd par 4, a 3,600 m² powder strip | none |
 | Emberfell | greens (5 of 9), par 4s, par 5s, bunker counts | a 240 yd par 3, a 70 m fairway, a 1,700 m² bunker, a straight hole | none |
 | The Lost Valley | greens (6 of 9), par 5s, widths, bends | a 215 yd par 3, a 300 yd par 4, a 490 yd par 5, no bunker, a field, a 3,800 m² bar, a straight hole | none |
-| Halcyon Ring | greens (8 of 9), par 5s, widths, bunker counts | a 230 yd par 3, a 310 yd par 4, a straight hole | none |
+| Halcyon Ring (round 2) | none | a 293 m² green, a 115 yd par 3, a 230 yd par 3, a 310 yd par 4, a 490 yd par 5, a 74 m fairway, no bunker, a field (the pews), a straight hole | the Spoke's 1,400 m² green |
 
-Edges nobody has touched: a green under 400 m²; a par 3 under 125 yd; a par 4 over 465; a par 5 over 580; a fairway
+Edges nobody has touched: a par 4 over 465; a par 5 over 580; a fairway
 over 75 m.
 
 **Famous-hole set pieces used:** the lone tree twice (the Lost Valley's giant and its fig); an island green of a
-kind (Emberfell's Heart, the Aerie's island greens); a chute of a kind (The Reclaim's Atrium nave). Never used:
-postage stamp, bunker in the green, shared green, shared fairway, church pews, hell bunker, the burn, the wall,
+kind (Emberfell's Heart, the Aerie's island greens); a chute of a kind (The Reclaim's Atrium nave). Halcyon Ring: the postage stamp (2) and church pews (3). Never used:
+bunker in the green, shared green, shared fairway, hell bunker, the burn, the wall,
 lion's mouth, skyline green, sleepers.
 
 ## Set pieces, counted (from the course notes; approximate)
 
 | Kind | Courses | Count |
 |---|---|---|
-| A waterfall (or the theme's version) as a backdrop | The Aerie, Red Mesa, Hollowmere, Rimeholm, Emberfell, the Lost Valley | 6 |
+| A waterfall (or the theme's version) as a backdrop | The Aerie, Red Mesa, Hollowmere, Rimeholm, Emberfell, the Lost Valley, Halcyon Ring | 7 |
 | A tee shot off a ledge, 25 m or more down | Red Mesa, Hollowmere, The Reclaim, Rimeholm, Emberfell, the Lost Valley | 6 |
 | A punchbowl green | The Aerie, Red Mesa, Hollowmere, The Reclaim, Rimeholm, Emberfell | 6 |
-| A bridge, in play or as a landmark | Red Mesa, Hollowmere, The Reclaim, Rimeholm, Emberfell, the Lost Valley | 6 |
+| A bridge, in play or as a landmark | Red Mesa, Hollowmere, The Reclaim, Rimeholm, Emberfell, the Lost Valley, Halcyon Ring | 7 |
 | A climb to the clubhouse to finish | Every course but the re-laid Lost Valley | 6 |
 | A chasm or void beside the fairway | The Aerie, Red Mesa, Hollowmere, The Reclaim, Rimeholm | 5 |
 | Something to play through or under (an arch, a lobby, an eyelet) | Red Mesa, Hollowmere, The Reclaim, the Lost Valley | 4 |
 | A relic in the ground (a fossil, a ship, a mammoth, a skeleton) | Red Mesa, Rimeholm, the Lost Valley | 3 |
 | A fairway split round an object | Rimeholm, Emberfell, the Lost Valley | 3 |
 | Something that moves between shots | The Aerie (island), Red Mesa (train), Hollowmere (ore cart) | 3 |
-| Terraces to play up or down | Hollowmere, Rimeholm, Emberfell | 3 |
+| Terraces to play up or down | Hollowmere, Rimeholm, Emberfell, Halcyon Ring | 4 |
 | A green inside a shell (a geode, a crater) | Hollowmere, Emberfell | 2 |
 | An island green | Emberfell | 1 |
 | A double fairway either side of a hazard | Emberfell (the Lava Tube) | 1 |
@@ -200,7 +207,7 @@ lion's mouth, skyline green, sleepers.
 **Never used, to start from:** a fairway along a ridge crest; a hole round the rim of something, playing
 clockwise; a green in a natural amphitheatre; a green hidden behind a wall or bank; a causeway or dam to play along; a zigzag down a slope in switchbacks; an up-and-over
 saddle between two peaks; a hole through a tunnel of trees; a shared double green; a tee you reach the fairway
-from across still water with a bail-out beach; dunes and blowouts; a quarry with benches; a canal with locks; a
+from across still water with a bail-out beach; dunes and blowouts; a quarry with benches; a
 tide or a level that changes between shots.
 
 ## Audit of all seven courses against the rules, 11 November 2026

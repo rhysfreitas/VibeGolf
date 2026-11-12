@@ -242,7 +242,7 @@ export function viewsFor(hi) {
   for (const f of h.feet || []) if (f.label) labelSet.push(L3(f.at, f.label, -120, 30));
   for (const v of h.villas || []) if (v.label) labelSet.push(L3(v.at, v.label, -50, v.h));
   if (h.bridge) labelSet.push(L3(h.bridge.a, h.bridge.label, -40, 2));
-  for (const [wp, t, up] of [[[-179, -176], 'the Long Window', 0.5], [[226, -1771], 'the Great Window', 0.5], [[-438, -650], 'the rim glass', 2], [[-420, -1000], 'the long lake', 1], [[240, -1545], 'the lock', 2], [[370, -1625], 'the aqueduct', 18], [[-186, -1090], 'the falls', 10]]) {
+  for (const [wp, t, up] of [[[-179, -176], 'the Long Window', 0.5], [[242.4, -1767.7], 'the Great Window', 0.5], [[-438, -650], 'the rim glass', 2], [[-420, -1000], 'the long lake', 1], [[240, -1545], 'the lock', 2], [[370, -1625], 'the aqueduct', 18], [[-186, -1090], 'the falls', 10]]) {
     const p = here(...wp), pr = project(h.line, ...p); if (pr.d < 320 && pr.s > -80 && pr.s < h.len + 160) labelSet.push(L3(p, t, -40, up));
   }
   const v = [];

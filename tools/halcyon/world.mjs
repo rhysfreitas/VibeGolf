@@ -22,7 +22,7 @@ export const TERMINATOR = 30;
 // floor windows (the penalty area): superellipses in ring space (a, s)
 export const WINDOWS = [
   { name: 'The Long Window', a: -179, s: 176, ra: 25, rs: 45, rot: 1.309, p: 3.2, hole: 4 },
-  { name: 'The Great Window', a: 226, s: 1771, ra: 28, rs: 40, rot: 0.17, p: 3.4, hole: 9 },
+  { name: 'The Great Window', a: 242.4, s: 1767.7, ra: 22, rs: 40, rot: -0.17, p: 3.4, hole: 9 },   // in the floor of the amphitheatre
 ];
 // the rim glass strip at the foot of the west wall below the 5th's balcony: a ball off the balcony's left edge falls
 // to it (a penalty area, like the windows)
@@ -36,8 +36,8 @@ export const CANAL = { pts: [[-372, 1150], [-120, 1168], [60, 1172], [118, 1170]
 export const AQUEDUCT = { from: [300, 1606], to: [440, 1640], h: 18 };
 
 // the spoke: an A-frame foot astride the centre of the 7th, two legs 240 m apart meeting 260 m up, then one shaft
-// to the hub. Its legs are solid, 34 m across at the floor, on a low plinth
-export const SPOKE = { a: 130, s: 1110, legs: [[10, 1110], [250, 1110]], foot: 34, apex: 260 };
+// to the hub. Its legs are solid, 34 m across at the floor; the west foot on the floor, the east one on the plinth
+export const SPOKE = { a: 100, s: 1110, legs: [[-20, 1110], [220, 1110]], foot: 34, apex: 260 };   // 30 m west of the routing's, so the west foot stands below the plinth's face (height forms, 12 November)
 
 // the clubhouse villa beyond the 9th green, on the lawn by the Great Window
 export const CLUBHOUSE = { a: 72, s: 1822, w: 70, d: 34, h: 18 };
@@ -52,22 +52,23 @@ export const VALLEY = { pts: [[160, 1150], [160, 1450], [200, 1560], [243, 1690]
 // `fall: [s0, h0, s1, h1]` tilts a top along the ring (h0 at s0 to h1 at s1)
 export const PLATEAUS = [
   { id: 'plaza', a: 236, s: 578, ra: 32, rs: 26, p: 3, top: 1.2, edge: 6 },                  // the tram stop's plaza (the 1st tee)
-  { id: 'garden', a: 372, s: 163, ra: 44, rs: 46, p: 3, top: 7, edge: 12 },                 // the walled garden (the 2nd green)
+  { id: 'garden', a: 372, s: 163, ra: 44, rs: 46, p: 3, top: 6, edge: 12 },                 // the walled garden (the 2nd green)
   { id: 'e-terrace', a: 412, s: 92, ra: 30, rs: 34, p: 3, top: 12, edge: 11 },              // the 3rd tee's terrace
   { id: 'w-low', a: -340, s: 398, ra: 44, rs: 40, p: 3, top: 5, edge: 30 },                // the lowest villa terrace (the 4th green)
   { id: 'w-fall', a: -416, s: 520, ra: 40, rs: 92, p: 3, top: 36, fall: [446, 36, 610, 13], edge: 12 }, // the long lawn falling from the high terrace toward the balcony
   { id: 'w-high', a: -414, s: 421, ra: 62, rs: 25, p: 3, top: 36, edge: 8 },                // the high west terrace (the 5th tee at its north lip)
   { id: 'balcony', a: -397, s: 650, ra: 30, rs: 34, rot: 0.2, p: 2.6, top: 10, edge: 5 },  // the balcony over the rim glass (the 5th green)
-  { id: 'falls', a: -186, s: 1114, ra: 50, rs: 26, p: 3, top: 12, edge: 10 },               // the waterfall's villa terrace (behind the 6th green, the 7th tee)
-  { id: 'plinth', a: 130, s: 1122, ra: 160, rs: 96, p: 4, top: 3.5, edge: 48 },             // the spoke's plinth (the 7th green, the 8th tee)
-  // the 9th's tees step down toward the Great Window like an amphitheatre: three terraces 10, 7 and 4 m above the
-  // floor, each with its lip 3 m in front of its tee, so from each tee the glass is in sight past the lip (a tee set
-  // back from a lip sees nothing below it: with the game's camera 3.2 m behind the ball, a drop of d metres hides
-  // about 4(d + 1.5) m of ground past the lip); applied lowest first
-  { id: 't9h', a: 283.8, s: 1760.4, ra: 9.5, rs: 13, rot: -0.17, p: 3, top: 4, edge: 4 },     // the Horizon tee's step
-  { id: 't9m', a: 295.6, s: 1758.2, ra: 9.5, rs: 13, rot: -0.17, p: 3, top: 7, edge: 4 },     // the Meridian tee's step
-  { id: 't9', a: 313.3, s: 1755.1, ra: 15.5, rs: 15, rot: -0.17, p: 3, top: 10, edge: 4 },    // the top terrace: the Zenith tee and the tips
+  { id: 'falls', a: -200, s: 1114, ra: 38, rs: 26, p: 3, top: 12, edge: 10 },               // the waterfall's villa terrace (behind the 6th green; the 7th's back tee 3 m short of its east lip)
+  { id: 'plinth', a: 151, s: 1122, ra: 139, rs: 96, p: 4, top: 7.5, edge: 25 },             // the spoke's plinth, a table 7.5 m up behind a grass face (the 7th's landing
+  // area for the long hitter and its green, the 8th tee); its west face 170–195 m from the 7th's back tee
   { id: 'lawn', a: 100, s: 1800, ra: 110, rs: 42, p: 3, top: -1.5, edge: 12 },              // the clubhouse lawn round the window
+  // the amphitheatre round the Great Window (after the lawn, so it wins): the floor sinks 8.5 m round the glass, its
+  // near bank stepped for the Meridian and Horizon tees (each 3 m short of its step's lip), its far rim the
+  // clubhouse lawn, level with the top tee: a par 3 across a gulf. Along the 9th's line from the back tee
+  // (303, 1757): the bank from 3 to 25 m, the floor to 98 m, the far bank to 120 m, the green from 124 m
+  { id: 'bowl', a: 242.4, s: 1767.7, ra: 47.5, rs: 58, rot: -0.17, p: 3, top: -8.5, edge: 22 },
+  { id: 'step-m', a: 293.15, s: 1758.74, ra: 6.5, rs: 15, rot: -0.17, p: 3, top: -3, edge: 3 },    // the Meridian tee's step
+  { id: 'step-h', a: 280.84, s: 1760.91, ra: 6, rs: 15, rot: -0.17, p: 3, top: -6, edge: 3 },    // the Horizon tee's step
 ];
 const plateauM = (P, a, s) => { const d = seDist({ x: P.a, z: P.s, rx: P.ra, rz: P.rs, rot: P.rot || 0, p: P.p || 2 }, a, s); return 1 - smooth((d - 1) * Math.min(P.ra, P.rs) / P.edge + 0.5); };
 
