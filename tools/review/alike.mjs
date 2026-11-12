@@ -18,7 +18,7 @@ import path from 'path';
 import { createTerrain } from '../../src/course/terrain.js';
 import { loadCourse, MODULES, REPO } from './page.mjs';
 
-const PLANNED = ['emberfell', 'lostvalley'];
+const PLANNED = ['emberfell', 'lostvalley', 'halcyon'];
 const N = 24, ALIKE = 0.25;
 
 const lenOf = L => L.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - L[i][0], p[1] - L[i][1]), 0);

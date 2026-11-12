@@ -43,20 +43,22 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Course | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | Par |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
-| Halcyon Ring (routing check) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Lake | 4 d Spoke | 5 ↑ Aqueduct | 3 the Great Window | 35 |
+| Halcyon Ring (plan book round 1) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 ↑ Aqueduct | 3 the Great Window | 35 |
 
 - Halcyon Ring (Rhys's picks, 11 November 2026; `claude/brief-halcyon-ring.md`): a pristine garden colony
   inside a ring space station; floor windows onto space are the penalty area; the ball flies as on Earth. The
   first par 35, the first with three par 3s, the first par-3 finish (across the Great Window to the clubhouse).
   Same par as another course on four holes at most (Hollowmere, The Reclaim, Rimeholm).
-  Routing check sent 11 November 2026 (`tools/halcyon/`, page "Halcyon Ring Routing"): R = 5 km, 900 m wide;
-  the curve plays as it looks; windows are glass, a penalty area. Zenith 3,230 yd: 1 The Promenade 4 380 (up the
-  curve, S), 2 The Walled Garden 3 165 (Eden), 3 The Terminator 4 430 (Road, along the day/night line), 4 The Long
-  Window 5 545 (cape over a floor window, +25), 5 The Balcony 3 235 (−22, to a green over the rim glass), 6 The
+  Routing check sent 11 November 2026 (`tools/halcyon/`, page "Halcyon Ring Routing"); plan book round 1
+  12 November 2026 (`out/halcyon-plan-book-r1.pdf`): R = 5 km, 900 m wide; the curve plays as it looks; windows
+  are glass, a penalty area. Zenith 3,225 yd: 1 The Promenade 4 380 (up the curve, S, Double Plateau), 2 The Walled
+  Garden 3 165 (Eden), 3 The Terminator 4 430 (Road, along the day/night line), 4 The Long Window 5 545 (cape over a
+  floor window, +27), 5 The Balcony 3 230 (−22, off the high terrace's lip to a green over the rim glass), 6 The Long
   Lake 4 455, 7 The Spoke 4 310 (drivable, Leven, the spoke's foot centre-line), 8 The Aqueduct 5 560 (Channel, go
-  or lay up at the canal's lock, +25 up the curve), 9 The Great Window 3 150 (the reveal and the finish). Forms fan,
-  hourglass, hook, scalloped, island, double. Classics Double Plateau, Eden, Road, Leven, Channel (all new);
-  decisions 4, 7, 8. Tees Zenith, Meridian, Horizon, Nadir; Kingfisher tips (switched off) about 3,485 yd.
+  or lay up at the canal, +21 up the curve), 9 The Great Window 3 150 (the reveal and the finish, from tees stepping
+  down three terraces). Forms fan, hourglass, hook, scalloped, island, split (`alike.mjs halcyon`: 0 of 15 alike, none
+  like another course's). Classics Double Plateau, Eden, Road, Leven, Channel (all new); decisions 4, 7, 8. Tees
+  Zenith, Meridian, Horizon, Nadir; Kingfisher tips (switched off) 3,465 yd.
 - Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
   island finish stays. Same par as another course on four holes at most (Rimeholm). Drawn in round 6 (11 November):
   3,435 yd from the Obsidian tees, 3,695 from the Magma tips (switched off in the data; round 7 moved the Lake's spot off the Lavafall's approach, and the Terraces went from 300 to 340 yd so a hybrid no longer reaches the green).

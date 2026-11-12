@@ -1,12 +1,13 @@
-// Halcyon Ring: the station's floor in ring space, for the routing check and (later) the plan book.
+// Halcyon Ring: the station's floor in ring space, for the routing check and the plan book.
 // The ring is a cylinder of radius R = 5 km (Rhys's pick, 11 November 2026), 900 m wide across its axis.
 // Ring space: a = across the ring (metres east of the centre line; the rims at a = ±450), s = along the ring
 // (metres north; north is spinward, up the curve toward the clubhouse). World plan coordinates follow the other
 // plan tools: X = a (east), Z = -s (north is -Z).
 // The curve "plays as it looks" (Rhys): each hole's ground rises by (s - s0)² / 2R along the ring from its own low
-// line s0 (curveRise); across the ring the floor is level. h (heightAt) is height above the cylinder's floor:
-// terraces, valleys, basins, built from wide landforms. Pure, no DOM.
-import { seDist, profileFn, smooth, clamp } from './geo.mjs';
+// line s0 (curveRise; the low line is at the hole's back tee, where the player stands); across the ring the floor
+// is level. H(X, Z) here is height above the cylinder's floor: the rim's rise, the villa terraces (plateaus with
+// eased edges), the lake's basin, the canal's cut and the 8th's valley, built from wide landforms. Pure, no DOM.
+import { seDist, smooth, clamp, lerp, distLine, project } from './geo.mjs';
 
 export const R = 5000;          // ring radius
 export const HALF = 450;        // the rims, at a = ±HALF
@@ -18,46 +19,118 @@ export const toAS = (X, Z) => [X, -Z];
 // the line where daylight meets the night side: the mirror band's shutters close south of it
 export const TERMINATOR = 30;
 
-// villa terraces rising toward each rim, with spurs and bays along the ring (height above the floor)
-const westTerr = profileFn([[400, 6], [470, 36], [560, 40], [690, 18], [760, 12], [900, 14], [1200, 16], [1500, 22], [1900, 20]]);
-const eastTerr = profileFn([[0, 22], [120, 24], [200, 18], [500, 14], [900, 16], [1400, 20], [1700, 26], [1900, 26]]);
-export function terraceH(a, s) {
-  if (a < 0) return westTerr(s) * smooth((-a - 300) / 130);
-  return eastTerr(s) * smooth((a - 300) / 130);
-}
-
-// floor windows (the penalty area): superellipses in ring space
+// floor windows (the penalty area): superellipses in ring space (a, s)
 export const WINDOWS = [
   { name: 'The Long Window', a: -179, s: 176, ra: 25, rs: 45, rot: 1.309, p: 3.2, hole: 4 },
-  { name: 'The Great Window', a: 221, s: 1726, ra: 33, rs: 55, rot: 0.17, p: 3.4, hole: 9 },
+  { name: 'The Great Window', a: 226, s: 1771, ra: 28, rs: 40, rot: 0.17, p: 3.4, hole: 9 },
 ];
-// the rim glass strip at the foot of the west wall by the 5th's balcony (seen through, not in play: the balcony
-// stands over it, and a ball that goes left falls to the rim walk below, a penalty area)
-export const RIM_GLASS = { a0: -450, a1: -428, s0: 590, s1: 710 };
+// the rim glass strip at the foot of the west wall below the 5th's balcony: a ball off the balcony's left edge falls
+// to it (a penalty area, like the windows)
+export const RIM_GLASS = { a0: -450, a1: -426, s0: 590, s1: 720 };
 
-// the long lake along the west side, curving up the ring at both ends (its far ends are scenery)
-export const LAKE = { pts: [[-418, 720], [-405, 820], [-385, 920], [-392, 1030], [-400, 1150], [-418, 1400], [-415, 1800], [-405, 2300]], w: [44, 70, 90, 80, 70, 50, 52, 48] };
-// the canal: out of the lake's east bay, along the north side of the 7th, then up the 8th's valley in two pounds
-// with a lock between, crossing the 8th's second shot on a diagonal; the aqueduct carries it on over the valley head
-export const CANAL = { pts: [[-360, 1150], [-120, 1155], [60, 1158], [88, 1200], [92, 1470], [150, 1545], [211, 1581], [290, 1606], [440, 1640]], w: 14, lock: [196, 1574] };
-export const AQUEDUCT = { from: [300, 1609], to: [440, 1640], h: 18 };
+// the long lake along the west side, curving up the ring at both ends (its far ends are scenery); level 3.2 m down
+export const LAKE = { pts: [[-418, 700], [-405, 800], [-380, 900], [-372, 980], [-392, 1060], [-405, 1180], [-418, 1400], [-415, 1800], [-405, 2300]], w: [44, 70, 92, 96, 80, 62, 50, 52, 48], level: -3.2 };
+// the canal: out of the lake's east bay, along the north side of the 7th, behind the 8th tee, then up the right of
+// the 8th's valley to a lock at its bend, and on north-east to the aqueduct over the east terraces
+export const CANAL = { pts: [[-372, 1150], [-120, 1168], [60, 1172], [118, 1170], [150, 1150], [232, 1150], [238, 1300], [236, 1450], [240, 1545], [262, 1582], [300, 1606], [440, 1640]], w: 14, lock: [240, 1545], depth: 1.6 };
+export const AQUEDUCT = { from: [300, 1606], to: [440, 1640], h: 18 };
 
 // the spoke: an A-frame foot astride the centre of the 7th, two legs 240 m apart meeting 260 m up, then one shaft
-// to the hub. Its legs are solid, 34 m across at the floor
+// to the hub. Its legs are solid, 34 m across at the floor, on a low plinth
 export const SPOKE = { a: 130, s: 1110, legs: [[10, 1110], [250, 1110]], foot: 34, apex: 260 };
 
-// the clubhouse villa beyond the 9th green, on the low terrace by the Great Window
-export const CLUBHOUSE = { a: 75, s: 1778, w: 70, d: 34, h: 18 };
+// the clubhouse villa beyond the 9th green, on the lawn by the Great Window
+export const CLUBHOUSE = { a: 72, s: 1822, w: 70, d: 34, h: 18 };
 // the tram stop by the 1st tee (the round starts here; the ring tram runs along the centre of the floor)
 export const TRAM = { a: 262, s: 585 };
 
 // the 8th's valley: a tree-lined trough along the ring, its floor rising toward the valley head
-export const VALLEY = { pts: [[160, 1150], [160, 1440], [205, 1560], [243, 1680]], half: 75, depth: [10, 8, 3, 0] };
+export const VALLEY = { pts: [[160, 1150], [160, 1450], [200, 1560], [243, 1690]], half: 75, depth: 3.5 };
+
+// the villa terraces and other built ground: plateaus in ring space, each a superellipse footprint (a, s, ra, rs,
+// rot, p) with a top height and an eased edge of `edge` metres; applied in order, each easing the ground to its top.
+// `fall: [s0, h0, s1, h1]` tilts a top along the ring (h0 at s0 to h1 at s1)
+export const PLATEAUS = [
+  { id: 'plaza', a: 236, s: 578, ra: 32, rs: 26, p: 3, top: 1.2, edge: 6 },                  // the tram stop's plaza (the 1st tee)
+  { id: 'garden', a: 372, s: 163, ra: 44, rs: 46, p: 3, top: 7, edge: 12 },                 // the walled garden (the 2nd green)
+  { id: 'e-terrace', a: 412, s: 92, ra: 30, rs: 34, p: 3, top: 12, edge: 11 },              // the 3rd tee's terrace
+  { id: 'w-low', a: -340, s: 398, ra: 44, rs: 40, p: 3, top: 5, edge: 30 },                // the lowest villa terrace (the 4th green)
+  { id: 'w-fall', a: -416, s: 520, ra: 40, rs: 92, p: 3, top: 36, fall: [446, 36, 610, 13], edge: 12 }, // the long lawn falling from the high terrace toward the balcony
+  { id: 'w-high', a: -414, s: 421, ra: 62, rs: 25, p: 3, top: 36, edge: 8 },                // the high west terrace (the 5th tee at its north lip)
+  { id: 'balcony', a: -397, s: 650, ra: 30, rs: 34, rot: 0.2, p: 2.6, top: 10, edge: 5 },  // the balcony over the rim glass (the 5th green)
+  { id: 'falls', a: -186, s: 1114, ra: 50, rs: 26, p: 3, top: 12, edge: 10 },               // the waterfall's villa terrace (behind the 6th green, the 7th tee)
+  { id: 'plinth', a: 130, s: 1122, ra: 160, rs: 96, p: 4, top: 3.5, edge: 48 },             // the spoke's plinth (the 7th green, the 8th tee)
+  // the 9th's tees step down toward the Great Window like an amphitheatre: three terraces 10, 7 and 4 m above the
+  // floor, each with its lip 3 m in front of its tee, so from each tee the glass is in sight past the lip (a tee set
+  // back from a lip sees nothing below it: with the game's camera 3.2 m behind the ball, a drop of d metres hides
+  // about 4(d + 1.5) m of ground past the lip); applied lowest first
+  { id: 't9h', a: 283.8, s: 1760.4, ra: 9.5, rs: 13, rot: -0.17, p: 3, top: 4, edge: 4 },     // the Horizon tee's step
+  { id: 't9m', a: 295.6, s: 1758.2, ra: 9.5, rs: 13, rot: -0.17, p: 3, top: 7, edge: 4 },     // the Meridian tee's step
+  { id: 't9', a: 313.3, s: 1755.1, ra: 15.5, rs: 15, rot: -0.17, p: 3, top: 10, edge: 4 },    // the top terrace: the Zenith tee and the tips
+  { id: 'lawn', a: 100, s: 1800, ra: 110, rs: 42, p: 3, top: -1.5, edge: 12 },              // the clubhouse lawn round the window
+];
+const plateauM = (P, a, s) => { const d = seDist({ x: P.a, z: P.s, rx: P.ra, rz: P.rs, rot: P.rot || 0, p: P.p || 2 }, a, s); return 1 - smooth((d - 1) * Math.min(P.ra, P.rs) / P.edge + 0.5); };
+
+// the rim: the floor rises gently toward each wall (the lowest terraces)
+const rimRise = a => 9 * smooth((Math.abs(a) - 320) / 120);
+
+const LAKE_PTS = LAKE.pts.map(([a, s]) => [a, -s]);
+export function lakeAt(a, s) {   // half-width of the lake where it's nearest and the distance from its centre line
+  const pr = project(LAKE_PTS, a, -s), L = LAKE.pts, n = L.length - 1;
+  let acc = 0, i = 0; for (; i < n; i++) { const l = Math.hypot(L[i + 1][0] - L[i][0], L[i + 1][1] - L[i][1]); if (pr.s <= acc + l) break; acc += l; }
+  i = Math.min(i, n - 1); const l = Math.hypot(L[i + 1][0] - L[i][0], L[i + 1][1] - L[i][1]), t = clamp((pr.s - acc) / l, 0, 1), hw = lerp(LAKE.w[i], LAKE.w[i + 1], t) / 2;
+  return { d: pr.d, hw: hw * (1 + 0.08 * Math.sin(pr.s / 23) + 0.05 * Math.sin(pr.s / 9.7)) };
+}
+const CANAL_PTS = CANAL.pts.map(([a, s]) => [a, -s]);
+export const canalD = (a, s) => distLine(CANAL_PTS, a, -s);
+const VALLEY_PTS = VALLEY.pts.map(([a, s]) => [a, -s]);
+
+// height above the cylinder's floor (no curve), at a world point
+export function H(X, Z, noCanal = false) {
+  const a = X, s = -Z;
+  let y = rimRise(a);
+  // the 8th's valley: a trough along the ring with wooded banks a few metres above the floor
+  // (open at its south end: nothing before its first point, the trough deepening from there, shallowing to its head)
+  { const pr = project(VALLEY_PTS, a, -s); if (pr.d < VALLEY.half + 60 && pr.s > 0.5) {
+      const t = clamp(pr.s / 560, 0, 1), dep = VALLEY.depth * Math.sin(Math.PI * Math.min(1, t * 1.25)) ** 0.7 * smooth(pr.s / 60), w = smooth((pr.d - VALLEY.half + 20) / 40);
+      const V = VALLEY_PTS, e0 = V.at(-2), e1 = V.at(-1), el = Math.hypot(e1[0] - e0[0], e1[1] - e0[1]);
+      const past = ((a - e1[0]) * (e1[0] - e0[0]) + (-s - e1[1]) * (e1[1] - e0[1])) / el;   // metres past the valley head
+      y += lerp(-dep, 3.5 * smooth(pr.s / 90) * (1 - smooth((pr.d - VALLEY.half - 20) / 40)) * (1 - smooth(past / 25)), w);   // the banks end at the head
+    } }
+  for (const P of PLATEAUS) {
+    if (Math.abs(a - P.a) > P.ra * 1.8 + P.edge || Math.abs(s - P.s) > P.rs * 1.8 + P.edge) continue;
+    const m = plateauM(P, a, s); if (m > 0) y = lerp(y, P.fall ? lerp(P.fall[1], P.fall[3], clamp((s - P.fall[0]) / (P.fall[2] - P.fall[0]), 0, 1)) : P.top, m);
+  }
+  // the lake's basin and the canal's cut
+  { const L = lakeAt(a, s); if (L.d < L.hw + 16) y = lerp(y, LAKE.level - 1.6, 1 - smooth((L.d - L.hw + 2) / 14)); }
+  if (!noCanal) { const d = canalD(a, s); if (d < CANAL.w / 2 + 6) y = Math.min(y, lerp(y - CANAL.depth - 0.8, y, smooth((d - CANAL.w / 2 + 1) / 6))); }
+  return y;
+}
+// water: the lake (level), the canal (1.4 m below the bank either side), the falls pool by the 6th green
+export function waterAt(X, Z) {
+  const a = X, s = -Z;
+  const L = lakeAt(a, s); if (L.d < L.hw) return { level: LAKE.level, body: 'lake' };
+  const d = canalD(a, s); if (d < CANAL.w / 2) return { level: H(X, Z, true) - 1.4, body: 'canal' };
+  return null;
+}
+export function inWindow(a, s) { for (const w of WINDOWS) if (seDist({ x: w.a, z: w.s, rx: w.ra, rz: w.rs, rot: w.rot, p: w.p }, a, s) < 1) return w;
+  if (a > RIM_GLASS.a0 && a < RIM_GLASS.a1 && s > RIM_GLASS.s0 && s < RIM_GLASS.s1) return { name: 'the rim glass', rim: true };
+  return null; }
+export const windowD = w => (a, s) => (seDist({ x: w.a, z: w.s, rx: w.ra, rz: w.rs, rot: w.rot, p: w.p }, a, s) - 1) * Math.min(w.ra, w.rs);
+
+// native ground away from the holes: parkland lawns, woods, villa gardens on the terraces, the plaza
+const n2 = (x, z) => Math.sin(x * 0.021 + Math.sin(z * 0.013) * 2.1) * Math.cos(z * 0.017 + Math.sin(x * 0.011) * 1.7);
+export function nativeAt(X, Z) {
+  const a = X, s = -Z;
+  if (plateauM(PLATEAUS[0], a, s) > 0.5) return 'plaza';
+  if (Math.abs(a) > 330) return 'garden';
+  { const pr = project(VALLEY_PTS, a, -s); if (pr.d > VALLEY.half - 25 && pr.d < VALLEY.half + 55) return 'wood'; }
+  if (n2(a, s) > 0.55) return 'wood';
+  return 'park';
+}
 
 export const LANDMARKS = [
   { id: 'spoke', name: 'The spoke', at: [SPOKE.a, SPOKE.s], h: 600 },
   { id: 'clubhouse', name: 'The clubhouse', at: [CLUBHOUSE.a, CLUBHOUSE.s], h: CLUBHOUSE.h },
   { id: 'earth', name: 'Earth through the rim glass', rim: true },
 ];
-
-export function inWindow(a, s) { for (const w of WINDOWS) if (seDist({ x: w.a, z: w.s, rx: w.ra, rz: w.rs, rot: w.rot, p: w.p }, a, s) < 1) return w; return null; }

@@ -10,13 +10,31 @@ looks; floor windows are glass and a penalty area (a stroke and a drop, like wat
 Nadir and the Kingfisher tips; decisions on 4 (bite off the Long Window), 7 (drivable round the spoke) and 8 (go or
 lay up at the canal); classics Double Plateau 1, Eden 2, Road 3, Leven 7, Channel 8; landmarks the spoke, Earth
 through the rim glass and the clubhouse, the reveal the Great Window from the 9th tee; late light with the air
-handling's spinward breeze. The plan-book tools (`shapes.mjs`, `sample.mjs`, `plans.py`, `sketch.mjs`, `book.mjs`)
-follow `tools/emberfell/` and `tools/lostvalley/` once he approves the routing.
+handling's spinward breeze. He approved the routing ("move on to the next steps").
+
+Plan book round 1 (12 November 2026): fairway and green shapes on every hole (forms fan, hourglass, hook,
+scalloped, island, split: `node tools/review/alike.mjs halcyon` finds no pair alike), the checks, plans, profiles,
+green diagrams, sketch views on the true cylinder and the book, `out/halcyon-plan-book-r1.pdf`. Changes from the
+routing, all from the checks: the 9th moved 45 m north (the Great Window had overlapped the 8th green); the canal
+runs behind the 8th tee and up the right of the valley; the 8th tee sits on the spoke's plinth; the 6th is The Long
+Lake; the 5th tee stands on the high terrace's lip with a long lawn falling to the balcony, and the 9th's tees step
+down on three terraces (10, 7 and 4 m), each 3 m short of its lip, because the game's camera saw nothing of the
+balcony or the window from a tee set back on a terrace; the 9th is 150 yd (the par 3s play 174, 214 and 138); the
+7th's forward tees moved right of the line so the spoke's foot doesn't hide the landing area.
+
+Run order for the book: `node sample.mjs` (about 20 s), `python3 plans.py`, `node sketch.mjs` (a few seconds),
+`node book.mjs` (`ROUND=n DATE='…' NEW=new.json` optional).
 
 | Step | What it does |
 |---|---|
 | `world.mjs` | The floor in ring space (`a` across, east +; `s` along, north/spinward +; plan X = a, Z = -s): the rims at a = ±450, the day/night line (`TERMINATOR`, the night side south of it), villa terraces toward each rim, the floor windows (`WINDOWS`: the Long Window on 4, the Great Window on 9), the rim glass under the 5th's balcony, the long lake along the west side, the canal with its lock and aqueduct, the spoke's A-frame foot astride the 7th, the clubhouse, the tram stop, the 8th's valley. `curveRise(s, s0)` is the curve's lift from a hole's low line. |
 | `holes.mjs` | `COURSE` (tee sets, the Kingfisher tips set switched off, the course card `card`) and `HOLES`: each hole from `legs` in its own frame, `place: { at, heading }` on the floor, tee spots, the tips spot (`tips`, default 34 m behind on par 4s and 5s, 14 m on par 3s) and its hole card (`card`: story, type, form, feature and job, decision, miss map, tee view, ground). |
+| `scene.mjs` | Each hole built in its own frame (`buildHole`): ground = the floor (`H`) + the curve from its back tee + the shared landforms + its cant and ramps near the line, the green levelled to the pin (a shelf cut into the curve), bunkers carved in, tee pads (`padL` shortens them so one stops short of a lip; a pad never blends down over a drop); `surface` (fairway, rough, the native park, woods only 70 m or more off the line, gardens, plaza, terrace walls, water, window); trees, villas, walls, the spoke's feet, the footbridge and the falls as objects and solids. `worldAt` is the floor between the holes for the map. |
+| `shapes.mjs`, `greens.mjs` | Fairways (ribbons `{ e }`, free shapes `{ lobes }`, cut-outs `{ bite }`), greens from lobes with designed contour, green stats and leans (as `tools/lostvalley/`). |
+| `node sample.mjs` | The checks (`out/grid/checks.txt`, `!` marks a failure): yardages, tees off fairways, tips pads, drives from every tee set (landing widths), the bold lines, bunkers touching the fairway, green size, contour and pins, leans, par 3 spread, and the tee view through the game's camera (3.2 m behind the ball, 1.55 m up: each tee set's target in sight, or the flag on a par 3, and how much of a floor window shows; walls, villas and the spoke block the view). Writes the grids for the plans and the map. |
+| `python3 plans.py` | One plan, profile and green diagram a hole, and the course map (`out/map.png`, north to the right). White pages. |
+| `node sketch.mjs [holes]` | Three views a hole (back tee, landing area or forward tee, short of the green), 5 m up, on the true cylinder: the hole's own ground near the line, the floor beyond climbing up the frame, rim walls of glass with ribs, Earth, the spoke, the aqueduct, villas, trees, the windows with stars under the glass. `out/views/`. |
+| `node book.mjs` | The plan book PDF: cover map, course card, the course at a glance, one page a hole (hole card, views, plan, words, checks, profile, green). |
 | `node routing.mjs` | The routing check: yardages, spacing between hole lines, walks, the curve's lift on each hole, the windows, spoke, canal and lake against the lines, the 4th's bold line and carry, the 9th's carry from each tee, and which landmarks are in each back tee's fixed view. Writes `out/routing.json`. |
 | `python3 routing.py` | The routing map (`out/routing-map.png`, white page, north up). |
 | `node ring-sketch.mjs` | Concept sketches of the ring through the game's fixed tee camera, for choosing the radius: across the ring (a par 4) and up the curve (a par 3 over a floor window) at R = 1.5, 3 and 5 km, and the Great Window from a tee on the floor and from one raised 14 m. Ring space is `a` across (the axis), `s` along (arc length), `h` up; the floor is a cylinder of radius R, 1 km wide, with villa terraces rising 46 m at each rim and glass rim walls 320 m tall. Writes `out/ring-*.svg` and `out/ring-sheet.png`. Seconds. |

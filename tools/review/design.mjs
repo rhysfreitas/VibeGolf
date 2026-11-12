@@ -23,7 +23,7 @@ import { makePlayer } from './play.mjs';
 
 const args = process.argv.slice(2), flag = k => args.find(a => a.startsWith(`--${k}`));
 const SEEDS = +((flag('seeds=') || '--seeds=12').split('=')[1]), PLAY = !flag('no-play'), ONLY_DEC = !!flag('only=decisions'), ONLY_GATE = !!flag('only=gate');
-const PLANNED = [];   // Emberfell (round 7) and The Lost Valley (after plan book round 3) are playable blockouts
+const PLANNED = ['halcyon'];   // Halcyon Ring is planned; Emberfell (round 7) and The Lost Valley (after plan book round 3) are playable blockouts
 let names = args.filter(a => !a.startsWith('--'));
 if (!names.length || names[0] === 'all') names = [...Object.keys(MODULES), ...PLANNED];
 const YD = 0.9144, yd = m => Math.round(m / YD), deg = r => r * 180 / Math.PI;
