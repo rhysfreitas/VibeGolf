@@ -141,6 +141,39 @@ By course, what the check flags:
 - The Lost Valley: one bold hole (the Nest's climb); five plain (1, 2, 5, 8, 9).
 - Halcyon Ring: two of three par 3s drops (5, 9).
 
+## Dials, counted (`node tools/review/spread.mjs all`, 12 November 2026)
+
+The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (Halcyon Ring from its plan data).
+
+| Dial | All courses | Real courses |
+|---|---|---|
+| Green size | 80% are 475–650 m²; one over 1,000 (Red Mesa's 3rd); none under 430 | about 300 to over 1,000 |
+| Par 3s | 126–265 yd; four courses' two par 3s within 35 yd of each other | 100 to 250 |
+| Par 4s | 300–457 yd | 280 to 500 |
+| Par 5s | 490–560 yd on every course; no course has 50 yd between its par 5s | 470 to 630 |
+| Fairway mean width | 34–72 m; 80% are 38–60 | 25 to 90 |
+| Bunkers | one or two by nearly every green; Emberfell exactly two on eight of nine | none to dozens |
+| Bends | 0–85°; most 20–55° | straight to 90° |
+
+| Course | Dials that cluster | Edges of real golf it touches | Past real golf |
+|---|---|---|---|
+| The Aerie | greens (6 of 9 one size), par 5s, bunker counts, bends | a 126 yd par 3, a 320 yd par 4, a 72 m fairway, a hole with no bunker, a straight hole | none |
+| Red Mesa | par 5s, fairway widths, bends | a 1,127 m² green, a 265 yd par 3, a 320 yd par 4, a 34 m fairway, a field of bunkers, a straight hole | the Switchback's waste |
+| Hollowmere | greens (8 of 9), par 3s (166 and 168), par 4s, par 5s (546 and 547), widths, bends | no bunker, a field of bunkers | none |
+| The Reclaim | greens (8 of 9), par 5s, widths, bunker counts | a 300 yd par 4, an 85° bend | none |
+| Rimeholm | greens (6 of 9), par 3s, par 5s, widths, bends | a 300 yd par 4, a 3,600 m² powder strip | none |
+| Emberfell | greens (5 of 9), par 4s, par 5s, bunker counts | a 240 yd par 3, a 70 m fairway, a 1,700 m² bunker, a straight hole | none |
+| The Lost Valley | greens (6 of 9), par 5s, widths, bends | a 215 yd par 3, a 300 yd par 4, a 490 yd par 5, no bunker, a field, a 3,800 m² bar, a straight hole | none |
+| Halcyon Ring | greens (8 of 9), par 5s, widths, bunker counts | a 230 yd par 3, a 310 yd par 4, a straight hole | none |
+
+Edges nobody has touched: a green under 400 m²; a par 3 under 125 yd; a par 4 over 465; a par 5 over 580; a fairway
+over 75 m.
+
+**Famous-hole set pieces used:** the lone tree twice (the Lost Valley's giant and its fig); an island green of a
+kind (Emberfell's Heart, the Aerie's island greens); a chute of a kind (The Reclaim's Atrium nave). Never used:
+postage stamp, bunker in the green, shared green, shared fairway, church pews, hell bunker, the burn, the wall,
+lion's mouth, skyline green, sleepers.
+
 ## Set pieces, counted (from the course notes; approximate)
 
 | Kind | Courses | Count |

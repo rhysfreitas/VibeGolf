@@ -45,6 +45,9 @@ formality: Lost Valley round 1 met every outline and slope rule and still read a
 | **Story** | One line. "The giant: a monkey-puzzle alone in the fairway at the corner." If the hole could sit on any course, it isn't done. |
 | **Type** | The classic it is built on, or "original". Its **fairway form** from the sheet (`docs/fairway-forms.svg`): spindle, hourglass, fan, funnel, bowl, hook, split, island, broken, stepping stones, double, scalloped. Choose the form for the hole's story before setting any numbers. |
 | **Feature and its job** | The feature, and what it does for the golf: hazard, aim point, frame, obstacle, lie-setter or helper (see "Features"). |
+| **Dial** | **The one thing this hole pushes well past normal** (see "Dials"): its length, its width, its green's size or shape, its height, the scale of one hazard, a carry, its bend, its bunker count. Everything else stays realistic. One hole a nine pushes its dial past anything on a real course. |
+| **The shots** | The tee shot it asks for (fade, draw, straight, low runner, high carry, a lay-up to a number) and the approach (high carry, run-up along the ground, bump into a bank, full wedge, long iron), and what hazard sits where (across, diagonal, down a side, in the centre, in front of the green, behind it). |
+| **Green surround** | What a near miss finds: a tight mown run-off, a collection hollow, a bank that feeds, bunkers, rough, a drop. |
 | **Decision** | The type and the two routes with their numbers (what the bold line gains, what each risks), or "none: one clear line". |
 | **Miss map** | Where the small miss, the medium miss and the big miss finish on each side, and which side is the safe miss at the green. |
 | **Tee view** | What is in front, in the middle and beyond; whether the landing area shows; the marker if it doesn't. |
@@ -61,7 +64,7 @@ The plan-book tools (`tools/<course>/sample.mjs`) carry the same checks for a co
 | 1 | The skeleton differs from every other course (par order, set-piece slots, opener, finish) | Must | `design.mjs all`, the register |
 | 2 | Every hole finishes from every tee set, and plays no worse than +1.5 for the tool's player | Must | `design.mjs` gate, `quickplay.mjs` |
 | 3 | Pins at 3% or less; tees off fairways; nothing overhead under 45 m at a tee; targets on fairway; nothing floats | Must | the course's tests |
-| 4 | Every tee set's drive lands on 40 m or more of fairway; 45–65 m where back-tee drives land | Must | `analyse.mjs` |
+| 4 | Every tee set's drive lands on 40 m or more of fairway; 45–65 m where back-tee drives land (one tight hole a nine may go to 30–36 m with soft sides: see "Dials") | Must | `analyse.mjs` |
 | 5 | No forced carry over 60% of that tee set's drive, and a way round every forced carry | Must | `design.mjs` carry |
 | 6 | Penalty ground (void, water, lava) on one side of a landing area at most | Must | the miss map, `design.mjs` penalties |
 | 7 | Two to four decision holes, each a different type, each measured as a real choice | Should | `design.mjs` decisions |
@@ -70,7 +73,7 @@ The plan-book tools (`tools/<course>/sample.mjs`) carry the same checks for a co
 | 10 | At least two features a nine help the ball | Should | the hole cards |
 | 11 | The tee shot's target is in the fixed view; two blind tee shots a nine at most, each with a marker | Should | `design.mjs` view, a tee render |
 | 12 | Each landmark is seen from three or more tees or landing areas; one planned reveal | Should | the landmark table, tee renders |
-| 13 | Par 4s from 340 yd or less to 420 or more; par 3s 25 yd or more apart (plays-like), facing different ways | Should | `design.mjs` rhythm, `analyse.mjs` |
+| 13 | Lengths spread: par 4s 120 yd or more from shortest to longest, par 3s 40 yd or more, par 5s 50 yd or more; par 3s facing different ways | Should | `spread.mjs`, `design.mjs` rhythm |
 | 14 | Holes face three or more quarters of the compass; bends within two of each other left and right; three straight holes at most | Should | `design.mjs` rhythm |
 | 15 | No two holes in a row with the same par and bend, the same fairway structure, or the same kind of height change | Should | `design.mjs`, the hole cards |
 | 16 | Height forms: two or three bold holes a nine; no form more than twice or twice running; three plain holes (ramp or level) at most among the par 4s and 5s; two tee shots off a height at most; one drop par 3 a course | Should | `relief.mjs` |
@@ -83,6 +86,10 @@ The plan-book tools (`tools/<course>/sample.mjs`) carry the same checks for a co
 | 23 | Grand visuals by layering; edges that wander; chasms that catch the eye; big sand now and then | Taste | a review round |
 | 24 | Fairway forms: no form more than twice, never two in a row, two plain strips at most, no two fairways measured alike | Must | `alike.mjs` |
 | 25 | No kind of feature more than twice a nine, and the second does a different job | Should | the hole cards |
+| 27 | Dials: every hole pushes one, no dial the same way twice; every dial varies across the nine; the nine touches the edge of real golf on three dials or more; one hole goes past real golf | Should | `spread.mjs`, the hole cards |
+| 28 | Two famous-hole set pieces a course, themed and enlarged, none another course has used | Should | the register |
+| 29 | The shots asked for vary: three or more kinds of tee shot and of approach, none more than four times, no two holes running alike | Should | the hole cards |
+| 30 | Hazard positions and green surrounds: no kind more than three times a nine; two or more diagonal hazards | Should | the hole cards |
 | 26 | Against the other courses: three or more kinds of set piece nobody has used, two at most from the over-used list, two fairways at most that match an earlier course's | Should | the register, `alike.mjs all` |
 
 # Part 3: the rules by topic
@@ -233,9 +240,11 @@ from about 19° above level to 31° below. Nothing in the rules allowed for that
   course. The big drop off a ledge is a fine opener, but four courses have used it.
 - **The hardest holes in the middle** (the 4th to the 7th), **a breather after the hardest**, and a finish with
   a decision or the course's set piece rather than simply its longest hole.
-- **Spread the lengths.** From the back tees: a par 4 of 340 yd or less and one of 420 or more, no two par 4s
-  within 15 yd of each other; par 3s 25 yd or more apart plays-like, facing different ways, and over a course's
-  par 3s a short iron and a long one. Approach clubs across the nine should run from a wedge to a long iron.
+- **Spread the lengths** (numbers widened 12 November 2026: no par 4 on any course was over 457 yd, all 15
+  par 5s were 490–560 and no par 3 was under 126). From the back tees: par 4s 120 yd or more from the shortest to
+  the longest, no two within 15 yd of each other; par 3s 40 yd or more apart plays-like and facing different ways;
+  two par 5s 50 yd or more apart, so one is reachable and one is three real shots. Approach clubs across the nine
+  should run from a wedge to a long iron. `spread.mjs` measures it; see "Dials" for the edges worth touching.
 - **Turn the compass.** Holes face three or more quarters, no three in a row the same way, so a set wind plays
   differently hole to hole.
 - **Balance the bends and the shots.** Left and right bends within two of each other, three straight holes at
@@ -328,6 +337,103 @@ A repeat inside the budget is fine, and sometimes right: a course's logic wants 
 Emberfell's holes, the Deep seen from four of Hollowmere's). What the budget stops is the default: reaching for
 the same shape or the same trick because it was the last one used.
 
+## Dials: one pushed on every hole (Should, measured; new 12 November 2026)
+
+The owner, 12 November 2026: "I am worried while we're generating holes that they're gonna end up being too
+repetitive", and he wants "unique, fun to play holes with somewhat realistic features and somewhat bold or
+exaggerated features". The forms above vary a hole's outline and its ground. Measured on 63 holes, the plain
+numbers did not vary: 80% of greens were 475–650 m² (on two courses every green within about 10% of one size);
+all 15 par 5s were 490–560 yd; no par 4 was over 457 yd; no par 3 under 126; 80% of fairways averaged 38–60 m
+wide; nearly every green had one or two bunkers. Real courses run from 300 m² greens to 1,000, from 100 yd par 3s
+to 620 yd par 5s, from 25 m chutes to 90 m fields. Our holes sat in the middle of every dial, because each hole's
+numbers began as the last hole's.
+
+- **Every hole pushes one dial well past normal and keeps the rest realistic.** That is where "somewhat
+  realistic, somewhat exaggerated" comes from: one thing about the hole is remarkable and the player can say
+  what. Write it on the hole card. **No dial is pushed the same way twice in a nine.**
+
+| Dial | Normal | The edge of real golf | Past real golf |
+|---|---|---|---|
+| Par 3 length | 140–190 yd | 100–130, or 200–250 | under 100, over 270 |
+| Par 4 length | 360–440 yd | 280–330 (drivable), or 465–500 | over 500 |
+| Par 5 length | 510–560 yd | 470–505 (reachable), or 580–630 | over 640 |
+| Fairway width | 45–65 m | 30–36 (tight), or 70–90 | over 95 |
+| Green size | 450–650 m² | 300–400, or 800–1,100 | under 280, over 1,200 |
+| Green shape and contour | one feature, 1.5–2.5% | a horseshoe, a 1.5 m tier, a 60 m depth | a bunker inside it, two holes sharing it |
+| Height | 8–15 m, a moderate form | the bold height forms | a 60 m drop, a 10 m face |
+| One hazard's scale | a 25–40 m bunker | a 150 m waste, a cross bunker the fairway's full width | 4,000 m² and more |
+| Bunker count | one to three | none, or six and more | a field of twenty pots |
+| Bend | 20–45° | dead straight, or 70–90° | a hairpin |
+| A carry | under half the drive | 55–60% of it | (the forced-carry Must still holds) |
+
+- **Every dial varies across the nine** (the owner, 12 November 2026: "we don't need to go to the extreme on tiny
+  green and huge green, just variance and touching the extremes sometimes"). `node tools/review/spread.mjs
+  <course>` flags a dial whose holes cluster, never a missing extreme:
+  - greens: the biggest half as big again as the smallest or more, and four at most within 10% of the middle one;
+  - par 3s 40 yd or more from shortest to longest, par 4s 120 yd or more, par 5s 50 yd or more;
+  - fairway mean widths 25 m or more from the tightest to the widest;
+  - bunkers a hole: four or more between the fewest and the most, five greens at most with the same number;
+  - bends: 45° or more between the straightest hole and the sharpest.
+- **The nine touches the edge of real golf on three dials or more**, different ones (the check lists which). Not
+  on every dial, and not the same three as the last course: the register records them.
+- **One hole a nine goes past real golf** (the owner's pick: "mostly real, one past it"), two at most. It is the
+  hole people describe to a friend. It still passes every Must.
+- **The exceptions the dials need.** A tight hole (30–36 m where back-tee drives land) is allowed once a nine if
+  both sides are soft for 20 m (first cut, rough, a bank, never a penalty) and every forward tee set still lands
+  on 40 m. A tiny green wants a short approach and an open front; a huge one wants contour that splits it into
+  parts. A very long hole is wide; a very short one is defended at the green.
+- **Never start a hole's numbers from another hole's.** That is how the clusters happened, for fairways, for
+  greens and for bunkers alike.
+
+## Famous-hole set pieces (Should, new 12 November 2026)
+
+The classics list above is hole types. Real golf also has set pieces people know by sight, and no course here has
+used most of them. **Two a course, dressed in the theme and made bigger than the original** (this is the natural
+home for the hole that goes past real golf), none that another course has used: the register lists them.
+
+| Set piece | What it is | Bolder here |
+|---|---|---|
+| **Island green** | A green with the hazard all round. | A short par 3 only; the island the theme's own (a floe, a slab over glass, a pillar). |
+| **Postage stamp** | A very short par 3 to a tiny green ringed with trouble. | 100–120 yd, 250–300 m². |
+| **Bunker in the green** | A pot inside the putting surface, so the pin has a front and a back. | A horseshoe green wrapped round a feature of the theme. |
+| **Shared green** | One enormous green serving two holes. | 1,500 m² and more, two flags; seen from both holes. |
+| **Shared fairway** | Two holes playing along one wide fairway in opposite directions. | 100 m wide; the other hole's bunkers are yours too. |
+| **Church pews** | One long bunker crossed by rows of grass ridges. | 100 m long; the ridges are the theme's (ribs, girders, sastrugi). |
+| **Hell bunker** | One vast, deep cross bunker where the second shot of a long hole wants to finish. | The fairway's full width, 3 m deep. |
+| **The burn** | A narrow creek that wanders across the fairway and in front of the green. | It crosses the line three times. |
+| **The wall** | A wall across the hole or tight behind the green; the ball plays off it. | A solid feature of the theme the ball banks off on purpose. |
+| **The chute** | A tee shot down a narrow gap that opens to a wide fairway. | Through something: an arch, a colonnade, a cleft. |
+| **The lone tree** | A single great tree in the middle of the fairway or guarding the green. | Used twice already (the giant, the fig): only as something else. |
+| **Lion's mouth** | A bunker eating into the front of a green, which wraps round it. | The mouth is a real pit. |
+| **Skyline green** | A green on a horizon with nothing behind it. | The edge of the world behind: void, glass, the lip of a fall. |
+| **Sleepers** | Hazard and green faces shored with vertical timber. | Faces in the theme's material that kick a ball back. |
+
+## The shots each hole asks for (Should, new 12 November 2026)
+
+Two holes with different shapes can still ask for the same two shots. Each hole card names the tee shot and the
+approach it wants. The owner, 12 November 2026: "I don't think we need to have every nine have every shot, I
+think we should have them call for some variability though."
+
+- **Tee shots:** a fade, a draw, dead straight, a low runner (under something, or to use a slope), a high carry,
+  a lay-up to a number, driver as hard as you like.
+- **Approaches:** a high carry that stops, a run-up along the ground, a bump into a bank or off a kick plate, a
+  full wedge, a long iron or wood, a shot from a hanging lie, a blind one over a marker.
+- **Across a nine:** three or more kinds of tee shot and three or more kinds of approach; no kind more than four
+  times; no two holes running that ask for the same tee shot and the same approach; a hole that favours a fade
+  and one that favours a draw, so neither shape owns the course. Not every kind on every nine.
+- The shape a hole asks for comes from its ground and hazards (the lean, the bend, where the trouble is), not
+  from a label on the card. If the card says "draw" and a straight ball does as well, the hole doesn't ask.
+
+## Where the hazard sits, and what surrounds the green (Should, new 12 November 2026)
+
+- **Hazard positions:** across the line (a carry), diagonal to it (a carry the player chooses the length of),
+  down one side, in the centre of the fairway, in front of the green, behind it, all round. **No position more
+  than three times a nine, and two or more diagonals:** a diagonal hazard is what makes a player pick a line,
+  and a course whose hazards all run down the sides only punishes a wide shot.
+- **Green surrounds:** a tight mown run-off, a collection hollow, a bank that feeds the ball in, bunkers, rough,
+  a drop, water or the theme's penalty. **No kind more than three times a nine**, so the recovery shots differ
+  too: a putt from off the green, a bump up a bank, a splash from sand, a flop over a hollow.
+
 ## Fairway forms (Must with the budget above; new 11 November 2026)
 
 `docs/fairway-forms.svg` (and `.png`) shows the twelve forms, each built from the plan tools' own pieces and named by the
@@ -384,7 +490,7 @@ copy a piece list into a hole's `fw` and adjust.
   through it in a test). See "Decisions".
 - **Vary the outlines of greens and fairways (agreed with the owner, Rimeholm round 2).** No plain circles,
   ovals or constant-width strips: they read as placeholders. Give each green its own shape and size (a
-  kidney, a peanut, a crescent, an L, a long thin diagonal, a clover, a T; roughly 450 to 750 m²), with an
+  kidney, a peanut, a crescent, an L, a long thin diagonal, a clover, a T; from about 350 to 900 m² across a nine, the biggest half as big again as the smallest or more: see "Dials"), with an
   uneven edge and the pin well inside a lobe, never in a waist. Let each fairway's two edges vary on their
   own along the hole: swell where drives land, pinch between landing areas, scallop along the edges, and
   let bunkers, crevasses and rocks bite in. Splitting a fairway now and then is good. Keep the 45–65 m
@@ -500,6 +606,10 @@ slopes for strategy" (cross slopes to about 7% on level zones, 4–5% when also 
   a bunker 25–40 m across, or a long one that follows a fairway's edge for 100 m or more, reads as a real
   hazard; a 10 m dot reads as a placeholder. Let them bite into the fairway's edge without taking the landing
   area under 45 m. Greenside bunkers can stay small, and sit at least 2.5 m off the green.
+- **Not the same bunkering on every hole** (measured 12 November 2026: one or two by nearly every green and about
+  one in each fairway; Emberfell had exactly two greenside on eight of nine holes). Across a nine the count runs
+  from none to several: a hole with no sand at all, a hole with one bunker that is the whole question, now and
+  then a field of six or more or one giant. No more than five greens with the same number beside them.
 - **Bunkers each have a job.** Every fairway bunker is a carry bunker (short of the landing area, on the side
   with the better angle in), a target bunker (beyond it, so long hitters play up to or past it), an approach
   bunker (40–90 m short of the green on par 5s and long par 4s) or a catch bunker (between short grass and real
