@@ -103,7 +103,7 @@ export const HOLES = [
       fw: [{ e: [[62, 22, 22], [110, 42, 42], [200, 49, 49], [300, 49, 49], [390, 46, 46], [455, 37, 37], [500, 24, 24], [524, 16, 16]], wob: 3.5 },
         { bite: [[150, -50, 34, 38], [248, 52, 36, 40], [346, -50, 34, 38], [438, 49, 30, 36]], wob: 2 }],
       corridor: 12,
-      cant: [[140, 470, 2.5]],   // away from the river, down to the right
+      cant: [[110, 470, -2.2]],   // a little down to the left, toward the river (Rhys, 13 November)
       // gently up the bank; the dry canal in front of the green is a hollow 3 m deep
       prof: [[0, 0], [150, 0.3], [295, 0.7], [440, 1.5], [486, 1.6], [504, -1.7], [520, 1.7], [len, 2]],
       bunkers: [{ at: P(248, 52), rx: 37, rz: 31, job: 'target' }, { at: P(438, 49), rx: 33, rz: 26, job: 'approach' }],
@@ -112,16 +112,16 @@ export const HOLES = [
       targets: [{ name: 'The drive', at: P(232, -8) }, { name: 'The lay-up', at: P(400, 2) }],
       words: {
         story: 'The river bank: palm groves and the old irrigation works, with the valley temple at the end of it.',
-        plays: 'A true three-shotter, 590 yd north along the river to the valley temple. The fairway is wide but nothing on it is straight: a palm grove bites in from the left, an old irrigation basin drifted full of soft sand from the right, a second grove from the left where the river bulges in behind 35 m of rough at the corner, and a second basin from the right where the lay-up wants to stop. The whole of it leans 2.5% away from the river. A dry canal crosses in front of the green as a hollow 3 m deep, mown, that gathers anything short. The temple\'s pylon stands behind the green.',
+        plays: 'A true three-shotter, 590 yd north along the river to the valley temple. The fairway is wide but nothing on it is straight: a palm grove bites in from the left, an old irrigation basin drifted full of soft sand from the right, a second grove from the left where the river bulges in behind 35 m of rough at the corner, and a second basin from the right where the lay-up wants to stop. The whole of it leans a little (2.2%) toward the river. A dry canal crosses in front of the green as a hollow 3 m deep, mown, that gathers anything short. The temple\'s pylon stands behind the green.',
         safe: 'Drive left of the first basin (232 m), lay up to a full wedge short of the second (400 m) and pitch over the canal.',
         bold: null,
         miss: 'Left, a grove: the palms knock a ball down, and beyond the second grove at the corner is the river (a stroke and a drop). Right, the basins: a dune lie. Short of the green, the canal\'s hollow: an uphill chip.',
       },
       card: {
-        type: 'Long', form: 'Scalloped', feature: 'The groves and the drifted irrigation basins, biting in from alternate sides', job: 'Hazards that set the line of each shot; the lean away from the river and the canal\'s hollow are helpers',
+        type: 'Long', form: 'Scalloped', feature: 'The groves and the drifted irrigation basins, biting in from alternate sides', job: 'Hazards that set the line of each shot; the canal\'s hollow is a helper; the lean toward the river makes the groves\' side the low side',
         decision: 'None: three full shots, each with a side to favour', miss: 'Small: the first cut, the low right side. Medium: a grove left, a basin right, the hollow. Big: the river, beyond the corner\'s grove on the left only. Safe miss at the green: short, in the hollow',
         view: 'In front the fairway between the first grove and the bank; in the middle the first basin on the right; beyond, the corner, and the pyramid\'s top over the palms. The landing area shows',
-        ground: 'Dip in front: nearly level along the bank (+2 m in all), leaning 2.5% away from the river, then a hollow 3 m deep in front of the green',
+        ground: 'Dip in front: nearly level along the bank (+2 m in all: a river plain has no height), leaning 2.2% toward the river, then a hollow 3 m deep in front of the green',
         height: 'Dip in front', dial: 'The length: 590 yd (the edge of real golf)', shots: { tee: 'A draw round the first grove', approach: 'A lay-up to a number, then a full wedge over the hollow' }, hazard: 'Diagonal: groves and basins from alternate sides', surround: 'A collection hollow',
       },
     }),
@@ -140,12 +140,14 @@ export const HOLES = [
       bunkers: [],
       green: { lobes: [[0, 0, 11, 15.5, 0], [-7, 10, 7, 6, 0]], apron: 4, contour: [{ fall: 0, pct: 2.0 }, { bowl: [-5, 9], r: 11, h: 0.28 }], style: 'Square to the causeway with a wing at the back left, falling 2% toward the front, a shallow bowl in the wing: the pyramid\'s foot behind it is a bank of drifted sand that feeds a long ball back' },
       // the drift at the pyramid's foot: a bank behind the green that feeds
-      forms: [{ at: P(len + 24, 0), rx: 34, rz: 9, rot: 0, h: 2.6, label: 'the drift' }],
+      forms: [{ at: P(len + 24, 0), rx: 34, rz: 9, rot: 0, h: 2.6, label: 'the drift' },
+        // dunes drifted over the kerbs from alternate sides, so the deck rolls: high left, high right, high left
+        { at: P(150, -46), rx: 40, rz: 56, rot: 0.25, h: 3.3, label: 'a dune' }, { at: P(256, 36), rx: 36, rz: 54, rot: -0.2, h: 3.6, label: 'a dune' }, { at: P(336, -31), rx: 31, rz: 44, rot: 0.15, h: 3.2, label: 'a dune' }],
       trees: [...palms(P(40, 52), 14, 6, 31), ...palms(P(20, -60), 12, 5, 32)],
       targets: [{ name: 'The court\'s end', at: P(212, 0) }],
       words: {
         story: 'The causeway: the processional way from the valley temple up to the pyramid, still the only way up.',
-        plays: 'Dead straight up the processional way. The causeway climbs 22 m off the river plain to the pyramid in one even ramp, its deck 2 m over the sand on either side, kerb stones along both edges. It is wide in the temple\'s court and closes all the way up: 36 m where the Falcon tee\'s drive lands, 26 m at the green. A running ball that drifts is turned back by the kerb; one that flies it drops 2 m to firm sand, a lie and never a stroke. No bunker. The great pyramid fills the sky behind the green, 30 m past the flag, sand drifted against its foot.',
+        plays: 'Dead straight up the processional way. The causeway climbs 22 m off the river plain to the pyramid in one even ramp, its deck 2 m over the sand on either side, kerb stones along both edges. It is wide in the temple\'s court and closes all the way up: 36 m where the Falcon tee\'s drive lands, 26 m at the green. Three dunes have drifted over the kerbs from alternate sides, so the deck rolls under you: high on the left in the court, high on the right where the Falcon drive lands, high on the left again on the approach, each about 2 m at the fairway\'s edge and nothing on the centre line. A running ball that drifts is turned back by the kerb; one that flies it drops 2 m to firm sand, a lie and never a stroke. No bunker. The great pyramid fills the sky behind the green, 30 m past the flag, sand drifted against its foot.',
         safe: 'Lay back to the court\'s end (212 m), where it is still about 50 m wide, and take one more club for the climb.',
         bold: null,
         miss: 'Off either side, 2 m down on firm sand: a pitch back up, the green above you. Long, the drift at the pyramid\'s foot rolls it back. Looking back from the green: the river\'s green line.',
@@ -154,7 +156,7 @@ export const HOLES = [
         type: 'Original', form: 'Funnel', feature: 'The causeway itself: a raised deck with kerbs, the pyramid\'s face behind the green', job: 'Lie-setter (on it or 2 m below it); the kerbs and the drift at the pyramid\'s foot are helpers; the pyramid is the frame and the backstop',
         decision: 'None: one line; how far up the funnel is the only choice', miss: 'Small: held by the kerb. Medium: off the deck, 2 m down on firm sand. Big: the same, further off. No penalty ground, no bunker. Safe miss at the green: long',
         view: 'In front the temple court; in the middle the causeway narrowing up the frame; beyond, the pyramid, its top out of the frame. The landing area shows',
-        ground: 'A ramp, on purpose: the causeway is the ramp, +22 m at an even 6%, level across, 2 m over the sand either side',
+        ground: 'The causeway is the ramp: +22 m at an even 6%, 2 m over the sand; three dunes drifted over it lift one edge about 2 m (left at 150 m, right at 256, left at 336)',
         height: 'Ramp up (plain, for a reason: the causeway is the ramp)', dial: 'The width: 36 m where the back tee\'s drive lands, firm sand both sides (the tight fairway of the nine)', shots: { tee: 'Dead straight; a 3 wood for most', approach: 'A mid iron uphill, a club more' }, hazard: 'Down both sides: the drop off the deck', surround: 'A feeding bank: the drift at the pyramid\'s foot',
       },
     }),
@@ -169,13 +171,14 @@ export const HOLES = [
       corridor: 11,
       prof: [[0, 0], [160, 0.4], [300, 1.3], [len, 2]],
       cant: [[120, 300, 2.5]],   // the grass leans a little toward the blowout
+      forms: [{ at: P(158, -46), rx: 30, rz: 62, rot: 0.5, h: 4.2, label: 'a dune' }, { at: P(252, -34), rx: 36, rz: 50, rot: 0.1, h: 3.6, label: 'a dune' }, { at: P(306, 42), rx: 25, rz: 33, rot: -0.3, h: 2.6, label: 'a dune' }],
       bunkers: [{ at: P(len - 30, -16), rx: 9, rz: 12, rot: -0.2 }],
       green: { k: 1.065, lobes: [[0, 0, 11.5, 16, 28], [-6, -11, 7, 6.5, 0]], apron: 7, contour: [{ fall: 45, pct: 1.7 }, { tier: [2, 5], up: -150, h: 0.4, w: 5 }], style: 'Set from front left to back right, open from the right (the Sand Sea side) and guarded on the left by a dune bunker, falling 1.7% toward the front right with a shelf at the back left; a tight run-off all round' },
       trees: [],
       targets: [{ name: 'Round on the grass', at: P(196, 0) }, { name: 'Over the Sand Sea', at: P(268, 36), bold: true }],
       words: {
         story: 'The Sand Sea: where the plateau opens, a blowout of soft sand the size of a city block lies between you and the green.',
-        plays: 'The reveal. From the 4th tee the plateau opens: dunes in long ridges to the horizon, the great pyramid over your left shoulder, the Sphinx\'s head on the skyline to the right, and straight in front the Sand Sea, a blowout 9 m deep and 8,000 m² across, bigger than anything on a real course. The grass hooks round its north and east rim. The straight line to the green crosses it: carry about 215 yd of soft sand to a far fairway 80 m wide and you have a wedge into the open side of the green. Round on the grass is safe all the way and leaves about 170 yd over a dune bunker.',
+        plays: 'The reveal. From the 4th tee the plateau opens: dunes in long ridges to the horizon, the great pyramid over your left shoulder, the Sphinx\'s head on the skyline to the right, and straight in front the Sand Sea, a blowout 9 m deep and 8,000 m² across, bigger than anything on a real course. The grass hooks round its north and east rim, between dunes: one banked round the outside of the corner, one whose shoulder lies across the left of the far fairway, a low one beyond the bold landing. The straight line to the green crosses it: carry about 215 yd of soft sand to a far fairway 80 m wide and you have a wedge into the open side of the green. Round on the grass is safe all the way and leaves about 170 yd over a dune bunker.',
         safe: 'Round on the grass to the corner (196 m): no sand to carry, a mid iron left over the dune bunker.',
         bold: 'Over the Sand Sea (carry about 215 yd from the Falcon tee) to the far fairway: about 105 yd left, the green open.',
         miss: 'Short on the bold line, the ball rolls to the blowout\'s floor: a dune lie 9 m down, not a penalty. Left of the safe line, dunes and firm sand. Round the green, short grass that runs a ball away.',
@@ -185,7 +188,7 @@ export const HOLES = [
         decision: 'The long way round: over the blowout is about 40 yd shorter and opens the green, with a 9 m deep dune lie for a short one; round on grass has no carry and leaves 170 yd over a bunker',
         miss: 'Small: the first cut. Medium: firm sand left, the bunker by the green. Big: the blowout\'s floor (a lie, never a stroke). No penalty ground. Safe miss at the green: right',
         view: 'In front the tee\'s dune and the near fairway; in the middle the Sand Sea and the far fairway beyond its rim; beyond, the dune sea. Both lines show',
-        ground: 'Valley carry on the bold line: level tee and far fairway at 31 m, the blowout\'s floor 9 m below between them; the safe line is level all the way; +2 m to the green',
+        ground: 'Valley carry on the bold line: level tee and far fairway at 31 m, the blowout\'s floor 9 m below between them; the safe line is level along its length, leaning 2.8% toward the blowout, with a dune banked 4 m round the outside of the corner and a dune shoulder lifting the far fairway about 2 m on its left; +2 m to the green',
         height: 'Valley carry', dial: 'One hazard\'s scale, past real golf: an 8,000 m² blowout', shots: { tee: 'A high carry (bold), or a fade round the rim', approach: 'A wedge to the open side, or a mid iron over the dune bunker' }, hazard: 'Diagonal: the blowout across the straight line', surround: 'A tight run-off', setPiece: null,
       },
     }),

@@ -163,7 +163,7 @@ export function buildHole(h) {
   // stone under them reads as stone
   const objs = [];
   const gAt = (x, z) => ground(x, z);
-  if (h.gate) { const G = h.gate; for (const sg of [-1, 1]) { const [x, z] = at(h.line, G.s, sg * G.off); objs.push({ kind: 'tower', x, z, w: G.w, l: G.l, h: G.h, rot: headingAt(h.line, G.s), base: gAt(x, z) - 0.5, label: sg < 0 ? 'the gate' : null }); } }
+  if (h.gate) { const G = h.gate; for (const sg of [-1, 1]) { const [x, z] = at(h.line, G.s, sg * G.off); objs.push({ kind: 'tower', x, z, w: G.w, l: G.l, h: G.h, rot: headingAt(h.line, G.s), base: gAt(x, z) - 0.5, label: sg < 0 ? (G.label || 'the gate') : null }); } }
   if (h.obelisk) { const O = h.obelisk, n = 3, gap = 5, pl = (O.s1 - O.s0 - gap * (n - 1)) / n;   // a fallen obelisk in three pieces along the line
     for (let i = 0; i < n; i++) { const s = O.s0 + i * (pl + gap) + pl / 2, [x, z] = at(h.line, s, (i - 1) * 1.4); objs.push({ kind: 'obelisk', x, z, w: O.t * (1 - i * 0.14), l: pl, h: O.t * (1 - i * 0.14), rot: headingAt(h.line, s) + (i - 1) * 0.09, base: gAt(x, z) - 0.6, label: i === 1 ? 'the fallen obelisk' : null }); } }
   // the world's built things near this hole (the Sphinx's head, the colossi, the temples, the camp)

@@ -23,6 +23,12 @@ stand 25.5 m either side of the line (42 m of fairway between them, so every tee
 Ibis and Scarab tees are both right of the line (from the left the obelisk hid the target); the 8th's tips spot is
 west of its back tee (straight back it crowded the 7th green).
 
+Round 2 (13 November 2026, Rhys's picks from two now-against-proposed sheets), `out/buried-kingdom-plan-book-r2.pdf`:
+the 2nd leans 2.2% toward the river (was 2.5% away; a terrace across its fairway was drawn and dropped: a river
+plain has no height); three dunes drifted over the 3rd's causeway from alternate sides and three round the 4th's
+grass (`forms`), each lifting one edge of the fairway about 2 m. `xsec.mjs <hole> <s,s,...>` cuts cross-sections
+of a hole's ground for such sheets.
+
 Run order: `node sample.mjs` (about 2 minutes), `python3 plans.py`, `node sketch.mjs [holes]` (about 20 s a hole),
 then `node ../review/relief.mjs buriedkingdom`, `alike.mjs` and `spread.mjs` into `out/review.txt`, and
 `node book.mjs` (`ROUND=n DATE='…' NEW=new.json` optional). Output goes to `out/` (ignored by git).

@@ -61,8 +61,11 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   seven spoil pits), 8 The Gate 4 410 (a fan up a 6.5 m table top between two gate towers), 9 The Colossi 4 470
   (an island fairway round a fallen obelisk, a fall-away into the forecourt; centre-line hazard). Plan book round 1
   13 November 2026 (`out/buried-kingdom-plan-book-r1.pdf`): `alike.mjs` 0 of 21 (seven forms), `relief.mjs` nine
-  forms, none twice (bold 4, 7, 8), `spread.mjs` no cluster. Not yet a module: the blockout waits for Rhys's
-  approval of the plan book.
+  forms, none twice (bold 4, 7, 8), `spread.mjs` no cluster. Round 2 the same day (`out/buried-kingdom-plan-book-r2.pdf`, Rhys's picks): the
+  2nd leans 2.2% toward the river; three dunes drifted over the 3rd's causeway from alternate sides and three
+  round the 4th's grass, each lifting one edge of the fairway about 2 m (side undulation). A terrace across the
+  2nd's fairway was drawn and dropped (a river plain has no height). Not yet a module: the blockout waits for
+  Rhys's approval of the plan book.
 - Halcyon Ring (Rhys's picks, 11 November 2026; `claude/brief-halcyon-ring.md`): a pristine garden colony
   inside a ring space station; floor windows onto space are the penalty area; the ball flies as on Earth. The
   first par 35, the first with three par 3s, the first par-3 finish (across the Great Window to the clubhouse).
