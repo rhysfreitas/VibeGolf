@@ -29,6 +29,12 @@ const PROF = HOLES.map((h, k) => {
   const st = 2, n = Math.ceil(h.len / st) + 1, y = [];
   for (let i = 0; i < n; i++) y.push(V(...WOR[k](...at(h.line, Math.min(i * st, h.len)))));
   for (const [a, b] of h.ramps || []) { const ia = Math.round(a / st), ib = Math.min(n - 1, Math.round(b / st)), ya = y[ia], yb = y[ib]; for (let i = ia; i <= ib; i++) y[i] = lerp(ya, yb, smooth((i - ia) / (ib - ia))); }
+  // `prof`: knots [s, y] that redraw the line's height between the first and last (y from the line's start; null = the
+  // height there as it was), eased from knot to knot: a valley carry, a table top along the line (12 November 2026)
+  if (h.prof) {
+    const y0 = y[0], was = y.slice(), K = h.prof, v = (j) => K[j][1] === null ? was[Math.min(n - 1, Math.round(K[j][0] / st))] : y0 + K[j][1];
+    for (let i = 0; i < n; i++) { const s = i * st; if (s < K[0][0] || s > K.at(-1)[0]) continue; let j = 0; while (j < K.length - 2 && s > K[j + 1][0]) j++; y[i] = lerp(v(j), v(j + 1), smooth((s - K[j][0]) / (K[j + 1][0] - K[j][0]))); }
+  }
   const sm = y.map((_, i) => { let s = 0, c = 0; for (let j = -3; j <= 3; j++) { const q = y[clamp(i + j, 0, n - 1)]; s += q; c++; } return s / c; });
   return { st, y: sm, at: s => { const f = clamp(s / st, 0, n - 1), i = Math.floor(f), t = f - i; return lerp(sm[i], sm[Math.min(n - 1, i + 1)], t); } };
 });
@@ -54,6 +60,15 @@ for (const a of ALL) {
 export const CRACKS = ALL;
 function formLift(f, x, z) {   // x, z in the form's own hole frame
   if (f.kind === 'mound') return f.h * bump(seDist(f, x, z) + 0.06 * noise2(x / 14, z / 14, 3));
+  // a table top: a level lift h inside a superellipse, its edge a face `face` m wide; `tail` (a share of rz) lets the far
+  // (downrange, local -z) end run back down into the ground instead of ending in a face (12 November 2026)
+  if (f.kind === 'table') {
+    const e = seDist(f, x, z) + 0.035 * noise2(x / 11, z / 11, 5), m = Math.min(f.rx, f.rz), edge = 1 - smooth((e - 1) * m / f.face + 1);
+    if (edge <= 0) return 0;
+    let t = 1;
+    if (f.tail) { const c = Math.cos(f.rot || 0), sn = Math.sin(f.rot || 0), v = (-(x - f.x) * sn + (z - f.z) * c) / f.rz; t = smooth(clamp((v + 1) / (2 * f.tail), 0, 1)); }
+    return f.h * edge * t;
+  }
   if (f.kind === 'vent') { const d = Math.hypot(x - f.x, z - f.z) / f.r; return d > 1 ? 0 : f.h * (1 - d * d) * (d > 0.35 ? 1 : 0.55 + 0.45 * d / 0.35); }
   // the cinder cone: a rim with a breach toward the tee, the crater floor level inside it
   const dx = x - f.x, dz = z - f.z, r = Math.hypot(dx, dz); if (r > f.base) return 0;

@@ -23,6 +23,8 @@ profiles and sketch views always agree. They follow `tools/rimeholm/` (geo.mjs a
 
 Fairways aren't only ribbons: in `holes.mjs` a piece of `fw` is `{ e: [[s, L, R] ...] }` (two edges along the line), `{ lobes: [[s, off, along, across, rot] ...] }` (a free shape: a bowl, a fan, a hook, an island of fairway) or `{ bite: [...] }` (the same shapes cut out of the rest: an island in the middle, a scalloped edge). `docs/fairway-forms.svg` shows twelve forms and `tools/review/forms.mjs` has the data for each; `node tools/review/alike.mjs emberfell` names each fairway's form and flags repeats (`docs/COURSE-DESIGN.md` "Sameness" and "Fairway forms").
 
+A hole's ground along its line can be redrawn with `prof` (knots [s, y] from the line's start; null keeps the height there), and `forms` takes `kind: 'table'` for a table top (a level lift with a steep face, `tail` running its far end back down): the Barranco's valley carry and the Lava Tube's flow front (12 November 2026).
+
 Run them in that order. Output goes to `out/` (ignored by git).
 
 `node emit.mjs` writes the playable course, `src/course/emberfell.js`, from the same data (about a minute): each hole's

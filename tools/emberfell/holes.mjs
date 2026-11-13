@@ -37,7 +37,7 @@ export const CARD = {
   rhythm: 'A gentle opener: wide, no carry, the river 40 m off the line at its nearest. The hardest run is 3–7; the short cone hole is the breather; the finish is a decision and the course\'s set piece. Par 4s 340, 385, 405, 430 and 455 yd; par 3s 34 yd apart plays-like, facing north-north-west and north-east. Three bends left, three right, three straight; all four quarters of the compass.',
   fairways: 'Seven par 4 and 5 fairways, seven forms: scalloped (1), funnel (2), double (3), hourglass (5), broken (6), fan (7), split (9). The check finds none alike; two match a fairway on another course, inside the budget.',
   borrowed: 'New to the register: a double fairway either side of a lava tube; a shoreline hole with a beach as the miss (the Heart); an island green with lava all round (Emberfell\'s alone); a green in an amphitheatre, the Lavafall\'s bay under the fall. Borrowed from the over-used list, all approved before the rules review: the fall as a backdrop, the tee shot off the rim, the punchbowl, the bridges, the terraces.',
-  tips: 'The Magma tees, switched off in the data (COURSE.tipsSet, hole.tips): 3,695 yd, 15–40 yd behind the back tee, every spot checked for a 280–300 yd drive.',
+  tips: 'The Magma tees, switched off in the data (COURSE.tipsSet, hole.tips): 3,795 yd, 15–40 yd behind the back tee, every spot checked for a 280–300 yd drive.',
 };
 
 // trees scattered round a point: the kipuka's old forest (ohia), tree ferns
@@ -123,15 +123,20 @@ export const HOLES = [
     build: (P) => ({
       tees: { obsidian: 14, basalt: 34, pumice: [80, 42], ash: [118, 62] },
       ramps: [[108, 202], [226, 330]],
+      // valley carry (12 November 2026, Rhys's pick): the gully deepened and pulled back to 150-215 m, the landing area beyond
+      // it lifted level with the tee, so a drive carries the barranco or runs back to its floor
+      prof: [[119, null], [128, 3.4], [150, -3.5], [174, -14], [192, -14], [214, -5], [232, 2.6], [254, 3.0], [309, 3.6], [332, null]],
       // form: funnel. Generous off the near wall, narrowing across the floor and all the way up the climb
       fw: [{ e: [[62, 13, 15], [96, 33, 31], [140, 47, 45], [190, 43, 41], [228, 36, 32], [258, 29, 27], [288, 22, 21], [318, 18, 16], [350, 14, 13], [364, 12, 11]], wob: 5.5 }],
       corridor: 18,
       cant: [[160, 280, 3]],   // the gully floor runs down-valley to the right
       bunkers: [{ strip: [[172, 62, -42], [196, 64, -40], [222, 58, -34], [250, 50, -28]], wob: 3, kind: 'cinder', job: 'catch' },
-        { at: P(352, -17), rx: 8, rz: 5 }, { at: P(384, 15), rx: 7, rz: 5 }, { strip: [[294, 34, 32], [302, 36, 34], [310, 34, 31]], wob: 2.5, job: 'cross' }],
+        { at: P(352, -17), rx: 8, rz: 5 }, { at: P(384, 15), rx: 7, rz: 5 },
+        // a field of small ash pots across the climb in place of the one cross bunker (12 November 2026, Rhys's pick)
+        ...[[290, -24], [294, 3], [297, 17], [303, -12], [307, 12], [312, -17], [315, -1], [320, 14], [324, -16], [328, 8], [332, -4]].map(([a, o], i) => ({ at: P(a, o), rx: 3.2 + (i % 3) * 0.4, rz: 2.7 + (i % 2) * 0.5, pot: true, job: 'cross' }))],
       green: { lobes: [[0, 0, 8, 17, 28], [6, 12, 6, 6, 0]], contour: [{ fall: 0, pct: 1.2 }, { tier: [3.5, 8], up: 152, h: 0.5, w: 4 }], style: 'Long and thin, set from front left to back right with a knob at the back, falling 1.8% toward the front, two tiers (the upper at the back, 0.5 m up): open from the left, where the strip bunker runs' },
       boulders: [...blocks(P(205, 74), 18, 7, 21), ...blocks(P(215, -84), 16, 6, 22)],
-      targets: [{ name: 'The gully floor', at: P(226, 2) }],
+      targets: [{ name: 'The shelf', at: P(250, 0) }, { name: 'The gully floor', at: P(183, 0) }],
       words: {
         story: 'Down into a flood gully and up the far side, a band of black sand across the climb where the floods run.',
         structure: 'a funnel, broken near the green by a cross bunker on the climb',
@@ -154,10 +159,14 @@ export const HOLES = [
   // that never fell (a natural bridge), then runs on down the shoulder toward the tee, its trench splitting two
   // fairways: the main one on the right for the back tees, a lane on the left (the channel) for the forward tees.
   // Rhys, round 6: not a decision ("it's not going to get you there in less shots"), but keep the two fairways
-  hole({ n: 3, name: 'The Lava Tube', seedN: 4, par: 4, split: true, laneReach: 110, legs: [[285, 0], [132, -14]], place: { at: [290, 400], heading: 306 },
+  hole({ n: 3, name: 'The Lava Tube', seedN: 4, par: 4, split: true, laneReach: 110, legs: [[285, 0], [132, -14]], place: { at: [290, 400], heading: 306 }, tips: [-50, 0],
     build: (P) => ({
       // the forward tees sit left of the trench's lower mouth and play down the channel; the back tees down the main
-      tees: { obsidian: 0, basalt: 20, pumice: [84, -64], ash: [126, -70] },
+      // the back tee 21 m back (12 November 2026, Rhys's pick): 455 -> 480 yd
+      tees: { obsidian: -21, basalt: 20, pumice: [84, -64], ash: [126, -70] },
+      // table top (12 November 2026, Rhys's pick): the channel lifted onto a flow front, a 6 m face at its near end, its top
+      // running back down into the approach toward the green
+      forms: [{ kind: 'table', at: P(256, -74), rx: 30, rz: 78, rot: 0, p: 2.6, h: 6, face: 8, tail: 0.42, label: 'the flow front' }],
       // form: double. The main fairway right of the trench, over the bridge to the approach; the channel left of it,
       // joining the approach short of the green
       fw: [{ e: [[100, 12, 15], [146, 21, 29], [194, 24, 35], [236, 24, 40], [262, 18, 42], [282, 6, 36], [292, 13, 15], [305, 17, 13], [332, 24, 9], [362, 25, 12], [392, 19, 14], [404, 14, 12]], wob: 4.5 },
@@ -203,7 +212,7 @@ export const HOLES = [
       tees: { obsidian: 0, basalt: [8, 22], pumice: [44, -20], ash: [94, -30] },
       corridor: 14,
       extraFw: [{ at: P(176, 26), rx: 18, rz: 26, rot: 0.2 }, { at: P(233, -24), rx: 14, rz: 12 }],
-      bunkers: [{ at: P(195, -20), rx: 8, rz: 5 }, { at: P(241, 10), rx: 9, rz: 5 }],
+      bunkers: [],   // none (12 November 2026, Rhys's pick): the drop and the crescent do the work
       green: { lobes: [[-13, -1, 9, 8, -28], [13, -1, 9, 8, 28], [0, 3, 12, 9, 0]], apron: 9, contour: [{ fall: 0, pct: 1.8 }, { ridge: [[0, -8], [0, 12]], h: -0.25, w: 7 }], style: 'A wide crescent across the line, its horns reaching back toward the tee, falling 1.8% toward the front, with a swale down the middle that gathers from both horns; short grass all round' },
       boulders: [...blocks(P(140, -48), 18, 6, 51), ...blocks(P(130, 46), 16, 5, 52)],
       targets: [],
@@ -261,9 +270,10 @@ export const HOLES = [
   }),
 
   // 6. THE LAVAFALL (was the 7th): a par 5 along the second terrace's ledge, past a lavafall, then down into a bay in the wall
-  hole({ n: 6, name: 'The Lavafall', seedN: 7, par: 5, legs: [[262, 0], [204, -35]], place: { at: [-345, -300], heading: 282 }, tips: [-34, 12],
+  hole({ n: 6, name: 'The Lavafall', seedN: 7, par: 5, legs: [[262, 0], [204, -35]], place: { at: [-345, -300], heading: 282 }, tips: [-112, 0],
     build: (P) => ({
-      tees: { obsidian: 0, basalt: 22, pumice: [70, 40], ash: [110, 40] },
+      // the long par 5 (12 November 2026, Rhys's pick): the back tee 82 m back, 510 -> 600 yd
+      tees: { obsidian: -82, basalt: 22, pumice: [70, 40], ash: [110, 40] },
       ramps: [[196, 292]],
       cant: [[150, 290, -6.5]],
       // form: broken. The ledge's fairway stops at the rill; the bay's begins beyond it, wider, toward the fall
@@ -370,8 +380,7 @@ export const HOLES = [
         { e: [[252, 23, 21], [256, 23, 21], [272, 15, 15], [295, 12, 12], [325, 12, 12], [352, 13, 13], [370, 11, 11]], wob: 4.5, seed: 57 }],
       corridor: 16,
       cant: [[140, 250, -3.5]],
-      bunkers: [{ strip: [[112, -24, 35], [150, -28, 41], [200, -29, 42], [240, -29, 42], [272, -17, 30]], wob: 3, job: 'catch' },   // the black-sand beach along the shore, 160 m between the fairway and the lava
-         { at: P(376, -15), rx: 6, rz: 4.5, pot: true }, { at: P(412, 13), rx: 6, rz: 4.5, pot: true }],
+      bunkers: [{ strip: [[112, -24, 35], [150, -28, 41], [200, -29, 42], [240, -29, 42], [272, -17, 30]], wob: 3, job: 'catch' }],   // the black-sand beach along the shore, 160 m between the fairway and the lava; no sand by the green (12 November 2026, Rhys's pick: the lava is enough)
       green: { lobes: [[-6, 7, 7, 9, 18], [6, 7, 7, 9, -18], [0, -6, 6, 10, 0]], join: 4, raise: 1.4, falseFront: true, contour: [{ fall: 0, pct: 1.5 }, { tier: [0, 3.25], up: 180, h: 0.4, w: 3.5 }], style: 'Two lobes across the back and a point at the front (a heart, for the Heart); raised 1.4 m with a false front; the two back lobes sit on a tier 0.4 m above the point, and the whole falls 1.5% toward the front' },
       hall: { at: [0, 0], w: 32, d: 14, h: 6, roof: 2.5, label: 'the clubhouse' },
       forms: [{ at: P(228, -7), rx: 7, rz: 11, rot: 0, h: 2.5, label: 'the tumulus' }],

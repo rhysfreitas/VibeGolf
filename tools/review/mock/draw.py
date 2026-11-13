@@ -48,7 +48,12 @@ def draw_plan(ax, H, box, title, ref=None, notes=(), show_change=False, lw_line=
             if lab: ax.annotate(lab, (x, z), xytext=(6, -2), textcoords='offset points', fontsize=6, color=NEW, weight='bold',
                                 bbox=dict(boxstyle='round,pad=0.12', fc='white', ec='none', alpha=0.85))
         if show_change:
-            dl = np.nan_to_num(H.h - ref.h, nan=0.0); ch = (np.abs(dl) >= 1) | (np.isnan(H.h) != np.isnan(ref.h))
+            rh = np.full(H.h.shape, np.nan)   # ref's heights on H's grid (a moved tee can change the grid's extent)
+            dx, dz = int(round(ref.x0 - H.x0)), int(round(ref.z0 - H.z0))
+            r0, r1 = max(0, dz), min(H.H, dz + ref.H); c0, c1 = max(0, dx), min(H.W, dx + ref.W)
+            if r1 > r0 and c1 > c0: rh[r0:r1, c0:c1] = ref.h[r0 - dz:r1 - dz, c0 - dx:c1 - dx]
+            dl = np.nan_to_num(H.h - rh, nan=0.0); ch = (np.abs(dl) >= 1) | (np.isnan(H.h) != np.isnan(rh))
+            ch &= ~np.isnan(rh)
             if ch.any(): ax.contour(H.X[0], H.Z[:, 0], ch.astype(float), levels=[0.5], colors=[NEW], linewidths=0.8, linestyles='--')
     ax.plot(*H.pin, marker='^', ms=6, mfc='white', mec='k', mew=0.6)
     for t in H.m['targets']:
@@ -152,6 +157,10 @@ def hpage(pdf, A, B, title, chips, asks, body, box, prof=None, cross=(), path=No
           notes_now=(), notes_new=(), detail=None):
     """one hole: title and chips, what it asks, the profile on top, the plans now and proposed, the words and a
     cross-section or close-up on the right"""
+    if not B.tee_marks:   # built data: mark every tee that moved, with its new card yardage
+        for st in B.m['teeSets']:
+            a, b = A.m['tees'].get(st['id']), B.m['tees'].get(st['id'])
+            if a and b and np.hypot(a[0] - b[0], a[1] - b[1]) > 2: B.tee_marks.append((b[0], b[1], f"{st['name']} {B.m['yards'].get(st['id'], '')} yd"))
     fig = plt.figure(figsize=(PW, PH)); fig.patch.set_facecolor('white')
     t = fig.text(0.04, 0.945, title, fontsize=16, weight='bold', va='center')
     fig.canvas.draw(); x = 0.04 + t.get_window_extent().width / fig.get_window_extent().width + 0.012

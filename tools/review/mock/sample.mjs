@@ -8,7 +8,8 @@ const OUT = new URL('../out/mockgrid/', import.meta.url).pathname; fs.mkdirSync(
 const SURF = ['void', 'tee', 'fairway', 'fringe', 'firstcut', 'rough', 'desert', 'sand', 'waste', 'water', 'green', 'rock', 'ice', 'powder'];
 const back = COURSE.teeSets[0].id, meta = [];
 HOLES.forEach((h, i) => {
-  const T = createTerrain(h), tee = h.tees[back], pin = h.green.pins?.[0] || h.pin;
+  // framed from the line's start (not the back tee), so a moved tee doesn't move the frame: before and after line up
+  const T = createTerrain(h), tee = (h.line && h.line[0]) || h.tees[back], pin = h.green.pins?.[0] || h.pin;
   const hd = Math.atan2(pin[0] - tee[0], -(pin[1] - tee[1])), cs = Math.cos(hd), sn = Math.sin(hd);
   const Wd = (lx, lz) => [tee[0] + lx * cs - lz * sn, tee[1] + lx * sn + lz * cs];
   const Lc = (x, z) => { const dx = x - tee[0], dz = z - tee[1]; return [dx * cs + dz * sn, -dx * sn + dz * cs]; };
