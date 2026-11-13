@@ -1469,7 +1469,7 @@ function renderPlan() {
     tw.appendChild(b);
   }
   if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
-  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut −2%', rough: 'Rough −6%', sand: 'Bunker −14%', waste: 'Waste area −6%', desert: (CAVE ? 'Cave floor' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green' };
+  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut −2%', rough: 'Rough −6%', sand: (KINGDOM ? 'Dune' : 'Bunker') + ' −14%', waste: (KINGDOM ? 'Sand' : 'Waste area') + ' −6%', desert: (CAVE ? 'Cave floor' : KINGDOM ? 'Rock' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green' };
   const pct = state.k < 0.995 ? ` · ${Math.round(state.k * 100)}%` : '';
   const L = lieSlope(), slopeTxt = [Math.abs(L.up) >= 2 ? `${L.up > 0 ? 'uphill' : 'downhill'} ${Math.round(Math.abs(L.up))}°` : '', Math.abs(L.side) >= 2 ? `ball ${L.side > 0 ? 'above' : 'below'} feet` : ''].filter(Boolean).join(', ');
   $('pvLie').textContent = `${CLUBS[state.club].name}${pct} · Lie: ${lieNames[state.lie] || state.lie}${slopeTxt ? ' · ' + slopeTxt : ''}`;
