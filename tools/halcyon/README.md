@@ -59,9 +59,10 @@ Glass plays as water, flush (no bed under it); the lie reads Glass and the toast
 a level pad. `src/course/ring-world.js` draws it into each hole's frame on the true cylinder (the floor climbing up
 the ring ahead and behind, the rim walls of glass with their ribs, the rim glass, its beams and sill, space through
 every pane: stars, Earth to the west, the Moon to the east) and paints the ground (`surfaceTextures`; main.js's
-`RING` shader define: lawn, woods, garden beds, plaza paving, white sand, limestone retaining walls). The decision
-on the 7th needs a look: the spoke's west foot stands on the straight line from every tee to the green, so a
-straight drive can't reach the plinth's green (a shaped one can).
+`RING` shader define: lawn, woods, garden beds, plaza paving, white sand, limestone retaining walls). On the 7th
+the spoke's west foot stands on the straight line from every tee to the green, so only a drawn or faded drive
+reaches the plinth's green; Rhys kept it that way (12 November), so the gate scores the straight bold line as a
+cost and auto-aim plays below the face.
 
 Run order for the book: `node sample.mjs` (about 20 s), `python3 plans.py`, `node sketch.mjs` (a few seconds),
 `node book.mjs` (`ROUND=n DATE='…' NEW=new.json` optional).
