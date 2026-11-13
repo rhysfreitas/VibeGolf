@@ -64,6 +64,12 @@ the spoke's west foot stands on the straight line from every tee to the green, s
 reaches the plinth's green; Rhys kept it that way (12 November), so the gate scores the straight bold line as a
 cost and auto-aim plays below the face.
 
+Art pass 1 (12 November 2026, the same night): `art-brief.md` (researched: the 1975 NASA colony paintings, Elysium's
+ring, Capability Brown parkland, Kew's Palm House, Palladian villas; Rhys's picks at its end: open to space, white
+modern villas, an English landscape park, follies, signs of people and station traffic). `emit.mjs` places the
+follies (`COURSE.ring.follies`) and carries the lake's line for the boat; ring-world.js draws the sky, the sun in
+the east glass, villas, trees, follies, flags, the tram, the boat, ships, beacons and drones.
+
 Run order for the book: `node sample.mjs` (about 20 s), `python3 plans.py`, `node sketch.mjs` (a few seconds),
 `node book.mjs` (`ROUND=n DATE='…' NEW=new.json` optional).
 

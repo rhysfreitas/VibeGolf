@@ -152,9 +152,10 @@ function lightPreset() {
   // shadows under the walls cool and green
   if (VALLEY && t === 'golden') Object.assign(P, { sun: 0xffc48e, si: 2.8, hs: 0xa9c4e4, hg: 0x4f6a34, hi: 0.55, exp: 0.62, turb: 2.2, ray: 2.2, mie: 0.006, fog: w === 'clear' ? 0xc9cfc0 : P.fog, near: 600, far: 6500 });
   else if (VALLEY && t !== 'night') { P.fog = 0xc4cfc6; P.turb = Math.min(P.turb, 3); }
-  // inside the ring in the late light: warm low light off the mirror band, a pale haze filling the curve ahead (the
-  // far floor climbs into it), soft green bounce off the parkland
-  if (RING && t !== 'night') Object.assign(P, { sun: t === 'golden' ? 0xffc890 : P.sun, si: t === 'golden' ? 2.6 : P.si, hs: 0xcfd8de, hg: 0x5d6d48, hi: 0.6, exp: 0.62, fog: w === 'overcast' ? 0xb8bcbc : 0xdcd8cc, near: 500, far: w === 'clear' ? 7000 : 4500 });
+  // inside the ring, open to space above its walls (art pass 1): the sun low through the east glass, warm and raking,
+  // long shadows; the fill cooler and weaker than under a blue sky (black space overhead), green bounce off the
+  // parkland; a warm haze filling the curve ahead (the far floor climbs into it)
+  if (RING && t !== 'night') Object.assign(P, { sun: t === 'golden' ? 0xffbf80 : P.sun, si: t === 'golden' ? 3.1 : P.si, hs: 0x9fb0c8, hg: 0x55693a, hi: 0.5, exp: 0.64, fog: w === 'overcast' ? 0xb8bcbc : 0xd9c9a8, near: 600, far: w === 'clear' ? 7500 : 4500 });
   if (CAVE) return { ...P, si: 0, hs: 0x5c6880, hg: 0x221f1b, hi: 0.5, exp: 1.05, fog: 0x080a0d, near: 120, far: 1700 };
   // Red Mesa's golden hour: a deep blue sky over a warm horizon, the low sun raking the walls, cool blue in the shadows, red bounce
   if (REDROCK && t === 'golden' && w === 'clear') Object.assign(P, { sun: 0xffa255, si: 3.3, hs: 0x9db4dc, hg: 0x8a4a30, hi: 0.5, exp: 0.6, turb: 2.4, ray: 3.0, mie: 0.004, fog: 0xe2b58e, near: 600, far: 6000 });
@@ -167,7 +168,7 @@ function lightPreset() {
 }
 function applySky(heading = 0) {
   const T0 = TIMES[cond.time] || TIMES.morning, P = lightPreset();
-  const a = skyAngles(T0.sunAz, EMBER && cond.time === 'golden' ? EMBER_SUN[emberStage] : T0.sunEl, MESA ? heading : 333);
+  const a = RING ? skyAngles(90, cond.time === 'golden' ? 8 : Math.max(8, T0.sunEl * 0.6), heading) : skyAngles(T0.sunAz, EMBER && cond.time === 'golden' ? EMBER_SUN[emberStage] : T0.sunEl, MESA ? heading : 333);   // the ring's sun: through the east glass
   sunDir.setFromSphericalCoords(1, a.polar, a.azimuth);
   const skySun = T0.night ? new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(96), skyAngles(300, 0, MESA ? heading : 333).azimuth) : sunDir;
   skyU.turbidity.value = P.turb; skyU.rayleigh.value = P.ray; skyU.mieCoefficient.value = P.mie; skyU.mieDirectionalG.value = 0.85;
@@ -178,7 +179,7 @@ function applySky(heading = 0) {
   FOG_COLOR.set(P.fog); scene.fog.near = P.near; scene.fog.far = P.far;
   scene.fog.color.copy(FOG_COLOR); // THREE.Fog copies its colour when it's made, so FOG_COLOR alone never reached it (every course played under the default pale fog until the art passes)
   if (ICE) { sky.visible = !T0.night; scene.background = T0.night ? FOG_COLOR : null; iceU.uMoon.value.copy(sunDir); }
-  if (RING) { sky.visible = false; scene.background = FOG_COLOR; }   // inside the station: the floor and the walls fill the view
+  if (RING) { sky.visible = false; scene.background = new THREE.Color(0x010206); stars.visible = false; }   // open to space: ring-world.js draws the sky (stars, the thin air)
   if (CAVE) { sky.visible = false; scene.background = FOG_COLOR; sun.castShadow = false; stars.visible = false; scene.environment = null; ball.material.emissive.set(0xa8c4d0); ball.material.emissiveIntensity = 0.35; return; }
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
@@ -963,7 +964,7 @@ function buildHole(h) {
   h.pinPos = new THREE.Vector3(pin[0], groundAt(pin[0], pin[1]), pin[1]);
   wind = holeWind(windRoll, HOLES.indexOf(h)); windVec = windVector(wind, h.heading ?? 0);
   if (EMBER) emberStage = Math.min(2, Math.max(0, HOLES.indexOf(h) - 2));   // the dusk deepens through the round: the shoulder, the Notch, the caldera
-  applySky(h.heading ?? 0);
+  applySky(RING ? h.frame.heading : h.heading ?? 0);   // the ring's sun is fixed in the station (east), so it goes by the frame
   const trees = [];
   talusPts = REDROCK ? [] : null;
   const box = holeBox(h); playBox = MESA ? box : null;
@@ -2077,7 +2078,7 @@ function openSetup() {
   const from = $('suFrom'); from.innerHTML = WIND_FROM.map(([v, l]) => `<option value="${v}"${String(cond.windFrom) === String(v) ? ' selected' : ''}>${v === 'random' ? 'Any direction' : 'From the ' + l}</option>`).join('');
   from.disabled = cond.wind === 'calm';
   from.onchange = () => { cond.windFrom = from.value === 'random' ? 'random' : +from.value; };
-  applySky(HOLES[0].heading ?? 0);
+  applySky(RING ? HOLES[0].frame.heading : HOLES[0].heading ?? 0);
   setPhaseUI();
   const sv = savedRound(), rb = $('suResume');
   rb.hidden = !sv; if (sv) { rb.textContent = 'Resume · ' + describeRound(sv, HOLES.map(h => h.par)); rb.onclick = () => resumeRound(sv); }
