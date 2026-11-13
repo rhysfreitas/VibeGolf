@@ -283,7 +283,7 @@ islandMat.onBeforeCompile = sh => {
   if (CITY) sh.defines = { ...(sh.defines || {}), CITY: '' };
   if (ICE) { sh.defines = { ...(sh.defines || {}), ICE: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, iceU); }
   if (EMBER) { sh.defines = { ...(sh.defines || {}), EMBER: '' }; sh.uniforms.uSurf2 = surf2U; }
-  if (VALLEY) { sh.defines = { ...(sh.defines || {}), VALLEY: '' }; sh.uniforms.uSurf2 = surf2U; }
+  if (VALLEY) { sh.defines = { ...(sh.defines || {}), VALLEY: '', }; sh.uniforms.uSurf2 = surf2U; }
   if (RING) { sh.defines = { ...(sh.defines || {}), RING: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
@@ -304,6 +304,9 @@ float emberHeat = 0.0, emberGloss = 0.0;
 #if defined(VALLEY) || defined(RING)
 uniform sampler2D uSurf2;
 #endif
+#ifdef VALLEY
+float valWet = 0.0;
+#endif
 float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
 float fb(vec2 p){ return vn(p)*0.5 + vn(p*2.07+3.1)*0.25 + vn(p*4.13+7.7)*0.125 + vn(p*8.4+1.3)*0.0625; }
@@ -319,6 +322,9 @@ totalEmissiveRadiance += vec3(1.0, 0.26, 0.06) * emberHeat * emberHeat * 0.5 * (
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 #ifdef EMBER
 roughnessFactor = mix(roughnessFactor, 0.62, emberGloss * 0.7);
+#endif
+#ifdef VALLEY
+roughnessFactor = mix(roughnessFactor, 0.22, valWet);   // after the rain: puddles and wet mud mirror the sky, wet rock shines
 #endif`)
     .replace('#include <map_fragment>', `
 vec3 p = vWPos;
@@ -417,17 +423,26 @@ grn = lin(vec3(0.4,0.57,0.26)) * (0.95 + 0.1*vn(p.xz*0.8)) * (0.97 + 0.06*fine);
 // mud by the swamp, grey river gravel. Inside the hole's box from uSurf2 (R jungle, G mud, B gravel, A rubble),
 // beyond it from the world mesh's aW
 vec4 s2 = inTex > 0.5 ? texture2D(uSurf2, clamp(st, 0.0, 1.0)) : vec4(vW4.xyz, 0.0);
-vec3 meadow = mix(lin(vec3(0.21,0.32,0.1)), lin(vec3(0.27,0.37,0.12)), mid) * (0.8 + 0.35*fine);
-meadow = mix(meadow, lin(vec3(0.33,0.38,0.14)), smoothstep(0.58, 0.82, fb(p.xz*0.04 + 2.0)) * 0.4);   // horsetail, a little lighter
-meadow = mix(meadow, lin(vec3(0.14,0.26,0.08)), smoothstep(0.5, 0.8, vn(p.xz*0.6)) * 0.45);          // fern clumps
+// the meadow is ferns and horsetails, not grass: olive, a little grey, in clumps; new fronds lighter
+vec3 meadow = mix(lin(vec3(0.27,0.33,0.16)), lin(vec3(0.34,0.39,0.2)), mid) * (0.78 + 0.38*fine);
+meadow = mix(meadow, lin(vec3(0.42,0.44,0.22)), smoothstep(0.58, 0.82, fb(p.xz*0.04 + 2.0)) * 0.45);  // horsetail stands, paler
+meadow = mix(meadow, lin(vec3(0.17,0.24,0.1)), smoothstep(0.5, 0.8, vn(p.xz*0.6)) * 0.5);             // fern clumps, dark between
+meadow = mix(meadow, lin(vec3(0.5,0.52,0.26)), smoothstep(0.78, 0.95, vn(p.xz*2.3 + 1.0)) * 0.25 * (1.0 - smoothstep(30.0, 90.0, camD)));   // new growth
 vec3 litter = mix(lin(vec3(0.15,0.2,0.09)), lin(vec3(0.24,0.2,0.12)), fb(p.xz*0.3)) * (0.8 + 0.3*fine);
-vec3 mud = mix(lin(vec3(0.2,0.16,0.11)), lin(vec3(0.27,0.22,0.15)), mid) * (0.8 + 0.25*fine);
-vec3 grav = mix(lin(vec3(0.5,0.48,0.43)), lin(vec3(0.62,0.6,0.54)), vn(p.xz*1.7)) * (0.85 + 0.2*fine);
+vec3 mud = mix(lin(vec3(0.24,0.18,0.12)), lin(vec3(0.31,0.24,0.16)), mid) * (0.8 + 0.25*fine);
+// the river's bars: pale quartz sand and gravel, red jasper pebbles through it
+vec3 grav = mix(lin(vec3(0.66,0.6,0.5)), lin(vec3(0.8,0.74,0.62)), vn(p.xz*1.7)) * (0.85 + 0.2*fine);
+grav = mix(grav, lin(vec3(0.5,0.24,0.18)), smoothstep(0.7, 0.9, vn(p.xz*5.0 + 3.0)) * 0.5 * (1.0 - smoothstep(25.0, 70.0, camD)));
 scrub = meadow;
 scrub = mix(scrub, litter, s2.r);
 scrub = mix(scrub, mud, s2.g);
 scrub = mix(scrub, grav, s2.b);
 scrub = mix(scrub, lin(vec3(0.46,0.39,0.35)) * (0.8 + 0.3*fine), s2.a * 0.8);
+// puddles in the low, flat spots of the meadow and the mud, close by: dark, mirroring the sky
+{ float nat = (1.0 - sf.r) * (1.0 - sf.g) * (1.0 - smoothstep(0.1, 0.4, sf.b)) * (1.0 - smoothstep(0.6, 0.9, sf.a)) * (1.0 - s2.r) * (1.0 - s2.a) * (1.0 - s2.b);
+  float pud = smoothstep(0.7, 0.74, fb(p.xz*0.3 + 5.0) + s2.g*0.1 - (1.0 - fb(p.xz*0.02 + 9.0))*0.25) * smoothstep(0.97, 0.995, vWN.y) * nat * (1.0 - smoothstep(60.0, 140.0, camD));
+  scrub = mix(scrub, lin(vec3(0.1,0.09,0.07)), pud * 0.85);
+  valWet = max(pud * 0.6, s2.g * 0.3 * smoothstep(0.92, 0.98, vWN.y) * nat); }
 dirt = scrub;
 #endif
 #ifdef RING
@@ -534,9 +549,12 @@ mfair = mix(lin(vec3(0.25,0.38,0.14)), lin(vec3(0.3,0.42,0.16)), mid) * (0.9 + 0
 #endif
 #ifdef VALLEY
 // pale river sand in the bunkers, grey sand and gravel in the waste and on the bars; lush, dark rough
-msand = mix(lin(vec3(0.56,0.53,0.47)), lin(vec3(0.86,0.8,0.66)) * (0.94 + 0.06*sin(p.x*3.0 + p.z*1.7)), smoothstep(0.6, 0.9, sf.b)) * (0.9 + 0.14*fine);
-mrough = mix(lin(vec3(0.21,0.35,0.12)), lin(vec3(0.27,0.41,0.15)), mid) * (0.72 + 0.45*fine);
-mcut = mix(lin(vec3(0.26,0.43,0.15)), lin(vec3(0.31,0.48,0.17)), mid) * (0.88 + 0.2*fine);
+msand = mix(lin(vec3(0.62,0.57,0.48)), lin(vec3(0.88,0.82,0.69)) * (0.94 + 0.06*sin(p.x*3.0 + p.z*1.7)), smoothstep(0.6, 0.9, sf.b)) * (0.9 + 0.14*fine);
+// the expedition's mown grass: the only clean green in the valley, a shade brighter than the meadow but not lurid
+mrough = mix(lin(vec3(0.27,0.36,0.15)), lin(vec3(0.33,0.41,0.18)), mid) * (0.74 + 0.42*fine);
+mcut = mix(lin(vec3(0.32,0.44,0.18)), lin(vec3(0.37,0.49,0.2)), mid) * (0.88 + 0.2*fine);
+mfair = mix(lin(vec3(0.38,0.51,0.21)), lin(vec3(0.45,0.58,0.25)), stripe) * (0.9 + 0.18*mid) * (0.92 + 0.16*fine);
+grn = lin(vec3(0.43,0.6,0.27)) * (0.96 + 0.08*vn(p.xz*0.8)) * (0.97 + 0.06*fine);
 #endif
 #ifdef RING
 // white sand; a soft, well-kept rough
@@ -611,15 +629,32 @@ rock *= 1.0 - step(0.55, h21(vec2(bi, 1.3))) * 0.32 * sheer * smoothstep(0.36, 0
 rock = mix(rock, lin(vec3(0.42,0.4,0.36)), smoothstep(0.75, 0.92, vn(vec2(wu*0.6, p.y*0.4)))*0.18);   // pale sublimate streaks
 #endif
 #ifdef VALLEY
-// the table mountain's quartzite sandstone: grey-pink, black where the algae streak down from the rim, ochre and
-// pink where it broke off fresh, in thick horizontal beds; moss and ferns on every ledge
-float bed = fb(vec2(p.y*0.06, (p.x+p.z)*0.002));
-rock = mix(lin(vec3(0.38,0.36,0.36)), lin(vec3(0.55,0.51,0.5)), bed) * (0.8 + 0.25*fine);
-rock = mix(rock, lin(vec3(0.6,0.45,0.38)), smoothstep(0.66, 0.84, fb(vec2((p.x-p.z)*0.01, p.y*0.04))) * 0.45);
-float streaks = smoothstep(0.42, 0.75, fb(vec2((p.x+p.z)*0.09, p.y*0.006))) * smoothstep(0.25, 0.55, steep);
-rock = mix(rock, lin(vec3(0.1,0.1,0.09)), streaks * 0.8);
-rock *= 0.84 + 0.16*smoothstep(0.0, 0.18, abs(fract(p.y*0.045 + fb(p.xz*0.003)) - 0.5));
-rock = mix(rock, lin(vec3(0.2,0.32,0.12)) * (0.8 + 0.3*fine), smoothstep(0.55, 0.8, vWN.y) * smoothstep(0.4, 0.62, fb(p.xz*0.2 + p.y*0.1)) * 0.85);
+// the tepui's quartzite: horizontal beds 2-6 m thick, each its own shade, a shadowed undercut at each bed's foot;
+// vertical joints every 10-30 m; the black crust of algae and cyanobacteria streaking down every water line and
+// under every ledge, the rock's own pink-red where it's fresh, grey on the dry faces; moss on the ledges
+vec2 hz = normalize(vec2(-vWN.z, vWN.x) + vec2(1e-4));
+float wu = dot(p.xz, hz);
+float sheer = smoothstep(0.45, 0.8, steep);
+float bedC = p.y*0.17 + fb(p.xz*0.006)*1.2, bi = floor(bedC), bfr = fract(bedC);
+float jt = wu*0.036 + h21(vec2(bi, 4.1))*0.6, ji = floor(jt), jf = fract(jt);
+float joint = (1.0 - smoothstep(0.0, 0.035, min(jf, 1.0 - jf))) * sheer;
+float under = (1.0 - smoothstep(0.0, 0.12, bfr)) * sheer;
+float streakN = fb(vec2(wu*0.035, p.y*0.0025 + 1.3)) * 0.88 + vn(vec2(wu*0.1, p.y*0.005)) * 0.12;
+float streakJ = 1.0 - smoothstep(0.0, 0.12, min(jf, 1.0 - jf));
+float bshade = h21(vec2(bi, 3.7));
+vec3 pinkR = mix(lin(vec3(0.58,0.39,0.33)), lin(vec3(0.64,0.44,0.37)), bshade);
+vec3 greyR = mix(lin(vec3(0.52,0.5,0.48)), lin(vec3(0.58,0.56,0.53)), bshade);
+float fresh = smoothstep(0.6, 0.78, fb(vec2(wu*0.012, p.y*0.012) + 7.0));
+vec3 rbase = mix(greyR, pinkR, max(fresh, 0.35*sheer));
+float detail = 1.0 - smoothstep(180.0, 420.0, camD);   // bed lines and joints fade out far off, where they'd only make a grid
+float black = smoothstep(0.38, 0.62, streakN + (streakJ*0.25 + under*0.3)*detail - fresh*0.35) * sheer;
+rock = mix(rbase, lin(vec3(0.075,0.072,0.07)), black * 0.9) * (0.9 + 0.15*fine);
+rock = mix(rock, lin(vec3(0.7,0.68,0.62)), smoothstep(0.62, 0.85, fb(vec2(wu*0.08, p.y*0.06) + 2.0)) * (1.0 - black) * 0.3);   // pale lichen
+rock *= 1.0 - (0.28*under + 0.18*joint) * detail;
+float ledge = smoothstep(0.5, 0.8, vWN.y);
+float rw0 = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
+valWet = max(valWet, black * 0.35 * rw0 * (1.0 - smoothstep(60.0, 220.0, camD)));
+rock = mix(rock, lin(vec3(0.2,0.3,0.11)) * (0.8 + 0.3*fine), ledge * smoothstep(0.35, 0.6, fb(p.xz*0.2 + p.y*0.1)) * 0.85);
 #endif
 #ifdef RING
 // the terraces' retaining walls: pale limestone ashlar in courses
