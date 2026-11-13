@@ -20,10 +20,11 @@ def smooth01(t):
     t = np.clip(t, 0, 1); return t * t * (3 - 2 * t)
 
 class Hole:
-    def __init__(self, course, n):
-        D = json.load(open(f'{GRID}/{course}.json')); self.SURF = D['SURF']; m = D['holes'][n - 1]
+    def __init__(self, course, n, grid=None):
+        grid = grid or GRID
+        D = json.load(open(f'{grid}/{course}.json')); self.SURF = D['SURF']; m = D['holes'][n - 1]
         self.course, self.m, self.n = course, m, n
-        W, H = m['W'], m['H']; raw = open(f'{GRID}/{course}_h{n}.bin', 'rb').read()
+        W, H = m['W'], m['H']; raw = open(f'{grid}/{course}_h{n}.bin', 'rb').read()
         self.h = np.frombuffer(raw[:W * H * 4], dtype=np.float32).reshape(H, W).astype(float)
         self.s_ = np.frombuffer(raw[W * H * 4:], dtype=np.uint8).reshape(H, W).copy()
         self.W, self.H, self.x0, self.z0 = W, H, m['x0'], m['z0']

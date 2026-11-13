@@ -342,16 +342,18 @@ export const HOLES = [
   hole({ n: 9, name: 'The Rift', par: 4, legs: [[250, 0], [143, 12]], place: { at: [-60, 40], heading: 318 }, base: 2, tips: [-25, 25],
     build: (P) => ({
       tees: { spire: 0, brick: 22, ivy: [56, 36], moss: [96, 38] },
-      prof: [[0, 0], [130, 5], [150, 10], [262, 16], [282, 21], [393, 28]],
+      // table top (proposal, 12 November 2026): the street climbs to a broken scarp at 262-278 m, 6.5 m high, and the
+      // last third stands on the slab above it, nearly level to the green; the fairway is mown up the face (a fan still)
+      prof: [[0, 0], [130, 5], [150, 10], [262, 19], [278, 25.5], [340, 27], [393, 28]],
       cant: [[60, 330, 3]],               // the slab falls to the right, away from the rift
       // Proposal (round 4): a fan. Narrow at the foot of the climb, squeezed between the rift and the rubble, it opens
       // as the heaved slab flattens out into the old civic plaza at the top: the further up you drive, the more room
-      fairway: [{ e: [[70, 11, 13], [120, 13, 16], [175, 17, 21], [225, 20, 26], [255, 24, 30], [290, 30, 36], [325, 36, 40], [355, 32, 36], [374, 22, 22], [383, 14, 14]], wob: 1.4 }],
+      fairway: [{ e: [[70, 11, 13], [120, 13, 16], [175, 17, 21], [225, 20, 26], [258, 23, 29], [280, 27, 33], [300, 31, 37], [325, 36, 40], [355, 32, 36], [374, 22, 22], [383, 14, 14]], wob: 1.4 }],
       corridor: 16,
       green: { rx: 15, rz: 17, lobes: [[0, -3, 11, 10, 0], [1, 10, 8, 8, 10]], join: 6, pins: [[1, 11], [-6, -5], [6, -4]], engine: { style: 'plateau', raise: 0.4, falseFront: 0.6, tilt: 1.5, shape: [] }, style: 'a pear up the line on a level shelf at the top, false front' },
       bunkers: [{ at: P(250, 39), rx: 14, rz: 7, rot: -0.1 }, { at: P(376, 20), rx: 8, rz: 5 }],
       rift: { pts: [P(50, -64), P(140, -58), P(240, -56), P(330, -64), P(380, -84)], w: 26, label: 'THE RIFT' },
-      terraces: [{ s: 140, label: 'broken pavement step' }, { s: 272, label: 'second step' }],
+      terraces: [{ s: 140, label: 'broken pavement step' }, { s: 270, label: 'the scarp (6.5 m)' }],
       rubble: [{ at: P(180, 62), rx: 16, rz: 44, h: 3 }, { at: P(326, 70), rx: 14, rz: 30, h: 3 }],
       buildings: [
         { at: P(432, -6), w: 60, d: 34, h: 30, broken: false, lean: { dir: 'back', deg: 9 }, tower: { h: 30, w: 10 }, name: 'the clubhouse', label: 'the clubhouse (leaning)' },
@@ -360,11 +362,11 @@ export const HOLES = [
       ],
       wrecks: [{ type: 'car', at: P(110, 40), rot: 0.6 }, { type: 'car', at: P(214, 34), rot: 1.8 }],
       trees: [...grove(P(400, 46), 12, 4, 91), ...grove(P(300, -36), 8, 2, 92, [7, 11])],
-      targets: [{ name: 'First terrace', at: P(232, 4) }, { name: 'Top terrace', at: P(300, 4) }],
+      targets: [{ name: 'Below the scarp', at: P(236, 4) }, { name: 'On the slab', at: P(305, 4) }],
       words: {
-        plays: 'The street tore open over the collapsed tunnel below and one side heaved up. You climb the tilted slab with the rift on your left, over two broken steps of pavement, to a green at the foot of the clubhouse, an old civic building that leans back on its foundations under its clock tower.',
+        plays: 'The street tore open over the collapsed tunnel below and one side heaved up. You climb the tilted slab with the rift on your left, over a broken step of pavement and then a scarp where the slab heaved 6.5 m, to a green at the foot of the clubhouse, an old civic building that leans back on its foundations under its clock tower.',
         safe: 'Drive down the right half; the slab falls away from the rift, toward the buildings, so it never kicks you in. Second shot plays a club or two up the hill.',
-        bold: 'A long drive up the left side reaches the top terrace and a level lie for a short iron.',
+        bold: 'A drive of about 280 m flies the scarp onto the slab, for a level lie and a view of the green; anything shorter stops on the flat below it and plays a blind second up the face.',
         miss: 'Left is the rift: open air, a drop beside where it went in. Right is rubble at the foot of the buildings.',
       },
     }),

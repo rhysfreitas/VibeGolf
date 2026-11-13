@@ -132,7 +132,7 @@ reported every landing area's lean on the wrong side (the sizes were right).
 | Hillside bench | 2 (3) | The Reclaim 8, Halcyon Ring 6, the Lost Valley 6 (9%) |
 | Crest and run | 2 | |
 | Fall-away | 2 (3: the Lost Valley 9) | |
-| Table top | 2 (3) | The Reclaim 2, Halcyon Ring 7, the Lost Valley 8 |
+| Table top | 3 (4) | The Reclaim 2 and 9 (the Rift, 12 November), Halcyon Ring 7, the Lost Valley 8 |
 | Dip in front | 1 | |
 | Level par 3 | 1 | |
 | Half-pipe | 1 (2) | Halcyon Ring 1, the Lost Valley 1 |
@@ -145,7 +145,8 @@ By course, what the check flags:
 - The Aerie: one bold hole; both par 3s drops.
 - Red Mesa: both par 3s drops.
 - Hollowmere: four tee shots off a height (1, 4, 6, 9).
-- The Reclaim: four plain par 4s and 5s (1, 4, 6, 7); both par 3s drops.
+- The Reclaim: both par 3s drops; plain par 4s and 5s 1, 4, 6, 7. The Rift became a table top 12 November (Rhys's pick): bold
+  holes 2, 8, 9.
 - Rimeholm: every landing area leans 1.4–2.8%.
 - Emberfell: no bold hole; five plain (1, 2, 3, 5, 6), two pairs back to back.
 - The Lost Valley: one bold hole (the Nest's climb); five plain (1, 2, 5, 8, 9). Reshaped 12 November (Rhys's picks):
@@ -323,6 +324,9 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
 - **Rhythm:** four straight holes; par 4s 300–430 (the 8th is now 365, so only the 2nd is at 380). Two drivable par 4s (2 and 6), kept on purpose.
 - **Tips:** the Girder set, switched off, 3,602 yd: 427, 418, 161, 538, 221, 331, 634, 403, 469 (27, 38, 26, 38, 26,
   31, 24, 38, 39 yd behind the back tee); the 1st's on the El platform's back end, run on 24 m for it.
+- **The Rift's table top (12 November 2026, Rhys's pick):** a 6.5 m scarp 262–278 m out, the slab above it nearly
+  level to the green, the fairway mown up the face (still a fan). Gate +0.1 / +0.0 (was +0.0 / +0.2). With the scarp
+  at 244–260 m, back-tee drives ran up into the face and it played +1.1 for the long hitter.
 - **Par 5s split (12 November 2026, Rhys's pick from the variety proposal):** Broken Tower 545 → 500 yd (the back tee
   41 m down the street, under the span; forward sets 475, 450, 415), The Bridge 560 → 610 (the back tee 46 m up the
   expressway ramp, on its deck at 13 m, so the slab's lip doesn't hide the landing area). Gate passes (both hitters
