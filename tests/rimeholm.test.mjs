@@ -33,6 +33,10 @@ test('nine holes, par 36, an ice theme with four tee sets', () => {
 test('card yardages are measured down the line', () => {
   HOLES.forEach(h => {
     let len = 0; for (let i = 1; i < h.line.length; i++) len += Math.hypot(h.line[i][0] - h.line[i - 1][0], h.line[i][1] - h.line[i - 1][1]);
+    // from the back tee, which can sit down the line (the Mammoth's, 495 yd) or behind its start (the Crevasse Field's
+    // and the Frozen Falls', 12 November 2026)
+    const [tx, tz] = h.tees.mammoth, [ax, az] = h.line[0], [bx, bz] = h.line[1], l = Math.hypot(bx - ax, bz - az);
+    len -= ((tx - ax) * (bx - ax) + (tz - az) * (bz - az)) / l;
     assert.ok(Math.abs(len / 0.9144 - h.yards.mammoth) < 4, `${h.name}: ${(len / 0.9144).toFixed(0)} vs ${h.yards.mammoth}`);
   });
 });
@@ -79,13 +83,18 @@ test('bunkers: black sand by the greens, powder out in the fairways', () => {
   assert.ok(kinds.has('sand') && kinds.has('powder'), [...kinds].join(','));
 });
 
-test('the moulin on the 7th is open air; the lake on the 3rd is ice with open water short of the green', () => {
+test('the moulin on the 7th is open air; the 3rd\'s green is an island ringed by lake ice', () => {
   const i7 = HOLES.findIndex(h => h.name === 'The Moulin'), t7 = T[i7];
   let air = 0; for (let s = 200; s < 360; s += 4) for (let off = -60; off <= 80; off += 4) { const [x, z] = at(HOLES[i7].line, s, off); if (t7.groundAt(x, z) === null) air++; }
   assert.ok(air > 20, `the moulin opens (${air} points of open air)`);
   const i3 = HOLES.findIndex(h => h.name === 'The Longship'), t3 = T[i3], L = HOLES[i3].line;
   const seen = new Set(); for (let s = 40; s < 140; s += 2) for (let off = -30; off <= 40; off += 2) seen.add(t3.surfaceAt(...at(L, s, off)));
-  assert.ok(seen.has('ice') && seen.has('water'), [...seen].join(','));
+  assert.ok(seen.has('ice') && !seen.has('water'), [...seen].join(','));
+  // the island green (12 November 2026): ice in front, behind, left and right of it, the green dry and above the ice
+  const pin = HOLES[i3].pin, lake = t3.groundAt(...at(L, 70, 0));
+  assert.equal(t3.surfaceAt(...pin), 'green');
+  assert.ok(t3.groundAt(...pin) > lake + 0.8, `the green ${t3.groundAt(...pin).toFixed(2)} stands over the ice ${lake.toFixed(2)}`);
+  for (const [s, off] of [[95, 0], [140, 0], [117, -25], [117, 25]]) assert.equal(t3.surfaceAt(...at(L, s, off)), 'ice', `ice at ${s}, ${off}`);
 });
 
 test('lake ice runs: a ball rolls a long way on it', () => {

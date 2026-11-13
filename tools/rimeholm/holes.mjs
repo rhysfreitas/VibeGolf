@@ -110,59 +110,67 @@ export const HOLES = [
   }),
 
   // 3. THE LONGSHIP: a par 3 off a moraine bluff over the frozen lake, a longship under the ice
-  hole({ n: 3, name: 'The Longship', par: 3, legs: [[151, 0]], base: 115, place: { heading: 102, walk: [60, 40] },
+  // island green (12 November 2026, Rhys's pick): the green moved 34 m nearer, out onto the lake, ringed by ice; no sand
+  hole({ n: 3, name: 'The Longship', par: 3, legs: [[117, 0]], base: 115, place: { heading: 102, walk: [60, 40] },
     build: (P) => ({
-      tees: { mammoth: 0, raven: 12, lynx: 26, hare: [56, -54] },
-      prof: [[0, 0], [16, 0], [50, -13.5], [151, -13.5]],
+      chainPin: P(151),   // the old pin: the next hole's walk starts there, so nothing after this hole moves
+      tees: { mammoth: 0, raven: 8, lynx: 18, hare: [30, -46] },   // the forward tees back up the bluff (the green is 34 m nearer)
+      prof: [[0, 0], [6, 0], [44, -13.5], [151, -13.5]],   // the drop starts nearer the back tee, so it sees the island green over the lip
       corridor: 10, steep: 'rock',
-      lake: { at: P(90, 12), rx: 50, rz: 40, y: -14.2, label: 'the frozen lake' },
-      openWater: { at: P(117, 6), rx: 18, rz: 6.5, rot: 0.08, label: 'open water' },
+      lake: { at: P(96, 8), rx: 60, rz: 46, y: -14.2, label: 'the frozen lake', isle: { at: P(117, 0), rx: 17, rz: 17, h: 0.9 } },
       longship: { at: P(104, 38), toward: P(96, 58), len: 28, beam: 6, rise: 34, out: 17, label: 'the longship (its bow up out of the ice)' },   // off the right of the line, framing the shot (far enough out that its bow shows over the bluff from the tee); solid, but only a big slice or a skating ball reaches it
-      green: { lobes: [[-12, -3, 8, 7, -30], [12, -3, 8, 7, 30], [0, 3, 10, 8, 0]], raise: 1.6, falseFront: true, contour: [{ fall: 0, pct: 1.5 }], style: 'A crescent across the line, its horns reaching toward the tee round a pot bunker; raised 1.6 m with a false front down to the ice' },
+      green: { lobes: [[0, 0, 12, 11, 0], [3, 5, 7, 6, 0]], raise: 0.5, contour: [{ fall: 0, pct: 1.5 }], style: 'Round, on an island in the lake ice, 0.5 m crowned, falling 1.5% toward the tee; ice on every side runs a ball away' },
       extraFw: [{ at: P(108, -56), rx: 14, rz: 26 }],
-      bunkers: [{ at: P(162, -18), rx: 7, rz: 5 }, { at: P(145, 0), rx: 5, rz: 3.5 }],
+      bunkers: [],   // no sand on the hole: the ice is the hazard
       boulders: [...erratics(P(20, -40), 16, 5, 31), ...erratics(P(40, 44), 14, 4, 32)],
       tips: [-10, 0],
       targets: [],
       words: {
-        plays: 'From a bluff of moraine 14 m above the lake. Off to the right a Viking longship rears its dragon prow out of the ice, its stern still frozen in below. The ice is fast: a ball that lands on it skates on toward the shore. Short of the green a hole of open black water lies in the ice, about 20 m before the front: a topped or thin shot that would have skated up to the shore can run into it. The green sits up on the far shore with a false front, so a shot that comes up short rolls back onto the ice.',
-        safe: 'Play to the left shore, on the short grass round the lake, and chip on.',
-        bold: 'Carry it all the way to the green, over the open water.',
-        miss: 'Into the open water is a stroke and a drop. A ball that lands short on the ice skates on, past the hole if it is lucky, and a ball that reaches the false front rolls back.',
+        plays: 'From a bluff of moraine 14 m above the lake. Off to the right a Viking longship rears its dragon prow out of the ice, its stern still frozen in below. The green is an island out on the lake, about 128 yd away, a metre or so proud of the ice on every side. The ice is fast: a ball that lands on it skates on and away, so long is as bad as short. No sand on the hole.',
+        safe: 'Play to the left shore, on the short grass round the lake, and chip across the ice onto the island.',
+        bold: 'A short iron that has to land on the island and stay there.',
+        miss: 'Anything that lands on the ice skates on: off the far side, back toward the bluff or along to the shore. There is no water left in the ice, so the ball stays in play, wherever it stops.',
       },
     }),
   }),
 
   // 4. THE CREVASSE FIELD: a par 5 S-bend through crevasses, down into a trough, then up two ramps
   hole({ n: 4, name: 'The Crevasse Field', par: 5, legs: [[190, 0], [160, 24], [144, -30]], base: 102, place: { heading: 128, walk: [70, 30] },
-    build: (P) => ({
-      tees: { mammoth: 0, raven: 24, lynx: [72, -42], hare: [112, -42] },
+    build: (P) => { const s0 = cvSeed; const o = ({
+      // the wide one and the long one (12 November 2026, Rhys's pick): back tee 46 m back, 590 yd; an 85 m snowfield with the
+      // crevasses inside it as diagonal slots
+      tees: { mammoth: -46, raven: 24, lynx: [72, -42], hare: [112, -42] },
       prof: [[0, 0], [28, 0], [110, -8], [195, -8], [245, 0], [262, 2.5], [285, 0.5], [330, 1.5], [390, 8], [494, 8]],
       cant: [[250, 400, 1.5]],
-      fw: [{ e: [[68, 18, 18], [100, 26, 24], [150, 30, 28], [190, 30, 30], [225, 28, 26], [270, 24, 22], [320, 26, 24], [355, 22, 24], [385, 16, 20], [398, 10, 12]], wob: 6 },
+      fw: [{ e: [[68, 18, 18], [92, 32, 30], [115, 40, 40], [150, 42, 43], [190, 43, 42], [225, 42, 43], [270, 42, 42], [320, 43, 42], [355, 40, 40], [383, 26, 28], [398, 12, 14]], wob: 6 },
         { e: [[436, 14, 16], [456, 18, 20], [482, 13, 13]], wob: 3 }],
       extraFw: [{ at: P(420, 44), rx: 14, rz: 30, rot: -0.1 }],
       corridor: 20, steep: 'ice',
-      cracks: [cv(P, [[108, 44], [140, 56], [172, 72]], 6, { h: 2.5, toward: [150, 140] }), cv(P, [[128, 62], [160, 74], [198, 96]], 7, { h: 3, toward: [170, 150] }),
-        cv(P, [[98, 74], [124, 84], [150, 102]], 5, { h: 2, toward: [130, 150] }),
-        cv(P, [[248, -44], [282, -50], [318, -52]], 8, { h: 3, toward: [290, -120] }), cv(P, [[276, -66], [310, -70], [344, -78]], 6, { h: 2.5, toward: [310, -140] }),
-        cv(P, [[408, -76], [413, -42], [420, -8], [426, 26]], 12, { h: 4, toward: [450, 0], run: 90, fall: 20, end: 40 }, { jag: 3.5 })],
-      voidLabels: [[[150, 74], 'crevasses'], [[300, -66], 'crevasses'], [[418, -20], 'the last crevasse']],
+      // explicit seeds: the outer crevasses and the last keep their old shapes, and the counter is put back after the hole
+      cracks: [cv(P, [[150, 82], [172, 92], [198, 106]], 7, { h: 3, toward: [170, 160] }, { seed: s0 + 1 }),
+        cv(P, [[98, 74], [124, 84], [150, 102]], 5, { h: 2, toward: [130, 150] }, { seed: s0 + 2 }),
+        cv(P, [[290, -72], [318, -78], [348, -86]], 6, { h: 2.5, toward: [310, -150] }, { seed: s0 + 4 }),
+        // the slots inside the snowfield, diagonal, alternating sides
+        // (a clear lane about 28 m wide stays down the middle: the slots eat into the wide parts, so a wide miss finds them)
+        cv(P, [[156, -40], [170, -28], [184, -16]], 5, { h: 1.2, toward: [196, -44] }, { seed: 701 }), cv(P, [[222, 40], [236, 28], [250, 16]], 5, { h: 1.2, toward: [262, 44] }, { seed: 702 }),
+        cv(P, [[286, -38], [300, -26], [314, -15]], 5, { h: 1.2, toward: [326, -42] }, { seed: 703 }), cv(P, [[334, 38], [346, 27], [356, 17]], 4.5, { h: 1, toward: [368, 40] }, { seed: 704 }),
+        cv(P, [[408, -76], [413, -42], [420, -8], [426, 26]], 12, { h: 4, toward: [450, 0], run: 90, fall: 20, end: 40 }, { jag: 3.5, seed: s0 + 5 })],
+      voidLabels: [[[176, 92], 'crevasses'], [[318, -80], 'crevasses'], [[170, -28], 'slot'], [[236, 28], 'slot'], [[300, -26], 'slot'], [[346, 27], 'slot'], [[418, -20], 'the last crevasse']],
       arch: { a: [...P(404, -46), 0], b: [...P(434, -44), 0], h: 9, w: 7, t: 3, label: 'ice bridge' },
       sketch: { green: { back: 100, off: 8 }, land: { eye: 7 } },
       cliffs: [{ at: P(538, -4), rx: 70, rz: 20, rot: -0.1, h: 22, surf: 'ice', label: 'ice cliff' }],
       green: { lobes: [[0, -3, 9, 14, 0], [-10, 8, 10, 6, 0]], tilt: { front: 1, pct: 2 }, contour: [{ ridge: [[-4, 2], [-6, 12]], h: 0.3, w: 2 }], style: 'An L: a long front leg and a wing at the back left behind a low spine, tilted 2% toward the front, on the shelf under the ice cliff' },
       bunkers: [{ at: P(470, -22), rx: 9, rz: 6 }],
       boulders: [...erratics(P(220, 62), 16, 5, 41)],
-      tips: [-34, 0],
-      targets: [{ name: 'The trough', at: P(205, -4) }, { name: 'Short of the crevasse', at: P(378, 4) }],
+      tips: [-72, 6],
+      targets: [{ name: 'The trough', at: P(192, -4) }, { name: 'Short of the crevasse', at: P(378, 4) }],
       words: {
         plays: 'The fairway weaves through a field of crevasses. The drive drops 8 m into a snow trough; from there two ramps climb with a blind crest between them, and the second leg leans away from the crevasses on its left. A last crevasse 12 m wide cuts across the line short of the green, and its far side is a shelf 4 m higher: a jagged ice face you play up onto. An ice bridge arches over its left end, and the way round on the right climbs a ramp onto the shelf. The green sits on the shelf under an ice cliff.',
         safe: 'Drive into the trough, lay up short of the last crevasse (390 m), and pitch over it, or play round its right end.',
         bold: 'From a good drive, a fairway wood over the last crevasse to the green in two.',
         miss: 'Right of the first leg and left of the second, a miss falls into a crevasse: a stroke and a drop back on the line it went in. An approach that comes up short hits the shelf\'s face and drops into the last one.',
       },
-    }),
+    }); cvSeed = s0 + 6; return o; },   // the crack seeds after this hole stay as they were (12 November 2026)
   }),
 
   // 5. THE SERACS: a drivable par 4 off the lip of the icefall, through a gap in the ice pillars
@@ -201,7 +209,8 @@ export const HOLES = [
   // 6. THE FROZEN FALLS: a blind par 3 up to a shelf above a frozen waterfall
   hole({ n: 6, name: 'The Frozen Falls', par: 3, legs: [[165, 0]], base: 76, place: { heading: 222, walk: [60, 30] },
     build: (P) => ({
-      tees: { mammoth: 0, raven: 12, lynx: 28, hare: [50, -34] },
+      // the long par 3 (12 November 2026, Rhys's pick): back tee 32 m back, 215 yd
+      tees: { mammoth: -32, raven: 12, lynx: 28, hare: [50, -34] },
       prof: [[0, 0], [20, 0], [96, 1.5], [108, 2.5], [165, 3]],
       // the shelf: a craggy cliff of dark rock 15 m high wandering right across the view, a raised, broken crest along its lip
       cracks: [cv(P, [[118, -150], [112, -80], [121, -40], [113, -10], [120, 20], [111, 60], [119, 140]], 0, { h: 15, toward: [150, 0], run: 90, fall: 40, face: 9, crest: 4.5 }, { open: false, jag: 9, crag: true, rockFace: true, rubble: 10, bulge: { c: P(116, 0), half: 13, out: 7 } })],
@@ -212,7 +221,7 @@ export const HOLES = [
       green: { lobes: [[-7, -3, 8, 8, 0], [7, -3, 8, 8, 0], [0, 6, 8, 8, 0], [0, 0, 6, 6, 0]], crown: 0.12, contour: [{ fall: 0, pct: 1 }], apron: 12, style: 'A three-leaf clover, gently crowned (0.12 m), with short grass all round it on the shelf' },
       bunkers: [{ wrap: { from: -155, to: 45, d: 3.5, w: 10 } }],
       boulders: [...erratics(P(60, 46), 16, 5, 61), ...erratics(P(70, -50), 14, 4, 62)],
-      tips: [-22, 0],
+      tips: [-54, -8],
       targets: [],
       words: {
         plays: 'The green sits on a shelf 18 m up, on top of a cliff of dark rock: a craggy, broken face that wanders in bays and buttresses right across the view, with rock tors along its lip. In the middle of it a waterfall froze as it fell, pale columns of ice down the black rock, with icicles at its edges and a skirt of ice at its foot. You can\'t see the putting surface from the tee, only the lip and the steam rising off the green behind it. A long black-sand bunker wraps the green from its front left round the back; short grass in front and on the right keeps a near miss up.',
@@ -228,7 +237,9 @@ export const HOLES = [
     build: (P) => ({
       tees: { mammoth: 0, raven: 15, lynx: [30, 34], hare: [110, -50] },   // the Lynx tee on the moulin's side, so its bold line carries the moulin too (194 yd)
       prof: [[0, 0], [50, 0], [195, 8.5], [232, 11], [262, 8], [330, 0], [384, -2]],
-      cant: [[232, 340, -1.5]],
+      // hillside bench (12 November 2026, Rhys's pick): the landing area tipped 9.5% across, up toward the moulin, the low
+      // side running off into a wide powder bank
+      cant: [[140, 262, -9.5], [262, 340, -1.5]],
       fw: [{ e: [[68, 22, 14], [100, 32, 20], [150, 36, 17], [170, 36, 14], [190, 34, 17], [215, 30, 20], [245, 26, 20], [280, 22, 24], [320, 24, 26], [350, 20, 22], [372, 14, 15]], wob: 5.5 }],
       cracks: [cv(P, [[255, -46], [290, -50], [330, -44]], 6, { h: 3, toward: [290, -100], run: 10, fall: 8 }),
         cv(P, [[150, 106], [138, 146]], 4, { h: 2, toward: [120, 130] }), cv(P, [[188, 106], [204, 150]], 5, { h: 2, toward: [220, 130] }), cv(P, [[212, 84], [248, 108]], 4, { h: 1.5, toward: [240, 90] })],
@@ -236,8 +247,9 @@ export const HOLES = [
       corridor: 18, steep: 'ice',
       moulin: { at: P(170, 66), r: 42, label: 'the moulin' },
       green: { lobes: [[0, 0, 8, 19, -40], [-7, 10, 8, 7, 0]], redan: 2, style: 'A Redan: long, set diagonally from front right to back left, and falling away 2% that way' },
-      bunkers: [{ at: P(394, -20), rx: 9, rz: 6 }, { at: P(368, 20), rx: 8, rz: 5 }],
-      boulders: [...erratics(P(150, -60), 16, 6, 71)],
+      bunkers: [{ at: P(394, -20), rx: 9, rz: 6 }, { at: P(368, 20), rx: 8, rz: 5 },
+        { at: P(182, -47), rx: 12, rz: 32, rot: 0.05, powder: true, job: 'catch' }, { at: P(232, -45), rx: 11, rz: 24, rot: 0.15, powder: true, job: 'catch' }],
+      boulders: [...erratics(P(150, -64), 16, 6, 71)],
       tips: [-45, 0],
       targets: [{ name: 'Left of the crest', at: P(205, -12) }, { name: 'Over the moulin', at: P(268, 6), bold: true }],
       boldLine: [[0, 0], P(290)],
@@ -253,7 +265,8 @@ export const HOLES = [
   // 8. THE MAMMOTH: a par 5 dogleg left along an esker, down a valley step, to a true punchbowl
   hole({ n: 8, name: 'The Mammoth', par: 5, legs: [[262, 0], [213, -36]], base: 90, place: { heading: 252, walk: [70, 40] },
     build: (P) => ({
-      tees: { mammoth: 0, raven: 22, lynx: [66, -44], hare: [108, -44] },
+      // the reachable par 5 (12 November 2026, Rhys's pick): back tee 23 m forward, 495 yd
+      tees: { mammoth: 23, raven: 44, lynx: [66, -44], hare: [108, -44] },
       prof: [[0, 0], [262, -2], [300, -3], [336, -14], [388, -14], [442, -5], [475, -5]],
       cant: [[40, 290, -2]],
       esker: { s0: -30, s1: 300, w: 84, h: 7, fall: 30, label: 'the esker' },
@@ -270,7 +283,7 @@ export const HOLES = [
       bunkers: [{ at: P(352, -30), rx: 16, rz: 10.5 }, { at: P(250, 33), rx: 15, rz: 9 }],
       boulders: [...erratics(P(330, 20), 20, 8, 81), ...erratics(P(160, -64), 14, 4, 82)],
       trees: [...grove(P(390, 70), 16, 7, 83), ...grove(P(470, 64), 12, 5, 84)],
-      tips: [-45, 0],
+      tips: [-5, 0],
       targets: [{ name: 'The esker', at: P(245, -4) }, { name: 'The high side', at: P(392, -14) }, { name: 'The low side', at: P(440, 24), bold: true }],
       words: {
         plays: 'The drive runs along the broad back of an esker, a long ridge a river under the ice left behind, leaning 2% into the dogleg. The second drops 11 m down a valley step to the valley floor, where a long crevasse splits the fairway in two: the left side rides 3 m up on the crevasse\'s lip, wide and flat, with a view down into the green; the right side is lower and narrower but runs on 40 m closer, to the bowl\'s bank. In the valley wall on the left a woolly mammoth lies frozen in the ice, its tusks breaking out near the green. The last 100 m rises to level ground, then the green sits down in a true punchbowl.',
@@ -322,7 +335,8 @@ export const HOLES = [
     }
     h.place.at = pos;
     const a = h.place.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
-    const [x, z] = h.pin, end = headingAt(h.line, h.len - 1) * 180 / Math.PI;
+    // `chainPin`: where the next hole's walk starts, if a green has moved (so the holes after it stay put)
+    const [x, z] = h.chainPin || h.pin, end = headingAt(h.line, h.len - 1) * 180 / Math.PI;
     prevEnd = { at: [pos[0] + x * rx + (-z) * fx, pos[1] + x * rz + (-z) * fz], heading: h.place.heading + end };
   }
 }

@@ -34,3 +34,4 @@ kept 22 m off every tee pad, bold targets on 5 and 9; the 7th's Lynx tee on the 
 checks the spots. Proposals are built in a scratch copy first (a git worktree of the repo), emitted and checked there, and shown to
 Rhys before they go in.
 
+Variety changes (12 November 2026): a lake can hold an island (`lake.isle: { at, rx, rz, h }`: no ice inside it, its ground at least `h` over the ice, banking down at its edge); a hole whose green moved keeps its old pin as `chainPin`, so the next hole's walk starts where it did and no later hole moves; a crack can take an explicit `seed` (pass it in `more`), and a hole that adds or removes cracks should put `cvSeed` back after itself (the Crevasse Field does), or every crevasse after it changes shape.

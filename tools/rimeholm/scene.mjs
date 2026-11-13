@@ -107,6 +107,10 @@ export function buildHole(h) {
   // a hole of open water in the lake's ice, with a ragged edge
   const open = h.openWater && { x: h.openWater.at[0], z: h.openWater.at[1], rx: h.openWater.rx, rz: h.openWater.rz, rot: h.openWater.rot || 0 };
   const inOpen = (x, z) => !!open && seDist(open, x, z) + 0.16 * noise2(x / 3.5, z / 3.5, 17) < 1;
+  // an island in the lake (the Longship's green, 12 November 2026): no ice inside it; its ground stands at least `h` over
+  // the ice and banks down to it over its outer 15%
+  const isle = lake && lake.isle && { ...lake.isle, x: lake.isle.at[0], z: lake.isle.at[1], rot: lake.isle.rot || 0 };
+  const isleE = (x, z) => isle ? seDist(isle, x, z) + 0.05 * noise2(x / 5, z / 5, 23) : 9;
   const cantAt = s => { let g = 0; for (const [a, b, gr] of h.cant || []) g += gr * span(s, a, b); return g; };
   // the cracks that touch this hole: its own, in its frame, and everyone else's through world space
   const xs = h.line.map(p => p[0]), zs = h.line.map(p => p[1]);
@@ -178,7 +182,9 @@ export function buildHole(h) {
     let y = base(x, z, bare);
     for (const t of teePads) { const d = Math.hypot(x - t.x, z - t.z); if (d < 12) y = lerp(t.y - (bare ? crackLift(x, z) : 0), y, smooth((d - 6) / 6)); }
     const drop = bare ? crackLift(x, z) : 0;
-    if (lake) { const e = seDist(lake, x, z); if (e < 1) return (inOpen(x, z) ? lake.y - 0.35 : lake.y) - drop; if (e < 1.14) y = lerp(lake.y + 0.1 - drop, y, smooth((e - 1) / 0.14)); }
+    if (lake) { const e = seDist(lake, x, z), ei = isleE(x, z);
+      if (e < 1 && ei < 1) return lerp(Math.max(y, lake.y + isle.h - drop), lake.y + 0.05 - drop, smooth((ei - 0.85) / 0.15));
+      if (e < 1) return (inOpen(x, z) ? lake.y - 0.35 : lake.y) - drop; if (e < 1.14) y = lerp(lake.y + 0.1 - drop, y, smooth((e - 1) / 0.14)); }
     for (const w of waters) { const e = seDist(w, x, z); if (e < 1) return w.y - drop; if (e < 1.3) y = lerp(w.y + 0.25 - drop, y, smooth((e - 1) / 0.3)); }
     return y;
   }
@@ -188,7 +194,7 @@ export function buildHole(h) {
   function surface(x, z) {
     const vd = voidD(x, z);
     if (vd < 0) return 'void';
-    if (lake && seDist(lake, x, z) < 1) return inOpen(x, z) ? 'water' : 'ice';
+    if (lake && seDist(lake, x, z) < 1 && !(isleE(x, z) < 0.95)) return inOpen(x, z) ? 'water' : 'ice';
     for (const w of waters) if (seDist(w, x, z) < 1) return 'water';
     if (hallPts && inPoly(hallPts, x, z)) return 'hall';
     const go = gm(x, z);
