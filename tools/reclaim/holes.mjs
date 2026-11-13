@@ -170,11 +170,12 @@ export const HOLES = [
   }),
 
   // 4. BROKEN TOWER: an S-bend par 5 under the top of a skyscraper that snapped and fell across the street
-  hole({ n: 4, name: 'Broken Tower', par: 5, legs: [[180, 0], [160, -34], [158, 42]], place: { at: [430, -860], heading: 112 }, base: 8, tips: [-35, 0],
+  hole({ n: 4, name: 'Broken Tower', par: 5, legs: [[180, 0], [160, -34], [158, 42]], place: { at: [430, -860], heading: 112 }, base: 8, tips: [6, 0],
     build: (P) => {
       const stump = P(132, 64), prop = P(150, -64);
       return {
-        tees: { spire: 0, brick: 30, ivy: 64, moss: [110, 40] },
+        // the reachable par 5 (12 November 2026, Rhys's pick): the back tee 41 m down the street, 545 -> 500 yd
+        tees: { spire: 41, brick: 64, ivy: 88, moss: [120, 40] },
         prof: [[0, 0], [300, 0.5], [352, 3.5], [366, 6.5], [380, 5], [430, 7], [498, 10]],
         // Proposal (round 4): an hourglass, the bottle. Wide where the drive and the lay-up land on the second leg, pinched
         // to under 20 m where rubble heaps either side of the crest leave one gap over it, wide again in the hill park
@@ -268,9 +269,11 @@ export const HOLES = [
   }),
 
   // 7. THE BRIDGE: off the broken end of the expressway ramp, along the river to the suspension bridge
-  hole({ n: 7, name: 'The Bridge', par: 5, legs: [[262, 0], [250, -30]], place: { at: [690, -160], heading: 262 }, base: 2, tips: [-16, -22],
+  hole({ n: 7, name: 'The Bridge', par: 5, legs: [[262, 0], [250, -30]], place: { at: [690, -160], heading: 262 }, base: 2, tips: [-68, 0],
     build: (P) => ({
-      tees: { spire: 0, brick: 26, ivy: [72, -34], moss: [118, -36] },
+      // the long par 5 (12 November 2026, Rhys's pick): the back tee 46 m up the expressway ramp, 560 -> 610 yd
+      tees: { spire: -46, brick: 26, ivy: [72, -34], moss: [118, -36] },
+      teeY: { spire: 13 },   // on the ramp's deck, which climbs away behind the hole (14 m at -70, 10 m at its end)
       prof: [[0, 10], [40, 10], [110, 0], [512, 0]],
       // the quake cracked the riverside street and tipped its slab: raised on the river side, falling 3% to the
       // right, its broken river-side edge a 5 m drop just past the rough

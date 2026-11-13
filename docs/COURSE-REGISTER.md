@@ -162,7 +162,7 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 | Green size | 80% are 475–650 m²; over 1,000: Red Mesa's 3rd, Halcyon Ring's 7th (1,400); under 430: Halcyon Ring's 2nd (290) and 3rd (420) | about 300 to over 1,000 |
 | Par 3s | 115–265 yd; four courses' two par 3s within 35 yd of each other | 100 to 250 |
 | Par 4s | 300–457 yd | 280 to 500 |
-| Par 5s | 490–560 yd on every course; only Halcyon Ring has 50 yd between its par 5s (490, 545) | 470 to 630 |
+| Par 5s | 490–560 yd on most courses; Halcyon Ring (490, 545), the Lost Valley (490, 610) and The Reclaim (500, 610, from 12 November) split theirs | 470 to 630 |
 | Fairway mean width | 34–72 m; 80% are 38–60 | 25 to 90 |
 | Bunkers | one or two by nearly every green; Emberfell exactly two on eight of nine | none to dozens |
 | Bends | 0–85°; most 20–55° | straight to 90° |
@@ -172,7 +172,7 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 | The Aerie | greens (6 of 9 one size), par 5s, bunker counts, bends | a 126 yd par 3, a 320 yd par 4, a 72 m fairway, a hole with no bunker, a straight hole | none |
 | Red Mesa | par 5s, fairway widths, bends | a 1,127 m² green, a 265 yd par 3, a 320 yd par 4, a 34 m fairway, a field of bunkers, a straight hole | the Switchback's waste |
 | Hollowmere | greens (8 of 9), par 3s (166 and 168), par 4s, par 5s (546 and 547), widths, bends | no bunker, a field of bunkers | none |
-| The Reclaim | greens (8 of 9), par 5s, widths, bunker counts | a 300 yd par 4, an 85° bend | none |
+| The Reclaim | greens (8 of 9), widths, bunker counts (par 5s split 12 November: 500 and 610) | a 300 yd par 4, a 500 and a 610 yd par 5, an 85° bend | none |
 | Rimeholm | greens (6 of 9), par 3s, par 5s, widths, bends | a 300 yd par 4, a 3,600 m² powder strip | none |
 | Emberfell | greens (5 of 9), par 4s, par 5s, bunker counts | a 240 yd par 3, a 70 m fairway, a 1,700 m² bunker, a straight hole | none |
 | The Lost Valley (reshaped 12 November) | none (was greens 6 of 9, par 5s, widths, bends) | a 324 m² green, a 1,323 m² green, a 115 yd and a 215 yd par 3, a 300 yd par 4, a 490 and a 610 yd par 5, a 35 m fairway, no bunker, a field of pits, a 70° bend, a straight hole | the 9th's green (1,323 m², in two parts) |
@@ -321,8 +321,12 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
   `design.mjs` now scores second-shot choices (the 4th; the 7th's inlet before it was unmarked: pays the long
   hitter 0.2, costs the short 0.3).
 - **Rhythm:** four straight holes; par 4s 300–430 (the 8th is now 365, so only the 2nd is at 380). Two drivable par 4s (2 and 6), kept on purpose.
-- **Tips:** the Girder set, switched off, 3,603 yd: 427, 418, 161, 583, 221, 331, 590, 403, 469 (27, 38, 26, 38, 26,
-  31, 30, 38, 39 yd behind the back tee); the 1st's on the El platform's back end, run on 24 m for it.
+- **Tips:** the Girder set, switched off, 3,602 yd: 427, 418, 161, 538, 221, 331, 634, 403, 469 (27, 38, 26, 38, 26,
+  31, 24, 38, 39 yd behind the back tee); the 1st's on the El platform's back end, run on 24 m for it.
+- **Par 5s split (12 November 2026, Rhys's pick from the variety proposal):** Broken Tower 545 → 500 yd (the back tee
+  41 m down the street, under the span; forward sets 475, 450, 415), The Bridge 560 → 610 (the back tee 46 m up the
+  expressway ramp, on its deck at 13 m, so the slab's lip doesn't hide the landing area). Gate passes (both hitters
+  within +0.4 on every hole); the "Through the gap" second pays both hitters; no blind tee shots.
 - **Classics:** three by green style.
 
 ### Rimeholm (reworked and re-measured 11 November, 12 and 36 rounds gate, 24 decisions)

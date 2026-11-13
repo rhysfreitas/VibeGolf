@@ -33,9 +33,10 @@ test('nine holes, par 36, a city theme with four tee sets', () => {
 test('card yardages are measured down the line', () => {
   HOLES.forEach(h => {
     let len = 0; for (let i = 1; i < h.line.length; i++) len += Math.hypot(h.line[i][0] - h.line[i - 1][0], h.line[i][1] - h.line[i - 1][1]);
-    // from the back tee, which can sit a little way down the line (the Station's was moved up to make it a pitch)
+    // from the back tee, which can sit a little way down the line (the Station's was moved up to make it a pitch, Broken
+    // Tower's to make it reachable) or behind its start (the Bridge's, up the expressway ramp)
     const [tx, tz] = h.tees.spire, [ax, az] = h.line[0], [bx, bz] = h.line[1], l = Math.hypot(bx - ax, bz - az);
-    len -= Math.max(0, ((tx - ax) * (bx - ax) + (tz - az) * (bz - az)) / l);
+    len -= ((tx - ax) * (bx - ax) + (tz - az) * (bz - az)) / l;
     assert.ok(Math.abs(len / 0.9144 - h.yards.spire) < 4, `${h.name}: ${(len / 0.9144).toFixed(0)} vs ${h.yards.spire}`);
   });
 });
