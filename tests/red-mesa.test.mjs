@@ -29,7 +29,7 @@ const TOUR = { DR: { Speed: 167, VLA: 10.9, TotalSpin: 2686 }, '8i': { Speed: 11
 test('nine holes, par 36, four tee sets with the designed totals', () => {
   assert.equal(HOLES.length, 9);
   assert.equal(HOLES.reduce((a, h) => a + h.par, 0), 36);
-  const want = { canyon: 3435, mesa: 3040, sage: 2665, lizard: 2070 };
+  const want = { canyon: 3503, mesa: 3090, sage: 2665, lizard: 2070 };
   for (const s of COURSE.teeSets) assert.equal(teeYards(HOLES, s.id), want[s.id], s.id);
 });
 
@@ -197,12 +197,14 @@ test('The Chute: a wide plateau on the left, a grove on the split, walls cut bac
   assert.ok(rise > 1 && rise < 6, `forward tee ${rise.toFixed(1)} m up`);
 });
 
-test('Dry Wash: a river from the falls crosses the hole twice and leaves the canyon; a drive into it is wet', () => {
+test('Dry Wash: a burn from the falls crosses the hole twice, then the front of the green; a drive into it is wet', () => {
   const t = T[7], h = HOLES[7], V = t.features.rivers[0];
-  assert.ok(V && V.level < t.floor.y, 'the river sits below the floor');
-  for (const [x, z] of [[-40, -110], [50, -180], [-10, -275], [-52, -400]]) assert.equal(t.surfaceAt(x, z), 'water', `water at ${x}, ${z}`);
+  assert.ok(V && V.level < t.floor.y, 'the burn sits below the floor');
+  assert.ok(V.w <= 8, 'a burn, not a river');
+  for (const [x, z] of [[-38, -111], [48, -170], [8, -270], [0, -373], [22, -380]]) assert.equal(t.surfaceAt(x, z), 'water', `water at ${x}, ${z}`);
   assert.equal(t.surfaceAt(-3, -200), 'fairway', 'the fairway inside the bend is dry');
-  assert.ok(t.groundAt(-60, -515) < 5, 'the river leaves through a gap at the back left');
+  assert.notEqual(t.surfaceAt(-52, -400), 'water', 'no longer down the left wall');
+  assert.equal(t.surfaceAt(13, -350), 'fairway', 'a lay-up short of it is dry');
   // a drive pushed right finds the water (the tee ledge is 12 m up, so it carries further)
   const wet = shoot(t, h.tees.canyon, [50, -190], { Speed: 132, VLA: 12, TotalSpin: 2900 }); // off the 12 m ledge
   assert.equal(t.surfaceAt(wet.end.x, wet.end.z), 'water');

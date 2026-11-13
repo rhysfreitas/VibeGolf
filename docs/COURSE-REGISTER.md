@@ -132,18 +132,18 @@ reported every landing area's lean on the wrong side (the sizes were right).
 | Hillside bench | 3 (4) | The Reclaim 8, Rimeholm 7 (the Moulin, 12 November), Halcyon Ring 6, the Lost Valley 6 (9%) |
 | Crest and run | 3 | The Aerie 8 (Long Roll, 13 November) |
 | Fall-away | 2 (3: the Lost Valley 9) | |
-| Table top | 3 (4) | The Reclaim 2 and 9 (the Rift, 12 November), Halcyon Ring 7, the Lost Valley 8; also Emberfell 3's channel (off the playing line, so not counted) |
+| Table top | 4 (5) | The Reclaim 2 and 9 (the Rift, 12 November), Halcyon Ring 7, the Lost Valley 8, Red Mesa 9 (the Climb's two 14 m steps read as one, 13 November); also Emberfell 3's channel (off the playing line, so not counted) |
 | Dip in front | 1 | |
 | Level par 3 | 1 | |
 | Half-pipe | 1 (2) | Halcyon Ring 1, the Lost Valley 1 |
-| Par 3 across a gulf | 1 | Halcyon Ring 9 |
+| Par 3 across a gulf | 2 | Halcyon Ring 9, Red Mesa 6 (the Trestle's tees in a notch at the green's height, 13 November) |
 | Hog's back | 0 (1) | The Lost Valley 5 |
 | Valley carry | 1 | Emberfell 2 (the Barranco, 12 November; `relief.mjs` reads it as a table top too) |
 
 By course, what the check flags:
 
 - The Aerie: both par 3s drops. Bold holes 3 and 9 since 13 November (the Ascent stepped, Long Roll a crest and run).
-- Red Mesa: both par 3s drops.
+- Red Mesa: one drop par 3 (Kestrel) since 13 November, when the Trestle went level across its gorge; bold holes 2 and 9.
 - Hollowmere: four tee shots off a height (1, 4, 6, 9).
 - The Reclaim: both par 3s drops; plain par 4s and 5s 1, 4, 6, 7. The Rift became a table top 12 November (Rhys's pick): bold
   holes 2, 8, 9.
@@ -171,7 +171,7 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 | Course | Dials that cluster | Edges of real golf it touches | Past real golf |
 |---|---|---|---|
 | The Aerie | bunker counts, bends (greens and par 5s cleared 13 November) | a 378 m² and an 866 m² green, a 126 and a 211 yd par 3, a 320 and a 479 yd par 4, a 490 and a 590 yd par 5, a 72 m fairway, a hole with no bunker, a straight hole | none |
-| Red Mesa | par 5s, fairway widths, bends | a 1,127 m² green, a 265 yd par 3, a 320 yd par 4, a 34 m fairway, a field of bunkers, a straight hole | the Switchback's waste |
+| Red Mesa | bends (par 5s and widths cleared 13 November) | a 1,127 m² green, a 265 yd par 3, a 320 and a 475 yd par 4, a 495 and a 598 yd par 5, a 34 and a 68 m fairway, a field of bunkers, a straight hole | the Switchback's waste |
 | Hollowmere | greens (8 of 9), par 3s (166 and 168), par 4s, widths, bends (par 5s split 12 November: 500 and 588) | a 500 and a 588 yd par 5, no bunker, a field of bunkers | none |
 | The Reclaim | greens (8 of 9), widths, bunker counts (par 5s split 12 November: 500 and 610) | a 300 yd par 4, a 500 and a 610 yd par 5, an 85° bend | none |
 | Rimeholm | greens (5 of 9), widths (par 3s, par 5s and bunker counts cleared 12 November) | a 130 and a 215 yd par 3, a 300 yd par 4, a 495 and a 590 yd par 5, an 85 m snowfield, a hole with no bunker, a 3,600 m² powder strip | none |
@@ -179,12 +179,12 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 | The Lost Valley (reshaped 12 November) | none (was greens 6 of 9, par 5s, widths, bends) | a 324 m² green, a 1,323 m² green, a 115 yd and a 215 yd par 3, a 300 yd par 4, a 490 and a 610 yd par 5, a 35 m fairway, no bunker, a field of pits, a 70° bend, a straight hole | the 9th's green (1,323 m², in two parts) |
 | Halcyon Ring (round 2) | none | a 293 m² green, a 115 yd par 3, a 230 yd par 3, a 310 yd par 4, a 490 yd par 5, a 74 m fairway, no bunker, a field (the pews), a straight hole | the Spoke's 1,400 m² green |
 
-Edges nobody has touched: a par 4 over 465; a fairway over 75 m. (A par 5 over 580: the Lost Valley's 2nd, 610 yd,
+Edges nobody has touched: a fairway over 75 m. (A par 4 over 465: Emberfell's Lava Tube 480, the Aerie's Long Roll 479 and Red Mesa's Dry Wash 475, from 12–13 November.) (A par 5 over 580: the Lost Valley's 2nd, 610 yd,
 since 12 November.)
 
 **Famous-hole set pieces used:** the lone tree twice (the Lost Valley's giant and its fig); an island green of a
 kind (Emberfell's Heart, the Aerie's island greens); a chute of a kind (The Reclaim's Atrium nave). Halcyon Ring: the postage stamp (2) and church pews (3). The Lost Valley (built 12 November): the postage stamp
-(4, ringed by tar) and the burn (2, crossing the line three times). The postage stamp was taken by both on the
+(4, ringed by tar) and the burn (2, crossing the line three times). Red Mesa (13 November): the chute (2, a 27 m slot in the rim) and the burn (8, Dry Wash, across the line twice and the front of the green). The postage stamp was taken by both on the
 same day, Halcyon Ring planned and the Lost Valley built; Rhys kept both (12 November: "The postage stamp is fine"). Never used:
 bunker in the green, shared green, shared fairway, hell bunker, the wall,
 lion's mouth, skyline green, sleepers.
@@ -294,7 +294,17 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
 - **Tips:** the Butte set, switched off, 3,676 yd, all on existing mesa ground: 419, 440, 287, 400, 565, 190,
   350, 480, 545 (24, 30, 25, 30, 30, 15, 30, 30, 30 yd behind the back tees). The 2nd's and 6th's are blind like
   their back tees; the 8th's has a 3.5 m pad so it sees over the ledge too.
-- **Rhythm:** four straight holes; par 4s 320–450; par 3s 175 and 265 (far apart on the card, close plays-like
+- **Variety changes (13 November 2026, Rhys's picks):** the Trestle level across the gorge (its back tees in a notch
+  cut 17 m into the mesa's lip at the green's height, a `step` landform; Sage moved into it; relief: a par 3 across a
+  gulf); the Climb 515 → 598 (back tee 75 m back on the floor) with its gully ramps made two 14 m steps in 20 m (the
+  Mesa tee at the old back tee, 515); the Chute a 27 m slot in the rim 25–65 m out (two rock blocks, 2 m left of the
+  line so the plateau's line clears it) and its lower fairway 60–70 m wide; Dry Wash 450 → 475 with the river a 7 m
+  burn that cuts across the front of the green into the right wall instead of running down the left wall; Switchback
+  535 → 495 (Mesa 460, the tips at the old back tee), its drive target 45 m further on, so the long hitter goes for
+  the green in two (4.50) and "Over the waste" is the short hitter's bold second (pays 0.17). Gate: every hole within
+  +0.8 (Kestrel, unchanged). Blind tee shots one (the 2nd). Tips 3,745 yd: 419, 440, 287, 400, 535, 190, 350, 497,
+  627.
+- **Rhythm:** four straight holes; par 4s 320–475 (from 13 November); par 3s 175 and 265 (far apart on the card, close plays-like
   because of the 70 m drop, as the shape review found).
 - **Classics:** five. The model for the rule.
 
