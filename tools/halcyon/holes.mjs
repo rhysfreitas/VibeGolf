@@ -39,7 +39,7 @@ export const COURSE = {
     heights: 'One height form a hole, none twice: half-pipe (1), uphill par 3 (2), tee drop (3), stepped (4), drop par 3 (5), hillside bench (6), table top (7), perched green (8), par 3 across a gulf (9). Bold: 4, 6, 7.',
     shots: 'Tee shots: driver hard (1), a lay-up to a number (3), a fade (4), a draw (6), a high carry (7), dead straight (8). Approaches: run-up (1, 3), full wedge (2), long wood or iron (4, 5, 8), hanging lie (6), blind over a marker (7), high carry that stops (9). Hazards: diagonal (3, 4, 8), a side (1, 5, 6), all round (2), centre (7), across (9).',
     decisions: 'Three, each a different type: bite off the Long Window (4), drivable up the table top round the spoke (7), go for the green in two or lay up at the canal (8). One in the last two holes. The rest have one clear line.',
-    landmarks: 'The spoke (tees 5, 6 and 7, the 4th\'s second leg): an A-frame foot astride the 7th rising out of the top of the frame to the hub. Earth through the rim glass (tees 2, 3, 4, 5, 7 and 9). The clubhouse, high on the curve ahead (tees 5, 6, 8 and 9, the 4th\'s second leg), played to at the end. The reveal: the 9th tee, up out of the 8th\'s valley, the Great Window spread below with the stars through it.',
+    landmarks: 'The spoke (tees 5, 6 and 7, the 4th\'s second leg): an A-frame foot astride the 7th rising out of the top of the frame to the hub. Earth through the west rim\'s glass (tees 3, 4, 5 and 9), the Moon through the east (tees 2 and 7). The clubhouse, high on the curve ahead (tees 5, 6, 8 and 9, the 4th\'s second leg), played to at the end. The reveal: the 9th tee, up out of the 8th\'s valley, the Great Window spread below with the stars through it.',
     rhythm: 'A gentle opener (a fan, no penalty ground near, the night side climbing ahead). The hardest run is 4 to 7 (the cape over the Long Window and the climb, the long par 3 to the balcony, the long par 4 by the lake, the drivable 7th). The 8th is the breather and a choice, and the 9th finishes on the set piece. Par 4s 310, 380, 430, 455; par 3s 115, 230, 150; par 5s 545 (a cape and a climb) and 490 (a valley and a canal, reachable).',
     newBorrowed: 'New to the register: a par 3 level across a floor window sunk in an amphitheatre; a postage stamp in a walled garden; church pews as a parterre; a table top under a spoke; a 1,400 m² green; a green on a balcony over the rim glass (a band of glass round the ring at the foot of each wall, segmented by the wall\'s ribs); a spoke\'s foot as a centre-line hazard; a hole along the day/night line; a canal with a lock beside the second shot; a par-3 finish; a curve you can see rise. Borrowed from the over-used list, three (one over the two allowed): a waterfall (off a villa terrace behind the 6th green), one bridge (the footbridge over the canal on the 8th) and terraces to play up (the 4th\'s three, picked 12 November for its height form).',
     forms: 'Par 4s and 5s: 1 fan, 3 hourglass, 4 hook, 6 scalloped, 7 island (the spoke\'s foot in the fairway), 8 split (the Channel: a second lane over the canal, reached by a footbridge). Six forms, none twice, no plain strips; alike.mjs finds no pair alike.',
@@ -140,7 +140,7 @@ export const HOLES = [
       targets: [],
       words: {
         story: 'A villa\'s walled garden on the east terraces, the green on its top lawn under the rim glass.',
-        plays: 'A full wedge up into a villa\'s walled garden, 5 m above the tee, to the smallest green on the course: about 290 m², ringed by two bunkers short and a pot front left, with the garden\'s white back wall 4 m behind it. Clipped yews line the side walls, the villa stands beyond, and above it the rim\'s glass climbs out of the frame with Earth in it.',
+        plays: 'A full wedge up into a villa\'s walled garden, 5 m above the tee, to the smallest green on the course: about 290 m², ringed by two bunkers short and a pot front left, with the garden\'s white back wall 4 m behind it. Clipped yews line the side walls, the villa stands beyond, and above it the east rim\'s glass climbs out of the frame with the Moon in it.',
         safe: 'The middle of the green, below the hole: it tilts toward you, and a ball long plays off the wall.',
         bold: null,
         miss: 'Short left and short right, the bunkers; the pot front left. Long, the wall: a ball hits it and comes back (it is solid, 3.2 m high), sometimes onto the green, sometimes into the collar. Off the sides, the yews.',
@@ -150,7 +150,7 @@ export const HOLES = [
         feature: 'The postage stamp in the walled garden, and the wall 4 m behind it', job: 'Hazard (bunkers all round a tiny green) and a helper of a kind: the back wall stops a long ball',
         decision: 'None',
         miss: 'Small: the collar, or the front tilt sending a short ball back off. Medium: the two bunkers short, the pot front left, the yews either side. Big: over the wall into the ha-ha beyond (no penalty, a blind pitch back); the rim glass is 60 m past the green. Safe miss: short and centre',
-        view: 'In front the lawn falling to a gravel walk; in the middle the tiny green on the garden\'s top lawn, its bunkers round it; beyond, the white back wall, the villa, and Earth through the rim glass',
+        view: 'In front the lawn falling to a gravel walk; in the middle the tiny green on the garden\'s top lawn, its bunkers round it; beyond, the white back wall, the villa, and the Moon through the east rim\'s glass',
         ground: 'Uphill to a shelf: 5 m up onto the garden\'s top lawn; the green tilted 2.2% from back to front, about 290 m², bunkers short left and right and a pot front left',
         dial: 'Green size: about 290 m², the smallest on the course (the edge of real golf); 115 yd', height: 'Uphill par 3 to a shelf', shots: { tee: '-', approach: 'A full wedge' }, hazard: 'All round (bunkers, the pot, the wall)', surround: 'Bunkers, and the wall behind', setPiece: 'Postage stamp',
       },
@@ -159,7 +159,7 @@ export const HOLES = [
 
   // 3. THE TERMINATOR: along the line where day meets night, off the east terrace; an hourglass pinched between a
   // night-side garden wall and a sunken lawn, to a Road green with a villa wall hard behind
-  hole({ n: 3, name: 'The Terminator', par: 4, legs: [[240, 0], [153, -20]], place: { at: [400, -90], heading: 270 }, shape: 'Dogleg left', tips: [-17, 0],
+  hole({ n: 3, name: 'The Terminator', par: 4, legs: [[240, 0], [153, -20]], place: { at: [400, -90], heading: 270 }, shape: 'Dogleg left', tips: [-17, 9],
     build: (P) => ({
       tees: P4(),
       fw: [{ e: [[50, 22, 22], [110, 30, 31], [170, 31, 31], [232, 29, 30], [262, 13, 12], [286, 12, 13], [312, 22, 24], [360, 20, 20], [382, 12, 12]], wob: 3 }],
@@ -195,7 +195,7 @@ export const HOLES = [
 
   // 4. THE LONG WINDOW: a cape round a floor window along the inside of the first leg, then a climb in two broad
   // steps to the lowest west terrace
-  hole({ n: 4, name: 'The Long Window', par: 5, legs: [[220, 0], [278, 55]], place: { at: [-30, -75], heading: 285 }, shape: 'Dogleg right (cape)', tips: [-28, 18],
+  hole({ n: 4, name: 'The Long Window', par: 5, legs: [[220, 0], [278, 55]], place: { at: [-30, -75], heading: 285 }, shape: 'Dogleg right (cape)', tips: [-30, 12],
     build: (P) => ({
       tees: P4L(),
       fw: [{ lobes: [[78, -8, 36, 19, 0], [140, -26, 44, 26, 0], [198, -44, 36, 30, 20], [252, -28, 40, 28, 52]], join: 16, wob: 4 },
@@ -294,7 +294,7 @@ export const HOLES = [
   }),
 
   // 7. THE SPOKE: drivable between the spoke's legs: its west foot stands in the fairway, the green on its plinth
-  hole({ n: 7, name: 'The Spoke', par: 4, legs: [[283, 0]], place: { at: [-170, -1110], heading: 90 }, shape: 'Straight',
+  hole({ n: 7, name: 'The Spoke', par: 4, legs: [[283, 0]], place: { at: [-170, -1110], heading: 90 }, shape: 'Straight', tips: [-34, -12],   // left of the falls' pool on the terrace
     build: (P, L, len) => ({
       tees: { zenith: 0, meridian: 18, horizon: [55, 24], nadir: [92, 26] },   // the forward tees right of the line, so the spoke's foot doesn't stand between them and the landing area
       fw: [{ e: [[30, 14, 14], [80, 24, 24], [125, 44, 42], [158, 46, 44], [182, 34, 34], [205, 40, 42], [240, 30, 32], [270, 20, 22]], wob: 3 }, { bite: [[150, 0, 20, 23]], wob: 1.5 }],
@@ -311,7 +311,7 @@ export const HOLES = [
       boldLine: [[0, 0], P(240, -38)],   // left of the west foot (it stands on the line from 133 to 167 m), up onto the plinth
       words: {
         story: 'Drivable between the spoke\'s legs: up onto the spoke\'s plinth, a table 7.5 m up with the biggest green in the game on it, under the A-frame.',
-        plays: 'Off the waterfall\'s terrace, 12 m down to the floor. The spoke\'s west foot, 34 m across, stands in the middle of the fairway 133–167 m out and rises out of the top of the frame toward the hub; behind it a grass face climbs 7.5 m onto the plinth, a white marker on its lip. On the plinth, level for 85 m: one lawn of a green, about 1,400 m² under the A-frame, split by a tier into a front and a back. The canal runs down the left, the far rim\'s glass and Earth beyond.',
+        plays: 'Off the waterfall\'s terrace, 12 m down to the floor. The spoke\'s west foot, 34 m across, stands in the middle of the fairway 133–167 m out and rises out of the top of the frame toward the hub; behind it a grass face climbs 7.5 m onto the plinth, a white marker on its lip. On the plinth, level for 85 m: one lawn of a green, about 1,400 m² under the A-frame, split by a tier into a front and a back. The canal runs down the left, the east rim\'s glass and the Moon beyond.',
         safe: 'Below the face, right of the foot (about 145 yd): a pitch up the face, blind, over the lip marker to the green.',
         bold: 'Carry the face (about 215 yd from the Zenith tee) left or right of the foot onto the plinth: the green is in reach, about 280 m from the tee.',
         miss: 'Into the foot (a ball off it drops at its base). Short of the face: the ball runs back down it to the floor. Left, the canal (a stroke and a drop), past the left lane. Right, planes. On the green: the wrong shelf, a long putt over the tier.',
@@ -321,7 +321,7 @@ export const HOLES = [
         feature: 'The spoke\'s west foot, 34 m across, below a 7.5 m table; the green on the table, about 1,400 m²', job: 'Obstacle (centre-line) and landmark; the face is a hazard for the short drive and the lip marker an aim point',
         decision: 'Drivable up the table top: carry the face (about 215 yd from Zenith) left or right of the foot and the green is in reach; or lay up below the face and pitch up blind over the marker',
         miss: 'Small: first cut either side. Medium: the face (it sends the ball back down), a plane grove right. Big: the canal left (penalty). On the green: the wrong shelf',
-        view: 'From the terrace\'s lip: in front the floor and the spoke\'s west foot astride the line; in the middle the grass face and the marker on its lip; beyond, the plinth\'s top, the green between the legs and Earth through the east rim glass; the foot rises out of the top of the frame',
+        view: 'From the terrace\'s lip: in front the floor and the spoke\'s west foot astride the line; in the middle the grass face and the marker on its lip; beyond, the plinth\'s top, the green between the legs and the Moon through the east rim\'s glass; the foot rises out of the top of the frame',
         ground: 'A table top: off the waterfall terrace 12 m down to the floor, the lay-up area round the foot nearly level, then a grass face 7.5 m high from 165 to 197 m out (about 25%) and the plinth\'s top level for 85 m; the green about 1,400 m², split by a 0.5 m tier into a front and a back shelf',
         dial: 'Green size, past real golf: one lawn of about 1,400 m²', height: 'Table top', shots: { tee: 'A high carry up onto the plinth', approach: 'Blind, over the lip marker (from below the face)' }, hazard: 'Centre (the spoke\'s foot)', surround: 'A feeding bank (the bowl on the front shelf)',
       },

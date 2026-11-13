@@ -83,6 +83,7 @@ export function buildHole(h) {
   const cantAt = s => { let g = 0; for (const [a, b, gr] of h.cant || []) g += gr * span(s, a, b); return g; };
   const rampAt = (s, off) => { let y = 0; for (const [a, b, dh] of h.ramps || []) y += dh * smooth((s - a) / (b - a)); return y * (1 - smooth((Math.abs(off) - 70) / 50)); };
   const teePads = Object.entries(h.teePts).map(([key, p]) => ({ k: key, x: p[0], z: p[1] }));
+  if (h.tipsPt) teePads.push({ k: 'tips', x: h.tipsPt[0], z: h.tipsPt[1] });   // the tips tee's pad too (switched off in the game, but level and mown)
   const teeHead = headingAt(h.line, 1), tc = Math.cos(teeHead), ts = Math.sin(teeHead);
   const onPad = (t, x, z) => { const u = (x - t.x) * tc + (z - t.z) * ts, v = (x - t.x) * ts - (z - t.z) * tc; return Math.abs(u) < (h.padL || 6) && Math.abs(v) < 5; };
 

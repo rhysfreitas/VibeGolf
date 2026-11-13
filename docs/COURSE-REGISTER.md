@@ -56,14 +56,14 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   penalty area. Zenith 3,105 yd: 1 The Promenade 4 380 (a 90 m half-pipe lawn, Double Plateau), 2 The Walled
   Garden 3 115 (the postage stamp, a 290 m² green; an Eden until it shrank), 3 The Terminator 4 430 (Road, the
   church pews in the pinch, eleven bunkers), 4 The Long Window 5 545 (cape over a floor window, +26 m in three
-  terraces), 5 The Balcony 3 230 (−22, off the high terrace's lip to a green over the rim glass), 6 The Long Lake 4
+  terraces), 5 The Balcony 3 230 (−15, off the high terrace's lip to a green over the rim glass), 6 The Long Lake 4
   455 (a 10% hillside bench), 7 The Spoke 4 310 (drivable up a table top round the spoke's foot, Leven, a
   1,400 m² green: the hole past real golf), 8 The Aqueduct 5 490 (Channel, reachable, go or lay up at the canal),
   9 The Great Window 3 150 (across the window sunk in an amphitheatre, tee and green level on its rims). Forms
   fan, hourglass, hook, scalloped, island, split (`alike.mjs halcyon`: 0 of 15 alike, none like another
   course's). Classics Double Plateau, Short, Road, Leven, Channel (all new); decisions 4, 7, 8; set pieces the
-  postage stamp and the church pews. Tees Zenith, Meridian, Horizon, Nadir; Kingfisher tips (switched off) 3,345
-  yd. Three from the over-used list (one over): a waterfall, a bridge and the 4th's terraces.
+  postage stamp and the church pews. Tees Zenith, Meridian, Horizon, Nadir; Kingfisher tips (switched off) 3,330
+  yd. A playable blockout since 12 November 2026 (`?c=halcyon`). Three from the over-used list (one over): a waterfall, a bridge and the 4th's terraces.
 - Emberfell: a par 5 opens (first course to); three holes outside, the drop off the rim 4th, five inside; the
   island finish stays. Same par as another course on four holes at most (Rimeholm). Drawn in round 6 (11 November):
   3,435 yd from the Obsidian tees, 3,695 from the Magma tips (switched off in the data; round 7 moved the Lake's spot off the Lavafall's approach, and the Terraces went from 300 to 340 yd so a hybrid no longer reaches the green).

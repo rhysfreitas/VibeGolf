@@ -1,6 +1,6 @@
 # Halcyon Ring: plan tools
 
-Halcyon Ring is a course in planning (`claude/brief-halcyon-ring.md` in the project): parkland golf inside a ring
+Halcyon Ring is a playable blockout since 12 November 2026 (`?c=halcyon`; the brief is `claude/brief-halcyon-ring.md` in the project): parkland golf inside a ring
 space station, a pristine garden colony. Floor windows onto space are the penalty area; the ball flies as on
 Earth. Skeleton (Rhys's pick, 11 November 2026): par 35, 4 3 4 5 3 4 4 5 3, finishing with a par 3 across the
 Great Window to the clubhouse.
@@ -32,7 +32,7 @@ scale on 4, the 230 yd 5th, the 6th's 10% bench, the 7th's 1,400 m² green past 
 reachable, no bunker on the 9th); set pieces the postage stamp and the church pews; the 9th's window sunk in an
 amphitheatre 8.5 m deep with tee and green level on its rims; the 7th up onto a table top 7.5 m high round the
 spoke, whose foot moved 30 m west; the shots asked for and the hazard and surround kinds on each card. Zenith
-3,105 yd, Kingfisher tips 3,345. `spread.mjs halcyon` finds no cluster, `relief.mjs halcyon` flags nothing,
+3,105 yd, Kingfisher tips 3,330 (3,345 before round 5 moved the 3rd's). `spread.mjs halcyon` finds no cluster, `relief.mjs halcyon` flags nothing,
 `alike.mjs halcyon` 0 of 15. The book is `out/halcyon-plan-book-r2.pdf`.
 
 Plan book round 3 (12 November 2026), from Rhys's notes on round 2: the rim glass, a 24 × 130 m strip of floor
@@ -47,6 +47,21 @@ its back tee. The 1st's green had come out as two pieces with the pin between th
 halved and put on the wall's ribs, then the arches taken out ("too busy") for flat beams across the glass on the
 wall's ribs and a sill along the wall's foot; the lake's head back behind the 5th green; the postage stamp kept.
 The book is `out/halcyon-plan-book-r5.pdf`.
+
+The blockout (12 November 2026, after round 5): `node emit.mjs` (about 2 minutes) writes `src/course/halcyon.js`
+(don't edit it by hand): each hole's `field` sampled every 2 m from `buildHole` (heights with the curve from the
+back tee in them, surface codes, a paint byte `m`: 0 lawn, 1 woods, 2 garden, 3 plaza, 4 stone, 7 glass, 8 water),
+greens and bunkers as outlines, villas, garden walls, the clubhouse and the rim walls as soaking boxes, the spoke's
+feet as wedges leaning in toward the hub, trees as plants with their own bodies, and `COURSE.ring` (the floor once
+in ring space: a 10 m map over the course and a 40 m one 6.4 km round either way, the windows, the lake, the
+canal, the spoke, the clubhouse, the aqueduct, the bridges, the falls, the tram, the scenery villas and trees).
+Glass plays as water, flush (no bed under it); the lie reads Glass and the toast "On the glass". The tips spot gets
+a level pad. `src/course/ring-world.js` draws it into each hole's frame on the true cylinder (the floor climbing up
+the ring ahead and behind, the rim walls of glass with their ribs, the rim glass, its beams and sill, space through
+every pane: stars, Earth to the west, the Moon to the east) and paints the ground (`surfaceTextures`; main.js's
+`RING` shader define: lawn, woods, garden beds, plaza paving, white sand, limestone retaining walls). The decision
+on the 7th needs a look: the spoke's west foot stands on the straight line from every tee to the green, so a
+straight drive can't reach the plinth's green (a shaped one can).
 
 Run order for the book: `node sample.mjs` (about 20 s), `python3 plans.py`, `node sketch.mjs` (a few seconds),
 `node book.mjs` (`ROUND=n DATE='…' NEW=new.json` optional).
