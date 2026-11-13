@@ -18,7 +18,7 @@ import path from 'path';
 import { createTerrain } from '../../src/course/terrain.js';
 import { loadCourse, MODULES, REPO } from './page.mjs';
 
-const PLANNED = ['emberfell', 'lostvalley', 'halcyon'];
+const PLANNED = ['emberfell', 'lostvalley', 'halcyon', 'buriedkingdom'];
 const N = 24, ALIKE = 0.25;
 
 const lenOf = L => L.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - L[i][0], p[1] - L[i][1]), 0);
@@ -84,7 +84,8 @@ export function distance(a, b) {
 export async function courseFairways(c) {
   if (PLANNED.includes(c)) {
     const H = await import(path.join(REPO, 'tools', c, 'holes.mjs')), S = await import(path.join(REPO, 'tools', c, 'shapes.mjs'));
-    return H.HOLES.filter(h => h.par > 3).map(h => { const fd = S.makeFairway(h.line, h.fw || []); return { n: h.n, name: h.name, par: h.par, sig: signature(h.line, (x, z) => fd(x, z) < 0) }; });
+    // formLine: a hook is read against the straight line from tee to green, which its fairway wraps round
+    return H.HOLES.filter(h => h.par > 3).map(h => { const fd = S.makeFairway(h.line, h.fw || []); return { n: h.n, name: h.name, par: h.par, sig: signature(h.formLine || h.line, (x, z) => fd(x, z) < 0) }; });
   }
   const { HOLES, COURSE } = await loadCourse(c), back = COURSE.teeSets[0].id;
   const lineOf = h => h.line || [h.tees[back], ...(h.targets || []).filter(t => !t.pin && !t.bold).map(t => [t.x, t.z]), h.green?.pins?.[0] || h.pin];

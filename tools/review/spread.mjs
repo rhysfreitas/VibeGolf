@@ -17,7 +17,7 @@ import { createTerrain } from '../../src/course/terrain.js';
 import { loadCourse, MODULES, REPO } from './page.mjs';
 import { signature } from './alike.mjs';
 
-const PLANNED = ['halcyon'];
+const PLANNED = ['halcyon', 'buriedkingdom'];
 // the edges of real golf (`lo`, `hi`: a nine touches some of them, not all), and what counts as past real golf
 export const EDGE = {
   green: { lo: 400, hi: 800, pastLo: 280, pastHi: 1200, unit: 'm²' },

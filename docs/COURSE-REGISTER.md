@@ -44,7 +44,25 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 |---|---|---|---|---|---|---|---|---|---|---|
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
 | Halcyon Ring (plan book round 5) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
+| The Buried Kingdom (plan book round 1, 13 November 2026) | 3 The Landing | 5L The River Bank | 4 The Causeway ↑ | 4R Sahara | 3 The Sphinx | 5R Hog's Back | 4L The Quarry | 4R The Gate | 4L The Colossi | 36 |
 
+- The Buried Kingdom (Rhys's picks, 12-13 November 2026; `claude/buried-kingdom-layout.md` and
+  `claude/brief-buried-kingdom.md` in the project; `tools/buriedkingdom/`): Egyptian ruins half buried in sand, an
+  invented site, in blazing late-morning light; the river (1-3), the plateau (4-6), the cliffs (7-9). Its logic: off
+  the grass is sand in three bands (rough 8-15 m, then firm sand that plays as the game's waste area, soft dunes
+  only as placed features); water on the 1st and 2nd only. The first course to open with a par 3; no drop par 3; a
+  downhill finish to the camp. Same par as another course on four holes at most. Falcon 3,470 yd, Cobra tips 3,745
+  (switched off). 1 The Landing 3 145 (level across the boat basin, a 960 m² green, a beach as the bail-out),
+  2 The River Bank 5 590 (scalloped, a dip in front), 3 The Causeway 4 435 (a funnel up a raised processional way,
+  +22 m, 36 m wide where the back tee lands, no bunker), 4 Sahara 4 385 (a hook round an 8,000 m² blowout, the hole
+  past real golf; valley carry on the bold line; the long way round), 5 The Sphinx 3 200 (a lion's mouth: a
+  horseshoe green round a pit between the paws, +7 m), 6 Hog's Back 5 500 (a dune's crowned crest, broken by a
+  blowout, to a 370 m² skyline green; go or lay up), 7 The Quarry 4 335 (off a 20 m lip to a 9% hillside bench,
+  seven spoil pits), 8 The Gate 4 410 (a fan up a 6.5 m table top between two gate towers), 9 The Colossi 4 470
+  (an island fairway round a fallen obelisk, a fall-away into the forecourt; centre-line hazard). Plan book round 1
+  13 November 2026 (`out/buried-kingdom-plan-book-r1.pdf`): `alike.mjs` 0 of 21 (seven forms), `relief.mjs` nine
+  forms, none twice (bold 4, 7, 8), `spread.mjs` no cluster. Not yet a module: the blockout waits for Rhys's
+  approval of the plan book.
 - Halcyon Ring (Rhys's picks, 11 November 2026; `claude/brief-halcyon-ring.md`): a pristine garden colony
   inside a ring space station; floor windows onto space are the penalty area; the ball flies as on Earth. The
   first par 35, the first with three par 3s, the first par-3 finish (across the Great Window to the clubhouse).
@@ -90,6 +108,7 @@ middle; a long par 3 early.
 | **Rimeholm** | Ice runs; powder buries; hot springs keep greens alive | Redan (7), punchbowl (8), Bottle (9) | Drivable through the seracs (5), cape over the moulin (7), split fairway (8), bottle through the neck (9) (all `bold: true`, 11 November) | Ice cave tee (1), travertine terraces (2), longship (3), crevasse field (4), frozen falls (6), moulin (7), mammoth (8), longhouse under the aurora (9) | Powder strip (1) |
 | **Emberfell** (playable blockout, round 7) | Lava plays as water | Leven (5), Long (6), Cape (7), Punchbowl in a crater ringed with sand (8) | Drivable down the columns (5), go or lay up at the rill (6), bite off the cape (7), split (9) | Kipuka and lava river (1), geysers (2), tube bridge and a double fairway either side of its trench (3), the Notch reveal (4), basalt columns (5), lavafall in its bay (6), lava lake (7), cinder cone on the caldera floor (8), island clubhouse (9) | Cross bunker (2), ring (8), beach (9) |
 | **The Lost Valley** (playable blockout) | Animals are scenery; tar plays as water; the river's gravel bars play as bunkers | Long (2, 610 yd), Short (4, a postage stamp), Eden (7), Leven (8), Hog's Back (5: the crowned causeway) | Centre-line hazard (3, the Bone Bluff), the long way round (5, the stepping stones or the dry way), drivable (8, under the root arch), go or lay up (9, the shelf in two) | The camp on its knoll (1), the giant monkey-puzzle (1), braided river and its burn (2), Bone Bluff, its skeleton and the dig pits (3), tar pit and bones (4), swamp and stepping stones (5), the ramp to the east ledge and Nest Falls (6), the ledge's bluff, the lookout and the spire (7), the table top, the survey pole and the Strangler's root arch (8), the Great Falls, the plunge pool, the two-part green on its shelf and the rope bridge (9); long-necks and pterosaurs as scenery | Sand ring round the 3rd green, nine dig pits (3), the 1st's waste strip and the waste through its corner, gravel bars |
+| **The Buried Kingdom** (plan book round 1) | Sand in three bands: rough, firm sand (a waste area), soft dunes only where placed; you always find your ball | Sahara (4), Lion's Mouth (5), Hog's Back (6) | The long way round (4), go or lay up (6), centre-line hazard (9) | A par 3 opener across still water with a beach (1), a causeway to play along (3), an 8,000 m² blowout (4), a lion's mouth between the Sphinx's paws (5), a dune-crest fairway to a skyline green (6), a gate to play through onto a table top (8), a fallen obelisk in the fairway and colossi over an amphitheatre green (9); landmarks the great pyramid, the Sphinx, the river's green line, the colossi | The Sand Sea (4), the crest's blowout (6), seven spoil pits (7) |
 
 Classics no course has used yet: **Eden, Road, Bottle, Channel, Leven, Double Plateau, Hog's Back, Sahara, Long,
 Dell.** (The Lost Valley has since used a Long, an Eden, a Leven and a Hog's Back.) A punchbowl is on six of seven courses: give it a rest.

@@ -19,7 +19,7 @@ import path from 'path';
 import { createTerrain } from '../../src/course/terrain.js';
 import { loadCourse, MODULES, REPO } from './page.mjs';
 
-const PLANNED = ['halcyon'];
+const PLANNED = ['halcyon', 'buriedkingdom'];
 export const BOLD = ['table top', 'hillside bench', 'valley carry', 'stepped', 'big drop', 'big climb'];
 export const PLAIN = ['ramp up', 'ramp down', 'level'];
 const YD = 0.9144;
@@ -88,7 +88,7 @@ export function heightForm(line, groundAt, onFw, par, landAt = null) {
 export async function courseRelief(c) {
   if (PLANNED.includes(c)) {
     const S = await import(path.join(REPO, 'tools', c, 'scene.mjs')), H = await import(path.join(REPO, 'tools', c, 'holes.mjs'));
-    return { name: H.COURSE.name, holes: H.HOLES.map((h, i) => { const B = S.BUILT[i]; return { n: i + 1, name: h.name, r: heightForm(h.line, (x, z) => B.ground(x, z), (x, z) => B.surface(x, z) === 'fairway', h.par) }; }) };
+    return { name: H.COURSE.name, holes: H.HOLES.map((h, i) => { const B = S.BUILT[i]; return { n: i + 1, name: h.name, r: heightForm(h.reliefLine || h.line, (x, z) => B.ground(x, z), (x, z) => B.surface(x, z) === 'fairway', h.par) }; }) };   // reliefLine: a hole whose height form is on its bold line (a valley carry beside a level way round)
   }
   const { COURSE, HOLES } = await loadCourse(c), back = COURSE.teeSets[0].id;
   return { name: COURSE.name, holes: HOLES.map((h, i) => {
