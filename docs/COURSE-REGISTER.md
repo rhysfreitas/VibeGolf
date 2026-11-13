@@ -128,7 +128,7 @@ reported every landing area's lean on the wrong side (the sizes were right).
 | Big climb (25 m or more) | 4 | Four are finishes or near it |
 | Perched green | 4 | |
 | Uphill par 3 | 4 | |
-| Stepped | 3 (4) | Halcyon Ring 4 and the Lost Valley 2 among them |
+| Stepped | 4 (5) | Halcyon Ring 4, the Lost Valley 2 and Hollowmere 3 (Stalagmite Forest, 12 November) among them |
 | Hillside bench | 3 (4) | The Reclaim 8, Rimeholm 7 (the Moulin, 12 November), Halcyon Ring 6, the Lost Valley 6 (9%) |
 | Crest and run | 2 | |
 | Fall-away | 2 (3: the Lost Valley 9) | |
@@ -172,7 +172,7 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 |---|---|---|---|
 | The Aerie | greens (6 of 9 one size), par 5s, bunker counts, bends | a 126 yd par 3, a 320 yd par 4, a 72 m fairway, a hole with no bunker, a straight hole | none |
 | Red Mesa | par 5s, fairway widths, bends | a 1,127 m² green, a 265 yd par 3, a 320 yd par 4, a 34 m fairway, a field of bunkers, a straight hole | the Switchback's waste |
-| Hollowmere | greens (8 of 9), par 3s (166 and 168), par 4s, par 5s (546 and 547), widths, bends | no bunker, a field of bunkers | none |
+| Hollowmere | greens (8 of 9), par 3s (166 and 168), par 4s, widths, bends (par 5s split 12 November: 500 and 588) | a 500 and a 588 yd par 5, no bunker, a field of bunkers | none |
 | The Reclaim | greens (8 of 9), widths, bunker counts (par 5s split 12 November: 500 and 610) | a 300 yd par 4, a 500 and a 610 yd par 5, an 85° bend | none |
 | Rimeholm | greens (5 of 9), widths (par 3s, par 5s and bunker counts cleared 12 November) | a 130 and a 215 yd par 3, a 300 yd par 4, a 495 and a 590 yd par 5, an 85 m snowfield, a hole with no bunker, a 3,600 m² powder strip | none |
 | Emberfell | greens (6 of 9 with two bunkers), widths (par 4s, par 5s and bunker counts cleared 12 November) | a 240 yd par 3, a 480 yd par 4, a 600 yd par 5, a hole with no bunker, a 1,700 m² bunker, a straight hole | none |

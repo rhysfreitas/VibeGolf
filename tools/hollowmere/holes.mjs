@@ -234,8 +234,9 @@ export const HOLES = [
     name: 'Stalagmite Forest', par: 5, shape: 'Dogleg left: down the terraces, up the slope',
     targets: [{ name: 'Down the terraces', x: 172, z: -712 }, { name: 'Lay up right', x: 168, z: -846 }, { name: 'Thread the stalagmites', x: 72, z: -906, bold: true }],
     line: [[184, -522], [165, -778], [-8, -948]],
-    tees: { eagle: [184, -522], hawk: [204, -556], swift: [150, -600], wren: [212, -646] },
-    tips: [186.5, -483.6],   // back up the hall on the cave floor, 42 yd behind the Eagle tee
+    // the long par 5 (12 November 2026, Rhys's pick): the Eagle tee back up the hall to where the tips spot was, 546 -> 590 yd
+    tees: { eagle: [186.5, -483.6], hawk: [204, -556], swift: [150, -600], wren: [212, -646] },
+    tips: [188.7, -453.7],   // back up the hall on the cave floor, 30 m behind the Eagle tee
     // on the cave floor (no slabs: their edges stood as cliffs beside the 2nd green): down the terraces, then
     // one wide ramp from wall to wall up to the ledge the green sits on
     floor: caveFloor(-46), islands: [],
@@ -249,7 +250,11 @@ export const HOLES = [
     green: { x: -8, z: -952, rx: 15, rz: 13, lobes: [[1, 0, 9, 19, -60], [1, 9, 6, 6, 0]], join: 4, style: 'tiered', shape: [], tiers: [{ b: 5, step: 0.5 }], apron: 6, runoff: true, from: [80, -900], pins: [[-6, -954], [-14, -946], [-2, -960], [-16, -958]] },
     bunkers: [{ x: 186, z: -760, rx: 13, rz: 7, style: 'flashed', toward: [184, -522] }, bunker(at(L3b, 150, 36), L3b[0], L3b[1], 8, 18), { x: 14, z: -930, rx: 5, rz: 4, style: 'flashed', toward: [-8, -952] }, { x: -24, z: -966, rx: 4, rz: 3, style: 'pot' }],
     landforms: [terrace(176, -672, [184, -522], 2, 600, 2000), terrace(174, -727, [184, -522], 2, 600, 2000), terrace(171, -777, [184, -522], 2, 600, 2000),
-      { type: 'step', x: 84, z: -870, from: [165, -790], length: 220, width: 320, height: -26, run: 60 }],
+      // the climb in three rimstone steps of about 8.7 m (12 November 2026, Rhys's pick; it was one 26 m ramp): each
+      // rises over 14 m and holds its height through the green, so the green stands where it did
+      { type: 'step', x: 105.8, z: -836.2, from: [127.2, -815.1], length: 14, width: 320, height: -8.7, run: 202 },
+      { type: 'step', x: 65.1, z: -876.1, from: [86.5, -855], length: 14, width: 320, height: -8.65, run: 145 },
+      { type: 'step', x: 29.5, z: -911.2, from: [50.9, -890.1], length: 14, width: 320, height: -8.65, run: 95 }],
     roof: { y: 18 },
     marks: [
       { type: 'hang', pts: [[-52, -950, 12, 2.4], [-80, -966, 15, 2.8], [-108, -956, 13, 2.4], [-134, -972, 9, 2], [-70, -944, 8, 1.8]], label: 'the stalagmite cave: stalactites to meet them' },
@@ -257,7 +262,7 @@ export const HOLES = [
       { type: 'lanterns', pts: [[214, -590], [210, -680], [214, -780], [170, -880], [80, -960]], label: 'lanterns on the safe side' },
       { type: 'text', x: 70, z: -790, label: 'stalagmite forest, 6–20 m tall' },
       { type: 'text', x: -96, z: -878, label: 'side bay: the stream rises here' },
-      { type: 'text', x: 128, z: -700, label: 'rimstone terraces: three 2 m steps' },
+      { type: 'text', x: 128, z: -700, label: 'rimstone terraces: three 2 m steps' }, { type: 'text', x: 30, z: -880, label: 'the climb: three rimstone steps of about 9 m' },
       { type: 'text', x: 40, z: -1030, label: 'the hall opens into the Hollow: first sight of the falls' },
     ],
     idea: 'Thread it or go round',
@@ -361,8 +366,9 @@ export const HOLES = [
     name: 'The Trestle', par: 5, shape: 'S-bend over the fissure, down the terraces',
     targets: [{ name: 'Fairway', x: c(236, -10)[0], z: c(236, -10)[1] }, { name: 'Over the trestle', x: c(206, 140)[0], z: c(206, 140)[1], bold: true }, { name: 'Round the end', x: c(334, 60)[0], z: c(334, 60)[1] }],
     line: L7,
-    tees: { eagle: c(200, -205), hawk: c(178, -160), swift: c(173, -118), wren: c(184, -74) },
-    tips: [369.4, -1448.6],   // back up the floor, 48 yd behind the Eagle tee
+    // the reachable par 5 (12 November 2026, Rhys's pick): the Eagle tee 43 m down the line, 547 -> 500 yd
+    tees: { eagle: at(L7, 43, 6), hawk: at(L7, 66, -16), swift: c(173, -118), wren: c(184, -74) },
+    tips: c(200, -205),   // the old Eagle tee, 47 yd behind the new one
     floor: hollowFloor,
     islands: [],
     landforms: [cant(...c(236, -10), c(200, -205), -3, 100, 90), terrace(...c(213, 102), c(214, 62), 2.5, 420, 260), terrace(...c(211, 150), c(214, 62), 2.5, 420, 210), terrace(...c(222, 206), c(214, 62), 2, 420, 160),

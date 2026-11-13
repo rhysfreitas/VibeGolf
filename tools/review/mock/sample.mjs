@@ -4,12 +4,26 @@ import { loadCourse } from '../page.mjs';
 import fs from 'fs';
 const which = process.argv[2];
 const { HOLES, COURSE } = await loadCourse(which);
+// --ref=<module path>: frame each hole as the reference module frames it (a course whose hole frame starts at the back
+// tee moves and turns with it). The two frames are lined up on the pin and a tee set that didn't move.
+const refArg = process.argv.find(a => a.startsWith('--ref='));
+const REF = refArg ? (await import(refArg.slice(6))).HOLES : null;
+function refFrame(h, r) {
+  const ids = Object.keys(h.tees).filter(k => r.tees[k]), d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+  const id = ids.reverse().find(k => Math.abs(d(h.tees[k], h.pin) - d(r.tees[k], r.pin)) < 0.5);
+  if (!id) return null;
+  const va = [r.tees[id][0] - r.pin[0], r.tees[id][1] - r.pin[1]], vb = [h.tees[id][0] - h.pin[0], h.tees[id][1] - h.pin[1]];
+  const th = Math.atan2(vb[1], vb[0]) - Math.atan2(va[1], va[0]), c = Math.cos(th), sn = Math.sin(th);
+  const map = ([x, z]) => { const dx = x - r.pin[0], dz = z - r.pin[1]; return [h.pin[0] + dx * c - dz * sn, h.pin[1] + dx * sn + dz * c]; };
+  return map((r.line && r.line[0]) || r.tees[Object.keys(r.tees)[0]]);
+}
 const OUT = new URL('../out/mockgrid/', import.meta.url).pathname; fs.mkdirSync(OUT, { recursive: true });
 const SURF = ['void', 'tee', 'fairway', 'fringe', 'firstcut', 'rough', 'desert', 'sand', 'waste', 'water', 'green', 'rock', 'ice', 'powder'];
 const back = COURSE.teeSets[0].id, meta = [];
 HOLES.forEach((h, i) => {
   // framed from the line's start (not the back tee), so a moved tee doesn't move the frame: before and after line up
-  const T = createTerrain(h), tee = (h.line && h.line[0]) || h.tees[back], pin = h.green.pins?.[0] || h.pin;
+  const T = createTerrain(h), pin = h.green.pins?.[0] || h.pin;
+  const tee = (REF && refFrame(h, REF[i])) || (h.line && h.line[0]) || h.tees[back];
   const hd = Math.atan2(pin[0] - tee[0], -(pin[1] - tee[1])), cs = Math.cos(hd), sn = Math.sin(hd);
   const Wd = (lx, lz) => [tee[0] + lx * cs - lz * sn, tee[1] + lx * sn + lz * cs];
   const Lc = (x, z) => { const dx = x - tee[0], dz = z - tee[1]; return [dx * cs + dz * sn, -dx * sn + dz * cs]; };
