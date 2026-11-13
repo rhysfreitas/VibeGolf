@@ -128,9 +128,9 @@ reported every landing area's lean on the wrong side (the sizes were right).
 | Big climb (25 m or more) | 4 | Four are finishes or near it |
 | Perched green | 4 | |
 | Uphill par 3 | 4 | |
-| Stepped | 4 (5) | Halcyon Ring 4, the Lost Valley 2 and Hollowmere 3 (Stalagmite Forest, 12 November) among them |
+| Stepped | 5 (6) | Halcyon Ring 4, the Lost Valley 2, Hollowmere 3 (Stalagmite Forest) and the Aerie 9 (the Ascent, 13 November) among them |
 | Hillside bench | 3 (4) | The Reclaim 8, Rimeholm 7 (the Moulin, 12 November), Halcyon Ring 6, the Lost Valley 6 (9%) |
-| Crest and run | 2 | |
+| Crest and run | 3 | The Aerie 8 (Long Roll, 13 November) |
 | Fall-away | 2 (3: the Lost Valley 9) | |
 | Table top | 3 (4) | The Reclaim 2 and 9 (the Rift, 12 November), Halcyon Ring 7, the Lost Valley 8; also Emberfell 3's channel (off the playing line, so not counted) |
 | Dip in front | 1 | |
@@ -142,7 +142,7 @@ reported every landing area's lean on the wrong side (the sizes were right).
 
 By course, what the check flags:
 
-- The Aerie: one bold hole; both par 3s drops.
+- The Aerie: both par 3s drops. Bold holes 3 and 9 since 13 November (the Ascent stepped, Long Roll a crest and run).
 - Red Mesa: both par 3s drops.
 - Hollowmere: four tee shots off a height (1, 4, 6, 9).
 - The Reclaim: both par 3s drops; plain par 4s and 5s 1, 4, 6, 7. The Rift became a table top 12 November (Rhys's pick): bold
@@ -163,14 +163,14 @@ The plain numbers (`docs/COURSE-DESIGN.md` "Dials"). 72 holes on eight courses (
 | Green size | 80% are 475–650 m²; over 1,000: Red Mesa's 3rd, Halcyon Ring's 7th (1,400); under 430: Halcyon Ring's 2nd (290) and 3rd (420) | about 300 to over 1,000 |
 | Par 3s | 115–265 yd; four courses' two par 3s within 35 yd of each other | 100 to 250 |
 | Par 4s | 300–457 yd | 280 to 500 |
-| Par 5s | 490–560 yd on most courses; Halcyon Ring (490, 545), the Lost Valley (490, 610) and The Reclaim (500, 610, from 12 November) split theirs | 470 to 630 |
+| Par 5s | 490–560 yd on most courses; Halcyon Ring (490, 545), the Lost Valley (490, 610), The Reclaim (500, 610), Rimeholm (495, 590), Emberfell (480 par 4, 600), Hollowmere (500, 588) and the Aerie (490, 590, 13 November) split theirs | 470 to 630 |
 | Fairway mean width | 34–72 m; 80% are 38–60 | 25 to 90 |
 | Bunkers | one or two by nearly every green; Emberfell exactly two on eight of nine | none to dozens |
 | Bends | 0–85°; most 20–55° | straight to 90° |
 
 | Course | Dials that cluster | Edges of real golf it touches | Past real golf |
 |---|---|---|---|
-| The Aerie | greens (6 of 9 one size), par 5s, bunker counts, bends | a 126 yd par 3, a 320 yd par 4, a 72 m fairway, a hole with no bunker, a straight hole | none |
+| The Aerie | bunker counts, bends (greens and par 5s cleared 13 November) | a 378 m² and an 866 m² green, a 126 and a 211 yd par 3, a 320 and a 479 yd par 4, a 490 and a 590 yd par 5, a 72 m fairway, a hole with no bunker, a straight hole | none |
 | Red Mesa | par 5s, fairway widths, bends | a 1,127 m² green, a 265 yd par 3, a 320 yd par 4, a 34 m fairway, a field of bunkers, a straight hole | the Switchback's waste |
 | Hollowmere | greens (8 of 9), par 3s (166 and 168), par 4s, widths, bends (par 5s split 12 November: 500 and 588) | a 500 and a 588 yd par 5, no bunker, a field of bunkers | none |
 | The Reclaim | greens (8 of 9), widths, bunker counts (par 5s split 12 November: 500 and 610) | a 300 yd par 4, a 500 and a 610 yd par 5, an 85° bend | none |
@@ -258,11 +258,20 @@ A bold target out of reach from the tee is now scored as a second-shot choice (1
   reaches). The 3rd's "Round the right" is unmarked: it costs both players over a stroke with 0.6–0.8 penalties
   (the tool can't bend a ball round the pinnacle). The 4th is not a decision: every bold spot tried on its top
   terrace costs the long hitter 0.75–1.7 (its card: "no hero carry, just a climb"). Marking 3, 4 and 5 would be
-  three in a row.
-- **Tips:** the Albatross set, switched off, 3,692 yd: 452, 205, 549, 353, 480, 153, 445, 490, 565 (44, 29, 39,
+  three in a row. (13 November: "Round the right" marked bold after all, with a fairway shelf right of the
+  pinnacle beside the green for a long second to land on; it now plays even with the lay-up, 4.83 against 4.75.)
+- **Variety changes (13 November 2026, Rhys's picks):** Lantern 171 → 211 yd (its tee island 37 m back and 3.5 m up,
+  so the forward tee islands don't hide the green; a 17 m drop); Long Way Round 510 → 490 (tee island 18 m forward)
+  with the shelf above; the Stair's green cut to about 380 m²; Long Roll 457 → 479 (a tee island of its own 20 m
+  back, the Hawk tee on its own pad) with a 6.8 m crest across the fairway island 223 m out, its far slope running
+  the ball on (the island's near end 10 m nearer, so the carry stays 199 yd); the Ascent 530 → 590 (tee island 55 m
+  back; carry 238 yd) in three steps of about 4.5 m (the drive's island +0.5, the upper fairway +5, a bank 420 m
+  out to the green's level +9.5, replacing the Alps ridge) to an 866 m² green. Gate: every hole within +0.4. Blind
+  tee shots two (3, and 8 over its crest). Tips now 3,776 yd: 452, 239, 528, 353, 480, 153, 445, 507, 619.
+- **Tips (as first set, 11 November):** the Albatross set, switched off, 3,692 yd: 452, 205, 549, 353, 480, 153, 445, 490, 565 (44, 29, 39,
   33, 30, 25, 32, 33, 35 yd behind). No back tee had ground behind it, so each is a small tee island floating
   behind the back tee (Rhys's pick, 11 November). Long Way Round's is blind over its crest like its back tee.
-- **Rhythm:** five straight holes (three at most); par 4s 320–457 yd, a good spread; par 3s 126 and 171.
+- **Rhythm:** five straight holes (three at most); par 4s 320–479 yd, a good spread; par 3s 126 and 211 (from 13 November).
 - **Classics:** two (Cape, punchbowl). Short of four or five.
 
 ### Red Mesa (re-measured 11 November, 12 rounds gate, 24 decisions)

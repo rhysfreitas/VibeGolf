@@ -40,7 +40,7 @@ function cardYards(h, [x, z]) {
 test('nine holes, par 36, four tee sets', () => {
   assert.equal(HOLES.length, 9);
   assert.equal(HOLES.reduce((a, h) => a + h.par, 0), 36);
-  const want = { eagle: 3385, hawk: 3091, swift: 2742, wren: 2279 };
+  const want = { eagle: 3487, hawk: 3091, swift: 2742, wren: 2279 };
   for (const s of COURSE.teeSets) assert.equal(teeYards(HOLES, s.id), want[s.id], s.id);
 });
 

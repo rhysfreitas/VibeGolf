@@ -86,13 +86,13 @@ export const HOLES = [
     heading: 311,
     idea: "A long drop to a lit green",
     blurb: "An island green 14 m below the tee, so it plays a club less. Short left is a bigger bailout ledge. Long or right is the clouds. Lanterns on posts ring the green; at dusk they are the only thing you see.",
-    yards: {"eagle":171,"hawk":149,"swift":129,"wren":99},
+    yards: {"eagle":211,"hawk":149,"swift":129,"wren":99},
     line: [[0,0],[-8,-152]],
-    tees: {"eagle":[0,4],"hawk":[-1,-16],"swift":[-2,-34],"wren":[-3.5,-62]},
-    tips: {"tee":[0.7,30.5],"yards":205},
+    tees: {"eagle":[0,41],"hawk":[-1,-16],"swift":[-2,-34],"wren":[-3.5,-62]},
+    tips: {"tee":[0.7,66],"yards":239},
     islands: [
-      {"x":0,"z":6,"rx":14,"rz":16,"top":0,"depth":220,"kind":"tee","seed":11},
-      {"x":0.7,"z":30.5,"rx":9,"rz":8,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":91,"trees":0}, // the tips tee, switched off
+      {"x":0,"z":47,"rx":12,"rz":10,"top":3.5,"depth":220,"kind":"tee","seed":11},
+      {"x":0.7,"z":66,"rx":9,"rz":7,"p":3,"top":5,"depth":70,"kind":"tee","seed":91,"trees":0}, // the tips tee, switched off
       {"x":-1,"z":-16,"rx":5.95,"rz":7,"top":-1.5,"depth":70,"kind":"tee","seed":14,"trees":0},
       {"x":-2,"z":-34,"rx":5.95,"rz":7,"top":-3,"depth":70,"kind":"tee","seed":15,"trees":0},
       {"x":-3.5,"z":-62,"rx":5.95,"rz":7,"top":-6,"depth":70,"kind":"tee","seed":16,"trees":0},
@@ -128,13 +128,13 @@ export const HOLES = [
     heading: 275,
     idea: "A blind drive at the balloon",
     blurb: "The drive is blind over a crest 185 yd out, to a fairway island that leans gently toward its right-hand edge. The hot air balloon hangs above the landing area as your aiming point. Then a rock pinnacle stands on the straight line to the green, so you go round it: the long way, left to the big lay-up island for a wedge in three, or bend a long second round its right side to a bigger green complex, with a receiving fairway in front and a pond to its left that spills off the edge.",
-    yards: {"eagle":510,"hawk":470,"swift":420,"wren":366},
+    yards: {"eagle":490,"hawk":470,"swift":420,"wren":366},
     line: [[0,0],[4,-215],[18,-462]],
-    tees: {"eagle":[0,4],"hawk":[0.6,-33],"swift":[1.5,-78],"wren":[-30,-135]},
-    tips: {"tee":[-0.9,39.5],"yards":549},
+    tees: {"eagle":[0,-14],"hawk":[0.6,-33],"swift":[1.5,-78],"wren":[-30,-135]},
+    tips: {"tee":[-0.9,20],"yards":528},
     islands: [
-      {"x":0,"z":6,"rx":14,"rz":18,"top":0,"depth":230,"kind":"tee","seed":21},
-      {"x":-0.9,"z":39.5,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":92,"trees":0}, // the tips tee, switched off
+      {"x":0,"z":-10,"rx":14,"rz":14,"top":0,"depth":230,"kind":"tee","seed":21},
+      {"x":-0.9,"z":20,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":92,"trees":0}, // the tips tee, switched off
       {"x":0.6,"z":-33,"rx":6.8,"rz":8,"top":-1,"depth":70,"kind":"tee","seed":26,"trees":0},
       {"x":1.5,"z":-78,"rx":6.8,"rz":8,"top":-2.5,"depth":70,"kind":"tee","seed":27,"trees":0},
       {"x":-30,"z":-135,"rx":6.8,"rz":8,"top":-4,"depth":70,"kind":"tee","seed":28,"trees":0},
@@ -142,11 +142,13 @@ export const HOLES = [
       {"x":8,"z":-354,"rx":14,"rz":14,"p":2.6,"top":22,"depth":170,"kind":"rough","seed":23,"trees":5},
       {"x":-64,"z":-372,"rx":33,"rz":35,"rot":0.2,"top":3,"depth":290,"kind":"fairway","seed":24},
       {"x":10,"z":-452,"rx":46,"rz":48,"top":1,"depth":300,"kind":"rough","seed":25,"trees":0},
+      {"x":52,"z":-436,"rx":22,"rz":34,"rot":0.2,"top":1,"depth":280,"kind":"fairway","seed":29,"trees":0}, // the shelf right of the pinnacle: room for a long second round the right
     ],
     fairways: [
       {"pts":[[2,-150,16,18],[4,-200,26,33],[6,-255,32,26],[6,-292,17,15]]},
       {"pts":[[-60,-345,20],[-66,-398,22]]},
       {"pts":[[-4,-418,13],[20,-421,14],[42,-425,11]]},
+      {"pts":[[44,-418,12],[56,-440,14]]},
       {"pts":[[-28,-426,9],[-26,-446,8]]},
     ],
     landforms: [
@@ -165,7 +167,7 @@ export const HOLES = [
     corridor: 9999,
     native: [0,0],
     drops: [],
-    targets: [{"name":"Fairway","x":6,"z":-245},{"name":"Layup island","x":-64,"z":-372},{"name":"Round the right","x":44,"z":-434},{"name":"Go for it","pin":true}],
+    targets: [{"name":"Fairway","x":6,"z":-245},{"name":"Layup island","x":-64,"z":-372},{"name":"Round the right","x":44,"z":-434,"bold":true},{"name":"Go for it","pin":true}],
     scenery: [
       {"type":"balloon","x":8,"z":-250,"y":35,"label":"The balloon (aim here)"},
       {"type":"falls","pts":[[-37,-462],[-37,-478]],"top":1,"label":"the pond spills off the edge"},
@@ -201,12 +203,12 @@ export const HOLES = [
       {"pts":[[-2,-240,13],[0,-268,15],[-6,-296,9]]},
     ],
     landforms: [{ type: "tilt", x: -6, z: -190, length: 90, width: 60, grade: -3 }],
-    green: {"x":-44,"z":-264,"rx":14,"rz":13,"lobes":[[-8,1,7,7,0],[8,1,7,7,0],[0,9,7,6,0],[0,-5,8,7,0]],"join":4,"style":"plateau","falseFront":1,"runoff":true,"from":[-6,-176],"pins":[[-44,-266],[-50,-260],[-38,-270],[-46,-274]],"shape":[]},
+    green: {"x":-44,"z":-264,"rx":11.8,"rz":10.9,"lobes":[[-6.7,0.8,5.9,5.9,0],[6.7,0.8,5.9,5.9,0],[0,7.6,5.9,5,0],[0,-4.2,6.7,5.9,0]],"join":3.4,"style":"plateau","falseFront":1,"runoff":true,"from":[-6,-176],"pins":[[-44,-265.7],[-49,-260.6],[-39,-269],[-45.7,-272.4]],"shape":[]},
     bunkers: [
-      {"x":-62,"z":-248,"rx":5,"rz":4,"style":"flashed","toward":[-44,-264]},
-      {"x":-27,"z":-252,"rx":3.5,"rz":3,"style":"pot"},
+      {"x":-60.2,"z":-249.6,"rx":5,"rz":4,"style":"flashed","toward":[-44,-264]},
+      {"x":-28.7,"z":-253.2,"rx":3.5,"rz":3,"style":"pot"},
     ],
-    pin: [-44,-266],
+    pin: [-44,-265.7],
     corridor: 9999,
     native: [0,0],
     drops: [],
@@ -371,16 +373,17 @@ export const HOLES = [
     heading: 75,
     idea: "Down, then up under a rock ceiling",
     blurb: "The longest par 4. Drive down 14 m to a rolling fairway where ridges and a swale give you a different lie every time. Then back up 8 m to a Double Plateau green: two raised halves with a dip between, so you have to land on the right half. Two floating islands throw blocks of rock far out over the hole, one over the landing area and one over the approach: high enough to stay out of play, low enough to feel like a ceiling.",
-    yards: {"eagle":457,"hawk":420,"swift":377,"wren":316},
+    yards: {"eagle":479,"hawk":420,"swift":377,"wren":316},
     line: [[0,0],[2,-235],[-22,-398]],
-    tees: {"eagle":[0,18],"hawk":[0,-16],"swift":[0.5,-55],"wren":[-26,-114]},
-    tips: {"tee":[-0.2,48.5],"yards":490},
+    tees: {"eagle":[0,38],"hawk":[0,-16],"swift":[0.5,-55],"wren":[-26,-114]},
+    tips: {"tee":[-0.2,64],"yards":507},
     islands: [
-      {"x":0,"z":8,"rx":16,"rz":26,"top":8,"depth":240,"kind":"tee","seed":71},
-      {"x":-0.2,"z":48.5,"rx":8,"rz":9,"p":3,"top":11,"depth":70,"kind":"tee","seed":97,"trees":0}, // the tips tee, switched off
+      {"x":0,"z":42,"rx":14,"rz":10,"top":8,"depth":240,"kind":"tee","seed":71},
+      {"x":-0.2,"z":64,"rx":8,"rz":9,"p":3,"top":11,"depth":70,"kind":"tee","seed":97,"trees":0}, // the tips tee, switched off
+      {"x":0,"z":-16,"rx":6.8,"rz":8,"top":7,"depth":70,"kind":"tee","seed":70,"trees":0},
       {"x":0.5,"z":-55,"rx":6.8,"rz":8,"top":6,"depth":70,"kind":"tee","seed":72,"trees":0},
       {"x":-26,"z":-114,"rx":6.8,"rz":8,"top":2,"depth":70,"kind":"tee","seed":73,"trees":0},
-      {"x":2,"z":-238,"rx":44,"rz":82,"top":-6,"depth":330,"kind":"fairway","seed":74},
+      {"x":2,"z":-228,"rx":44,"rz":92,"top":-6,"depth":330,"kind":"fairway","seed":74},
       {"x":-22,"z":-400,"rx":38,"rz":35,"top":2,"depth":280,"kind":"rough","seed":75,"trees":0},
     ],
     fairways: [
@@ -388,7 +391,7 @@ export const HOLES = [
     ],
     landforms: [
       { type: "tilt", x: 2, z: -250, length: 90, width: 60, grade: -3 },
-      {"type":"ridge","x":1,"z":-200,"rot":0,"length":70,"width":22,"height":1.2},
+      {"type":"ridge","x":2,"z":-185,"rot":1.5708,"length":100,"width":52,"height":6.8}, // the crest, across the line
       {"type":"swale","x":2,"z":-232,"rot":0,"length":70,"width":20,"height":0.9},
       {"type":"ridge","x":3,"z":-266,"rot":0,"length":60,"width":22,"height":1.4},
     ],
@@ -424,21 +427,21 @@ export const HOLES = [
     heading: 152,
     idea: "Climb to the clubhouse",
     blurb: "Home, toward the mountain island with the clubhouse on its shoulder. A generous drive, with a steep hill along the right that kicks a push back to the fairway, then a choice: lay up short of the gap or carry 40 yd of sky to the upper fairway, 9 m higher. The upper fairway now runs all the way to the green, so a long second can carry the ridge and roll down onto it; otherwise the third is an Alps shot, blind over the 5 m ridge to a flat green at the mountain's foot. Everyone on the terrace watches you putt out.",
-    yards: {"eagle":530,"hawk":485,"swift":436,"wren":367},
+    yards: {"eagle":590,"hawk":485,"swift":436,"wren":367},
     line: [[0,0],[-4,-225],[-24,-392],[-10,-478]],
-    tees: {"eagle":[0,4],"hawk":[-0.6,-37],"swift":[-1.5,-82],"wren":[-32,-150]},
-    tips: {"tee":[0.5,36],"yards":565},
+    tees: {"eagle":[0,59],"hawk":[-0.6,-37],"swift":[-1.5,-82],"wren":[-32,-150]},
+    tips: {"tee":[0.5,86],"yards":619},
     islands: [
-      {"x":0,"z":5,"rx":15,"rz":18,"top":0,"depth":240,"kind":"tee","seed":81},
-      {"x":0.5,"z":36,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":98,"trees":0}, // the tips tee, switched off
+      {"x":0,"z":60,"rx":15,"rz":14,"top":0,"depth":240,"kind":"tee","seed":81},
+      {"x":0.5,"z":86,"rx":8,"rz":9,"p":3,"top":1.4,"depth":70,"kind":"tee","seed":98,"trees":0}, // the tips tee, switched off
       {"x":-0.6,"z":-37,"rx":6.8,"rz":8,"top":-1,"depth":70,"kind":"tee","seed":82,"trees":0},
       {"x":-1.5,"z":-82,"rx":6.8,"rz":8,"top":-2,"depth":70,"kind":"tee","seed":83,"trees":0},
       {"x":-32,"z":-150,"rx":6.8,"rz":8,"top":-2.5,"depth":70,"kind":"tee","seed":84,"trees":0},
-      {"x":-4,"z":-228,"rx":42,"rz":76,"top":-3,"depth":320,"kind":"fairway","seed":85},
-      {"x":48,"z":-236,"rx":32,"rz":84,"top":-3,"depth":300,"kind":"rough","seed":80},
-      {"x":-24,"z":-394,"rx":36,"rz":54,"top":6,"depth":300,"kind":"fairway","seed":86},
+      {"x":-4,"z":-228,"rx":42,"rz":76,"top":0.5,"depth":320,"kind":"fairway","seed":85},
+      {"x":48,"z":-236,"rx":32,"rz":84,"top":0.5,"depth":300,"kind":"rough","seed":80},
+      {"x":-24,"z":-390,"rx":36,"rz":60,"top":5,"depth":300,"kind":"fairway","seed":86},
       {"x":-10,"z":-480,"rx":34,"rz":32,"top":5,"depth":300,"kind":"rough","seed":87,"trees":0},
-      {"x":-20,"z":-450,"rx":32,"rz":16,"top":5.5,"depth":260,"kind":"fairway","seed":79,"trees":0},
+      {"x":-20,"z":-450,"rx":32,"rz":16,"top":5,"depth":260,"kind":"fairway","seed":79,"trees":0},
       {"x":34,"z":-500,"rx":26,"rz":22,"top":12,"depth":280,"kind":"rough","seed":88,"trees":0},
       {"x":-10,"z":-516,"rx":40,"rz":16,"top":5,"depth":280,"kind":"rough","seed":78,"trees":0,"slope":{"from":[-10,-502,5],"to":[-10,-526,16]}},
       {"x":-12,"z":-566,"rx":62,"rz":48,"top":30,"depth":360,"kind":"rough","seed":89,"trees":30,"p":2},
@@ -450,12 +453,12 @@ export const HOLES = [
     landforms: [
       { type: "tilt", x: -4, z: -230, length: 90, width: 70, grade: 3.5 },
       {"type":"mound","x":50,"z":-244,"length":120,"width":46,"height":8},
-      {"type":"ridge","x":-20,"z":-432,"rot":0.15,"length":64,"width":20,"height":5},
+      {"type":"step","x":-20,"z":-421,"from":[-24,-392],"length":14,"width":240,"height":-4.5,"run":200}, // the last step, a 4.5 m bank up to the green's level
       {"type":"mound","x":-12,"z":-572,"length":92,"width":116,"height":42},
     ],
-    green: {"x":-10,"z":-480,"rx":16,"rz":14,"lobes":[[0,0,9,17,-32],[5,6,6,6,0],[-4,-6,6,6,0]],"join":3,"style":"tilt","tilt":1.5,"apron":6,"runoff":true,"from":[-24,-392],"pins":[[-10,-480],[-15,-476],[-5,-485],[-8,-474]],"shape":[]},
+    green: {"x":-10,"z":-480,"rx":20,"rz":17.5,"lobes":[[0,0,11.3,21.3,-32],[6.3,7.5,7.5,7.5,0],[-5,-7.5,7.5,7.5,0]],"join":3.8,"style":"tilt","tilt":1.5,"apron":6,"runoff":true,"from":[-24,-392],"pins":[[-10,-480],[-16.3,-475],[-3.7,-486.3],[-7.5,-472.5]],"shape":[]},
     bunkers: [
-      {"x":-30,"z":-470,"rx":5,"rz":4,"style":"flashed","toward":[-10,-480]},
+      {"x":-34,"z":-468,"rx":5,"rz":4,"style":"flashed","toward":[-10,-480]},
       {"x":-34,"z":-218,"rx":12,"rz":6,"style":"flashed","toward":[0,4]},
       {"x":-4,"z":-426,"rx":9,"rz":6,"rot":0.2,"style":"flashed","toward":[-10,-480]},
     ],
