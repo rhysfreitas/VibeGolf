@@ -60,6 +60,8 @@ function hole(def) {
   for (const [k, v] of Object.entries(h.tees)) h.yards[k] = yd(v, h.teePts[k]);
   const tp = def.tips || (def.par === 3 ? [-14, 0] : [-34, 0]);
   h.tipsPt = P(...tp); h.tipsYards = yd(tp, h.tipsPt);
+  // a tips spot well off the line (the 8th's, beside the lip) is measured through the back tee
+  if (def.par !== 3 && Math.abs(tp[1] || 0) > 10) { const b = h.teePts[BACK]; h.tipsYards = Math.round((h.yards[BACK] + Math.hypot(h.tipsPt[0] - b[0], h.tipsPt[1] - b[1]) / YD) / 5) * 5; }
   h.tips = { tee: h.tipsPt, yards: h.tipsYards };
   return { ...def, ...h };
 }
@@ -291,7 +293,7 @@ export const HOLES = [
   }),
 
   // 8. THE GATE: up the wadi floor and onto a temple terrace through the ruined gateway
-  hole({ n: 8, name: 'The Gate', par: 4, world: [[1035, -440], [1100, -665], [1091, -805]], tips: [-20, 36], shape: 'Dogleg right, up onto the terrace', hold: true, mown: 0.5, flat: 60, fade: 40,
+  hole({ n: 8, name: 'The Gate', par: 4, world: [[1035, -440], [1100, -665], [1091, -805]], tips: [-14, 14], shape: 'Dogleg right, up onto the terrace', hold: true, mown: 0.5, flat: 60, fade: 40,
     build: (P, L, len) => ({
       tees: { falcon: 0, jackal: 40, ibis: [74, -30], scarab: [86, 30] },
       // a fan: tight in the wadi, through the gate, wide on the terrace
@@ -306,12 +308,12 @@ export const HOLES = [
       green: { k: 1.02, lobes: [[0, 0, 10.5, 15, 22], [-6, 9, 7, 6, 0]], apron: 6, contour: [{ fall: 30, pct: 1.6 }, { tier: [-2, 6], up: 200, h: 0.4, w: 5 }], style: 'Set from front left to back right on the terrace, falling 1.6% toward the front with a shelf across the back; short grass runs off the back toward the terrace\'s edge' },
       trees: [],
       boulders: [...blocks(P(120, 44), 12, 5, 81, [1.5, 3.5]), ...blocks(P(150, -52), 12, 5, 82, [1.5, 3.5])],
-      targets: [{ name: 'Up on the terrace', at: P(266, 0) }, { name: 'Below the face', at: P(190, 0) }],
+      targets: [{ name: 'Up on the terrace', at: P(246, 0) }, { name: 'Below the face', at: P(165, 0) }],
       words: {
         story: 'The gate: a ruined gateway on the lip of a temple terrace, its two towers still standing.',
         plays: 'Up the wadi between its rock walls and onto a temple terrace. The terrace\'s face crosses the hole 217 m out, 6.5 m high, grass up it, and on its lip stands the ruined gateway: two towers 22 m tall, 42 m of fairway between them, the marker for the drive. Carry the face (about 245 yd from the Falcon tee) between the towers and the terrace is wide and flat, with a short iron left. Come up short and you are on the lower landing area with a blind mid iron up through the gate. The fairway is tight in the wadi and fans out on top: one line, and the reward is for length.',
-        safe: 'Below the face (190 m) if the carry is out of reach: the lower fairway is 44 m wide, then a mid iron up through the gate.',
-        bold: 'Carry the face between the towers (266 m) for a flat lie and a short iron.',
+        safe: 'Below the face (165 m, a clear 40 m short of its foot) if the carry is out of reach: the lower fairway is 44 m wide, then a mid iron up through the gate.',
+        bold: 'Carry the face between the towers (the lip is 228 m out; aim 246 m) for a flat lie and a short iron.',
         miss: 'Into the face: it stops below the top, on grass. Wide of the gate, a tower: solid, the ball drops at its foot. Left in the wadi, a dune bunker; beyond it scree at the wall\'s foot. Long at the green, short grass toward the terrace\'s back edge.',
       },
       card: {
@@ -342,7 +344,7 @@ export const HOLES = [
       green: { k: 1.04, lobes: [[0, 0, 12.5, 19.5, 13], [-8, 9, 8, 7, 0]], apron: 4, contour: [{ fall: 190, pct: 1.3 }, { bowl: [-7, 11], r: 11, h: 0.28 }], style: 'Long and deep, its axis toward the left lane, falling 1.3% away from you toward the back (land it short and let it release), a bowl in the back left under the forecourt\'s bank: from the right lane the approach crosses a dune bunker' },
       trees: [],
       boulders: [...blocks(P(150, -56), 12, 5, 91, [1.5, 3.5]), ...blocks(P(300, 62), 12, 5, 92, [1.5, 3.5])],
-      targets: [{ name: 'Right of the obelisk', at: P(244, 27) }, { name: 'Left of the obelisk', at: P(240, -20), bold: true }],
+      targets: [{ name: 'Right of the obelisk', at: P(244, 27) }, { name: 'Left of the obelisk', at: P(266, -18), bold: true }, { name: 'Short of the forecourt', at: P(352, 0) }],
       words: {
         story: 'The colossi: four seated kings 30 m tall at the cliff temple\'s door, and a fallen obelisk in the fairway on the way down to them.',
         plays: 'The longest par 4 on any course, 470 yd, and downhill: off the terrace\'s back edge, down the wadi and round to the left into the cliff temple\'s forecourt, where four seated colossi 30 m tall watch the last green and the expedition\'s camp stands beside it. At the corner a fallen obelisk lies in the middle of the fairway in three pieces. Left of it the lane is 25 m wide under the wadi\'s wall, and from there you play down the length of the green. Right of it is 40 m wide, and the approach comes in across a dune bunker. The forecourt falls away 4 m to the green: land the long second short and let it run. Banks left of the green and behind it feed a ball back.',

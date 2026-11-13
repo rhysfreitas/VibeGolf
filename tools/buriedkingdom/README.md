@@ -16,7 +16,7 @@ lie "Dune": a bunker, 7 iron 139 yd) only in bunkers and the Sand Sea. Water is 
 Plan book round 1 (13 November 2026), `out/buried-kingdom-plan-book-r1.pdf`: real fairway outlines from the forms
 (scalloped, funnel, hook, broken, a wide strip, fan, island: `alike.mjs buriedkingdom` 0 of 21 alike), green shapes
 sized to the cards, bunkers, heights (`relief.mjs`: nine height forms, none twice, bold 4, 7, 8), tee sets (Falcon,
-Jackal, Ibis, Scarab) and the Cobra tips spot on every hole (3,745 yd, switched off), targets (bold on 4 and 9, the
+Jackal, Ibis, Scarab) and the Cobra tips spot on every hole (3,730 yd, switched off), targets (bold on 4 and 9, the
 6th's green). `spread.mjs` finds no cluster. Changes from the layout doc, all from the checks: the great pyramid
 stands 48 m further south (centre 733, 712) so its face is square behind the 3rd green; the 8th's gate towers
 stand 25.5 m either side of the line (42 m of fairway between them, so every tee set lands on 40 m); the 9th's
@@ -43,6 +43,15 @@ then `node ../review/relief.mjs buriedkingdom`, `alike.mjs` and `spread.mjs` int
 | `node sketch.mjs [holes]` | Three views a hole (back tee 2.4 m up, landing area or forward tee, short of the green): plain shapes through a real camera in SVG. Blockout shapes only. |
 | `node book.mjs` | The plan book PDF: cover map, course card, the course at a glance (two tables), the checks as run, one page a hole. |
 
-Still to come (the brief's steps 5-7): review rounds from Rhys's markups; then the blockout (an emitter, a world
-module for the far dune sea, river plain and cliff line, the theme and a hard midday light, a menu tile, tests, the
-gate and a play-through); then the art pass.
+The blockout (13 November 2026, after Rhys approved the plan book): `node emit.mjs` (about a minute) writes
+`src/course/buriedkingdom.js` from this data: each hole's field every 2 m (firm sand as the engine's 'waste', the
+Sand Sea and bunkers 'sand', the river and the basin 'water'), greens and bunkers as outlines, the built things as
+soaking boxes, palms as plants, the tips spots switched off, and `COURSE.kingdom` (the site once: a 10 m map, a
+60 m one beyond, pyramids, built things, palms) for `src/course/kingdom-world.js`. Don't hand-edit the module.
+After a change: `node emit.mjs`, `npm test`, `node ../review/design.mjs buriedkingdom` (the gate),
+`node ../review/tips.mjs buriedkingdom` (the 3rd's 36 m landing is the nine's one tight fairway, on purpose).
+Each tips spot gets level ground (`tipsPad` in `scene.mjs`); one more than 10 m off the line (the 8th's, beside
+the lip) is measured through the back tee. Targets moved for the engine: the 8th's (terrace 246 m, lay-up 165 m)
+and the 9th's (the bold left one at 266 m past the obelisk; a lay-up short of the forecourt).
+
+Still to come: the art pass (`docs/ART-PASS.md`), in its own round.

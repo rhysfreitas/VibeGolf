@@ -35,7 +35,8 @@ function clear(T, o, x, z) {
 }
 // opts: scale (a shorter hitter: every reach times this), first ([x, z]: where the first shot is aimed, for playing one
 // route), firstAt (the shot `first` applies to: 0 the tee shot, 1 the second, for a choice made on the second shot),
-// skip (targets left out, e.g. the bold ones when playing the safe route), max (strokes before giving up)
+// skip (targets left out, e.g. the bold ones when playing the safe route), max (strokes before giving up), trace
+// (log where each stroke was aimed and finished)
 function playHole(h, T, set, seed, opts = {}) {
   const scale = opts.scale ?? 1, skip = opts.skip || [];
   const R = rng(seed), back = h.tees[set], pin = h.pin, pinY = T.groundAt(pin[0], pin[1]);
@@ -62,7 +63,7 @@ function playHole(h, T, set, seed, opts = {}) {
     const sol = solveCustom(flat, CLUBS, { x: 0, z: -dist });
     const res = live(amateurMiss(sol.ball, R)); n++;
     if (res.surf === 'void' || res.surf === 'water') { n++; pen++; log.push(`${res.surf}+1`); continue; } // a stroke, play again from here
-    log.push(res.surf); ball = res;
+    log.push(opts.trace ? `${res.surf}@${Math.round(res.x)},${Math.round(res.z)}(aim ${Math.round(aim[0])},${Math.round(aim[1])})` : res.surf); ball = res;
   }
   return { n, log, pen, stuck: true };
 }

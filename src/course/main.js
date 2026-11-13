@@ -21,7 +21,7 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js', rimeholm: './rimeholm.js', emberfell: './emberfell.js', lostvalley: './lostvalley.js', halcyon: './halcyon.js' };
+const COURSES = { aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js', rimeholm: './rimeholm.js', emberfell: './emberfell.js', lostvalley: './lostvalley.js', halcyon: './halcyon.js', buriedkingdom: './buriedkingdom.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
 const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
 const CAVE = COURSE.theme === 'cave'; // underground: built like Red Mesa (floor, playfield, rocks), under a roof
@@ -35,7 +35,9 @@ const EMBER = COURSE.theme === 'ember';
 const VALLEY = COURSE.theme === 'valley';
 // a ring space station (Halcyon Ring): a sampled field with the ring's curve in it, parkland, glass onto space; ring-world.js draws the cylinder
 const RING = COURSE.theme === 'ring';
-const FIELD = CITY || ICE || EMBER || VALLEY || RING;   // ground from a sampled field
+// Egyptian ruins half buried in sand (The Buried Kingdom): a sampled field, firm sand that plays as a waste area, soft dunes as bunkers; kingdom-world.js draws the site
+const KINGDOM = COURSE.theme === 'kingdom';
+const FIELD = CITY || ICE || EMBER || VALLEY || RING || KINGDOM;   // ground from a sampled field
 const MESA = COURSE.theme === 'mesa' || CAVE || FIELD;
 const DESERT = MESA && !FIELD; // the red-rock colours (fog, the ground shader's native earth)
 const REDROCK = DESERT && !CAVE; // Red Mesa itself: its art (junipers, talus, ragged far mesas)
@@ -48,6 +50,7 @@ const IW = ICE ? await import('./ice-world.js') : null;
 const EW = EMBER ? await import('./ember-world.js') : null;
 const VW = VALLEY ? await import('./valley-world.js') : null;
 const RW = RING ? await import('./ring-world.js') : null;
+const KW = KINGDOM ? await import('./kingdom-world.js') : null;
 const SP = SHAPED ? await import('./sky-props.js') : null;
 const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
 document.title = COURSE.name;
@@ -75,7 +78,7 @@ const islandAt = (x, z) => T.islandAt(x, z);
 const surfaceAt = (x, z) => T.surfaceAt(x, z);
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' ? 'fairway' : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
-const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : EMBER ? 'Lava rock' : VALLEY ? 'Meadow' : RING ? 'Lawn' : MESA ? 'Native' : 'Rough', sand: 'Bunker', waste: EMBER ? 'Scoria' : 'Waste area', water: EMBER ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder' };
+const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : EMBER ? 'Lava rock' : VALLEY ? 'Meadow' : RING ? 'Lawn' : KINGDOM ? 'Rock' : MESA ? 'Native' : 'Rough', sand: KINGDOM ? 'Dune' : 'Bunker', waste: EMBER ? 'Scoria' : KINGDOM ? 'Sand' : 'Waste area', water: EMBER ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder' };
 const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' || l === 'powder' ? 'var(--sand)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
 
 /* ---------- conditions and tees (set on the round setup screen) ---------- */
@@ -156,6 +159,9 @@ function lightPreset() {
   // long shadows; the fill cooler and weaker than under a blue sky (black space overhead), green bounce off the
   // parkland; a warm haze filling the curve ahead (the far floor climbs into it)
   if (RING && t !== 'night') Object.assign(P, { sun: t === 'golden' ? 0xffbf80 : P.sun, si: t === 'golden' ? 3.1 : P.si, hs: 0x9fb0c8, hg: 0x55693a, hi: 0.5, exp: 0.64, fog: w === 'overcast' ? 0xb8bcbc : 0xd9c9a8, near: 600, far: w === 'clear' ? 7500 : 4500 });
+  // the buried kingdom in blazing late-morning light: a hard white sun high up, a deep blue sky, short shadows, warm
+  // bounce off the sand into them, the air clear to the horizon with a pale dust haze low down
+  if (KINGDOM && t !== 'night') Object.assign(P, t === 'midday' ? { sun: 0xfff0d2, si: 3.0, hs: 0xb4c6dc, hg: 0xc49a5e, hi: 0.5, exp: 0.46, turb: 2.4, ray: 0.85, mie: 0.004 } : {}, { fog: w === 'overcast' ? 0xcbbfa6 : 0xe6d6b6, near: 700, far: w === 'clear' ? 9000 : 5000 });
   if (CAVE) return { ...P, si: 0, hs: 0x5c6880, hg: 0x221f1b, hi: 0.5, exp: 1.05, fog: 0x080a0d, near: 120, far: 1700 };
   // Red Mesa's golden hour: a deep blue sky over a warm horizon, the low sun raking the walls, cool blue in the shadows, red bounce
   if (REDROCK && t === 'golden' && w === 'clear') Object.assign(P, { sun: 0xffa255, si: 3.3, hs: 0x9db4dc, hg: 0x8a4a30, hi: 0.5, exp: 0.6, turb: 2.4, ray: 3.0, mie: 0.004, fog: 0xe2b58e, near: 600, far: 6000 });
@@ -285,6 +291,7 @@ islandMat.onBeforeCompile = sh => {
   if (EMBER) { sh.defines = { ...(sh.defines || {}), EMBER: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (VALLEY) { sh.defines = { ...(sh.defines || {}), VALLEY: '', }; sh.uniforms.uSurf2 = surf2U; }
   if (RING) { sh.defines = { ...(sh.defines || {}), RING: '' }; sh.uniforms.uSurf2 = surf2U; }
+  if (KINGDOM) { sh.defines = { ...(sh.defines || {}), KINGDOM: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -301,7 +308,7 @@ uniform sampler2D uSurf2; uniform vec3 uMoon; uniform vec2 uWind; uniform vec4 u
 uniform sampler2D uSurf2;
 float emberHeat = 0.0, emberGloss = 0.0;
 #endif
-#if defined(VALLEY) || defined(RING)
+#if defined(VALLEY) || defined(RING) || defined(KINGDOM)
 uniform sampler2D uSurf2;
 #endif
 #ifdef VALLEY
@@ -466,6 +473,24 @@ scrub = mix(scrub, plaza, s2.b);
 scrub = mix(scrub, mownC, mownFar);
 dirt = scrub;
 #endif
+#ifdef KINGDOM
+// the buried kingdom (blockout): firm wind-packed sand off the grass, warm gold, darker where the wind has scoured it,
+// fine ripples close by; the fields along the river; pale limestone masonry. Inside the hole's box from uSurf2
+// (R fields, G masonry, A rock); beyond it from the world mesh's aW (x fields, 0.5 another hole's grass; y masonry)
+vec4 s2 = inTex > 0.5 ? texture2D(uSurf2, clamp(st, 0.0, 1.0)) : vec4(step(0.75, vW4.x), vW4.y, 0.0, 0.0);
+float kMown = inTex > 0.5 ? 0.0 : (1.0 - step(0.75, vW4.x)) * step(0.25, vW4.x);
+vec3 firm = mix(lin(vec3(0.74,0.57,0.35)), lin(vec3(0.82,0.65,0.42)), mid) * (0.9 + 0.14*fine);
+firm = mix(firm, lin(vec3(0.64,0.48,0.3)), smoothstep(0.5, 0.78, fb(p.xz*0.035 + 4.0)) * 0.5);
+firm *= 0.96 + 0.04*sin((p.x*0.94 + p.z*0.34)*5.5 + fb(p.xz*0.3)*5.0) * (1.0 - smoothstep(25.0, 90.0, camD));
+vec3 crops = mix(lin(vec3(0.27,0.42,0.16)), lin(vec3(0.36,0.5,0.2)), step(0.5, fract(p.x/26.0 + 0.3*vn(p.xz*0.02)))) * (0.85 + 0.25*fine);
+crops = mix(crops, lin(vec3(0.3,0.24,0.16)), step(0.72, vn(floor(p.xz/38.0))) * 0.7);
+vec3 paving = mix(lin(vec3(0.68,0.58,0.42)), lin(vec3(0.75,0.65,0.48)), vn(floor(p.xz/2.4))) * (0.9 + 0.12*fine);
+scrub = firm;
+scrub = mix(scrub, crops, s2.r);
+scrub = mix(scrub, paving, s2.g);
+scrub = mix(scrub, mix(lin(vec3(0.33,0.5,0.19)), lin(vec3(0.39,0.56,0.22)), mid), kMown);
+dirt = scrub;
+#endif
 #endif
 #ifdef ICE
 // Rimeholm: snow and ice. uSurf: R packed snow (fairways, tees), G grass (green 1, its collar 0.5), B black sand,
@@ -573,6 +598,13 @@ msand = mix(lin(vec3(0.38,0.15,0.1)), lin(vec3(0.38,0.36,0.34)) * (0.94 + 0.06*s
 mrough = mix(lin(vec3(0.3,0.31,0.17)), lin(vec3(0.38,0.36,0.2)), mid) * (0.7 + 0.5*fine);
 mrough = mix(mrough, scrub, smoothstep(0.45, 0.75, fb(p.xz*0.5)) * 0.45);
 #endif
+#ifdef KINGDOM
+// soft sand (bunkers, the Sand Sea): paler and yellower than the firm sand, rippled; the rough a dry halfa grass,
+// thin, the sand showing through it
+msand = mix(lin(vec3(0.9,0.78,0.52)), lin(vec3(0.95,0.85,0.6)), mid) * (0.92 + 0.1*fine) * (0.95 + 0.05*sin((p.x*0.94 + p.z*0.34)*3.2 + fb(p.xz*0.2)*6.0));
+mrough = mix(lin(vec3(0.5,0.5,0.25)), lin(vec3(0.6,0.56,0.3)), mid) * (0.74 + 0.44*fine);
+mrough = mix(mrough, scrub, smoothstep(0.5, 0.8, fb(p.xz*0.6)) * 0.5);
+#endif
 col = mix(col, mrough, smoothstep(0.12, 0.5, sf.a));
 col = mix(col, mcut, smoothstep(0.7, 0.95, sf.a));
 col = mix(col, mfair, sf.r); col = mix(col, grn, sf.g);
@@ -584,7 +616,7 @@ col = mix(col, msand, smoothstep(0.35, 0.75, sf.b));
 // red sandstone: strata, pale bands and dark desert varnish down the faces
 float band = fb(vec2(p.y*0.16, (p.x+p.z)*0.003));
 float steep = 1.0 - abs(vWN.y);
-#if !defined(CAVE) && !defined(CITY) && !defined(EMBER) && !defined(VALLEY) && !defined(RING)
+#if !defined(CAVE) && !defined(CITY) && !defined(EMBER) && !defined(VALLEY) && !defined(RING) && !defined(KINGDOM)
 // Navajo sandstone: rust to salmon in thick sets, pale bleached bands, fine cross-bedding inside each set,
 // a harder pale caprock along the rim with a shadowed lip under it, and desert varnish streaking down from
 // the pour-offs (strongest near the top, fading down the face, never a full-height stripe)
@@ -661,6 +693,17 @@ rock = mix(rock, lin(vec3(0.2,0.3,0.11)) * (0.8 + 0.3*fine), ledge * smoothstep(
 rock = mix(lin(vec3(0.72,0.69,0.62)), lin(vec3(0.82,0.79,0.72)), band) * (0.86 + 0.18*fine);
 vec2 cw2 = vec2(dot(p.xz, normalize(vec2(-vWN.z, vWN.x) + vec2(1e-4))), p.y);
 rock *= 1.0 - 0.16*(1.0 - smoothstep(0.0, 0.04, min(abs(fract(cw2.y/0.6) - 0.5), abs(fract(cw2.x/1.4 + 0.5*floor(cw2.y/0.6)) - 0.5))));
+#endif
+#ifdef KINGDOM
+// the wadi's cliffs: tawny limestone in thick beds, paler bands, a shadowed foot to each bed; masonry (the pyramids'
+// faces inside a hole's box, temple platforms) in pale courses
+{ float bedK = p.y*0.21 + fb(p.xz*0.007)*1.3, bfK = fract(bedK);
+rock = mix(lin(vec3(0.72,0.56,0.36)), lin(vec3(0.84,0.7,0.48)), h21(vec2(floor(bedK), 2.3))) * (0.86 + 0.18*fine);
+rock = mix(rock, lin(vec3(0.9,0.8,0.6)), smoothstep(0.62, 0.84, band) * 0.5);
+rock *= 1.0 - 0.22*(1.0 - smoothstep(0.0, 0.1, bfK)) * smoothstep(0.4, 0.75, steep);
+vec3 blocksK = mix(lin(vec3(0.68,0.57,0.4)), lin(vec3(0.76,0.65,0.47)), h21(vec2(floor(p.y/1.4), 5.1))) * (0.9 + 0.12*fine);
+blocksK *= 1.0 - 0.14*(1.0 - smoothstep(0.0, 0.08, fract(p.y/1.4)));
+rock = mix(rock, blocksK, s2.g); }
 #endif
 #ifdef CITY
 rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0.25*fine);
@@ -918,7 +961,7 @@ const trunkGeo = new THREE.CylinderGeometry(0.12, 0.22, 1, 6); trunkGeo.translat
 const foliageMat = new THREE.MeshStandardMaterial({ roughness: 0.92, envMapIntensity: 0.5 });
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 });
 function buildTrees(list, group) {
-  list = list.filter(t => t.type !== 'mushroom' && t.type !== 'ohia' && !(VALLEY && VW.TYPES.has(t.type)) && !t.ringFar);   // ring-world.js draws Halcyon's trees well off the line (ringFar) // cave-world.js draws the giant mushrooms, ember-world.js the ohia, valley-world.js the valley's trees (they still play)
+  list = list.filter(t => t.type !== 'mushroom' && t.type !== 'ohia' && !(VALLEY && VW.TYPES.has(t.type)) && !(KINGDOM && KW.TYPES.has(t.type)) && !t.ringFar);   // ring-world.js draws Halcyon's trees well off the line (ringFar) // cave-world.js draws the giant mushrooms, ember-world.js the ohia, valley-world.js the valley's trees (they still play)
   if (!MESA) return skyPines(list, group);
   const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type !== 'pine');
   const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * (ICE ? 6 : 3));
@@ -1008,7 +1051,8 @@ function buildHole(h) {
     const tex = ICE ? (() => { const [a, b] = IW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75, COURSE.ice); surf2U.value = b; return a; })()
       : EMBER ? (() => { const [a, b] = EW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })()
       : VALLEY ? (() => { const [a, b] = VW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })()
-      : RING ? (() => { const [a, b] = RW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
+      : RING ? (() => { const [a, b] = RW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })()
+      : KINGDOM ? (() => { const [a, b] = KW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
     surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
   }
   for (const I of ISL) buildIsland(I, { seg: MESA ? Math.min(coarse ? 200 : 280, Math.max(96, Math.round(Math.max(I.rx, I.rz) * 1.6))) : coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
@@ -1028,6 +1072,7 @@ function buildHole(h) {
     else if (EMBER) { mesaCtx = EW.buildEmber(h, T, box, COURSE.ember, HOLES.indexOf(h), { group: holeGroup, coarse, sunDir, dusk: cond.time === 'golden' ? emberStage : -1, farMat: emberFarMat }); trees.push(...mesaCtx.trees); }
     else if (VALLEY) { mesaCtx = VW.buildValley(h, T, box, COURSE.valley, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, rockMat: islandMat, sunDir, perch: !state.once.has('ptero') }); trees.push(...mesaCtx.trees); }
     else if (RING) { mesaCtx = RW.buildRing(h, T, box, COURSE.ring, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir, haze: FOG_COLOR.getHex() }); trees.push(...mesaCtx.trees); }
+    else if (KINGDOM) { mesaCtx = KW.buildKingdom(h, T, box, COURSE.kingdom, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
     else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
     else {
       MW.talus(talusPts, coarse, holeGroup); talusPts = null;
@@ -1125,7 +1170,7 @@ function buildHole(h) {
     rocks: T.rocks.map(r => ({ type: r.type, x: r.x, z: r.z, r: r.type === 'arch' ? r.ao : r.capR, rot: r.rot || 0, d: r.d || 0, ai: r.ai || 0 })),
     fit: h.line ? [...Object.values(h.tees).map(t => (Array.isArray(t) ? t : [t.x, t.z])), [pp.x, pp.z]] : null,
     // a city course: the map is painted from the ground's surfaces, with the buildings in dark grey
-    paint: ICE ? IW.mapPaint(T, h) : EMBER ? EW.mapPaint(T, h) : VALLEY ? VW.mapPaint(T, h) : RING ? RW.mapPaint(T, h) : CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
+    paint: ICE ? IW.mapPaint(T, h) : EMBER ? EW.mapPaint(T, h) : VALLEY ? VW.mapPaint(T, h) : RING ? RW.mapPaint(T, h) : KINGDOM ? KW.mapPaint(T, h) : CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
       return (x, z) => { for (const r of blds) { const dx = x - r.x, dz = z - r.z; if (Math.abs(dx * r.c + dz * r.s) < r.w / 2 && Math.abs(-dx * r.s + dz * r.c) < r.d / 2) return '#3b3a37'; } return C[T.surfaceAt(x, z)] || '#77746d'; }; })() : null,
     feat: { greens: T.features.greens.map(G => featureOutline(G, 'green')), bunkers: T.features.bunkers.map(B => featureOutline(B, 'bunker', 24)), tees: T.features.tees.map(t => featureOutline(t, 'tee')), water: T.features.water.map(W => featureOutline(W, 'water')) },
   });
@@ -1595,7 +1640,7 @@ function finishShot() {
     res = '<span style="color:var(--bad)">Void +1</span>';
   } else {
     state.ball.copy(end); state.lie = surfaceAt(end.x, end.z);
-    res = `<span style="color:${lieColor(state.lie)}">${VALLEY && state.lie === 'desert' ? VW.lieName(HOLE, end.x, end.z) : RING && state.lie === 'desert' ? RW.lieName(HOLE, end.x, end.z) : RING && state.lie === 'water' && RW.isGlass(HOLE, end.x, end.z) ? 'Glass' : LIE_NAMES[state.lie] || state.lie}</span>`;
+    res = `<span style="color:${lieColor(state.lie)}">${VALLEY && state.lie === 'desert' ? VW.lieName(HOLE, end.x, end.z) : RING && state.lie === 'desert' ? RW.lieName(HOLE, end.x, end.z) : KINGDOM && state.lie === 'desert' ? KW.lieName(HOLE, end.x, end.z) : KINGDOM && state.lie === 'rough' && KW.isField(HOLE, end.x, end.z) ? 'Field' : RING && state.lie === 'water' && RW.isGlass(HOLE, end.x, end.z) ? 'Glass' : LIE_NAMES[state.lie] || state.lie}</span>`;
     state.rimDrop = null;
     if (state.lie === 'water') { // a stroke, and a drop beside where it went in, no nearer the hole
       state.strokes++;

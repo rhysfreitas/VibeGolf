@@ -148,6 +148,9 @@ export function buildHole(h) {
   const pinBase = (() => { const pr = along(...h.pin); return PR.at(pr.s) + lineExtra(pr.s, 0) - h.base + shapesAt(...W(...h.pin)); })();
   const level = (x, z, y) => { const go = gm(x, z); if (go > 9) return y; const raw = baseAbs(x, z) - h.base + shapesAt(...W(x, z)); return y + (pinBase - raw) * (1 - smooth((go + 1) / 10)); };
   for (const t of teePads) t.y = level(t.x, t.z, base(t.x, t.z)) + 0.4;
+  // the tips spot (switched off in the game) gets level ground, so turning it on later needs no earthwork
+  const tipsPad = h.tipsPt ? { x: h.tipsPt[0], z: h.tipsPt[1] } : null;
+  if (tipsPad) tipsPad.y = level(tipsPad.x, tipsPad.z, base(tipsPad.x, tipsPad.z));
 
   function ground(x, z) {
     const [X, Z] = W(x, z), wa = waterAt(X, Z);
@@ -155,6 +158,7 @@ export function buildHole(h) {
     for (const t of teePads) if (onPad(t, x, z)) return t.y;
     let y = level(x, z, base(x, z));
     for (const t of teePads) { const d = Math.hypot(x - t.x, z - t.z); if (d < 12) y = lerp(t.y, y, smooth((d - 6) / 6)); }
+    if (tipsPad) { const d = Math.hypot(x - tipsPad.x, z - tipsPad.z); if (d < 16) y = lerp(tipsPad.y, y, smooth((d - 8) / 8)); }
     return y;
   }
   const slopeAt = (x, z) => { const d = 1.5, a = ground(x + d, z), b = ground(x - d, z), c = ground(x, z + d), e = ground(x, z - d); return Math.hypot(a - b, c - e) / (2 * d); };
@@ -223,6 +227,7 @@ export const BUILT = HOLES.map(buildHole);
 
 // the ground between the holes (world, absolute heights): each hole's own ground near its line, blended into its
 // neighbours' further out and into the world beyond
+const TIPS_W = HOLES.map((h, k) => h.tipsPt ? [...WOR[k](...h.tipsPt), BUILT[k].ground(...h.tipsPt) + BUILT[k].base] : null).filter(Boolean);
 export function worldAt(X, Z) {
   let best = -1, bd = Infinity;
   const near = [];
@@ -238,6 +243,7 @@ export function worldAt(X, Z) {
     y = fy / fw;
     if (bd > 130) y = lerp(y, V(X, Z) + shapesAt(X, Z), smooth((bd - 130) / 110));
   }
+  for (const [tx, tz, ty] of TIPS_W) { const d = Math.hypot(X - tx, Z - tz); if (d < 16) y = lerp(ty, y, smooth((d - 8) / 8)); }   // each tips spot level, whichever hole's ground it sits in
   const s = bd < 150 ? own.surface(lx, lz) : (() => {
     if (softAt(X, Z)) return 'sand';
     const d = 1.5, sl = Math.hypot(V(X + d, Z) - V(X - d, Z), V(X, Z + d) - V(X, Z - d)) / (2 * d), nat = nativeAt(X, Z);
