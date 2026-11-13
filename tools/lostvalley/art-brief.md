@@ -110,3 +110,24 @@ streaked black and pink); more than the two real lights.
   tree's bare trunk and upturned arms.
 - NPS, [plants of the dinosaurs' world](https://npshistory.com/handbooks/natural/dino/dino3.htm): ferns, horsetails,
   cycads and conifers; no grass.
+
+## Rhys's picks (13 November 2026)
+
+- **Rock: Roraima**, chosen from in-game renders of three (Roraima, golden sandstone, green all over): pink-red
+  quartzite in beds, black streaks down every water line, grey dry faces, moss on the ledges.
+- **Plants, light and details: no preference**, so the recommended options: the Jurassic floor (fern and horsetail
+  meadow, cycads, tree ferns, monkey-puzzles, swamp cypress, no grass outside the course); wet and clearing (puddles,
+  wet rock, mist, a rainbow in the Great Falls' spray, cloud on the rim); proper long-necks and better bones (the camp
+  as it was).
+
+## What pass 1 built
+
+- main.js, the `VALLEY` block: the walls as tepui quartzite (beds about 6 m thick with a shadowed foot, joints, black
+  algae streaks, pink-red fresh rock, grey dry faces, lichen, moss on ledges; the fine lines fade with distance), the
+  fern and horsetail meadow, quartz gravel with jasper, small puddles and wet mud close by (`valWet`), muted turf.
+- valley-world.js: blackwater and glossy tar; the Great Falls breaking into spray with a faint rainbow; mist off the
+  jungle, on the walls and along the far rim; candelabra monkey-puzzles, cycad crowns, moss on the cypresses, the
+  Strangler's root lattice, ferns and horsetails on the native ground; smooth long-necks (necks moving slowly) and
+  bipeds; bones as round pieces.
+- Left for a later pass: the camp (lanterns, a rope ladder), swamp life, the Bone Bluff's rock (it reads as hooped
+  layers close up), the glare on the 3rd tee looking into the sun.

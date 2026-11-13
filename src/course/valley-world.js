@@ -1,5 +1,5 @@
 // The Lost Valley (global THREE): what COURSE.valley holds (world space) put into a hole's frame (hole.frame) and
-// drawn. A blockout, ahead of its art pass: the valley floor and the table mountain's walls from the height maps
+// drawn (art pass 1: tools/lostvalley/art-brief.md). The valley floor and the table mountain's walls from the height maps
 // (sandstone faces in the ground shader's VALLEY branch, jungle on the talus), the far mesas on the skyline, the water
 // (the braided river, the swamp's pools, the creek, the plunge pool) and the tar, the Great Falls and the ribbon
 // falls off the walls with their mist, the trees (cycads, tree ferns, monkey-puzzles and the giant, broadleaves, swamp
@@ -119,9 +119,9 @@ function mergeGeos(parts) {
 }
 const M4 = (x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
 // a cylinder from P0 (radius r0) to P1 (radius r1)
-const between = (P0, P1, r0, r1 = r0, seg = 6) => {
+const between = (P0, P1, r0, r1 = r0, seg = 6, open = false) => {
   const a = new THREE.Vector3(...P0), b = new THREE.Vector3(...P1), d = b.clone().sub(a), l = d.length() || 0.01;
-  return [new THREE.CylinderGeometry(r1, r0, l, seg, 1), new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()), new THREE.Vector3(1, 1, 1))];
+  return [new THREE.CylinderGeometry(r1, r0, l, seg, 1, open), new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()), new THREE.Vector3(1, 1, 1))];
 };
 const ball = (x, y, z, sx, sy = sx, sz = sx, seg = 10) => [new THREE.SphereGeometry(1, seg, Math.max(5, seg * 0.7 | 0)), M4(x, y, z, 0, 0, 0, sx, sy, sz)];
 // a chain of cylinders through points with radii
@@ -148,8 +148,7 @@ function shapes() {
     for (const [h, reach, n] of [[0.05, 1.0, 9], [0.32, 0.88, 8], [0.56, 0.66, 7], [0.76, 0.38, 5]]) for (let i = 0; i < n; i++) {
       const an = (i + Rr() * 0.45) / n * 6.283 + h * 4, ca = Math.cos(an), sa = Math.sin(an), rc = reach * (0.85 + Rr() * 0.25);
       const P = t => [ca * rc * t, h - 0.06 * t + 0.42 * t ** 3, sa * rc * t];
-      for (let k = 0; k < 4; k++) parts.push(between(P(k / 4), P((k + 1) / 4), 0.085 - k * 0.008, 0.078 - k * 0.008, 5));
-      parts.push([new THREE.IcosahedronGeometry(0.1, 0), M4(...P(1))]);
+      for (let k = 0; k < 3; k++) parts.push(between(P(k / 3), P((k + 1) / 3), 0.09 - k * 0.01, 0.08 - k * 0.012, 4, true));   // open, four-sided: 8 triangles a piece
     }
     return keep(mergeGeos(parts)); })();
   // hanging moss under a swamp cypress's crown: grey-green strands from y 0 down to -1
@@ -389,7 +388,7 @@ export function buildValley(hole, T, box, E, hi, { group, coarse, groundMat, roc
       const tr = t.tr ?? 0.7; put('trunk', t.x, y0 - 0.3, t.z, tr, H * 0.97, tr, ry);
       // the crown: whorls of long arms turning up at the tips, a flat-topped candelabra (far off, a dome is enough)
       const top = y0 + H, dome = H * (1 - low);
-      if (near(t.x, t.z, coarse ? 700 : 1100)) put('puzzle', t.x, top - dome * 0.62, t.z, cr * 1.1, dome * 0.55, cr * 1.1, ry, pick(t.type, rr));
+      if (near(t.x, t.z, coarse ? 450 : 650)) put('puzzle', t.x, top - dome * 0.62, t.z, cr * 1.1, dome * 0.55, cr * 1.1, ry, pick(t.type, rr));
       else put('blob', t.x, top - dome * 0.16, t.z, cr, dome * 0.17, cr * 0.94, ry, pick(t.type, rr));
     }
     else if (t.type === 'cypress') { put('cone', t.x, y0 - 0.8, t.z, (t.tr ?? 0.9) * 2.4, 3, (t.tr ?? 0.9) * 2.4, ry); put('trunk', t.x, y0, t.z, t.tr ?? 0.9, H * 0.8, t.tr ?? 0.9, ry);
