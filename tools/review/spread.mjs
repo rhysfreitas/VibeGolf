@@ -17,7 +17,7 @@ import { createTerrain } from '../../src/course/terrain.js';
 import { loadCourse, MODULES, REPO } from './page.mjs';
 import { signature } from './alike.mjs';
 
-const PLANNED = ['halcyon', 'buriedkingdom'];
+const PLANNED = ['halcyon', 'buriedkingdom', 'wreckersreach'];
 // the edges of real golf (`lo`, `hi`: a nine touches some of them, not all), and what counts as past real golf
 export const EDGE = {
   green: { lo: 400, hi: 800, pastLo: 280, pastHi: 1200, unit: 'm²' },
@@ -35,12 +35,13 @@ export function holeFacts(line, groundAt, surfaceAt, par, yards) {
   for (let u = -60; u <= 60; u += 1.5) for (let v = -60; v <= 60; v += 1.5) { if (on(pin[0] + ux * u - uz * v, pin[1] + uz * u + ux * v, ['green'])) { n++; d0 = Math.min(d0, u); d1 = Math.max(d1, u); w0 = Math.min(w0, v); w1 = Math.max(w1, v); } }
   const xs = line.map(p => p[0]), zs = line.map(p => p[1]), x0 = Math.min(...xs) - 70, z0 = Math.min(...zs) - 70;
   const W = Math.ceil((Math.max(...xs) + 70 - x0) / 3), H = Math.ceil((Math.max(...zs) + 70 - z0) / 3), g = new Uint8Array(W * H);
-  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (on(x0 + i * 3, z0 + j * 3, ['sand', 'waste', 'powder'])) g[j * W + i] = 1;
+  const pot = new Uint8Array(W * H);   // pots (a links' small sunk bunkers, 3-5 m) count from a single cell
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (on(x0 + i * 3, z0 + j * 3, ['sand', 'waste', 'powder', 'pot'])) { g[j * W + i] = 1; pot[j * W + i] = surfaceAt(x0 + i * 3, z0 + j * 3) === 'pot' ? 1 : 0; }
   let byGreen = 0, inFairway = 0, biggest = 0;
   for (let k = 0; k < g.length; k++) if (g[k] === 1) {
-    const st = [k]; g[k] = 2; let c = 0, sx = 0, sz = 0;
-    while (st.length) { const q = st.pop(), i = q % W, j = (q - i) / W; c++; sx += x0 + i * 3; sz += z0 + j * 3; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i2 = i + di, j2 = j + dj; if (i2 >= 0 && j2 >= 0 && i2 < W && j2 < H && g[j2 * W + i2] === 1) { g[j2 * W + i2] = 2; st.push(j2 * W + i2); } } }
-    if (c * 9 < 40) continue;
+    const st = [k]; g[k] = 2; let c = 0, sx = 0, sz = 0, pc = 0;
+    while (st.length) { const q = st.pop(), i = q % W, j = (q - i) / W; c++; pc += pot[q]; sx += x0 + i * 3; sz += z0 + j * 3; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i2 = i + di, j2 = j + dj; if (i2 >= 0 && j2 >= 0 && i2 < W && j2 < H && g[j2 * W + i2] === 1) { g[j2 * W + i2] = 2; st.push(j2 * W + i2); } } }
+    if (c * 9 < (pc ? 9 : 40)) continue;
     biggest = Math.max(biggest, c * 9); if (Math.hypot(sx / c - pin[0], sz / c - pin[1]) < 55) byGreen++; else inFairway++;
   }
   let width = null, turn = 0;

@@ -65,6 +65,12 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   decisions 3, 5, 9; set pieces the double green and the shared fairway (both new), a field of pots, a blind dune.
   The 6th, 8th and 9th all play south (Rhys: "it's what out-and-back links do"). Same par as another course on
   three holes at most.
+  Plan book round 1 14 November 2026 (`out/wreckers-reach-plan-book-r1.pdf`): `alike.mjs` 0 of 15 alike (six forms),
+  `relief.mjs` bold 3 (valley carry) and 9 (table top), `spread.mjs` no cluster (edges: a 380 m² green, the double green,
+  a 205 yd par 3, a 330 and a 465 yd par 4, a 580 yd par 5, 85 m fairways, a field of pots, a 139° bend, a straight
+  hole; past real golf: the double green and the 22 pots). Changed from the layout doc by the checks: the 9th 40 m north
+  (the walk from the 8th green 97 m), the galleon 8 m west, the Cauldron 15 m west with a mouth to the north-east, the
+  5th tee raised 4.6 m over lowered ground (the pool shows from it), the shared field ending about 100 yd out.
 
 - The Buried Kingdom (Rhys's picks, 12-13 November 2026; `claude/buried-kingdom-layout.md` and
   `claude/brief-buried-kingdom.md` in the project; `tools/buriedkingdom/`): Egyptian ruins half buried in sand, an
