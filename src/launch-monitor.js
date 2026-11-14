@@ -90,6 +90,7 @@ class LaunchMonitor extends EventTarget {
     this.status = 'off';          // off | connecting | bridge | ready
     this.detail = 'Not connected';
     this.needsTap = false;        // Bluetooth was on last time but this page can't reconnect without a tap
+    this.notListed = false;       // the chooser closed without an R10: offer the list of every device
     this.ws = null;
     this.retry = 0;
     this.wanted = false;
@@ -138,18 +139,22 @@ class LaunchMonitor extends EventTarget {
   }
 
   // ── Bluetooth ──
-  // choose = true from a tap (opens the browser's chooser); false to reconnect a remembered R10 quietly.
+  // choose = true from a tap (opens the browser's chooser); false to reconnect a remembered R10 quietly;
+  // 'all' from a tap lists every device nearby (for an R10 the chooser's name filter didn't show).
   connectBluetooth(choose = true) {
     if (!this.bluetooth) { this.setStatus('off', 'This browser has no Bluetooth access'); return Promise.resolve(false); }
     this.disconnect(true);
     this.source = 'ble'; store(false, 'ble', SRC); this.wanted = true;
-    const p = choose ? this.ble.choose() : this.ble.reconnect();   // choose() calls requestDevice before any await
-    this.setStatus('connecting', choose ? 'Choose your R10…' : 'Reconnecting to the R10…');
+    let p;
+    try { p = choose ? this.ble.choose(choose === 'all') : this.ble.reconnect(); }   // choose() calls requestDevice before any await
+    catch (e) { p = Promise.reject(e); }
+    this.setStatus('connecting', choose === 'all' ? 'Pick the R10 from the list…' : choose ? 'Choose your R10…' : 'Reconnecting to the R10…');
     return p.then(ok => {
       if (ok === false) { this.wanted = false; this.needsTap = true; this.setStatus('off', 'Tap Connect R10 to link the R10 on this page'); return false; }
-      store(false, '1', AUTO);
+      store(false, '1', AUTO); this.notListed = false;
       return true;
     }, e => {
+      if (choose && e && e.name === 'NotFoundError') this.notListed = true;
       this.ble.wanted = false; this.ble.teardown();
       this.onBle('error', { message: explainBleError(e) });
       return false;
@@ -214,6 +219,7 @@ export function mountLaunchMonitorUI({ dot, text, button, compact = false }) {
       <p class="lm-note">${bleNote}</p>
       <div class="lm-row lm-row-ble"><button class="lm-go" id="lmBle"></button>
         <label class="lm-tee" title="How far the R10 sits behind the ball. Leave blank to use the R10's own setting.">R10 to ball <input id="lmTee" type="number" inputmode="decimal" min="3" max="15" step="0.5" placeholder="–"> ft</label></div>
+      <p class="lm-note lm-miss" id="lmMiss" hidden>R10 not in the list? Swipe the Garmin Golf app closed (it grabs the R10 even in the background), switch the R10 off and on, and try again. <button class="lm-all" id="lmAll">Show all devices</button></p>
     </div>
     <div class="lm-pane" data-pane="bridge">
       <p class="lm-note">Start the bridge on this computer, point OpenLaunch Connect (or any GSPro connector) at it, then connect here. Setup steps are in the README.</p>
@@ -224,7 +230,7 @@ export function mountLaunchMonitorUI({ dot, text, button, compact = false }) {
     <div class="lm-dbg" id="lmDbg" hidden><span>Capture · <b id="lmDbgN">0</b></span><button id="lmDbgSave">Save</button><button id="lmDbgCopy">Copy</button><button id="lmDbgClear">Clear</button></div>`;
   document.body.appendChild(pop);
   const $ = s => pop.querySelector(s);
-  const url = $('#lmUrl'), go = $('#lmGo'), st = $('#lmState'), ble = $('#lmBle'), tee = $('#lmTee');
+  const url = $('#lmUrl'), go = $('#lmGo'), st = $('#lmState'), ble = $('#lmBle'), tee = $('#lmTee'), miss = $('#lmMiss');
   let view = lm.source;
   const render = () => {
     const s = lm.status, ready = s === 'ready';
@@ -238,6 +244,7 @@ export function mountLaunchMonitorUI({ dot, text, button, compact = false }) {
     go.textContent = on('bridge') ? 'Disconnect' : 'Connect';
     ble.textContent = on('ble') ? 'Disconnect' : 'Connect R10';
     ble.disabled = !lm.bluetooth;
+    miss.hidden = !(lm.bluetooth && lm.notListed && !on('ble'));
     st.textContent = lm.detail;
   };
   url.value = lm.url;
@@ -247,6 +254,7 @@ export function mountLaunchMonitorUI({ dot, text, button, compact = false }) {
   for (const b of pop.querySelectorAll('.lm-seg button')) b.onclick = () => { view = b.dataset.src; render(); };
   go.onclick = () => { if (lm.wanted && lm.source === 'bridge' && lm.status !== 'off') lm.disconnect(); else lm.connect(url.value.trim() || DEFAULT_URL); render(); };
   ble.onclick = () => { if (lm.wanted && lm.source === 'ble' && lm.status !== 'off') lm.disconnect(); else lm.connectBluetooth(true); render(); };
+  $('#lmAll').onclick = () => { lm.connectBluetooth('all'); render(); };
   tee.addEventListener('change', () => { const v = parseFloat(tee.value); lm.setTeeDistance(v); tee.value = lm.teeFt ?? ''; });
   url.addEventListener('keydown', e => { if (e.key === 'Enter') go.click(); e.stopPropagation(); });
   tee.addEventListener('keydown', e => { if (e.key === 'Enter') tee.blur(); e.stopPropagation(); });

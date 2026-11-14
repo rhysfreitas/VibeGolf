@@ -48,7 +48,7 @@ VibeGolf talks to the R10 itself, straight from the browser.
 
 While you play, the game keeps the screen awake (where the browser allows it), so the phone beside the R10 doesn't dim and drop the link. A swing a moment early, before the last ball has stopped, is held and played when the game is ready; one far too early is refused with a message rather than played from a lie you hadn't seen.
 
-If it won't connect, pair the R10 once in the phone's or PC's Bluetooth settings and try again. **R10 to ball** (in feet) is optional: set it and the game sends it to the R10 as its tee distance; leave it blank to keep the R10's own setting. Where the browser remembers the R10 (Chrome), each page reconnects by itself; otherwise the status reads **R10 · tap** and one tap on **Connect R10** links it again.
+If it won't connect, pair the R10 once in the phone's or PC's Bluetooth settings and try again. If the R10 isn't in the chooser's list, swipe the Garmin Golf app closed (it holds the R10 even in the background, and a connected R10 stops showing up), switch the R10 off and on, and try again; after an empty chooser the popover also offers **Show all devices**, which lists everything nearby so you can pick the R10 whatever name it shows under. On iPhone the home-screen app runs in Safari, which has no Bluetooth: open the VibeGolf address inside Bluefy itself. **R10 to ball** (in feet) is optional: set it and the game sends it to the R10 as its tee distance; leave it blank to keep the R10's own setting. Where the browser remembers the R10 (Chrome), each page reconnects by itself; otherwise the status reads **R10 · tap** and one tap on **Connect R10** links it again.
 
 | Device | Browser |
 |---|---|

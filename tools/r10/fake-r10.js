@@ -57,6 +57,6 @@
   };
   F.shot = n => { const s = SHOT.slice(); s[13] = n; return sendPb(s); };
   F.drop = () => { connected = false; device.dispatchEvent(new Event('gattserverdisconnected')); };
-  const bt = { requestDevice: async () => device, getDevices: window.__noGetDevices ? undefined : async () => (F.remember ? [device] : []) };
+  const bt = { requestDevice: async o => { F.requests = (F.requests || []).concat([o]); if (window.__hideR10 && !o.acceptAllDevices) throw new DOMException('User cancelled the requestDevice() chooser.', 'NotFoundError'); return device; }, getDevices: window.__noGetDevices ? undefined : async () => (F.remember ? [device] : []) };
   Object.defineProperty(Navigator.prototype, 'bluetooth', { get: () => bt, configurable: true });
 })();

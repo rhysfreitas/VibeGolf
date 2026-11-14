@@ -24,6 +24,8 @@
 .lm-row-ble { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
 .lm-row-ble .lm-go { padding: 10px 14px; }
 .lm-go:disabled { opacity: 0.4; cursor: default; }
+.lm-miss[hidden] { display: none; }
+.lm-all { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--bone); border-radius: 6px; padding: 3px 8px; margin-left: 2px; font: inherit; cursor: pointer; white-space: nowrap; }
 .lm-tee { justify-self: end; display: flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage, var(--mist)); white-space: nowrap; }
 .lm-tee input { width: 4.2em; padding: 7px 6px; text-align: center; }
 .lm-dbg { display: flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sage, var(--mist)); border-top: 1px solid var(--line); padding-top: 8px; }

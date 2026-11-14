@@ -20,6 +20,7 @@ const withTimeout = (p, ms, msg) => Promise.race([p, sleep(ms).then(() => { thro
 export function explainBleError(e) {
   const m = `${e && e.name} ${e && e.message}`.toLowerCase();
   if (e && e.name === 'NotFoundError') return m.includes('cancel') || m.includes('chosen') ? 'No R10 chosen' : 'No R10 found. Is it switched on and nearby?';
+  if (e && e.name === 'TypeError' && m.includes('acceptalldevices')) return 'This browser can\'t list every device';
   if (e && e.name === 'SecurityError') return 'Tap Connect R10 to pick your R10';
   if (m.includes('auth') || m.includes('encrypt') || m.includes('pair') || m.includes('bond')) return 'The R10 needs pairing. Pair it in your Bluetooth settings, then tap Connect R10 again';
   if (e && e.name === 'TimeoutError') return e.message;
@@ -37,10 +38,15 @@ export class R10Link {
   }
 
   // Must be called straight from a tap: no await before requestDevice.
-  choose() {
+  // all = true lists every device nearby, for an R10 the name filter doesn't show (a phone that has only
+  // ever seen it through the Garmin app may not have its name in the advert).
+  choose(all = false) {
     this.wanted = true;
-    const req = navigator.bluetooth.requestDevice({ filters: [{ namePrefix: NAME_PREFIX }], optionalServices: [SERVICE] });
-    this.emit('progress', { text: 'Choose your R10…' });
+    this.log({ dir: 'ble', what: 'choose', all });
+    const req = navigator.bluetooth.requestDevice(all
+      ? { acceptAllDevices: true, optionalServices: [SERVICE] }
+      : { filters: [{ namePrefix: NAME_PREFIX }, { namePrefix: 'R10' }], optionalServices: [SERVICE] });
+    this.emit('progress', { text: all ? 'Pick the R10 from the list…' : 'Choose your R10…' });
     return req.then(d => this.use(d)).then(() => this.open());
   }
 
@@ -84,7 +90,8 @@ export class R10Link {
       const v = ev.target.value;
       try { session.receive(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)); } catch (e) { this.log({ dir: 'rx', what: 'receive-error', error: e.message }); }
     });
-    await rx.startNotifications();
+    await this.patient(() => rx.startNotifications(), 'notifications', gen);
+    if (gen !== this.gen) return;
     this.log({ dir: 'ble', what: 'notifications-on' });
     clearTimeout(this.watchdog);
     this.watchdog = setTimeout(() => {
@@ -94,16 +101,34 @@ export class R10Link {
         ? 'The R10 connected but won\'t talk. Close the Garmin Golf app (the R10 takes one connection), then tap Connect R10'
         : 'The R10 stopped mid setup. Tap Connect R10 to try again'));
     }, READY_TIMEOUT);
-    await session.start();
+    // The REGISTER write can be refused while the phone is still pairing; send it again rather than wait
+    // 15 s for the watchdog.
+    await this.patient(() => session.start(), 'register', gen);
+  }
+
+  // The first protected operation on an unpaired R10 fails while the OS pairs with it (Android does this
+  // by itself, and Chrome reports the failure). Stay connected and try again a few times before giving up.
+  async patient(fn, what, gen) {
+    for (let i = 0; ; i++) {
+      try { return await fn(); } catch (e) {
+        this.log({ dir: 'ble', what: `${what}-failed`, attempt: i + 1, name: e && e.name, error: e && e.message });
+        if (i >= 3 || gen !== this.gen || !(this.device && this.device.gatt.connected)) throw e;
+        this.emit('progress', { text: 'Pairing with the R10…' });
+        await sleep(2000);
+        if (gen !== this.gen) throw e;
+      }
+    }
   }
 
   // GATT allows one operation at a time, so writes queue. Data goes without response; REGISTER with.
+  // A failed data write is logged and the queue carries on; a failed REGISTER is the caller's to handle.
   write(ch, bytes, withResponse) {
-    this.q = this.q.then(() => {
+    const p = this.q.then(() => {
       if (withResponse) return ch.writeValueWithResponse ? ch.writeValueWithResponse(bytes) : ch.writeValue(bytes);
       return ch.writeValueWithoutResponse ? ch.writeValueWithoutResponse(bytes) : ch.writeValue(bytes);
-    }).catch(e => this.log({ dir: 'tx', what: 'write-error', error: e.message }));
-    return this.q;
+    });
+    this.q = p.catch(e => this.log({ dir: 'tx', what: 'write-error', error: e.message }));
+    return withResponse ? p : this.q;
   }
 
   onSession(type, d) {

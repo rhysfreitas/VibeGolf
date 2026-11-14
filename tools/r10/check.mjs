@@ -91,5 +91,19 @@ const result = {};
   result.gameErrs = errs;
   await pg.close();
 }
+// 6. The chooser's name filter doesn't show the R10 (as in Bluefy): the hint and Show all devices
+{
+  const { pg, errs } = await open('range.html?mode=range', { width: 667, height: 375, pre: 'window.__hideR10 = true; window.__noGetDevices = true;' });
+  await pg.evaluate(() => document.querySelector('#lmBtn,[data-r=lmBtn]').click()); await pg.waitForTimeout(300);
+  result.missBefore = await pg.evaluate(() => document.getElementById('lmMiss').hidden);
+  await pg.click('#lmBle'); await pg.waitForTimeout(500);
+  result.missAfter = await pg.evaluate(() => ({ hidden: document.getElementById('lmMiss').hidden, state: document.getElementById('lmState').textContent }));
+  await pg.screenshot({ path: `${OUT}/range-667-not-listed.png` });
+  await pg.click('#lmAll');
+  await pg.waitForFunction(() => document.querySelector('#lmText,[data-r=lmText]').textContent === 'R10 live', null, { timeout: 20000 }).catch(() => {});
+  result.showAll = { text: await lmText(pg), hintHidden: await pg.evaluate(() => document.getElementById('lmMiss').hidden), requests: await pg.evaluate(() => window.__fakeR10.requests.map(o => o.acceptAllDevices ? 'all' : 'filtered')) };
+  result.missErrs = errs;
+  await pg.close();
+}
 console.log(JSON.stringify(result, null, 1));
 await b.close();
