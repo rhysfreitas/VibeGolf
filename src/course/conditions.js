@@ -15,6 +15,7 @@ export const WINDS = {
   light:  { label: 'Light', mph: [3, 7] },
   breezy: { label: 'Breezy', mph: [8, 14] },
   strong: { label: 'Strong', mph: [15, 24] },
+  sea:    { label: 'Sea wind', mph: [14, 20] }, // steady and strong: two to three clubs (Wrecker's Reach's signature)
 };
 export const WEATHER = {
   clear:    { label: 'Clear' },

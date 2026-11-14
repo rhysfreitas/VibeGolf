@@ -21,6 +21,12 @@ const SURFACES = {
   water:   { mu: 4.00, eScale: 0.02, tScale: 0.02, crr: 6.00 },  // it stops where it goes in
   ice:     { mu: 0.10, eScale: 0.85, tScale: 0.92, crr: 0.025 }, // lake ice (Rimeholm): a ball skates on
   powder:  { mu: 1.00, eScale: 0.08, tScale: 0.10, crr: 2.20 },  // soft powder snow: it buries the ball
+  // links surfaces (Wrecker's Reach; Rhys's picks 14 November 2026). 'links' is a fairway on a course with
+  // COURSE.turf = 'links' (main.js maps it): a drive runs about 35 yd, a 7 iron 16 (fairway: 17 and 8).
+  links:   { mu: 0.36, eScale: 1.00, tScale: 0.76, crr: 0.10 },
+  beach:   { mu: 0.40, eScale: 0.90, tScale: 0.70, crr: 0.16 },  // firm wet sand: runs like a parkland fairway
+  pot:     { mu: 0.90, eScale: 0.25, tScale: 0.20, crr: 1.20 },  // a sod-faced pot: sand (the face's cost is the lie)
+  tussock: { mu: 2.00, eScale: 0.08, tScale: 0.08, crr: 3.00 },  // in a clump of dune grass: it stops there
 };
 
 const DEFAULT_COEF = { cd0: 0.2043, cdS: 0.1414, cdLow: 0.2999, cdV: 51.1, clMax: 0.447, s0: 0.1736, clScale: 1.0, spinTau: 19.9 }; // fit to TrackMan PGA Tour averages

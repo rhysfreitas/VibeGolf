@@ -76,10 +76,12 @@ let HOLE = null, ISL = [], T = null;
 const groundAt = (x, z) => T.groundAt(x, z);
 const islandAt = (x, z) => T.islandAt(x, z);
 const surfaceAt = (x, z) => T.surfaceAt(x, z);
-const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' ? 'fairway' : s === 'void' ? 'rough' : s; };
+// a links course (COURSE.turf = 'links') runs its fairways, tees and collars firm: physics.js 'links'
+const FIRM = COURSE.turf === 'links' ? 'links' : 'fairway';
+const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' || s === 'fairway' ? FIRM : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
-const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : EMBER ? 'Lava rock' : VALLEY ? 'Meadow' : RING ? 'Lawn' : KINGDOM ? 'Rock' : MESA ? 'Native' : 'Rough', sand: KINGDOM ? 'Dune' : 'Bunker', waste: EMBER ? 'Scoria' : KINGDOM ? 'Sand' : 'Waste area', water: EMBER ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder' };
-const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' || l === 'powder' ? 'var(--sand)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
+const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut', rough: 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : EMBER ? 'Lava rock' : VALLEY ? 'Meadow' : RING ? 'Lawn' : KINGDOM ? 'Rock' : MESA ? 'Native' : 'Rough', sand: KINGDOM ? 'Dune' : 'Bunker', waste: EMBER ? 'Scoria' : KINGDOM ? 'Sand' : 'Waste area', water: EMBER ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder', pot: 'Pot bunker', tussock: 'Dune grass', beach: 'Beach' };
+const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' || l === 'powder' || l === 'pot' || l === 'beach' ? 'var(--sand)' : l === 'tussock' ? 'var(--warn)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
 
 /* ---------- conditions and tees (set on the round setup screen) ---------- */
 const TEE_SETS = COURSE.teeSets || [{ id: 'tee', name: 'Tees', color: '#f5c542', minDrive: 0 }];
@@ -1292,6 +1294,12 @@ function lieAdjust(shot, lie) {
   else if (lie === 'waste') { s.Speed *= 0.94; s.TotalSpin *= 0.78; s.VLA += 0.6; }
   else if (lie === 'desert') { s.Speed *= 0.9; s.TotalSpin *= 0.62; s.VLA += 1; }
   else if (lie === 'powder') { s.Speed *= 0.78; s.TotalSpin *= 0.55; s.VLA += 3; }   // soft snow: the ball sits down in it
+  // links lies (Wrecker's Reach, Rhys's picks 14 November 2026): a pot's sod face and a tussock cap how hard the
+  // ball can come out, whatever the club: about 85 yd at most from a pot (greenside it plays as a bunker), about
+  // 50 from a clump of dune grass (a hack out; always found). The beach is firm wet sand: a tight lie.
+  else if (lie === 'pot') { s.Speed = Math.min(s.Speed * 0.86, 70); s.TotalSpin *= 0.65; s.VLA = Math.max(s.VLA + 2, 30); }
+  else if (lie === 'tussock') { s.Speed = Math.min(s.Speed * 0.86, 50); s.TotalSpin *= 0.65; s.VLA = Math.max(s.VLA + 2, 34); }
+  else if (lie === 'beach') { s.Speed *= 0.97; s.TotalSpin *= 0.85; s.VLA += 0.3; }
   return s;
 }
 // the slope under the ball, as the golfer stands: along the aim (+ = uphill) and across it (+ = rising to
@@ -1469,7 +1477,7 @@ function renderPlan() {
     tw.appendChild(b);
   }
   if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
-  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut −2%', rough: 'Rough −6%', sand: (KINGDOM ? 'Dune' : 'Bunker') + ' −14%', waste: (KINGDOM ? 'Sand' : 'Waste area') + ' −6%', desert: (CAVE ? 'Cave floor' : KINGDOM ? 'Rock' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green' };
+  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: 'First cut −2%', rough: 'Rough −6%', sand: (KINGDOM ? 'Dune' : 'Bunker') + ' −14%', waste: (KINGDOM ? 'Sand' : 'Waste area') + ' −6%', desert: (CAVE ? 'Cave floor' : KINGDOM ? 'Rock' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green', pot: 'Pot bunker: out ~85 yd at most', tussock: 'Dune grass: hack out ~50 yd', beach: 'Beach −3%' };
   const pct = state.k < 0.995 ? ` · ${Math.round(state.k * 100)}%` : '';
   const L = lieSlope(), slopeTxt = [Math.abs(L.up) >= 2 ? `${L.up > 0 ? 'uphill' : 'downhill'} ${Math.round(Math.abs(L.up))}°` : '', Math.abs(L.side) >= 2 ? `ball ${L.side > 0 ? 'above' : 'below'} feet` : ''].filter(Boolean).join(', ');
   $('pvLie').textContent = `${CLUBS[state.club].name}${pct} · Lie: ${lieNames[state.lie] || state.lie}${slopeTxt ? ' · ' + slopeTxt : ''}`;

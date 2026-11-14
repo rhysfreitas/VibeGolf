@@ -416,7 +416,7 @@ export function prepFeatures(hole, baseAt, teeSpots, teeAims, sceneryAt = null) 
     for (const W of water) if (near(W, x, z) && waterRho(W, x, z) < 1.4) { const g = groundOf(); if (g !== null && g < W.level) return 'water'; }
     for (const V of rivers) { const d = riverDist(V, x, z); if (d < V.hw) return 'water'; if (d < V.hw + 2) return 'waste'; }
     let rim = null; // sand beats the green; the green beats a bunker's grassy rim
-    for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s === 'sand' || s === 'waste' || s === 'powder') return s; if (s) rim = s; }
+    for (const B of bunkers) { const s = bunkerSurface(B, x, z); if (s === 'sand' || s === 'waste' || s === 'powder' || s === 'pot') return s; if (s) rim = s; }
     for (const G of greens) { const s = greenSurface(G, x, z); if (s === 'green' || s === 'fringe') return s; if (s && !rim) rim = s; }
     for (const P of rockfalls) if (near(P, x, z) && rockfallRho(P, x, z) < 0.92) return 'desert';
     if (rim) return rim;

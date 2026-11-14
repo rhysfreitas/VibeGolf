@@ -108,3 +108,12 @@ test('a topped shot runs, but not for ever: it never goes further up a slope tha
   const drive = { Speed: 150, VLA: 12, HLA: 0, TotalSpin: 2800, SpinAxis: 0 };
   assert.ok(Math.abs(simulate(drive).total - 249) < 4, 'an ordinary drive runs out as before');
 });
+
+test("links surfaces (Wrecker's Reach): firm turf runs, the beach runs, a tussock stops the ball", () => {
+  const rho = airDensity(72, 0), drive = { Speed: 140, VLA: 12.5, HLA: 0, TotalSpin: 3000, SpinAxis: 0 };
+  const roll = surf => { const r = simulate(drive, { rho, surfaceAt: () => surf }); return r.totalDown - r.carry; };
+  const fw = roll('fairway'), links = roll('links'), beach = roll('beach'), tus = roll('tussock');
+  assert.ok(links > 30 && links < 42, `links run ${links.toFixed(1)} yd`);
+  assert.ok(Math.abs(beach - fw) < 4, `beach ${beach.toFixed(1)} vs fairway ${fw.toFixed(1)}`);
+  assert.ok(tus < 1, `tussock ${tus.toFixed(2)} yd`);
+});

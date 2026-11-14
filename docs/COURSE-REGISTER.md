@@ -45,6 +45,26 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
 | Halcyon Ring (plan book round 5) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
 | The Buried Kingdom (blockout, 13 November 2026) | 3 The Landing | 5L The River Bank | 4 The Causeway ↑ | 4R Sahara | 3 The Sphinx | 5R Hog's Back | 4L The Quarry | 4R The Gate | 4L The Colossi | 36 |
+| Wrecker's Reach (layout approved 13 November 2026; plan book next) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
+
+- Wrecker's Reach (Rhys's picks, 13-14 November 2026; `claude/wreckers-reach-layout.md`,
+  `claude/brief-wreckers-reach.md` and `claude/brief-addendum-wreckers-reach-vegetation.md` in the project;
+  `tools/wreckersreach/`): the first true links. A ship-graveyard shore on a spit of dunes, sea west, lagoon east,
+  age of sail only (galleons, frigates, brigs, luggers), an invented coast, in a storm clearing. No special rule:
+  firm running turf, a strong south-west wind, sod-faced pots that cost about a shot; off the fairway fescue
+  (cheap), then dune sand with tall tussocks of dune grass (sand between them, a hack out in one, always found),
+  then the firm beach. Out and back; par 36 with three par 3s and three par 5s (first), back-to-back par 3s (6, 7;
+  first), a long par 3 early (2, 205 yd; first), a par 5 opener on the shared fairway (with the 9th) and a shared
+  double green (2 and 8). Galleon 3,365 yd; tees Galleon, Frigate, Brig, Lugger, Man-of-War tips (switched off).
+  1 The Hauling Ground 5 540 (funnel, crest and run, 90 m wide), 2 The False Light 3 205 (uphill to a low table, the
+  double green), 3 The Galleon 4 330 (broken, valley carry over a beached galleon; drivable), 4 Man-of-War 4 465
+  (hourglass up a dune valley, Bottle and Road green), 5 The Cauldron 5 515 (hook clockwise round the point, Cape,
+  fall-away; bite off what you dare), 6 The Dell 3 165 (blind over a 9 m dune), 7 The Ribs 3 135 (the drop par 3,
+  over a tidal creek), 8 The Graveyard 5 580 (scalloped, level, 22 pots: a hole past real golf), 9 The Wrecker's
+  Inn 4 430 (fan, a 5.5 m table top; high road or low road). Classics Bottle, Road, Cape, Dell (Road and Dell new);
+  decisions 3, 5, 9; set pieces the double green and the shared fairway (both new), a field of pots, a blind dune.
+  The 6th, 8th and 9th all play south (Rhys: "it's what out-and-back links do"). Same par as another course on
+  three holes at most.
 
 - The Buried Kingdom (Rhys's picks, 12-13 November 2026; `claude/buried-kingdom-layout.md` and
   `claude/brief-buried-kingdom.md` in the project; `tools/buriedkingdom/`): Egyptian ruins half buried in sand, an
