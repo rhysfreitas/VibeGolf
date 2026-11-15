@@ -54,4 +54,8 @@ Each tips spot gets level ground (`tipsPad` in `scene.mjs`); one more than 10 m 
 the lip) is measured through the back tee. Targets moved for the engine: the 8th's (terrace 246 m, lay-up 165 m)
 and the 9th's (the bold left one at 266 m past the obelisk; a lay-up short of the forecourt).
 
-Still to come: the art pass (`docs/ART-PASS.md`), in its own round.
+Art pass 1 (14 November 2026): `art-brief.md` (researched; Rhys's picks at its end). `emit.mjs` lays out the
+scenery off the lines of play (`ART`: reeds, tamarisk, acacias, doums, litter, columns, birds, boats, camp, doors,
+talus, crests, quay) and the Sphinx's body (`sphinx`) in `COURSE.kingdom`; `src/course/kingdom-world.js` draws them.
+`world.mjs` exports `duneAt` and `duneCrest` for it. Renders: `node ../review/views.mjs buriedkingdom`, then
+`python3 ../review/sheet.py buriedkingdom`.

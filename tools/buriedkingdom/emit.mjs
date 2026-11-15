@@ -20,7 +20,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
 import { BUILT, worldAt, toWorld, toLocal } from './scene.mjs';
-import { V, waterAt, nativeAt, softAt, PYRAMIDS, RIVER, BASIN, SITES, SPHINX, BANK } from './world.mjs';
+import { V, waterAt, nativeAt, softAt, PYRAMIDS, RIVER, BASIN, SITES, SPHINX, BANK, WADI, QUARRY, beachW, basinE, duneCrest } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { distLine, rnd, project } from './geo.mjs';
 import { packHeights } from '../../src/course/field-code.js';
@@ -95,6 +95,143 @@ const PALMS = [];
     if (TEES.some(([x, z]) => Math.hypot(X - x, Z - z) < 45)) continue;
     PALMS.push([r1(X), r1(Z), r1(2.6 + R() * 1.6), r1(11 + R() * 9)]);
   }
+}
+// ---- art pass 1 (art-brief.md, Rhys's picks): what is drawn round the play, laid out here where every hole's
+// line is known. All of it is scenery (the ball passes through), kept off the lines of play and the tees' views.
+const ART = {};
+{
+  const WL = HOLES.map((h, k) => h.line.map(p => WOR[k](...p)));
+  const TEES = HOLES.flatMap((h, k) => [...Object.values(h.teePts), h.tipsPt].filter(Boolean).map(p => WOR[k](...p)));
+  const offLine = (X, Z, d) => WL.every(L => distLine(L, X, Z) >= d);
+  const offTee = (X, Z, d) => TEES.every(([x, z]) => Math.hypot(X - x, Z - z) >= d);
+  const native = (X, Z) => { const w = worldAt(X, Z); return w.s; };
+  const spaced = (list, X, Z, d) => list.every(q => { const p = Array.isArray(q) ? q : q.at; return Math.hypot(p[0] - X, p[1] - Z) >= d; });
+  const R = rnd(9311);
+  // papyrus and reeds along the river's east bank, in the shallows and on the bank (not along the basin's quay)
+  ART.reeds = [];
+  for (let s0 = 0; s0 < 1900; s0 += 3.2) {
+    let acc = 0, P = null, D = null;
+    for (let i = 1; i < BANK.length; i++) { const [ax, az] = BANK[i - 1], [bx, bz] = BANK[i], l = Math.hypot(bx - ax, bz - az); if (acc + l >= s0) { const t = (s0 - acc) / l; P = [ax + (bx - ax) * t, az + (bz - az) * t]; D = [(bx - ax) / l, (bz - az) / l]; break; } acc += l; }
+    if (!P) break;
+    if (R() < 0.25) continue;
+    const off = -6 + R() * 10, n = [D[1], -D[0]];   // + = east of the bank line (land), - = into the river
+    const X = P[0] + n[0] * off, Z = P[1] + n[1] * off;
+    if (basinE(X, Z) < 1.6) continue;
+    if (!offLine(X, Z, 22) || !offTee(X, Z, 30)) continue;
+    const wa = waterAt(X, Z), y = wa ? wa.level : V(X, Z);
+    if (!wa && y > RIVER.level + 2.2) continue;
+    ART.reeds.push([r1(X), r1(Z), r1(y), r2(0.8 + R() * 0.7), wa ? 1 : 0]);
+  }
+  // tamarisk on the firm sand just past the fields, thinning to nothing 110 m out
+  ART.tamarisk = [];
+  for (let i = 0; i < 40000 && ART.tamarisk.length < 260; i++) {
+    const X = -400 + R() * 1100, Z = -1200 + R() * 1700, rp = project(BANK, X, Z);
+    if (rp.off < 60 || rp.off > 260) continue;
+    if (nativeAt(X, Z) !== 'firm' || native(X, Z) !== 'firm') continue;
+    const edge = 95 + 30 * Math.sin(rp.s / 80), d = rp.off - edge;
+    if (d < 4 || R() > Math.exp(-d / 45)) continue;
+    if (!offLine(X, Z, 28) || !offTee(X, Z, 30) || !spaced(ART.tamarisk, X, Z, 7)) continue;
+    ART.tamarisk.push([r1(X), r1(Z), r1(V(X, Z)), r2(1.6 + R() * 2.2)]);
+  }
+  // a few flat-topped acacias in the wadi floor
+  ART.acacias = [];
+  { let acc = 0; const segs = [];
+    for (let i = 1; i < WADI.length; i++) { const l = Math.hypot(WADI[i][0] - WADI[i - 1][0], WADI[i][1] - WADI[i - 1][1]); segs.push([acc, l, i]); acc += l; }
+    for (let k = 0; k < 400 && ART.acacias.length < 11; k++) {
+      const s0 = R() * acc, [a0, l, i] = segs.find(([a, l]) => s0 >= a && s0 < a + l) || segs[0], t = (s0 - a0) / l;
+      const A = WADI[i - 1], B = WADI[i], dx = (B[0] - A[0]) / l, dz = (B[1] - A[1]) / l, off = (R() < 0.5 ? -1 : 1) * (35 + R() * 40);
+      const X = A[0] + (B[0] - A[0]) * t - dz * off, Z = A[1] + (B[1] - A[1]) * t + dx * off;
+      if (native(X, Z) !== 'firm' || !offLine(X, Z, 42) || !offTee(X, Z, 40) || !spaced(ART.acacias, X, Z, 40)) continue;
+      ART.acacias.push([r1(X), r1(Z), r1(worldAt(X, Z).y), r1(5.5 + R() * 3)]);
+    }
+  }
+  // doum palms (forked trunks, fan crowns) here and there in the far groves
+  ART.doums = [];
+  for (let i = 0; i < 20000 && ART.doums.length < 16; i++) {
+    const X = -500 + R() * 900, Z = -1300 + R() * 2000;
+    if (nativeAt(X, Z) !== 'field' || waterAt(X, Z) || !offLine(X, Z, 90) || !offTee(X, Z, 60) || !spaced(ART.doums, X, Z, 30)) continue;
+    ART.doums.push([r1(X), r1(Z), r1(V(X, Z)), r1(9 + R() * 5)]);
+  }
+  // ruin litter: column drums, blocks, fallen casing round the pyramids' feet, two toppled heads
+  ART.litter = [];
+  const scatter = (c, r0, r1_, n, kinds) => { for (let i = 0, got = 0; i < n * 40 && got < n; i++) {
+    const an = R() * 6.283, rr = r0 + R() * (r1_ - r0), X = c[0] + Math.cos(an) * rr, Z = c[1] + Math.sin(an) * rr, sf = native(X, Z);
+    if (!(sf === 'firm' || sf === 'stone') || waterAt(X, Z) || !offLine(X, Z, 30) || !offTee(X, Z, 22) || !spaced(ART.litter, X, Z, 4.5)) continue;
+    const k = kinds[Math.floor(R() * kinds.length)];
+    ART.litter.push({ k, at: [r1(X), r1(Z)], y: r1(worldAt(X, Z).y), rot: r2(R() * 6.283), s: r2(0.7 + R() * 0.6), t: r2(R()) }); got++; } };
+  scatter([126, -670], 25, 70, 16, ['drum', 'drum', 'block', 'block']);                       // round the valley temple
+  for (const P of PYRAMIDS) scatter(P.c, P.half + 6, P.half + 32, P.cased ? 18 : 8, ['casing', 'block', 'block']);
+  scatter(SPHINX.body.c, 25, 60, 8, ['block', 'drum']);
+  scatter([1590, 836], 30, 80, 12, ['block', 'drum', 'block']);                               // the cliff temple's forecourt
+  scatter(QUARRY.c, 20, 70, 10, ['block', 'block']);
+  for (const [c, rot] of [[[96, -626], 1.2], [[1606, 890], 2.6]]) if (native(...c) === 'firm' && offLine(...c, 26)) ART.litter.push({ k: 'head', at: c, y: r1(worldAt(...c).y), rot, s: 1, t: 0.5 });
+  // papyrus columns in the valley temple's court, some broken off
+  ART.columns = [];
+  for (const n of [660, 680]) for (let x = 110; x <= 142; x += 8) { const X = x, Z = -n, br = R();
+    ART.columns.push([X, Z, r1(worldAt(X, Z).y), br < 0.35 ? r1(3 + R() * 5) : br < 0.6 ? r1(8 + R() * 3) : 13]); }
+  // birds at the water: egrets and ibis in the reeds and the fields, two herons; three egrets flying low
+  ART.birds = [];
+  for (const q of ART.reeds) if (R() < 0.08 && ART.birds.length < 22) ART.birds.push([q[0] + r1(R() * 3 - 1.5), q[1] + r1(R() * 3 - 1.5), q[2], R() < 0.66 ? 0 : 1, r2(R() * 6.28)]);
+  ART.birds.slice(0, 2).forEach(b => { b[3] = 2; });
+  // feluccas on the river, two lanes out from the east bank
+  ART.boats = [-110, -190].map(off => { const pts = [];
+    for (let s0 = 0; s0 < 1900; s0 += 20) { let acc = 0;
+      for (let i = 1; i < BANK.length; i++) { const [ax, az] = BANK[i - 1], [bx, bz] = BANK[i], l = Math.hypot(bx - ax, bz - az);
+        if (acc + l >= s0) { const t = (s0 - acc) / l, dx = (bx - ax) / l, dz = (bz - az) / l, X = ax + (bx - ax) * t - dz * off, Z = az + (bz - az) * t + dx * off;
+          if (waterAt(X, Z)) pts.push([r1(X), r1(Z)]); break; } acc += l; } }
+    return pts; });
+  // the expedition dig at the cliff temple: a spoil rail from the colossi's feet to a spoil heap, tip carts on it,
+  // stacks of crates, survey flags, ladders against the second colossus
+  { const col = SITES.filter(S => S.kind === 'colossus'), front = col.map(c => [c.at[0] - 9, c.at[1]]);
+    const rail = [[1575, 858], [1578, 878], [1584, 898], [1592, 914]];
+    const heap = [1598, 930];
+    const ok = (X, Z, d) => offLine(X, Z, d) && offTee(X, Z, 20);
+    ART.camp = { rail: rail.map(([X, Z]) => [X, Z, r1(worldAt(X, Z).y)]), heap: [...heap, r1(worldAt(...heap).y)],
+      carts: [0.25, 0.62],
+      crates: [[1470, 772], [1474, 770], [1516, 770], [1528, 786], [1532, 790], [1500, 812]].filter(p => ok(...p, 22)).map(([X, Z]) => [X, Z, r1(worldAt(X, Z).y), r2(R() * 6.28), 1 + Math.floor(R() * 3)]),
+      flags: [[1545, 812], [1550, 870], [1528, 905], [1612, 790], [1460, 760]].filter(p => ok(...p, 24)).map(([X, Z]) => [X, Z, r1(worldAt(X, Z).y)]),
+      ladder: col[1] ? { at: front[1], y: r1(worldAt(...col[1].at).y), rot: col[1].rot } : null };
+  }
+  // rock-cut tomb doors along the wadi's walls, at one level
+  ART.doors = [];
+  { let acc = 0; const segs = []; for (let i = 1; i < WADI.length; i++) { const l = Math.hypot(WADI[i][0] - WADI[i - 1][0], WADI[i][1] - WADI[i - 1][1]); segs.push([acc, l, i]); acc += l; }
+    for (let s0 = 120; s0 < acc - 40 && ART.doors.length < 14; s0 += 38 + R() * 50) for (const side of [-1, 1]) {
+      const [a0, l, i] = segs.find(([a, l]) => s0 >= a && s0 < a + l) || segs[0], t = (s0 - a0) / l, A = WADI[i - 1], B = WADI[i], dx = (B[0] - A[0]) / l, dz = (B[1] - A[1]) / l;
+      const cx = A[0] + (B[0] - A[0]) * t, cz = A[1] + (B[1] - A[1]) * t, nx = -dz * side, nz = dx * side, y0 = V(cx + nx * 40, cz + nz * 40);
+      if (R() < 0.45) continue;
+      for (let d = 60; d < 160; d += 1.5) { const X = cx + nx * d, Z = cz + nz * d, y = V(X, Z);
+        if (y - y0 > 14) { if (offLine(X, Z, 60)) ART.doors.push([r1(X - nx * 1.5), r1(Z - nz * 1.5), r1(y - 1), r2(Math.atan2(-nx, nz))]); break; } }
+    }
+  }
+  // talus: fallen blocks heaped at the foot of the wadi's walls and the quarry's faces
+  ART.talus = [];
+  { let acc = 0; const segs = []; for (let i = 1; i < WADI.length; i++) { const l = Math.hypot(WADI[i][0] - WADI[i - 1][0], WADI[i][1] - WADI[i - 1][1]); segs.push([acc, l, i]); acc += l; }
+    for (let s0 = 40; s0 < acc && ART.talus.length < 700; s0 += 6) for (const side of [-1, 1]) {
+      const [a0, l, i] = segs.find(([a, l]) => s0 >= a && s0 < a + l) || segs[0], t = (s0 - a0) / l, A = WADI[i - 1], B = WADI[i], dx = (B[0] - A[0]) / l, dz = (B[1] - A[1]) / l;
+      const cx = A[0] + (B[0] - A[0]) * t, cz = A[1] + (B[1] - A[1]) * t, nx = -dz * side, nz = dx * side, y0 = V(cx + nx * 40, cz + nz * 40);
+      for (let d = 55; d < 150; d += 1.5) { const X = cx + nx * d, Z = cz + nz * d, y = V(X, Z);
+        if (y - y0 > 2) { for (let k = 0; k < 3; k++) { const dd = d - 2 - R() * 12, j = (R() - 0.5) * 6, X2 = cx + nx * dd - nz * j, Z2 = cz + nz * dd + nx * j;
+            if (native(X2, Z2) !== 'firm' && native(X2, Z2) !== 'rock') continue; if (!offLine(X2, Z2, 34) || !offTee(X2, Z2, 30)) continue;
+            ART.talus.push([r1(X2), r1(Z2), r1(worldAt(X2, Z2).y), r2(0.8 + R() * R() * 3.2), r2(R() * 6.28)]); } break; } }
+    }
+  }
+  // sand streaming off the dune crests
+  ART.crests = [];
+  for (let Z = -1500; Z < 400; Z += 18) for (let X = 560; X < 2600; X += 18) {
+    const c = duneCrest(X, Z); if (c < 3) continue;
+    if (!offLine(X, Z, 120) || !spaced(ART.crests, X, Z, 70)) continue;
+    ART.crests.push([X, Z, r1(V(X, Z))]);
+    if (ART.crests.length >= 180) break;
+  }
+  // the boat basin's quay: at the water's edge where it isn't the beach (marching out from the middle to the first
+  // dry ground), with the bank's height just behind it
+  ART.quay = [];
+  for (let k = 0; k <= 160; k++) { const t = k / 160 * 6.2832, c = Math.cos(t), sn = Math.sin(t);
+    const ex = BASIN.rx * Math.sign(c) * Math.abs(c) ** (2 / BASIN.p), ez = BASIN.rz * Math.sign(sn) * Math.abs(sn) ** (2 / BASIN.p);
+    let f = 0.7; while (f < 1.4 && waterAt(BASIN.c[0] + ex * f, BASIN.c[1] + ez * f)) f += 0.004;
+    f -= 0.03; const X = BASIN.c[0] + ex * f, Z = BASIN.c[1] + ez * f, bw = beachW(X, Z), top = Math.max(RIVER.level + 0.5, worldAt(BASIN.c[0] + ex * (f + 0.08), BASIN.c[1] + ez * (f + 0.08)).y);
+    ART.quay.push([r1(X), r1(Z), r1(top), bw < 0.5 ? 1 : 0]); }
+  console.log('art:', Object.entries(ART).map(([k, v]) => `${k} ${Array.isArray(v) ? v.length : Object.keys(v).length}`).join(', '));
 }
 const plantOf = (x, z, r, hh) => ({ x: r1(x), z: r1(z), type: 'palm', h: hh, cr: r, low: 0.74, tr: 0.35, s: r2(hh / 10), r: r2(((x * 7.3 + z * 3.1) % 1 + 1) % 1) });
 
@@ -190,7 +327,8 @@ const course = { id: 'buriedkingdom', name: 'The Buried Kingdom', theme: 'kingdo
   teeSets: COURSE.teeSets, tipsSet: COURSE.tipsSet,
   kingdom: { world, far, level: RIVER.level, basin: { c: BASIN.c, rx: BASIN.rx, rz: BASIN.rz },
     pyramids: PYRAMIDS.map(P => ({ c: P.c.map(r1), half: P.half, h: P.h, y: r1(V(P.c[0] + P.half + 4, P.c[1], true)), ...(P.cased ? { cased: P.cased } : {}) })),
-    built: BUILT_THINGS, palms: PALMS.map(([X, Z, r, hh]) => [X, Z, r1(gy(X, Z)), r, hh]) } };
+    built: BUILT_THINGS, palms: PALMS.map(([X, Z, r, hh]) => [X, Z, r1(gy(X, Z)), r, hh]), ...ART,
+    sphinx: { c: SPHINX.body.c.map(r1), dir: SPHINX.dir.map(v => Math.round(v * 1e4) / 1e4), along: SPHINX.body.along, across: SPHINX.body.across, h: SPHINX.body.h, y: r1(V(...SPHINX.body.c, true)) } } };
 const src = `// The Buried Kingdom: nine holes through Egyptian ruins half buried in sand. GENERATED by
 // tools/buriedkingdom/emit.mjs from the plan book's hole data (tools/buriedkingdom/holes.mjs, world.mjs, scene.mjs):
 // don't edit by hand. Each hole's ground is a sampled field (terrain.js prepField): firm sand plays as 'waste' (the

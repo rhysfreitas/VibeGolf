@@ -166,7 +166,7 @@ function lightPreset() {
   if (RING && t !== 'night') Object.assign(P, { sun: t === 'golden' ? 0xffbf80 : P.sun, si: t === 'golden' ? 3.1 : P.si, hs: 0x9fb0c8, hg: 0x55693a, hi: 0.5, exp: 0.64, fog: w === 'overcast' ? 0xb8bcbc : 0xd9c9a8, near: 600, far: w === 'clear' ? 7500 : 4500 });
   // the buried kingdom in blazing late-morning light: a hard white sun high up, a deep blue sky, short shadows, warm
   // bounce off the sand into them, the air clear to the horizon with a pale dust haze low down
-  if (KINGDOM && t !== 'night') Object.assign(P, t === 'midday' ? { sun: 0xfff0d2, si: 3.0, hs: 0xb4c6dc, hg: 0xc49a5e, hi: 0.5, exp: 0.46, turb: 2.4, ray: 0.85, mie: 0.004 } : {}, { fog: w === 'overcast' ? 0xcbbfa6 : 0xe6d6b6, near: 700, far: w === 'clear' ? 9000 : 5000 });
+  if (KINGDOM && t !== 'night') Object.assign(P, t === 'midday' ? { sun: 0xfff0d6, si: 3.0, hs: 0xa8c0e0, hg: 0xc49a5e, hi: 0.52, exp: 0.46, turb: 1.8, ray: 2.2, mie: 0.0035 } : {}, { fog: w === 'overcast' ? 0xcbbfa6 : 0xe6d6b6, near: 700, far: w === 'clear' ? 9000 : 5000 });
   // the links in a storm clearing, late in the afternoon: a low gold sun under the last of the cloud, cool blue
   // bounce off the sea into the shadows, washed air with a grey-blue sea haze low down
   if (LINKS && t !== 'night') Object.assign(P, t === 'golden' ? { sun: 0xffc27e, si: 3.0, hs: 0xa8b3bd, hg: 0x9a8a62, hi: 0.55, exp: 0.6, turb: 5, ray: 2.4, mie: 0.007 } : {}, { fog: w === 'overcast' ? 0xa9b0b2 : 0xc3c6bf, near: 600, far: w === 'clear' ? 7000 : 4200 });
@@ -193,7 +193,8 @@ function applySky(heading = 0) {
   FOG_COLOR.set(P.fog); scene.fog.near = P.near; scene.fog.far = P.far;
   scene.fog.color.copy(FOG_COLOR); // THREE.Fog copies its colour when it's made, so FOG_COLOR alone never reached it (every course played under the default pale fog until the art passes)
   if (ICE) { sky.visible = !T0.night; scene.background = T0.night ? FOG_COLOR : null; iceU.uMoon.value.copy(sunDir); }
-  if (RING) { sky.visible = false; scene.background = new THREE.Color(0x010206); stars.visible = false; }   // open to space: ring-world.js draws the sky (stars, the thin air)
+  if (RING) { sky.visible = false; scene.background = new THREE.Color(0x010206); stars.visible = false; }
+  if (KINGDOM) { const dome = !T0.night && cond.weather !== 'overcast'; sky.visible = !dome; KW.sky(dome, sunDir); }   // blazing late morning: kingdom-world.js draws a deep blue dome (THREE.Sky goes pale with the sun this high)   // open to space: ring-world.js draws the sky (stars, the thin air)
   if (CAVE) { sky.visible = false; scene.background = FOG_COLOR; sun.castShadow = false; stars.visible = false; scene.environment = null; ball.material.emissive.set(0xa8c4d0); ball.material.emissiveIntensity = 0.35; return; }
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
@@ -300,7 +301,7 @@ islandMat.onBeforeCompile = sh => {
   if (EMBER) { sh.defines = { ...(sh.defines || {}), EMBER: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (VALLEY) { sh.defines = { ...(sh.defines || {}), VALLEY: '', }; sh.uniforms.uSurf2 = surf2U; }
   if (RING) { sh.defines = { ...(sh.defines || {}), RING: '' }; sh.uniforms.uSurf2 = surf2U; }
-  if (KINGDOM) { sh.defines = { ...(sh.defines || {}), KINGDOM: '' }; sh.uniforms.uSurf2 = surf2U; }
+  if (KINGDOM) { sh.defines = { ...(sh.defines || {}), KINGDOM: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, KW.U); }
   if (LINKS) { sh.defines = { ...(sh.defines || {}), LINKS: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
@@ -320,6 +321,9 @@ float emberHeat = 0.0, emberGloss = 0.0;
 #endif
 #if defined(VALLEY) || defined(RING) || defined(KINGDOM) || defined(LINKS)
 uniform sampler2D uSurf2;
+#endif
+#ifdef KINGDOM
+uniform float uKTime; uniform vec3 uKSky;
 #endif
 #ifdef VALLEY
 float valWet = 0.0;
@@ -492,6 +496,10 @@ float kMown = inTex > 0.5 ? 0.0 : (1.0 - step(0.75, vW4.x)) * step(0.25, vW4.x);
 vec3 firm = mix(lin(vec3(0.74,0.57,0.35)), lin(vec3(0.82,0.65,0.42)), mid) * (0.9 + 0.14*fine);
 firm = mix(firm, lin(vec3(0.64,0.48,0.3)), smoothstep(0.5, 0.78, fb(p.xz*0.035 + 4.0)) * 0.5);
 firm *= 0.96 + 0.04*sin((p.x*0.94 + p.z*0.34)*5.5 + fb(p.xz*0.3)*5.0) * (1.0 - smoothstep(25.0, 90.0, camD));
+// art pass 1: megaripples a metre or two apart in bands, a gravel lag where the wind has scoured it, fading far off
+float kMega = sin((p.x*0.9 + p.z*0.42)*3.6 + fb(p.xz*0.05)*7.0) * smoothstep(0.35, 0.7, fb(p.xz*0.012 + 2.0));
+firm *= 1.0 + 0.05*kMega*(1.0 - smoothstep(60.0, 240.0, camD));
+firm = mix(firm, mix(lin(vec3(0.6,0.47,0.32)), lin(vec3(0.52,0.4,0.28)), vn(p.xz*1.7)), smoothstep(0.62, 0.8, fb(p.xz*0.02 + 11.0)) * 0.55);
 vec3 crops = mix(lin(vec3(0.27,0.42,0.16)), lin(vec3(0.36,0.5,0.2)), step(0.5, fract(p.x/26.0 + 0.3*vn(p.xz*0.02)))) * (0.85 + 0.25*fine);
 crops = mix(crops, lin(vec3(0.3,0.24,0.16)), step(0.72, vn(floor(p.xz/38.0))) * 0.7);
 vec3 paving = mix(lin(vec3(0.68,0.58,0.42)), lin(vec3(0.75,0.65,0.48)), vn(floor(p.xz/2.4))) * (0.9 + 0.12*fine);
@@ -633,6 +641,7 @@ mrough = mix(mrough, scrub, smoothstep(0.45, 0.75, fb(p.xz*0.5)) * 0.45);
 // soft sand (bunkers, the Sand Sea): paler and yellower than the firm sand, rippled; the rough a dry halfa grass,
 // thin, the sand showing through it
 msand = mix(lin(vec3(0.9,0.78,0.52)), lin(vec3(0.95,0.85,0.6)), mid) * (0.92 + 0.1*fine) * (0.95 + 0.05*sin((p.x*0.94 + p.z*0.34)*3.2 + fb(p.xz*0.2)*6.0));
+msand *= 1.0 - 0.16*smoothstep(0.08, 0.35, 1.0 - vWN.y);   // the steep slip faces darker
 mrough = mix(lin(vec3(0.5,0.5,0.25)), lin(vec3(0.6,0.56,0.3)), mid) * (0.74 + 0.44*fine);
 mrough = mix(mrough, scrub, smoothstep(0.5, 0.8, fb(p.xz*0.6)) * 0.5);
 #endif
@@ -738,12 +747,19 @@ rock *= 1.0 - 0.16*(1.0 - smoothstep(0.0, 0.04, min(abs(fract(cw2.y/0.6) - 0.5),
 #ifdef KINGDOM
 // the wadi's cliffs: tawny limestone in thick beds, paler bands, a shadowed foot to each bed; masonry (the pyramids'
 // faces inside a hole's box, temple platforms) in pale courses
-{ float bedK = p.y*0.21 + fb(p.xz*0.007)*1.3, bfK = fract(bedK);
-rock = mix(lin(vec3(0.72,0.56,0.36)), lin(vec3(0.84,0.7,0.48)), h21(vec2(floor(bedK), 2.3))) * (0.86 + 0.18*fine);
-rock = mix(rock, lin(vec3(0.9,0.8,0.6)), smoothstep(0.62, 0.84, band) * 0.5);
-rock *= 1.0 - 0.22*(1.0 - smoothstep(0.0, 0.1, bfK)) * smoothstep(0.4, 0.75, steep);
+{ float bedK = p.y*0.19 + fb(p.xz*0.007)*1.3, bfK = fract(bedK), hb = h21(vec2(floor(bedK), 2.3));
+rock = mix(lin(vec3(0.6,0.45,0.28)), lin(vec3(0.8,0.66,0.45)), hb) * (0.86 + 0.18*fine);   // deep ochre beds, some pale
+rock = mix(rock, lin(vec3(0.86,0.76,0.58)), smoothstep(0.66, 0.86, band) * 0.4);
+rock *= 1.0 - 0.38*(1.0 - smoothstep(0.0, 0.14, bfK)) * smoothstep(0.25, 0.6, steep);           // the shadowed undercut at each bed's foot
+vec2 cwJ = vec2(dot(p.xz, normalize(vec2(-vWN.z, vWN.x) + vec2(1e-4))), p.y);
+rock *= 1.0 - 0.25*smoothstep(0.86, 0.97, vn(vec2(cwJ.x*0.07, floor(bedK)*3.1))) * smoothstep(0.25, 0.6, steep);   // joints opening in the faces
 vec3 blocksK = mix(lin(vec3(0.68,0.57,0.4)), lin(vec3(0.76,0.65,0.47)), h21(vec2(floor(p.y/1.4), 5.1))) * (0.9 + 0.12*fine);
 blocksK *= 1.0 - 0.14*(1.0 - smoothstep(0.0, 0.08, fract(p.y/1.4)));
+// desert varnish in streaks down from the rim, thin flint bands in the beds
+{ vec2 cwK = vec2(dot(p.xz, normalize(vec2(-vWN.z, vWN.x) + vec2(1e-4))), p.y);
+float varn = smoothstep(0.58, 0.82, vn(vec2(cwK.x*0.09, cwK.y*0.006))) * smoothstep(0.4, 0.75, steep);
+rock = mix(rock, lin(vec3(0.36,0.26,0.17)), varn * 0.75);
+rock *= 1.0 - 0.12*(1.0 - smoothstep(0.0, 0.035, abs(fract(p.y*0.62 + fb(p.xz*0.01)*0.8) - 0.5))) * smoothstep(0.4, 0.75, steep) * (1.0 - smoothstep(200.0, 600.0, camD)); }
 rock = mix(rock, blocksK, s2.g); }
 #endif
 #ifdef LINKS
@@ -757,7 +773,17 @@ rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0
 rock = mix(rock, lin(vec3(0.27,0.34,0.18)), smoothstep(0.45, 0.72, fb(p.xz*0.3 + p.y*0.2)) * 0.65);
 #endif
 float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
+#ifdef KINGDOM
+rw = max(rw, max(s2.a, (1.0 - smoothstep(0.55, 0.78, vWN.y)) * (1.0 - s2.g)));   // the wadi's walls: painted rock, and any face steeper than about 40 degrees
+#endif
 col = mix(col, rock, rw);
+#ifdef KINGDOM
+// heat shimmer (art pass 1): within a degree of the horizon, far off, the ground mirrors the sky and wavers
+{ float kE = (cameraPosition.y - p.y) / max(camD, 1.0);
+float kM = smoothstep(800.0, 2600.0, camD) * (1.0 - smoothstep(0.004, 0.016, kE)) * step(0.0, kE + 0.004);
+float kW = 0.55 + 0.45*sin(uKTime*1.3 + p.x*0.011 + p.z*0.007 + vn(p.xz*0.003)*8.0) * vn(vec2(p.x*0.004 + uKTime*0.12, p.z*0.004));
+col = mix(col, uKSky, kM * kW * 0.8); }
+#endif
 diffuseColor.rgb = col;
 #endif
 #else

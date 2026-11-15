@@ -101,6 +101,13 @@ function duneAt(X, Z) {
   for (const L of CALM) a *= 0.35 + 0.65 * smooth((project(L, X, Z).d - 60) / 80);
   return m * a * (prof - 0.45);
 }
+// how much of a dune crest stands here (0 elsewhere): the art pass streams sand off them in the wind
+export function duneCrest(X, Z) {
+  const n = -Z, m = smooth((X - 560) / 160) * (1 - smooth((lipD(X, Z) + 90) / 80));
+  if (m <= 0) return 0;
+  const ph = (X * 0.94 + n * 0.34) / 135 + 0.9 * noise2(X / 330, n / 330, 71), t = ph - Math.floor(ph);
+  return Math.abs(t - 0.7) < 0.025 ? m * 4.2 * (0.55 + 0.45 * noise2(X / 210, n / 210, 72)) : 0;
+}
 
 // ---- the cliffs: rock walls either side of the wadi, about 90 m off its middle. East and south of it they are
 // the cliff line, out to the horizon; west of the 8th they are a headland between the wadi and the low desert
@@ -198,4 +205,4 @@ export const SITES = [
 ];
 export const LABELS = [[w([-120, 330]), 'the river'], [w([66, 40]), 'the boat basin'], [w([118, -40]), 'the beach'], [w([122, 706]), 'the valley temple'], [w([400, 690]), 'the causeway'], [w([733, 712]), 'the great pyramid'],
   [w([738, 482]), 'the Sand Sea'], [SPHINX.body.c, 'the Sphinx'], [w([900, -508]), 'the quarry'], [w([1160, -640]), 'the wadi'], [w([1596, -800]), 'the cliff temple'], [w([1500, -770]), 'the camp'], [w([1050, 420]), 'the dune sea']];
-export { lipD, basinE, beachW, seaE, quarryE };
+export { lipD, basinE, beachW, seaE, quarryE, duneAt };
