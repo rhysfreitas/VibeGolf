@@ -278,7 +278,7 @@ for (const [i, B] of BUILT.entries()) {
   }
   R_(`  ${h.n} tee view: ${out.join('; ')}`);
   R_(`  ${h.n} trunks within 250 m across the tee view (share of the 90° frame): ${cov.join(', ')}`);
-  for (const bt of (h.targets || []).filter(q => q.bold)) { const mk = h.n === 3 ? B.trees.find(t => t.marker) : null, S = mk ? sight(B, h.teePts[BACK], [mk.x - 1.2, mk.z], mk.y + mk.h - 0.5) : sight(B, h.teePts[BACK], bt.at, B.ground(...bt.at) + 0.3); R_(`${S.inFrame && !S.hid ? ' ' : '!'} ${h.n} bold target "${bt.name}"${mk ? ' (its marker, the young fir on the trunk\'s back)' : ''} from the ${COURSE.teeSets[0].name} tee: ${S.hid ? 'hidden by ' + S.hid : 'in sight'} (${S.ang.toFixed(1)}°)`); }
+  for (const bt of (h.targets || []).filter(q => q.bold)) { const mk = h.n === 3 ? B.trees.find(t => t.marker) : null, S = mk ? sight(B, h.teePts[BACK], [mk.x - 1.2, mk.z], mk.y + mk.h - 0.5) : sight(B, h.teePts[BACK], bt.at, B.ground(...bt.at) + 0.3); R_(`${S.inFrame && !S.hid ? ' ' : h.n === 9 ? ' ' : '!'} ${h.n} bold target "${bt.name}"${mk ? ' (its marker, the young fir on the trunk\'s back)' : ''} from the ${COURSE.teeSets[0].name} tee: ${S.hid ? 'hidden by ' + S.hid : 'in sight'} (${S.ang.toFixed(1)}°)`); }
   // the landing views: from each target toward the next (or the pin)
   if (h.par > 3) for (const q of h.targets) { const C = trunkCover(B, q.at, h.pin); R_(`  ${h.n} from "${q.name}" the trunks fill ${C.pct}% of the frame${C.widest ? `, widest ${C.widest.deg.toFixed(0)}° at ${C.widest.d} m` : ''}${C.mid > 12 ? ' (!! across the middle)' : ''}`); }
 }
@@ -291,7 +291,7 @@ for (const [i, B] of BUILT.entries()) { const h = HOLES[i]; if (h.par === 3) con
     if (mine) { if (S.hid) { blindA++; R_(`  ${h.n} from "${q.name}" the green's surface is hidden by ${S.hid} (the flag ${S2.hid ? 'too' : 'shows'}): blind on purpose`); } else R_(`! ${h.n} from "${q.name}" the green is in sight: meant to be blind`); }
     else if (S2.hid) { blindA++; R_(`! ${h.n} from "${q.name}" the flag is hidden by ${S2.hid}`); }
     else if (S.hid) R_(`  ${h.n} from "${q.name}" the green's surface sits below the eye line (${S.hid}); the flag shows`); } }
-R_(`${blind + blindA <= 2 ? ' ' : '!'} blind shots: ${blind} from the back tees, ${blindA} approaches (two a nine at most: the 3rd's low road, the 9th's right lane)`);
+R_(`${blind + blindA <= 3 ? ' ' : '!'} blind shots: ${blind} from the back tees, ${blindA} approaches, and the 9th's left lane behind the root from the tee: three, one over the two a nine (Rhys's pick, 14 November: keep both of the 9th's blind, with the 3rd's low road)`);
 lap('views');
 
 // ---- the brief's look-at-first list
