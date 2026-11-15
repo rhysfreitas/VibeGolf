@@ -50,3 +50,13 @@ small tussocks is gone; `scene.mjs` builds `GRASS` from each hole's `rows` and `
 beside every back tee, the shared fairway's screen and swathes out in the dunes (see CLAUDE.md). `out/wreckers-reach-
 grass-proposal.pdf` (built by hand from `out/now/plan<n>.png`, round 1's plans, and the new `out/plan<n>.png`) is what
 Rhys saw before the swathes were thickened.
+
+Art pass 1 (15 November 2026; `art-brief.md`, the researched brief with Rhys's two photos in `refs/` and his four picks
+at its end: silver-grey weathered wrecks, marram plus small colour, the storm clearing, all four kinds of detail).
+Nothing that plays moved. `world.mjs` adds the wrecking sandbar offshore (`BAR`) and the humps of sand showing on it
+(`HUMPS`); `emit.mjs`'s `ART` block lays out what `links-world.js` draws round the play (the bar, seals, reeds,
+gorse, thrift and sea holly, the post fences, flotsam on the wrack line, creels by the luggers, gulls standing and
+wheeling, oystercatchers, the rowing boat's lane), each kept off every line of play and clear of every tee
+(`tests/wreckersreach.test.mjs` checks the distances). The sky, the water, the wrecks, the inn, the beacon and the
+life are all in `src/course/links-world.js` (see CLAUDE.md); the ground's paint (ripples, the wet beach, the wrack
+line, the pots' sod faces) is main.js's `LINKS` shader block.

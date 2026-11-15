@@ -254,6 +254,11 @@ export const SITES = [
   // the beacon tower on the point
   { kind: 'beacon', at: w([-106, 1784]), r: 4.2, h: 26, name: 'the beacon' },
 ];
+// ---- the wrecking sandbar (art pass 1): the bar that has taken ships for centuries, a line of breakers 230-280 m
+// off the sea coast and round the point; drawn only (the water shader breaks waves on it), with a few humps of sand
+// showing on it where the seals haul out
+export const BAR = W([[-540, -420], [-528, 120], [-548, 620], [-530, 1100], [-545, 1500], [-505, 1830], [-400, 2060], [-230, 2150], [-40, 2170], [150, 2120], [330, 2010]]);
+export const HUMPS = [[w([-541, 1380]), 26, 9, 0.2], [w([-520, 1700]), 34, 10, 0.55], [w([-318, 2110]), 22, 8, 1.3], [w([-532, 820]), 18, 7, 0.05]];
 export const LABELS = [[w([-300, 900]), 'the sea'], [w([600, 1150]), 'the lagoon'], [w([38, 1670]), 'the Cauldron'], [w([-60, 1870]), 'the point'], [w([300, 1060]), 'the Strand'],
   [w([268, 1338]), 'the creek'], [w([-118, 168]), 'the hauling ground'], [w([14, 111]), "the Wrecker's Inn"], [w([-110, 1784]), 'the beacon'], [w([60, 300]), 'the shared fairway'],
   [w([58, 738]), 'the double green'], [w([-215, 700]), 'the foredune']];

@@ -22,10 +22,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
-import { BUILT, worldAt, toWorld, toLocal, PROPS, GRASS, clusterAt } from './scene.mjs';
-import { V, waterAt, beachAt, SEA_LEVEL } from './world.mjs';
+import { BUILT, worldAt, toWorld, toLocal, PROPS, GRASS, clusterAt, WL } from './scene.mjs';
+import { V, waterAt, beachAt, SEA_LEVEL, coastD, creekD, cauldronE, CAULDRON, BAR, HUMPS } from './world.mjs';
 import { edgeSegs, noise2 } from './shapes.mjs';
-import { distLine, smooth } from './geo.mjs';
+import { distLine, smooth, rnd } from './geo.mjs';
 import { packHeights } from '../../src/course/field-code.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, '../../src/course/wreckersreach.js');
@@ -198,12 +198,122 @@ let far;
   far = { x0: FX0, z0: FZ0, cell: FC, nx: fnx, nz: fnz, y0: fy0, scale: 4, pred: 1, h: b64(packHeights(fq, fnx)), m: b64(fm) };
 }
 
+// ---- art pass 1 (art-brief.md, Rhys's picks): what links-world.js draws round the play, laid out here where every
+// hole's line and tee is known. All of it is scenery (the ball passes through it), kept off the lines of play and
+// clear of the tees.
+const ART = {};
+{
+  const TEES = HOLES.flatMap((h, k) => [...Object.values(h.teePts), h.tipsPt].filter(Boolean).map(p => WOR[k](...p)));
+  const offLine = (X, Z, d) => WL.every(L => distLine(L, X, Z) >= d);
+  const offTee = (X, Z, d) => TEES.every(([x, z]) => Math.hypot(X - x, Z - z) >= d);
+  const spaced = (list, X, Z, d) => list.every(q => Math.hypot(q[0] - X, q[1] - Z) >= d);
+  const R = rnd(7741), surf = (X, Z) => worldAt(X, Z).s, gy = (X, Z) => worldAt(X, Z).y;
+  const onLand = (X, Z) => !waterAt(X, Z);
+  ART.bar = BAR.map(p => p.map(r1));
+  ART.humps = HUMPS.map(([c, rx, rz, rot]) => [r1(c[0]), r1(c[1]), rx, rz, rot]);
+  // seals hauled out on the humps and on the beach at the point
+  ART.seals = [];
+  for (const [c, rx, rz, rot] of HUMPS) for (let i = 0; i < Math.round(rx / 5); i++) { const u = (R() - 0.5) * rx * 1.2, v = (R() - 0.5) * rz * 0.9;
+    ART.seals.push([r1(c[0] + u * Math.cos(rot) - v * Math.sin(rot)), r1(c[1] + u * Math.sin(rot) + v * Math.cos(rot)), 0.5, r2(R() * 6.28), r2(0.85 + R() * 0.35)]); }
+  for (let i = 0; i < 4000 && ART.seals.length < 34; i++) {
+    const X = -260 + R() * 420, Z = -1950 + R() * 160, cd = coastD(X, Z);
+    if (cd < 2 || cd > 14 || !offLine(X, Z, 70) || !offTee(X, Z, 60) || !spaced(ART.seals, X, Z, 2.4)) continue;
+    if (Math.hypot(X - -40, Z - -1905) > 95) continue;
+    ART.seals.push([r1(X), r1(Z), r1(gy(X, Z)), r2(R() * 6.28), r2(0.85 + R() * 0.35)]);
+  }
+  // reeds along the lagoon's shore and the creek's banks, in patches, from the water's edge to a few metres up
+  ART.reeds = [];
+  for (let i = 0; i < 90000 && ART.reeds.length < 700; i++) {
+    const X = 240 + R() * 1150, Z = -1760 + R() * 1200, cd = coastD(X, Z), kd = creekD(X, Z);
+    const shore = X > 300 && cd > -4 && cd < 8, creek = kd > -2.5 && kd < 5;
+    if (!shore && !creek) continue;
+    if (noise2(X / 45, Z / 45, 81) < -0.15 && !creek) continue;
+    if (!offLine(X, Z, 32) || !offTee(X, Z, 32) || !spaced(ART.reeds, X, Z, 2.6)) continue;
+    const wa = waterAt(X, Z);
+    ART.reeds.push([r1(X), r1(Z), r1(wa ? SEA_LEVEL : V(X, Z)), r2(0.8 + R() * 0.5), wa ? 1 : 0]);
+  }
+  // gorse: round the inn and inland on the mainland (south and east), in clumps
+  ART.gorse = [];
+  const gorse = (X, Z) => { const s = surf(X, Z); if (!(s === 'dune' || s === 'fescue') || !onLand(X, Z)) return false;
+    if (!offLine(X, Z, 30) || !offTee(X, Z, 26) || !spaced(ART.gorse, X, Z, 3.2)) return false;
+    if (PROPS.some(P => P.at && P.kind === 'inn' && Math.hypot(P.at[0] - X, P.at[1] - Z) < 26)) return false;
+    ART.gorse.push([r1(X), r1(Z), r1(gy(X, Z)), r2(1.1 + R() * 1.1)]); return true; };
+  for (let i = 0; i < 6000 && ART.gorse.length < 70; i++) { const an = R() * 6.283, rr = 26 + R() * 70; gorse(14 + Math.cos(an) * rr, -111 + Math.sin(an) * rr); }
+  for (let i = 0; i < 60000 && ART.gorse.length < 420; i++) {
+    const X = -200 + R() * 1150, Z = -760 + R() * 1170;
+    const inland = smooth((Z + 280) / 260) + smooth((X - 260) / 200); if (R() > inland) continue;
+    if (noise2(X / 60, Z / 60, 82) < 0.1) continue;
+    gorse(X, Z);
+  }
+  // thrift and sea holly out on the fescue and the dunes (drawn only: links-world.js puts the ones inside a hole's
+  // field there itself); a scatter over the whole spit for the far views
+  ART.flowers = [];
+  for (let i = 0; i < 120000 && ART.flowers.length < 1600; i++) {
+    const X = -300 + R() * 680, Z = -2000 + R() * 2200, s = surf(X, Z);
+    if (!(s === 'fescue' || s === 'dune') || !offLine(X, Z, 45) || !offTee(X, Z, 30)) continue;
+    const k = s === 'fescue' ? (R() < 0.6 ? 0 : 1) : (R() < 0.75 ? 1 : 0);   // 0 thrift, 1 sea holly
+    if (noise2(X / 30, Z / 30, 83 + k) < 0.05) continue;
+    ART.flowers.push([r1(X), r1(Z), r1(gy(X, Z)), k]);
+  }
+  // the weathered post fences on the dunes (Rhys's photo): runs along the foredune and across the lagoon-side dunes,
+  // a post every 2.6 m dipping with the ground, some leaning, a few gone
+  ART.fences = [];
+  const run = (A, B) => { const L = Math.hypot(B[0] - A[0], B[1] - A[1]), n = Math.floor(L / 2.6), posts = [];
+    for (let i = 0; i <= n; i++) { const t = i / n, X = A[0] + (B[0] - A[0]) * t + noise2(i / 6, A[0], 84) * 1.2, Z = A[1] + (B[1] - A[1]) * t;
+      if (!onLand(X, Z) || !offLine(X, Z, 38) || !offTee(X, Z, 40) || surf(X, Z) === 'beach') { if (posts.length > 3) ART.fences.push(posts.splice(0)); else posts.length = 0; continue; }
+      if (R() < 0.06) continue;
+      posts.push([r1(X), r1(Z), r1(gy(X, Z)), r2(0.9 + R() * 0.5), r2((R() - 0.5) * 0.25), r2((R() - 0.5) * 0.25)]); }
+    if (posts.length > 3) ART.fences.push(posts); };
+  for (let n0 = -300; n0 < 1750; n0 += 120 + R() * 90) { const X = -236 + R() * 12, l = 60 + R() * 110; run([X, -n0], [X + (R() - 0.5) * 8, -(n0 + l)]); }
+  run([-200, -1820], [-120, -1870]); run([-40, -1868], [80, -1858]);
+  for (const [a, b] of [[[300, -1000], [318, -1160]], [[290, -820], [305, -900]], [[120, -230], [200, -160]], [[-150, -60], [-90, 20]]]) run(a, b);
+  // flotsam on the beaches along the wrack line: barrels, spars, rope, a crate, a broken oar
+  ART.flotsam = [];
+  for (let i = 0; i < 80000 && ART.flotsam.length < 110; i++) {
+    const X = -310 + R() * 700, Z = -1960 + R() * 2000, y = V(X, Z);
+    if (!beachAt(X, Z) || waterAt(X, Z) || y < 0.75 || y > 1.5 || cauldronE(X, Z) < 1.3) continue;
+    if (!offLine(X, Z, 30) || !offTee(X, Z, 30) || !spaced(ART.flotsam, X, Z, 9)) continue;
+    const k = [0, 0, 1, 1, 1, 2, 2, 3, 4][Math.floor(R() * 9)];   // 0 barrel, 1 spar, 2 rope, 3 crate, 4 oar
+    ART.flotsam.push([r1(X), r1(Z), r1(y), k, r2(R() * 6.28), r2(0.7 + R() * 0.6)]);
+  }
+  // lobster pots (creels) stacked by the luggers on the hauling ground
+  ART.creels = [];
+  for (const P of PROPS.filter(P => P.kind === 'lugger')) for (let i = 0; i < 5; i++) {
+    const an = R() * 6.283, rr = 4 + R() * 4, X = P.at[0] + Math.cos(an) * rr, Z = P.at[1] + Math.sin(an) * rr;
+    if (!offLine(X, Z, 22) || !spaced(ART.creels, X, Z, 1.4)) continue;
+    const st = R() < 0.5 ? 2 : 1, y0 = gy(X, Z), r = r2(R() * 6.28);
+    for (let k = 0; k < st; k++) ART.creels.push([r1(X), r1(Z), r2(y0 + k * 0.5), r]);
+  }
+  // gulls: standing on the wrecks, the inn's ridge, the luggers and some fence posts; on the beach in loose groups;
+  // flocks wheeling over the wrecks, the hauling ground and the bar
+  ART.gulls = [];
+  for (const B of BUILT_THINGS) {
+    if (!['hull', 'castle', 'lugger', 'inn', 'rib'].includes(B.kind) || B.sunk) continue;
+    const n = B.kind === 'rib' ? (R() < 0.35 ? 1 : 0) : Math.round(Math.min(8, B.l / 6)), rot = B.rot || 0;
+    for (let i = 0; i < n; i++) { const u = (R() - 0.5) * (B.kind === 'inn' ? 0 : B.w * 0.5), v = (R() - 0.5) * B.l * 0.8;
+      ART.gulls.push([r1(B.at[0] + u * Math.cos(rot) + v * Math.sin(rot)), r1(B.at[1] + u * Math.sin(rot) - v * Math.cos(rot)), r2(B.y + B.h), r2(R() * 6.28)]); }
+  }
+  for (const F of ART.fences) for (const p of F) if (R() < 0.03) ART.gulls.push([p[0], p[1], r2(p[2] + p[3]), r2(R() * 6.28)]);
+  ART.oyster = [];
+  for (let g = 0; g < 400 && ART.oyster.length < 60; g++) {
+    const X = -300 + R() * 650, Z = -1950 + R() * 1900, y = V(X, Z);
+    if (!beachAt(X, Z) || waterAt(X, Z) || y > 0.95 || cauldronE(X, Z) < 1.3 || !offLine(X, Z, 40) || !offTee(X, Z, 40)) continue;
+    const n = 3 + Math.floor(R() * 6), gull = R() < 0.4;
+    for (let i = 0; i < n; i++) { const x = X + (R() - 0.5) * 7, z = Z + (R() - 0.5) * 7; if (waterAt(x, z)) continue;
+      (gull ? ART.gulls : ART.oyster).push([r1(x), r1(z), r2(V(x, z)), r2(R() * 6.28)]); }
+  }
+  const P0 = PROPS.find(P => P.name === 'the galleon'), PM = PROPS.find(P => P.kind === 'hull' && P.l > 60);
+  ART.wheel = [[...P0.at.map(r1), 26, 34, 7], [...PM.at.map(r1), 30, 40, 6], [-112, -165, 20, 26, 5], [-540, -1500, 14, 60, 8], [60, -1700, 24, 45, 5]];
+  // a rowing boat drifting on the lagoon, well off the 8th
+  ART.boat = [[470, -1380], [540, -1220], [585, -1040], [560, -880]];
+}
 const holes = HOLES.map((_, i) => { const o = holeOut(i); process.stdout.write(`${i + 1} `); return o; });
 const course = { id: 'wreckersreach', name: COURSE.name, theme: 'links', turf: 'links', altFt: COURSE.altFt,
   blurb: 'A true links on a spit of dunes where a sandbar has taken ships for centuries: firm running turf, a strong sea wind, sod-faced pots, the wrecks as walls and markers. Out to the point and the beacon tower, home along the lagoon to the Wrecker\'s Inn.',
   signature: { time: 'golden', wind: 'sea', windFrom: 225, weather: 'clear', temp: 'cool' },
   teeSets: COURSE.teeSets, tipsSet: COURSE.tipsSet,
-  links: { world, far, level: SEA_LEVEL, built: BUILT_THINGS, grass: GRASS.map(g => [r1(g.c[0]), r1(g.c[1]), r1(g.rx), r1(g.rz), r2(g.rot)]) } };
+  links: { world, far, level: SEA_LEVEL, built: BUILT_THINGS, grass: GRASS.map(g => [r1(g.c[0]), r1(g.c[1]), r1(g.rx), r1(g.rz), r2(g.rot)]),
+    cauldron: { c: CAULDRON.c, rx: CAULDRON.rx, rz: CAULDRON.rz, rot: r2(CAULDRON.rot), p: CAULDRON.p, mouth: { ...CAULDRON.mouth, rot: r2(CAULDRON.mouth.rot) } }, ...ART } };
 const src = `// Wrecker's Reach: nine holes of true links on a spit of dunes on a ship-graveyard coast. GENERATED by
 // tools/wreckersreach/emit.mjs from the plan book's hole data (tools/wreckersreach/holes.mjs, world.mjs, scene.mjs):
 // don't edit by hand. COURSE.turf = 'links': main.js plays fairways, tees and collars as physics.js 'links' (they

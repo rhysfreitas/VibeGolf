@@ -199,7 +199,10 @@ function applySky(heading = 0) {
   sun.shadow.radius = cond.weather === 'overcast' ? 6 : 1;
   stars.visible = !!T0.night && cond.weather !== 'overcast';
   // the city in mist: under an overcast the sky is the fog itself, so the towers fade into it
-  if (LINKS && cityClouds) { cityClouds.visible = !T0.night && cond.weather !== 'overcast'; cityClouds.material.uniforms.uCov.value = cond.weather === 'haze' ? 0.55 : 0.44; cityClouds.material.uniforms.uSun.value = sunDir; cityClouds.material.uniforms.uHaze.value.set(P.fog); }   // the storm breaking up: a broken deck
+  // the storm clearing (art pass 1): links-world.js draws the sky (the deck going away east, gold-edged cumulus, rays
+  // from the low sun); overhead the broken cloud thickens and darkens toward the east (uBias: east in this frame)
+  if (LINKS) { const dome = !T0.night && cond.weather !== 'overcast'; sky.visible = !dome; LW.sky(dome, sunDir, P.fog); }
+  if (LINKS && cityClouds) { const u = cityClouds.material.uniforms, ha = heading * Math.PI / 180; cityClouds.visible = !T0.night && cond.weather !== 'overcast'; u.uCov.value = cond.weather === 'haze' ? 0.55 : 0.4; u.uSun.value = sunDir; u.uHaze.value.set(P.fog); u.uBias.value.set(Math.cos(ha), -Math.sin(ha), cond.weather === 'clear' ? 0.26 : 0.12); }
   if (VALLEY && cityClouds) { cityClouds.visible = !T0.night && cond.weather !== 'overcast'; cityClouds.material.uniforms.uCov.value = cond.weather === 'haze' ? 0.47 : 0.32; cityClouds.material.uniforms.uSun.value = sunDir; cityClouds.material.uniforms.uHaze.value.set(P.fog); }
   if (CITY) { const misty = cond.weather === 'overcast' && !T0.night; sky.visible = !misty; scene.background = misty ? FOG_COLOR : null;
     if (cityClouds) { cityClouds.visible = !T0.night && cond.weather !== 'overcast'; cityClouds.material.uniforms.uCov.value = cond.weather === 'overcast' ? 0.95 : cond.weather === 'haze' ? 0.47 : 0.36; cityClouds.material.uniforms.uSun.value = sunDir; cityClouds.material.uniforms.uHaze.value.set(P.fog); } }
@@ -257,15 +260,18 @@ const cloudMats = MESA ? [] : [cloudLayer(-300, 0.0016, 1.0, 1.0), cloudLayer(-1
 const cityClouds = CITY || VALLEY || LINKS ? (() => {
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide,
-    uniforms: { uT: { value: 0 }, uSun: { value: sunDir }, uCov: { value: 0.5 }, uHaze: { value: new THREE.Color(0xd2cdbf) } },
+    uniforms: { uT: { value: 0 }, uSun: { value: sunDir }, uCov: { value: 0.5 }, uHaze: { value: new THREE.Color(0xd2cdbf) }, uBias: { value: new THREE.Vector3() } },
     vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `varying vec3 vW; uniform float uT, uCov; uniform vec3 uSun, uHaze;
+    fragmentShader: `varying vec3 vW; uniform float uT, uCov; uniform vec3 uSun, uHaze, uBias;
+      float cov = 0.0;
       float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
       float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
       float fb(vec2 p){ float a=0.5, s=0.0; for(int i=0;i<5;i++){ s += a*vn(p); p = p*2.07 + 3.1; a *= 0.5; } return s; }
-      float dens(vec2 p){ float n = fb(p + vec2(vn(p*0.5), vn(p*0.5+7.3))*0.5) + 0.35*vn(p*0.3); return smoothstep(1.06-uCov, 1.16-uCov, n*0.9); }
+      float dens(vec2 p){ float n = fb(p + vec2(vn(p*0.5), vn(p*0.5+7.3))*0.5) + 0.35*vn(p*0.3); return smoothstep(1.06-cov, 1.16-cov, n*0.9); }
       void main(){
         vec2 p = vW.xz * 0.0024 + vec2(uT*0.004, uT*0.0016);
+        float side = dot(normalize(vW.xz - cameraPosition.xz + vec2(1e-3, 0.0)), uBias.xy) * smoothstep(200.0, 1600.0, length(vW.xz - cameraPosition.xz));
+        cov = uCov + uBias.z * side;
         float d = dens(p), thick = dens(p*0.55 + 11.0) * d;              // the heart of a big cloud is thicker, its base darker
         vec2 sd = normalize(uSun.xz + 1e-4) * 0.05;
         float lit = clamp(1.0 - dens(p + sd) * 0.8, 0.0, 1.0);           // the edge toward the sun catches it
@@ -302,7 +308,7 @@ islandMat.onBeforeCompile = sh => {
   if (VALLEY) { sh.defines = { ...(sh.defines || {}), VALLEY: '', }; sh.uniforms.uSurf2 = surf2U; }
   if (RING) { sh.defines = { ...(sh.defines || {}), RING: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (KINGDOM) { sh.defines = { ...(sh.defines || {}), KINGDOM: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, KW.U); }
-  if (LINKS) { sh.defines = { ...(sh.defines || {}), LINKS: '' }; sh.uniforms.uSurf2 = surf2U; }
+  if (LINKS) { sh.defines = { ...(sh.defines || {}), LINKS: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, LW.U); }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -325,6 +331,10 @@ uniform sampler2D uSurf2;
 #ifdef KINGDOM
 uniform float uKTime; uniform vec3 uKSky;
 #endif
+#ifdef LINKS
+uniform float uLTime, uLSea; uniform vec2 uLWind, uLNorth;
+float linksWet = 0.0;
+#endif
 #ifdef VALLEY
 float valWet = 0.0;
 #endif
@@ -346,6 +356,9 @@ roughnessFactor = mix(roughnessFactor, 0.62, emberGloss * 0.7);
 #endif
 #ifdef VALLEY
 roughnessFactor = mix(roughnessFactor, 0.22, valWet);   // after the rain: puddles and wet mud mirror the sky, wet rock shines
+#endif
+#ifdef LINKS
+roughnessFactor = mix(roughnessFactor, 0.26, linksWet);   // the beach the tide has just left shines
 #endif`)
     .replace('#include <map_fragment>', `
 vec3 p = vWPos;
@@ -510,23 +523,35 @@ scrub = mix(scrub, mix(lin(vec3(0.33,0.5,0.19)), lin(vec3(0.39,0.56,0.22)), mid)
 dirt = scrub;
 #endif
 #ifdef LINKS
-// Wrecker's Reach (blockout): pale dune sand off the grass, wind ripples close by; golden fescue; the beach darker
-// and wet; straw and shade under the tussocks; the wrecks' grey timber and stone. Inside the hole's box from uSurf2
-// (R beach, G under a tussock, B timber, A stone); beyond it from the world mesh's aW (x fescue, y beach, z another
-// hole's mown ground, w stone)
-vec4 s2 = inTex > 0.5 ? texture2D(uSurf2, clamp(st, 0.0, 1.0)) : vec4(vW4.y, 0.0, 0.0, vW4.w);
+// Wrecker's Reach (art pass 1): pale dune sand with wind ripples square to the sea wind (a long lit stoss and a
+// short shaded lee close by, megaripples further out), damp and darker on the north faces; golden fescue with
+// thrift showing pink in it; the beach darker the lower it lies, wet and shining where the tide has just left it, a
+// broken wrack line of weed along its top; straw and shade under the tussocks; the wrecks' grey timber and stone.
+// Inside the hole's box from uSurf2 (R beach, G under a tussock, B timber or stone, A the pots); beyond it from the
+// world mesh's aW (x fescue, y beach, z another hole's mown ground, w stone)
+vec4 s2 = inTex > 0.5 ? texture2D(uSurf2, clamp(st, 0.0, 1.0)) : vec4(vW4.y, 0.0, vW4.w, 0.0);
 float lFes = inTex > 0.5 ? 0.0 : vW4.x, lMown = inTex > 0.5 ? 0.0 : vW4.z;
-vec3 dune = mix(lin(vec3(0.74,0.68,0.54)), lin(vec3(0.81,0.75,0.6)), mid) * (0.9 + 0.14*fine);
-dune *= 0.96 + 0.04*sin((p.x*0.7 + p.z*0.71)*4.2 + fb(p.xz*0.3)*5.0) * (1.0 - smoothstep(25.0, 90.0, camD));
-vec3 wetS = mix(lin(vec3(0.47,0.43,0.35)), lin(vec3(0.56,0.51,0.41)), mid) * (0.9 + 0.12*fine);
+vec2 lwd = normalize(uLWind + vec2(1e-4)); float lwa = dot(p.xz, lwd), lwc = dot(p.xz, vec2(-lwd.y, lwd.x));
+float nearR = 1.0 - smoothstep(18.0, 70.0, camD), midR = 1.0 - smoothstep(60.0, 280.0, camD);
+float rp = fract(lwa * 1.6 + fb(vec2(lwa * 0.05, lwc * 0.12)) * 3.0 + sin(lwc * 0.35) * 0.3), rip = smoothstep(0.0, 0.72, rp) - smoothstep(0.72, 1.0, rp);
+float mrp = fract(lwa * 0.21 + fb(vec2(lwa * 0.01, lwc * 0.03)) * 2.5), mrip = smoothstep(0.0, 0.75, mrp) - smoothstep(0.75, 1.0, mrp);
+vec3 dune = mix(lin(vec3(0.74,0.68,0.54)), lin(vec3(0.82,0.76,0.61)), mid) * (0.9 + 0.14*fine);
+dune *= 1.0 + (rip - 0.5) * 0.14 * nearR + (mrip - 0.5) * 0.09 * midR;
+dune *= 1.0 - 0.13 * clamp(dot(vWN.xz, uLNorth) * 2.5, 0.0, 1.0);                                          // the north faces stay damp
+float hgt = p.y - uLSea, damp = 1.0 - smoothstep(0.42, 0.8 + 0.18 * fb(p.xz * 0.06), hgt);
+vec3 wetS = mix(lin(vec3(0.52,0.47,0.38)), lin(vec3(0.6,0.55,0.44)), mid) * (0.9 + 0.12*fine);
+wetS = mix(wetS, mix(lin(vec3(0.3,0.28,0.23)), lin(vec3(0.36,0.33,0.27)), mid), damp);
+float wrack = (1.0 - smoothstep(0.0, 0.1, abs(hgt - 1.1 - 0.22 * (fb(p.xz * 0.03) - 0.5)))) * smoothstep(0.36, 0.62, fb(p.xz * 0.45 + 3.0));
+wetS = mix(wetS, mix(lin(vec3(0.1,0.085,0.06)), lin(vec3(0.24,0.21,0.11)), vn(p.xz * 3.0)), wrack * 0.85);
 vec3 fesc = mix(lin(vec3(0.56,0.53,0.31)), lin(vec3(0.64,0.59,0.35)), mid) * (0.74 + 0.44*fine);
+fesc = mix(fesc, lin(vec3(0.72,0.44,0.52)), smoothstep(0.8, 0.9, vn(p.xz * 0.9 + 5.0)) * 0.3 * midR);       // thrift in flower
 vec3 straw = mix(lin(vec3(0.44,0.43,0.28)), lin(vec3(0.52,0.49,0.32)), mid) * (0.8 + 0.3*fine);
 scrub = dune;
 scrub = mix(scrub, fesc, lFes);
 scrub = mix(scrub, wetS, s2.r);
+linksWet = s2.r * damp * (1.0 - wrack);
 scrub = mix(scrub, straw, s2.g * 0.75);
-scrub = mix(scrub, mix(lin(vec3(0.3,0.28,0.25)), lin(vec3(0.42,0.38,0.33)), vn(p.xz*1.3)) * (0.85 + 0.2*fine), s2.b);
-scrub = mix(scrub, mix(lin(vec3(0.4,0.39,0.37)), lin(vec3(0.5,0.49,0.46)), vn(p.xz*2.1)) * (0.85 + 0.2*fine), s2.a);
+scrub = mix(scrub, mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.46,0.45,0.42)), vn(p.xz*1.7)) * (0.85 + 0.2*fine), s2.b);
 scrub = mix(scrub, mix(lin(vec3(0.4,0.5,0.22)), lin(vec3(0.45,0.54,0.25)), mid), lMown);
 dirt = scrub;
 #endif
@@ -763,16 +788,23 @@ rock *= 1.0 - 0.12*(1.0 - smoothstep(0.0, 0.035, abs(fract(p.y*0.62 + fb(p.xz*0.
 rock = mix(rock, blocksK, s2.g); }
 #endif
 #ifdef LINKS
-// a blowout's face: slumped sand, a little darker and damper than the dune top, with old root lines; stone grey
+// a blowout's face: slumped sand, a little darker and damper than the dune top, with old root lines; stone grey;
+// the pots' revetted faces: turf sods stacked in layers about 15 cm thick, dark soil between them
 rock = mix(lin(vec3(0.68,0.62,0.49)), lin(vec3(0.76,0.7,0.56)), band) * (0.88 + 0.16*fine);
 rock *= 1.0 - 0.1*(1.0 - smoothstep(0.0, 0.12, abs(fract(p.y*0.8 + fb(p.xz*0.2)) - 0.5)));
-rock = mix(rock, mix(lin(vec3(0.4,0.39,0.37)), lin(vec3(0.5,0.49,0.46)), vn(p.xz*2.1)) * (0.85 + 0.2*fine), s2.a);
+rock = mix(rock, mix(lin(vec3(0.4,0.39,0.37)), lin(vec3(0.5,0.49,0.46)), vn(p.xz*2.1)) * (0.85 + 0.2*fine), s2.b * (1.0 - s2.a));
+float sodL = fract(p.y / 0.15 + fb(p.xz * 0.8) * 0.4);
+vec3 sod = mix(lin(vec3(0.15,0.12,0.08)), mix(lin(vec3(0.34,0.36,0.17)), lin(vec3(0.48,0.46,0.24)), vn(p.xz * 4.0 + p.y * 3.0)), smoothstep(0.16, 0.3, sodL) * (1.0 - smoothstep(0.86, 0.98, sodL)));
+rock = mix(rock, sod, smoothstep(0.15, 0.5, s2.a));
 #endif
 #ifdef CITY
 rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0.25*fine);
 rock = mix(rock, lin(vec3(0.27,0.34,0.18)), smoothstep(0.45, 0.72, fb(p.xz*0.3 + p.y*0.2)) * 0.65);
 #endif
 float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
+#ifdef LINKS
+rw = max(rw, smoothstep(0.15, 0.5, s2.a) * (1.0 - smoothstep(0.6, 0.86, vWN.y)));   // a pot's face, a little less steep than a blowout's
+#endif
 #ifdef KINGDOM
 rw = max(rw, max(s2.a, (1.0 - smoothstep(0.55, 0.78, vWN.y)) * (1.0 - s2.g)));   // the wadi's walls: painted rock, and any face steeper than about 40 degrees
 #endif
@@ -1115,7 +1147,7 @@ function buildHole(h) {
   h.pinPos = new THREE.Vector3(pin[0], groundAt(pin[0], pin[1]), pin[1]);
   wind = holeWind(windRoll, HOLES.indexOf(h)); windVec = windVector(wind, h.heading ?? 0);
   if (EMBER) emberStage = Math.min(2, Math.max(0, HOLES.indexOf(h) - 2));   // the dusk deepens through the round: the shoulder, the Notch, the caldera
-  applySky(RING ? h.frame.heading : h.heading ?? 0);   // the ring's sun is fixed in the station (east), so it goes by the frame
+  applySky(RING || LINKS ? h.frame.heading : h.heading ?? 0);   // the ring's sun is fixed in the station (east), so it goes by the frame
   const trees = [];
   talusPts = REDROCK ? [] : null;
   const box = holeBox(h); playBox = MESA ? box : null;
@@ -2239,7 +2271,7 @@ function openSetup() {
   const from = $('suFrom'); from.innerHTML = WIND_FROM.map(([v, l]) => `<option value="${v}"${String(cond.windFrom) === String(v) ? ' selected' : ''}>${v === 'random' ? 'Any direction' : 'From the ' + l}</option>`).join('');
   from.disabled = cond.wind === 'calm';
   from.onchange = () => { cond.windFrom = from.value === 'random' ? 'random' : +from.value; };
-  applySky(RING ? HOLES[0].frame.heading : HOLES[0].heading ?? 0);
+  applySky(RING || LINKS ? HOLES[0].frame.heading : HOLES[0].heading ?? 0);
   setPhaseUI();
   const sv = savedRound(), rb = $('suResume');
   rb.hidden = !sv; if (sv) { rb.textContent = 'Resume · ' + describeRound(sv, HOLES.map(h => h.par)); rb.onclick = () => resumeRound(sv); }

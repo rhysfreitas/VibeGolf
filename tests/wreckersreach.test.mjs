@@ -1,4 +1,4 @@
-// Wrecker's Reach (blockout): the sampled spit, the course data, and the ball on the links: firm turf, fescue, the
+// Wrecker's Reach (blockout, art pass 1): the sampled spit, the course data, and the ball on the links: firm turf, fescue, the
 // dunes and their tussocks, the beach, the pots, the shared fairway (1 and 9) and the double green (2 and 8), the
 // Cauldron and the creek, the wrecks, the inn and the 9th's table.
 import test from 'node:test';
@@ -209,4 +209,17 @@ test('dune grass in clusters, placed for jobs: well off the lines, never on a gr
   const d = 40, dir = [b.x - h.pin[0], b.z - h.pin[1]], l = Math.hypot(...dir), from = [b.x + dir[0] / l * d, b.z + dir[1] / l * d];
   const pts = shoot(i, from, [b.x, b.z], { Speed: 60, VLA: 3, TotalSpin: 2000 }, { trees: true, rng: () => 0.01 });
   const end = pts.at(-1); assert.ok(Math.hypot(end.x - from[0], end.z - from[1]) < d + b.cr + 2, 'stopped in or at the grass');
+});
+
+test('art pass 1: the scenery the emitter lays out stays off the lines of play and clear of the tees', () => {
+  const W = HOLES.map(h => { const tw = toWorld(h); return { line: h.line.map(p => tw(...p)), tees: [...Object.values(h.tees), h.tips.tee].map(p => tw(...p)) }; });
+  const dl = (X, Z) => Math.min(...W.map(({ line }) => { let d = Infinity; for (let i = 1; i < line.length; i++) { const [ax, az] = line[i - 1], [bx, bz] = line[i], ex = bx - ax, ez = bz - az, t = Math.max(0, Math.min(1, ((X - ax) * ex + (Z - az) * ez) / (ex * ex + ez * ez))); d = Math.min(d, Math.hypot(X - ax - ex * t, Z - az - ez * t)); } return d; }));
+  const dt = (X, Z) => Math.min(...W.flatMap(({ tees }) => tees.map(([x, z]) => Math.hypot(X - x, Z - z))));
+  const L = COURSE.links;
+  for (const [what, list, line, tee] of [['reeds', L.reeds, 30, 30], ['gorse', L.gorse, 28, 24], ['flowers', L.flowers, 44, 29], ['flotsam', L.flotsam, 29, 29], ['fence posts', L.fences.flat(), 36, 38], ['oystercatchers', L.oyster, 30, 30]]) {
+    assert.ok(list.length > 3, what);
+    for (const q of list) { assert.ok(dl(q[0], q[1]) >= line, `${what} at ${q[0]},${q[1]}: ${dl(q[0], q[1]).toFixed(1)} m off a line`); assert.ok(dt(q[0], q[1]) >= tee, `${what} at ${q[0]},${q[1]} near a tee`); }
+  }
+  assert.ok(L.bar.length > 5 && L.seals.length > 10 && L.wheel.length >= 4 && L.boat.length > 1);
+  for (const [X, Z] of L.boat) assert.ok(dl(X, Z) > 150, 'the rowing boat stays well off the 8th');
 });
