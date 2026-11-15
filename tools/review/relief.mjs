@@ -19,7 +19,7 @@ import path from 'path';
 import { createTerrain } from '../../src/course/terrain.js';
 import { loadCourse, MODULES, REPO } from './page.mjs';
 
-const PLANNED = ['halcyon', 'buriedkingdom', 'wreckersreach'];
+const PLANNED = ['halcyon', 'buriedkingdom', 'wreckersreach', 'eldergrove'];
 export const BOLD = ['table top', 'hillside bench', 'valley carry', 'stepped', 'big drop', 'big climb'];
 export const PLAIN = ['ramp up', 'ramp down', 'level'];
 const YD = 0.9144;
