@@ -48,6 +48,40 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Wrecker's Reach (art pass 1, 15 November 2026) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
 | Eldergrove (blockout 15 November 2026; `?c=eldergrove`) | 4L The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
 | Cloudrest (layout approved 15 November 2026; `tools/cloudrest/` started) | 4R The Overlook | 3 The Balcony | 5L ↓ The Hanging Valley | 3 The Needle (the drop, −18 m) | 4L The Broken Ridge | 5R ↑ The Stair | 3 The Alcove | 5L The Tea Terraces | 4S ↓ The Descent | 36 |
+| The Labyrinth (layout approved 15 November 2026; round 0 in `tools/labyrinth/`) | 5L The Gate | 4 \| The Long Corridor | 4L (or R) The Elbow | 4R The Cistern | 3 The Tower Court | 4R The Hanging Garden | 3 The Two Doors | 3 ↓ The Parapet (the drop, −28 m) | 5R ↓ The Way Out | 35 |
+
+- The Labyrinth (Rhys's picks, 15 November 2026; `claude/labyrinth-layout.md` and `claude/brief-labyrinth.md` in the
+  project; `tools/labyrinth/`): his idea, "kind of like maze runner", made our own: a maze the size of a town
+  (about 1,170 × 1,340 m inside an outer wall 60 m thick), colossal overgrown walls of weathered stone 10-60 m high,
+  ivy, trees in the cracks; vast, ancient, quiet; no monsters, no machinery, no names or designs from the films,
+  nothing moving during play. Low evening sun (wall tops gold, floors in shade, shafts through gaps). Its logic: **walls
+  play** (a ball into one drops at its foot; a leaning wall banks it on; ivy soaks more than bare stone) and **the
+  doors change** (on two holes a different way is open each round, shown on the scorecard before the round). Through
+  the maze: in at the gate in the south wall, two corridors, the flooded chamber, the tower in the central court
+  at the 5th (the reveal), a garden, two par 3s, out along the top of the outer wall and down through the breach.
+  Par 35, 5 4 4 4 3 4 3 3 5 (a par 5 opener and a par 5 finish, three par 3s with two in a row at 7-8); Tower
+  3,205 yd; tees Tower, Rampart, Gate, Court, Keystone tips (switched off). 1 The Gate 5 520 (hourglass, half-pipe
+  through the forecourt's ramps, between doors 40 m high), 2 The Long Corridor 4 455 (strip, dead straight between
+  walls 60 m high and 62 m apart, a leaning end wall to bank off: past real golf), 3 The Elbow 4 380 (hook, a true
+  right angle; carry the crumbled 12 m inside wall, 225 yd; turns left or right by the round), 4 The Cistern 4 420
+  (double: a crowned causeway the long way round, three stepping stones the short way; hog's back), 5 The Tower
+  Court 3 175 (across a dry moat to a 760 m² green at the tower's foot), 6 The Hanging Garden 4 330 (scalloped,
+  a table top under a 7 m face with a cedar on the lip), 7 The Two Doors 3 135 (uphill to a shelf; two greens about
+  80° apart, one open each round), 8 The Parapet 3 205 (the drop par 3, −28 m off a wall top into a sunken court,
+  an 820 m² green), 9 The Way Out 5 585 (broken, along the wall top between parapets, then stepped down the breach's
+  rubble ramp to a green outside; go or lay up). Classics Cape over a wall (3), Long (9); set pieces the chute (1)
+  and the wall (2, banked off on purpose: never used). Decisions 3 (bite off), 4 (the long way round), 9 (go or lay
+  up). Bold height forms 6, 9; one drop par 3 (8). Landmarks the tower (glimpsed over walls from 1, 3, 4; the reveal at
+  5; again from 8, 9), the lit wall tops, the whole maze from the 8th tee. New: doors that change the hole each
+  round, a true corridor hole, a right-angle dogleg, a bank shot off a wall on purpose, a fairway along a wall top, a
+  finish that leaves the place. Borrowed from the over-used list (two): something to play through (the gate), a tee
+  shot off a height (8). No waterfall, bridge, punchbowl or climb to the clubhouse. Same par as another course on
+  four holes at most (Emberfell, the Lost Valley, Wrecker's Reach).
+  Round 0 15 November 2026 (`tools/labyrinth/`, `out/labyrinth-round0.pdf`, before the plan book): the view from the
+  camera inside the corridors, wall soak, the 2nd's bank shot (it needs a mown bank of about 29% at the wall's foot),
+  the Elbow's corner redrawn as low broken walls with a court behind (the layout's rubble heap didn't read from the
+  tee; bold carry 212 yd from round 0's back tee), sliding doors, and how two-version holes are stored. Waiting on
+  Rhys's picks.
 
 - Cloudrest (Rhys's picks, 14-15 November 2026; `claude/cloudrest-layout.md` and `claude/brief-cloudrest.md` in the
   project; `tools/cloudrest/`): a "roof of the world" course, holes cut into the sides of a misty green gorge: two
