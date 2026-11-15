@@ -46,6 +46,30 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Halcyon Ring (plan book round 5) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
 | The Buried Kingdom (blockout, 13 November 2026) | 3 The Landing | 5L The River Bank | 4 The Causeway ↑ | 4R Sahara | 3 The Sphinx | 5R Hog's Back | 4L The Quarry | 4R The Gate | 4L The Colossi | 36 |
 | Wrecker's Reach (blockout, 14 November 2026) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
+| Eldergrove (layout approved 14 November 2026; plan book next) | 4R The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
+
+- Eldergrove (Rhys's picks, 14 November 2026; `claude/eldergrove-layout.md` and `claude/brief-eldergrove.md` in the
+  project; `tools/eldergrove/` to come): the first tree course, an ancient endless forest of conifers about 100 m
+  tall (the mood of an elven forest, our own: no names or designs from the books), hints of the grown (a stair, a
+  root bridge, the hall in the heart tree), a misty morning with low sun shafts. Its logic: the trunks are walls (a
+  ball that hits one drops at its foot) and the canopy is a roof far above any shot. Lies moss, fern, leaf litter,
+  root; almost no penalty ground (the stream by the 1st green, the pool on 4, the brook on 6 and 7). Par 36,
+  4 5 4 4 4 3 5 3 4 (the traditional card); tees Redwood, Cedar, Rowan, Hazel, Ironwood tips (switched off);
+  Redwood 3,465 yd. 1 The Eaves 4 400 (fan, half-pipe down a stream valley, a chute between two gate trees 45 m
+  apart), 2 The Avenue 5 560 (dead straight, 34 m between two rows of trunks: the hole past real golf), 3 The
+  Fallen Giant 4 335 (split along a fallen trunk, stepped: high road, low road), 4 The Mirror 4 420 (hook round a
+  pool, Cape), 5 The Glade 4 465 (a 9% hillside bench in a sunlit meadow, 75 m wide), 6 The Stair 3 150 (the drop
+  par 3, a tee 25 m up a living tree), 7 The Brook 5 505 (broken, dip in front; reachable, Long), 8 The Hollow 3 190
+  (uphill to a shelf inside a burnt-out trunk's shell), 9 The Hall 4 440 (island round a 4 m root, down into a root
+  amphitheatre under the heart tree). Classics Cape (4), Long (7); set piece the chute (1). Decisions 3 (high road
+  or low road), 4 (bite off), 7 (go or lay up), 9 (centre-line). Bold height forms 3, 5, 6; blind shots the low
+  road's pitch on 3 and the right side's approach on 9. Landmarks the heart tree (glimpsed from 3, the reveal from
+  4 reflected in the pool, then 5-9), the Glade's light (from 4, 6), the fallen giant's root plate (from 2's green
+  and 4's tee). New: a tunnel of trees, a fairway along a fallen trunk, a tee in a living tree, a meadow hole, a
+  green in a natural amphitheatre, moss and leaf-litter lies. Borrowed from the over-used list (two): a tee shot off
+  a height (the Stair), a green inside a shell (the Hollow). No waterfall, bridge in play, chasm, punchbowl, arch or
+  climb to the clubhouse; finishes down to a green under the landmark. Same par as another course on four holes at
+  most (checked over every par order in the concept chat).
 
 - Wrecker's Reach (Rhys's picks, 13-14 November 2026; `claude/wreckers-reach-layout.md`,
   `claude/brief-wreckers-reach.md` and `claude/brief-addendum-wreckers-reach-vegetation.md` in the project;
