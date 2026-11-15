@@ -46,7 +46,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Halcyon Ring (plan book round 5) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
 | The Buried Kingdom (art pass 1, 14 November 2026) | 3 The Landing | 5L The River Bank | 4 The Causeway ↑ | 4R Sahara | 3 The Sphinx | 5R Hog's Back | 4L The Quarry | 4R The Gate | 4L The Colossi | 36 |
 | Wrecker's Reach (art pass 1, 15 November 2026) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
-| Eldergrove (layout approved 14 November 2026; plan book next) | 4R The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
+| Eldergrove (blockout 15 November 2026; `?c=eldergrove`) | 4L The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
 
 - Eldergrove (Rhys's picks, 14 November 2026; `claude/eldergrove-layout.md` and `claude/brief-eldergrove.md` in the
   project; `tools/eldergrove/` to come): the first tree course, an ancient endless forest of conifers about 100 m

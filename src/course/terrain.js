@@ -461,7 +461,7 @@ export function createTerrain(hole) {
     return null;
   }
   // groves: trees placed with the hole (the renderer adds its own scatter; all of them play)
-  const trees = [...(hole.groves || []).flatMap(G => groveTrees(G, groundAt)), ...(hole.plants || []).map(t => ({ ...t, y: groundAt(t.x, t.z) ?? 0 }))];
+  const trees = [...(hole.groves || []).flatMap(G => groveTrees(G, groundAt)), ...(hole.plants || []).map(t => ({ ...t, y: (groundAt(t.x, t.z) ?? 0) + (t.dy || 0) }))];   // dy: a trunk whose foot sits below the ground at its centre (Eldergrove's giants, on their root flare)
   // the lowest height a ball can fall to before it's gone (below every top and the floor)
   const lows = ISL.map(I => (I.slope ? Math.min(I.slope.from[2], I.slope.to[2]) : I.top));
   if (F && F.solid) lows.push(F.y - 3);

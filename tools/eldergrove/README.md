@@ -1,6 +1,6 @@
 # Eldergrove: plan tools
 
-Eldergrove is in its plan book (round 1, 14 November 2026): the first tree course. Nine holes on the floor of an
+Eldergrove is a playable blockout (15 November 2026, `?c=eldergrove`), made from its plan book (round 1, 14 November 2026, and Rhys's notes on it the next morning) by `emit.mjs`: the first tree course. Nine holes on the floor of an
 ancient forest of conifers about 100 m tall (trunks 8-12 m across, first branches about 60 m up), a misty morning,
 one colossal heart tree at the origin. The concept, the skeleton (par 36: 4 5 4 4 4 3 5 3 4), the routing and the
 nine hole cards were approved by Rhys on 14 November 2026 (`claude/eldergrove-layout.md` and
@@ -27,6 +27,7 @@ then `node ../review/relief.mjs eldergrove`, `alike.mjs` and `spread.mjs` into `
 | `python3 plans.py` | Plan (trunks to scale, placed ones dark, crowns as dashed rings), profile (trunks as bars) and green diagram per hole, and the course map. White pages. |
 | `node sketch.mjs [holes]` | Three views a hole through a real camera in SVG: ground cells from `worldAt` (shade under the canopy, sun in the Glade), every trunk as a tapered column with its crown, the shell and the plate as boxes, a few sun shafts through the mist. |
 | `node book.mjs` | The plan book PDF: the cover with the course map, the course card, the course at a glance, the checks as run, one page a hole. |
+| `node emit.mjs` | Writes `src/course/eldergrove.js` (about 30 s; never hand-edit the module): each hole's field sampled from `worldAt` every 2 m (engine codes: moss 'firstcut', fern and meadow 'rough', litter 'beach', root and bark 'desert', sand, water with a 0.8 m bed; paint byte `m`), the decks as ground with `deckFloor` under them, greens and bunkers as outlines, the root plate and the shell's walls as soaking boxes, every giant near the field as a tree body (type 'redwood', 'snag' or 'heart'; soak 0.45; `dy` for its foot), the tips; and `COURSE.grove`, the forest once in world space (a 10 m and a 60 m map with the paint, every giant, the heart tree, the walls, the decks, limbs and stair) that `src/course/grove-world.js` draws. |
 
 Plan book round 1 (14 November 2026), `out/eldergrove-plan-book-r1.pdf`. Changes from the layout doc: the 1st bends
 left 26° and the 9th right 76° (measured from the approved lines; the table said right 26° and right 50°); the brook
@@ -51,3 +52,9 @@ in each 110 m cell; scene.mjs `rollK` takes it full off the fairways, a third on
 none within 8 m of every shot's straight line (so a mound never hides a target), none round greens, tees and water); the 4th's green perched on a
 knoll 5 m over the shore (`prof`; a hog's back was tried first, but the shore sits only a metre over the pool; `cross` with h < 0 now raises a spine); the 9th a true fall-away (7 m in
 its last 100 m). `relief.mjs`: nine forms, none twice, no plain hole.
+
+Blockout (15 November 2026): `node emit.mjs`, then `npm test` (`tests/eldergrove.test.mjs`), `node ../review/design.mjs
+eldergrove` (the gate: every hole within +0.3 for both players after the fixes below) and `node ../review/playthrough.mjs
+eldergrove --render=120`. The engine asked for three changes, made here in `holes.mjs`: the 7th's lay-up at P(360, 12)
+(it sat a metre from the brook, which runs down the left of the second leg), the 4th's bold target at Lw(425, 113) (a
+carry of about 230 yd, not 267), the 9th's left lane target at P(262, -14) (about 25 yd nearer than the right lane's).
