@@ -174,3 +174,24 @@ test('a boulder is solid, and a rockfall heaps up toward its back with boulders 
   assert.equal(t.surfaceAt(60, -200), 'desert');
   assert.ok(t.rocks.filter(r => r.type === 'boulder' && Math.hypot(r.x - 60, r.z + 200) < 15).length >= 12, 'boulders scattered over it');
 });
+
+test('a giant trunk that soaks drops some balls at its foot; a canopy 60 m up takes only a skied ball (Eldergrove)', async () => {
+  const { createTreeField } = await import('../src/course/trees.js');
+  const { simulate } = await import('../src/physics.js');
+  // a trunk 10 m across, 120 m out, its crown from 60 to 100 m up
+  const giant = (soak) => createTreeField([{ x: 0, y: 0, z: -110, h: 100, cr: 20, low: 0.6, tr: 5, type: 'giant', soak }]).at;
+  const drive = { Speed: 167, VLA: 10.9, HLA: 0, TotalSpin: 2686, SpinAxis: 0 };
+  const rest = (treeAt, seed, shot = drive) => { let q = seed; const rng = () => (q = q * 16807 % 2147483647) / 2147483647; const r = simulate(shot, { groundAt: () => 0, surfaceAt: () => 'fairway', treeAt, rng }); return { z: r.pts[r.pts.length - 1].p[2], hits: r.treeHits }; };
+  // no soak: every drive comes back well short of the trunk
+  for (let i = 1; i <= 10; i++) assert.ok(rest(giant(0), i * 7919).z > -80, 'a bare trunk throws the ball back');
+  // soak 0.45: about half drop within 4 m of the bark (its face is at z = -105)
+  let foot = 0;
+  for (let i = 1; i <= 40; i++) { const e = rest(giant(0.45), i * 7919); if (e.z < -101) foot++; }
+  assert.ok(foot >= 10 && foot <= 30, `${foot} of 40 dropped at the foot`);
+  // a normal drive under the crown never touches the leaves; a skied one into it is knocked down
+  const clear = createTreeField([{ x: 0, y: 0, z: -150, h: 100, cr: 25, low: 0.6, tr: 0.5, type: 'giant' }]).at;
+  assert.equal(rest(clear, 3, { ...drive, HLA: 0.5 }).hits, 0, 'a tour drive flies under a 60 m canopy');
+  let down = 0;
+  for (let i = 1; i <= 10; i++) if (rest(clear, i * 7919, { Speed: 160, VLA: 25, HLA: 0, TotalSpin: 4500, SpinAxis: 0 }).hits > 0) down++;
+  assert.ok(down >= 7, `${down} of 10 skied drives hit the crown`);
+});

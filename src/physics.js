@@ -112,7 +112,7 @@ function cor(vn) { return vn < 20 ? Math.max(0.12, 0.510 - 0.0375 * vn + 0.00090
 // opts.solidAt(x,y,z)  -> outward normal [nx,ny,nz] (optional .soak: the chance a hit kills the ball's
 //                         speed so it drops at the face) when the point is inside rock that isn't
 //                         ground (an arch, a spire, a cliff overhang), else null
-// opts.treeAt(x,y,z)   -> { n: [nx,0,nz] } against a trunk, { density } (chance per metre of hitting a
+// opts.treeAt(x,y,z)   -> { n: [nx,0,nz], soak? } against a trunk (soak: the chance it drops at the foot), { density } (chance per metre of hitting a
 //                         branch) inside a canopy, else null
 // opts.rng             -> random numbers in [0, 1) for branch hits (Math.random when omitted)
 function simulate(shot, opts = {}) {
@@ -160,7 +160,9 @@ function simulate(shot, opts = {}) {
       if (tree && tree.n) { // off the trunk
         const n = tree.n, vn = s.vel[0] * n[0] + s.vel[2] * n[2];
         if (vn < 0) {
-          s = { pos: prev.pos.slice(), vel: [(s.vel[0] - 2 * vn * n[0]) * 0.4, s.vel[1] * 0.6, (s.vel[2] - 2 * vn * n[2]) * 0.4], spin: prev.spin.map(w => w * 0.3) };
+          // a trunk that soaks (Eldergrove's giants): the ball dies against the bark and drops at its foot
+          if (tree.soak && rand() < tree.soak) s = { pos: prev.pos.slice(), vel: [n[0] * 1.2, Math.min(0, s.vel[1] * 0.1) - 0.5, n[2] * 1.2], spin: [0, 0, 0] };
+          else s = { pos: prev.pos.slice(), vel: [(s.vel[0] - 2 * vn * n[0]) * 0.4, s.vel[1] * 0.6, (s.vel[2] - 2 * vn * n[2]) * 0.4], spin: prev.spin.map(w => w * 0.3) };
           treeHits++;
           if (++wallHits > 60) break;
           pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight', hit: true });

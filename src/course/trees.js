@@ -16,10 +16,11 @@ const DENSITY = { pine: 0.34, oak: 0.3, juniper: 0.5, pinyon: 0.42, cotton: 0.28
 
 export function treeBody(t) {
   // a tree with its own body (The Lost Valley's): h tall, its canopy from h * low up to h, cr across in radius, a
-  // trunk tr thick under it
+  // trunk tr thick under it; soak (Eldergrove's giants) is the chance a ball that hits the trunk dies there and
+  // drops at its foot, as on cave walls and facades
   if (t.cr != null && t.h != null) {
     const low = t.low ?? 0.35, y0 = t.y + t.h * low;
-    return { x: t.x, z: t.z, y: t.y, cy: (y0 + t.y + t.h) / 2, rh: t.cr, rv: Math.max(0.6, t.h * (1 - low) / 2), top: y0, tr: t.tr ?? 0.3, density: DENSITY[t.type] ?? 0.3 };
+    return { x: t.x, z: t.z, y: t.y, cy: (y0 + t.y + t.h) / 2, rh: t.cr, rv: Math.max(0.6, t.h * (1 - low) / 2), top: y0, tr: t.tr ?? 0.3, density: DENSITY[t.type] ?? 0.3, soak: t.soak || 0 };
   }
   if (t.type === 'pine') {
     const H = 7 * t.s + 4 * t.r;
@@ -29,7 +30,7 @@ export function treeBody(t) {
   return { x: t.x, z: t.z, y: t.y, cy: t.y + H + cs * 0.55, rh: cs * 1.05, rv: cs * 0.75, top: t.y + H + cs * 0.3, tr: Math.max(0.12, 0.22 * t.s * sh[2]), density: DENSITY[t.type] ?? 0.3 };
 }
 
-// a lookup over a list of trees: at(x, y, z) -> { n: [nx, 0, nz] } against a trunk, { density } inside a
+// a lookup over a list of trees: at(x, y, z) -> { n: [nx, 0, nz], soak } against a trunk, { density } inside a
 // canopy, or null
 export function createTreeField(list, cell = 10) {
   const bodies = list.filter(t => t.y != null && Number.isFinite(t.y)).map(treeBody), grid = new Map();
@@ -47,7 +48,7 @@ export function createTreeField(list, cell = 10) {
       const dx = x - B.x, dz = z - B.z;
       if (y < B.y - 0.5) continue;
       const d = Math.hypot(dx, dz);
-      if (y < B.top && d < B.tr + 0.04) return { n: d > 1e-6 ? [dx / d, 0, dz / d] : [1, 0, 0] };
+      if (y < B.top && d < B.tr + 0.04) return { n: d > 1e-6 ? [dx / d, 0, dz / d] : [1, 0, 0], soak: B.soak || 0 };
       const e = (dx * dx + dz * dz) / (B.rh * B.rh) + ((y - B.cy) / B.rv) ** 2;
       if (e < 1) return { density: B.density };
     }
