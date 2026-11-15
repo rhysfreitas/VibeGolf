@@ -42,4 +42,7 @@ the 6th looks at the tree); the 3rd's high road made the better line: the fallen
 (the root plate with it), the high road's target 223 m out leaving 88 m in sight, the sentinel (a standing giant
 214 m out at the low road's left edge) making the low road a lay-up (182 m, 128 m left, blind and uphill) or a
 26-30 m lane past it, the green turned 26° right to lie along the high road with a second sand hollow on the low
-road's side (`out/h3-now-vs-proposed.png`).
+road's side (`out/h3-now-vs-proposed.png`). Then (Rhys, the same morning): the 3rd's green 10 m left (its line now ends at (446, -173)), so the
+high road plays straight down it and the low road comes in across it past the trunk's end; the low road opened on
+the right (to 45-48 m, and the lane past the sentinel 34-38 m wide), so going round is a real line too
+(`out/h3-r2b.png`).

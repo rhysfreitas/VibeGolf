@@ -176,16 +176,16 @@ export const HOLES = [
         tees: { redwood: 0, cedar: [18, 10], rowan: [45, -6], hazel: [76, 20] },
         // split: the high road mown along the trunk's back (26 m), the low road on the floor to its right (about 50 m)
         fw: [{ poly: highRoad(Lw), wob: 1 },
-          { e: [[96, 12, 34], [150, 9, 41], [185, 7, 40], [199, 3, 40], [207, -6, 40]], wob: 2.6 },
-          // round 2: past the sentinel the low road goes on as a pinched lane 26 m wide on its right, to 252 m (it ran 50 m wide to 276)
-          { poly: [P(204, 15), P(222, 16), P(240, 18), P(250, 22), P(255, 31), P(250, 42), P(236, 46), P(218, 46), P(204, 44)], wob: 2 }],
+          { e: [[96, 12, 34], [150, 9, 42], [185, 7, 45], [199, 3, 47], [207, -6, 48]], wob: 2.6 },
+          // round 2: past the sentinel the low road goes on as a lane 34-38 m wide on its right, to 252 m, the way round (it ran 50 m wide to 276)
+          { poly: [P(204, 15), P(222, 16), P(240, 18), P(250, 22), P(256, 34), P(251, 48), P(236, 54), P(218, 54), P(204, 50)], wob: 2 }],
         // the green on the upper level, level with the trunk's back; a bank 5-6 m up from the low road
         prof: [[0, 0], [len, 0]],
         bunkers: [sand(P(len - 15, 13), 5.4, 3.8, 0.3), sand(P(len - 3, 17), 4.2, 3.2, 0.5)],   // round 2: a second hollow right, on the low road's angle
         green: { k: 1.06, lobes: [[0, 0, 9, 13.5, 12], [5, 8, 5.5, 5, 0]], apron: 2, contour: [{ fall: 200, pct: 1.6 }, { bowl: [4, 9], r: 8, h: 0.25 }], style: 'Small, up on the high level, its long axis turned 24° right so the high road plays down its length and the low road comes in across it (round 2: it was turned the other way, toward the low road); it falls 1.6% away with a shallow bowl at the back right; two sand hollows on the right, the bank down to the low road in front' },
         trunks: [
           { job: 'the sentinel: a standing giant in the low road 214 m out (round 2, Rhys: "pinch in with a tree on the low road"), so the low road is a lay-up short of it', list: [[214, 5, 6.2]] },
-          { job: 'the far side of the low road', list: [[118, 62, 5], [172, 66, 5.4], [236, 60, 4.8]] },
+          { job: 'the far side of the low road', list: [[118, 64, 5], [172, 70, 5.4], [236, 70, 4.8]] },
           { job: 'beyond the fern under the fallen giant', list: [[112, -82, 5], [186, -74, 5.2]] },
           { job: 'behind the green', list: [[342, -22, 5], [348, 26, 4.8]] },
           { job: 'the marker: a young fir growing out of the trunk\'s back, the high road\'s line', list: [{ at: onTrunk(Lw, 198, -9), r: 0.7, snag: true, h: 9, marker: true }] },
