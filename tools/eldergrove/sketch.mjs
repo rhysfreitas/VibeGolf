@@ -10,7 +10,7 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES, BACK, FRONT } from './holes.mjs';
-import { BUILT, toWorld, toLocal, worldAt, ALLTREES, WALLS } from './scene.mjs';
+import { BUILT, toWorld, toLocal, worldAt, ALLTREES, WALLS, DECKS, LIMBS, STAIRS } from './scene.mjs';
 import { LABELS, HEART, openAt } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { at, headingAt, clamp, project } from './geo.mjs';
@@ -77,7 +77,7 @@ function renderView(hi, view) {
 
   // ---- ground
   const cache = new Map();
-  const gq = (x, z) => { const key = x.toFixed(2) + ':' + z.toFixed(2); let v = cache.get(key); if (!v) { v = worldAt(...W(x, z)); cache.set(key, v); } return v; };
+  const gq = (x, z) => { const key = x.toFixed(2) + ':' + z.toFixed(2); let v = cache.get(key); if (!v) { v = worldAt(...W(x, z)); if (v.deck) { v = worldAt(...W(x, z), true); if (v.s === 'tee') v.s = 'moss'; } cache.set(key, v); } return v; };   // under a deck: the floor (the deck is drawn on its limb)
   const gy = (x, z) => gq(x, z).y;
   const cells = [];
   function cell(x, z, s) {
@@ -131,7 +131,7 @@ function renderView(hi, view) {
     }
   };
   const segDrape = (segs, colr, wd) => { for (const [p, q] of segs) drape([p, q], false, colr, wd); };
-  for (const t of B.teePads) { const c = Math.cos(headingAt(h.line, 1)), sn = Math.sin(headingAt(h.line, 1)); drape([[-6, -5], [6, -5], [6, 5], [-6, 5]].map(([u, v]) => [t.x + u * c - v * sn, t.z + u * sn + v * c]), true, [110, 130, 150], 0.9); }
+  for (const t of B.teePads) { if (t.lift) continue; const c = Math.cos(headingAt(h.line, 1)), sn = Math.sin(headingAt(h.line, 1)); drape([[-6, -5], [6, -5], [6, 5], [-6, 5]].map(([u, v]) => [t.x + u * c - v * sn, t.z + u * sn + v * c]), true, [110, 130, 150], 0.9); }
   { const [px, pz] = h.pin; segDrape(edgeSegs((x, z) => B.gm(x, z) < 0, px - 45, pz - 45, px + 45, pz + 45, 1), [60, 96, 40], 1.4); }
   for (const b of B.bunkers) segDrape(edgeSegs(B.inBunker(b), ...b.box, 0.8), [150, 124, 70], 1.2);
   { const xs = h.line.map(p => p[0]), zs = h.line.map(p => p[1]); segDrape(edgeSegs((x, z) => B.surface(x, z) === 'fairway', Math.min(...xs) - 100, Math.min(...zs) - 40, Math.max(...xs) + 100, Math.max(...zs) + 40, 2), [96, 132, 70], 1.0); }
@@ -177,6 +177,50 @@ function renderView(hi, view) {
       const Q = proj(pts); if (Q) add(d0 + 0.05, `<polygon points="${fmt(Q)}" fill="${hex(mix([62, 84, 64], Math.min(0.9, f + 0.08)))}" stroke="none" opacity="0.92"/>`); }
   };
   for (const t of ALLTREES) trunk(t);
+  // the stair tree's limbs and decks, and the stair round its trunk (tees grown out of the tree)
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], crs = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], nrm = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+  const BARK = [112, 86, 66], MOSSY = [118, 132, 78];
+  const tube = (a, b, ra, rb, colr) => {   // a limb piece: its silhouette as seen from the camera, lit by its side
+    const mid = a.map((v, i) => (v + b[i]) / 2), d0 = cam.hd(mid); if (d0 > FAR) return;
+    const w = nrm(crs(sub(b, a), sub(cam.pos, mid))), up = nrm(crs(w, sub(b, a)));
+    const P = proj([a.map((v, i) => v - w[i] * ra), b.map((v, i) => v - w[i] * rb), b.map((v, i) => v + w[i] * rb), a.map((v, i) => v + w[i] * ra)]); if (!P) return;
+    const f = fogAt(d0), lt = 0.78 + 0.3 * clamp(up[0] * L[0] + up[1] * L[1] + up[2] * L[2], 0, 1);
+    add(d0 - 0.15, `<polygon points="${fmt(P)}" fill="${hex(mix(colr.map(v => v * lt), f))}" ${ink(d0)} stroke-width="${(0.9 * (1.15 - f)).toFixed(2)}" stroke-linejoin="round"/>`);
+    // moss along the limb's top
+    const Q = proj([a.map((v, i) => v - w[i] * ra * 0.7 + up[i] * ra * 0.85), b.map((v, i) => v - w[i] * rb * 0.7 + up[i] * rb * 0.85), b.map((v, i) => v + w[i] * rb * 0.7 + up[i] * rb * 0.85), a.map((v, i) => v + w[i] * ra * 0.7 + up[i] * ra * 0.85)]);
+    if (Q && cam.pos[1] > Math.min(a[1], b[1]) - 4) add(d0 - 0.16, `<polygon points="${fmt(Q)}" fill="${hex(mix(MOSSY.map(v => v * 0.9), f))}" stroke="none" opacity="0.85"/>`);
+  };
+  const bez = (a, k, b, t) => a.map((v, i) => (1 - t) * (1 - t) * v + 2 * (1 - t) * t * k[i] + t * t * b[i]);
+  for (const l of LIMBS) {
+    const from = [...Lc(l.from[0], l.from[2])], knee = [...Lc(l.knee[0], l.knee[2])], to = [...Lc(l.to[0], l.to[2])];
+    const A = [from[0], l.from[1], from[1]], K = [knee[0], l.knee[1], knee[1]], Bq = [to[0], l.to[1], to[1]], n = 6;
+    // one smooth silhouette: the curve's left and right edges as seen from the camera, a flare where it leaves the bark
+    const n2 = 14, Ls = [], Rs = [], Ms = [];
+    for (let i = 0; i <= n2; i++) { const t = i / n2, p = bez(A, K, Bq, t), tg = sub(bez(A, K, Bq, Math.min(1, t + 0.02)), bez(A, K, Bq, Math.max(0, t - 0.02)));
+      const w = nrm(crs(tg, sub(cam.pos, p))), up = nrm(crs(w, tg)), r = (l.r0 + (l.r1 - l.r0) * t) * (1 + 0.35 * Math.max(0, 1 - t / 0.25) ** 2);
+      Ls.push(p.map((v, j) => v - w[j] * r)); Rs.push(p.map((v, j) => v + w[j] * r)); Ms.push(p.map((v, j) => v + up[j] * r * 0.8)); }
+    const mid = bez(A, K, Bq, 0.5), d0 = cam.hd(mid); if (d0 > FAR) continue;
+    const P = proj([...Ls, ...Rs.reverse()]); if (!P) continue; const f = fogAt(d0);
+    add(d0 - 0.15, `<polygon points="${fmt(P)}" fill="${hex(mix(BARK.map(v => v * 0.92), f))}" ${ink(d0)} stroke-width="${(0.9 * (1.15 - f)).toFixed(2)}" stroke-linejoin="round"/>`);
+    const M = proj(Ms); if (M && cam.pos[1] > l.to[1] - 2) add(d0 - 0.16, `<polyline points="${fmt(M)}" fill="none" stroke="${hex(mix(MOSSY, f))}" stroke-width="${Math.max(1.5, 6 * (1.1 - f) * 60 / Math.max(d0, 20)).toFixed(1)}" stroke-linecap="round" opacity="0.9"/>`);
+  }
+  for (const d of DECKS) {   // the deck: the limb's end flattened into a mossy pad 1.4 m thick, the tee mown on it
+    const O2 = d.outline.map(q => Lc(...q)), [cx, cz] = Lc(...d.at), d0 = cam.hd([cx, 0, cz]); if (d0 > FAR) continue;
+    const f = fogAt(d0), y1 = d.y, y0 = d.y - 1.4;
+    for (let i = 0; i < O2.length; i++) {
+      const a = O2[i], b = O2[(i + 1) % O2.length], nx = b[1] - a[1], nz = -(b[0] - a[0]), mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2;
+      const out = nx * (mx - cx) + nz * (mz - cz) > 0 ? 1 : -1; if (out * (nx * (cam.pos[0] - mx) + nz * (cam.pos[2] - mz)) <= 0) continue;
+      const P = proj([[a[0], y0 + 0.5, a[1]], [b[0], y0 + 0.5, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]]); if (!P) continue;
+      add(cam.hd([mx, 0, mz]) - 0.2, `<polygon points="${fmt(P)}" fill="${hex(mix(BARK.map(v => v * (0.8 + 0.25 * lit([out * nx, 0, out * nz]))), f))}" ${ink(d0)} stroke-width="0.7" stroke-linejoin="round"/>`);
+    }
+    if (cam.pos[1] > y1) { const P = proj(O2.map(q => [q[0], y1, q[1]])); if (P) add(d0 - 0.3, `<polygon points="${fmt(P)}" fill="${hex(mix(SC.tee, f))}" ${ink(d0)} stroke-width="0.8"/>`); }
+    else { const P = proj(O2.map(q => [q[0], y0 + 0.5, q[1]])); if (P) add(d0 - 0.1, `<polygon points="${fmt(P)}" fill="${hex(mix(BARK.map(v => v * 0.62), f))}" ${ink(d0)} stroke-width="0.7"/>`); }
+  }
+  for (const S of STAIRS) {   // treads grown out of the bark, spiralling up from the floor to the highest deck
+    const [sx, sz] = Lc(...S.at); if (cam.hd([sx, 0, sz]) > 420) continue;
+    const R = S.r + 0.9, dth = 1.25 / R; let th = 0, y = S.foot + 0.3;
+    for (; y < S.top - 0.2; th += dth, y += 0.42) prism({ x: sx + R * Math.cos(th), z: sz + R * Math.sin(th), w: 1.8, l: 1.4, h: 0.3, rot: th, base: y }, [126, 98, 74]);
+  }
   // the shell's walls and the root plate
   for (const o of WALLS) { const [x, z] = Lc(o.X, o.Z); prism({ x, z, w: o.w, l: o.l, h: o.h, rot: o.rot - h.place.heading * Math.PI / 180, base: gy(x, z) - 0.3 }, o.kind === 'plate' ? [120, 96, 72] : [62, 56, 52], 0.95); }
   // light shafts: a few pale slanting bands through the mist, from the sun's side
@@ -225,6 +269,7 @@ export function viewsFor(hi) {
   if (h.par === 3) {
     v.push({ id: 'tee', title: 'From the back tee', pos: eye(tee, pin, 4, 2.4), look: look(pin, -2) });
     const fw = h.teePts[FRONT]; v.push({ id: 'land', title: 'From the forward tee', fov: 50, pos: eye(fw, pin, 4, 2.4), look: look(pin, -2) });
+    if (h.platform) { const sp = at(h.line, 48, -34), to = at(h.line, -4, 8); v.push({ id: 'stair', title: 'The stair tree', fov: 62, pos: [sp[0], g(...sp) + 3, sp[1]], look: [to[0], g(...to) + 17, to[1]] }); }
   } else {
     const aim = h.table ? at(h.line, h.table.s0 + 30, 0) : firstT.at;
     v.push({ id: 'tee', title: 'From the back tee', pos: eye(tee, aim, 4, 2.4), look: look(aim, sk.teeDrop ?? -2) });

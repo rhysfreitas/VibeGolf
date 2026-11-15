@@ -164,12 +164,12 @@ for (const h of D.holes) {
   const drv = h.par === 3 ? '' : `<p class="small">Drives from the Redwood tee straight down the first leg: tour ${Math.round(dr.tour.carry / YD)} yd carry, ${Math.round(dr.tour.total / YD)} total, finishing on ${dr.tour.rest}${dr.tour.trees ? ' (off a trunk)' : ''}; 150 mph ${Math.round(dr.mid.carry / YD)} carry, ${Math.round(dr.mid.total / YD)} total, on ${dr.mid.rest}.${h.bold ? ` Along the bold line: ${Object.entries(h.bold.drives).map(([k, v]) => `${k === 'mid' ? '150 mph' : k} ${v.rest === 'water' ? 'in the water' : v.hit ? 'hits ' + v.hit.what : 'finishes on ' + v.rest}`).join(', ')}.` : ''}</p>`;
   const vs = viewsFor(h.n - 1);
   const first = h.targets.filter(t => !t.bold)[0];
-  const cap = v => ({ tee: `<b>From the back tee</b>${first ? ', toward ' + esc(first.name) : ''}`, land: h.par === 3 ? `<b>From the forward tee</b> (${h.yards.hazel} yd)` : `<b>From the landing area</b> (${esc(first ? first.name : '')})`, green: `<b>Short of the green</b>, ${Math.round(Math.hypot(v.pos[0] - h.pin[0], v.pos[2] - h.pin[1]) / 5) * 5} m out` })[v.id];
+  const cap = v => ({ tee: `<b>From the back tee</b>${first ? ', toward ' + esc(first.name) : ''}`, land: h.par === 3 ? `<b>From the forward tee</b> (${h.yards.hazel} yd)` : `<b>From the landing area</b> (${esc(first ? first.name : '')})`, stair: '<b>The stair tree</b>: the tees on its limbs', green: `<b>Short of the green</b>, ${Math.round(Math.hypot(v.pos[0] - h.pin[0], v.pos[2] - h.pin[1]) / 5) * 5} m out` })[v.id];
   pages.push(`<div class="page">
     <div class="head"><div><div class="small">Hole ${h.n}</div><h2>${esc(h.name)}</h2>
       <div class="facts"><span><b>Par ${h.par}</b></span><span>${shape(h)}</span><span>${height(h)} tee to green (climbs ${h.rise} m, drops ${h.fall} m)</span></div></div>${card(h)}</div>
     ${hcard(h)}
-    <div class="views">${vs.map(v => `<div class="view"><img src="${img('views/h' + h.n + '_' + v.id + '.png')}"><div class="cap">${cap(v)}</div></div>`).join('')}</div>
+    <div class="views" style="grid-template-columns: repeat(${vs.length}, 1fr)">${vs.map(v => `<div class="view"><img src="${img('views/h' + h.n + '_' + v.id + '.png')}"><div class="cap">${cap(v)}</div></div>`).join('')}</div>
     <div class="body">
       <div class="plan"><img src="${img('plan' + h.n + '.png')}"></div>
       <div class="side">

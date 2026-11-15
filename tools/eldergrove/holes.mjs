@@ -79,7 +79,7 @@ function hole(def) {
   // the trunks in the hole's frame: { x, z, r, job }
   h.trunkPts = (h.trunks || []).flatMap(T => (T.list || [T]).map(t => {
     const p = Array.isArray(t) ? P(t[0], t[1]) : t.world ? Lw(...t.world) : t.at ? t.at : P(t.s, t.off);
-    return { x: p[0], z: p[1], r: Array.isArray(t) ? t[2] : t.r, job: T.job || t.job || '', ...(t.tall ? { tall: t.tall, low: t.low } : {}), ...(t.snag ? { snag: true, h: t.h } : {}), ...(t.marker ? { marker: true } : {}) };
+    return { x: p[0], z: p[1], r: Array.isArray(t) ? t[2] : t.r, job: T.job || t.job || '', ...(t.tall ? { tall: t.tall, low: t.low } : {}), ...(t.snag ? { snag: true, h: t.h } : {}), ...(t.marker ? { marker: true } : {}), ...(t.stair ? { stair: true } : {}) };
   }));
   return { ...def, ...h };
 }
@@ -88,7 +88,7 @@ const sand = (at, rx, rz = rx, rot = 0, more = {}) => ({ at, rx, rz, rot, ...mor
 const onTrunk = (Lw, t, o = 0) => { const A = Lw(FALLEN.a[0], -FALLEN.a[1]), B = Lw(FALLEN.b[0], -FALLEN.b[1]), l = Math.hypot(B[0] - A[0], B[1] - A[1]), u = [(B[0] - A[0]) / l, (B[1] - A[1]) / l]; return [A[0] + u[0] * t - u[1] * o, A[1] + u[1] * t + u[0] * o]; };
 // the high road: mown 27 m wide along the trunk's back, from the top of the ramp to 6 m short of its root end
 const highRoad = Lw => { const A = Lw(FALLEN.a[0], -FALLEN.a[1]), B = Lw(FALLEN.b[0], -FALLEN.b[1]), l = Math.hypot(B[0] - A[0], B[1] - A[1]), P = [];
-  for (let t = 38; t <= l - 6; t += 8) P.push(onTrunk(Lw, t, 13.5)); for (let t = l - 6; t >= 38; t -= 8) P.push(onTrunk(Lw, t, -13.5)); return P; };
+  for (let t = 38; t <= l - 3; t += 8) P.push(onTrunk(Lw, t, 13.5)); for (let t = l - 3; t >= 38; t -= 8) P.push(onTrunk(Lw, t, -13.5)); return P; };
 
 export const HOLES = [
   // 1. THE EAVES: in from the bright meadow, down a stream valley and through two gate trees into the forest
@@ -171,39 +171,42 @@ export const HOLES = [
   hole({ n: 3, name: 'The Fallen Giant', par: 4, world: LINES[2], tips: [-30, 0], shape: 'A slight dogleg right (8°)', split: true,
     build: (P, L, len, Lw) => {
       const ax = (s) => { const t = (s - 61) / (229 - 61); return -36 + 14 * t; };   // about where the trunk's axis lies, metres left of the line
-      const hr = onTrunk(Lw, 118);   // the high road's target on the trunk's back, and the marker beyond it
+      const hr = onTrunk(Lw, 170);   // the high road's target on the trunk's back, about 25 m short of where the mowing ends (round 2: was 118, the trunk 32 m shorter)
       return {
         tees: { redwood: 0, cedar: [18, 10], rowan: [45, -6], hazel: [76, 20] },
         // split: the high road mown along the trunk's back (26 m), the low road on the floor to its right (about 50 m)
         fw: [{ poly: highRoad(Lw), wob: 1 },
-          { e: [[96, 12, 34], [150, 9, 41], [205, 6, 42], [245, 5, 36], [266, 8, 24], [276, 8, 14]], wob: 2.6 }],
+          { e: [[96, 12, 34], [150, 9, 41], [185, 7, 40], [199, 3, 40], [207, -6, 40]], wob: 2.6 },
+          // round 2: past the sentinel the low road goes on as a pinched lane 26 m wide on its right, to 252 m (it ran 50 m wide to 276)
+          { poly: [P(204, 15), P(222, 16), P(240, 18), P(250, 22), P(255, 31), P(250, 42), P(236, 46), P(218, 46), P(204, 44)], wob: 2 }],
         // the green on the upper level, level with the trunk's back; a bank 5-6 m up from the low road
         prof: [[0, 0], [len, 0]],
-        bunkers: [sand(P(len - 15, 13), 5.4, 3.8, 0.3)],
-        green: { k: 1.06, lobes: [[0, 0, 10, 12, -18], [-4, 7, 5.5, 5, 0]], apron: 2, contour: [{ fall: 200, pct: 1.6 }, { bowl: [-4, 9], r: 8, h: 0.25 }], style: 'Small, up on the high level, set a little left so the high road plays down its length; it falls 1.6% toward the back left with a shallow bowl; one sand hollow front right, the bank down to the low road in front' },
+        bunkers: [sand(P(len - 15, 13), 5.4, 3.8, 0.3), sand(P(len - 3, 17), 4.2, 3.2, 0.5)],   // round 2: a second hollow right, on the low road's angle
+        green: { k: 1.06, lobes: [[0, 0, 9, 13.5, 12], [5, 8, 5.5, 5, 0]], apron: 2, contour: [{ fall: 200, pct: 1.6 }, { bowl: [4, 9], r: 8, h: 0.25 }], style: 'Small, up on the high level, its long axis turned 24° right so the high road plays down its length and the low road comes in across it (round 2: it was turned the other way, toward the low road); it falls 1.6% away with a shallow bowl at the back right; two sand hollows on the right, the bank down to the low road in front' },
         trunks: [
-          { job: 'the far side of the low road', list: [[118, 62, 5], [172, 66, 5.4], [226, 60, 4.8]] },
+          { job: 'the sentinel: a standing giant in the low road 214 m out (round 2, Rhys: "pinch in with a tree on the low road"), so the low road is a lay-up short of it', list: [[214, 5, 6.2]] },
+          { job: 'the far side of the low road', list: [[118, 62, 5], [172, 66, 5.4], [236, 60, 4.8]] },
           { job: 'beyond the fern under the fallen giant', list: [[112, -82, 5], [186, -74, 5.2]] },
           { job: 'behind the green', list: [[342, -22, 5], [348, 26, 4.8]] },
-          { job: 'the marker: a young fir growing out of the trunk\'s back, the high road\'s line', list: [{ at: onTrunk(Lw, 132), r: 0.7, snag: true, h: 9, marker: true }] },
+          { job: 'the marker: a young fir growing out of the trunk\'s back, the high road\'s line', list: [{ at: onTrunk(Lw, 198, -9), r: 0.7, snag: true, h: 9, marker: true }] },
         ],
-        reliefLine: [[0, 0], onTrunk(Lw, 20), onTrunk(Lw, 160), P(250, -2), P(272, 2), L.at(-1)],   // read on the high road: up the ramp onto the trunk's back, off its end to the low road, up the bank to the green (the two levels side by side)
-        targets: [{ name: 'The low road', at: P(226, 20) }, { name: 'The high road', at: hr, bold: true }],
+        reliefLine: [[0, 0], onTrunk(Lw, 20), onTrunk(Lw, 190), onTrunk(Lw, 206), onTrunk(Lw, 206, 30), L.at(-1)],   // read on the high road: up the ramp onto the trunk's back, off its end onto the floor (the dell at its end, 30 m across to the low road), up the bank to the green (the three levels: trunk, floor, green)
+        targets: [{ name: 'The low road', at: P(182, 28) }, { name: 'The high road', at: hr, bold: true }],
         boldPath: hr,
         words: {
           story: 'The fallen giant: a trunk 28 m across lying along the hole, its back the high road.',
-          plays: 'A fallen giant lies along the left of the hole, its mossy back 28 m wide and 6 m up. The high road: up the ramp of its broken crown onto its back, a 3 wood or a hybrid (about 200 yd) to a flat lie with the green in sight, then a wedge down its length. The low road: driver on the forest floor beside it, 50 m wide; from there the green is up a bank 6 m above you and the trunk\'s end hides its left half: a blind pitch. The root plate stands on end where the trunk ends.',
-          safe: 'Driver down the low road (226 m), a blind pitch up to the green.',
-          bold: 'A 3 wood or hybrid onto the trunk\'s back (178 m), a wedge in with the green in sight.',
-          miss: 'Off the trunk\'s right side: the low road. Off its left: fern under the trunk, blocked, a shot out along the floor. Right of the low road: fern, then the forest floor. At the green, a sand hollow front right; short, the bank sends it back down.',
+          plays: 'A fallen giant lies along the left of the hole, its mossy back 28 m wide and 6 m up. The high road: up the ramp of its broken crown and along its back, a driver or a strong 3 wood (about 220 yd) to a flat lie with the green in sight, then a wedge (about 120 yd) down its length. Too long and it runs off the trunk\'s end, down beside the root plate. The low road: the floor beside it, 50 m wide, but a standing giant, the sentinel, stands in it 206 m out, so the safe drive is a hybrid laid up short of it; from there it is about 150 yd up a bank 6 m above you, the trunk\'s end hiding the green\'s left half, two sand hollows on your side: a blind pitch, a club or two more.',
+          safe: 'A hybrid down the low road short of the sentinel (176 m), a blind mid iron up the bank (about 150 yd).',
+          bold: 'Driver or 3 wood along the trunk\'s back (199 m), a wedge (about 120 yd) with the green in sight.',
+          miss: 'Off the trunk\'s right side: the low road. Off its left: fern under the trunk, blocked, a shot out along the floor. Past its end: down beside the root plate. On the low road, long: the sentinel (half drop at its foot) or past it into fern. Right of the low road: fern, then the forest floor. At the green, two sand hollows right; short, the bank sends it back down.',
         },
         card: {
           type: 'Original (high road, low road)', form: 'Split (the trunk\'s back and the floor)', feature: 'The fallen giant (28 m wide, 6 m up) and its root plate', job: 'Its back is the high road (a lie-setter: flat, the view); its flank is an obstacle and a frame; the root plate is a landmark',
-          decision: 'High road, low road: the trunk\'s back (about 200 yd, a flat lie and a wedge in sight) or the floor beside it (driver, 50 m wide, a blind pitch up the bank)',
-          miss: 'Small: moss along the trunk\'s edges, fern beside the low road. Medium: fern under the trunk (blocked, a shot out), the forest floor. Big: deep in the forest. No penalty ground. Safe miss at the green: left (high side)',
-          view: 'In front the ramp of broken crown; in the middle the trunk\'s back running away and the low road beside it; beyond, the root plate and the light on the green, the heart tree glimpsed far left. Both roads show',
+          decision: 'High road, low road: the trunk\'s back (driver or 3 wood, 26 m wide, 6 m up; a wedge in sight, about 30 yd nearer) or the floor beside it (a hybrid laid up short of the sentinel, 50 m wide; a blind mid iron up the bank)',
+          miss: 'Small: moss along the trunk\'s edges, fern beside the low road. Medium: fern under the trunk (blocked, a shot out), off the trunk\'s end beside the root plate, the sentinel, the forest floor. Big: deep in the forest. No penalty ground. Safe miss at the green: left (high side)',
+          view: 'In front the ramp of broken crown; in the middle the trunk\'s back running away, the low road beside it and the sentinel standing in it; beyond, the root plate and the light on the green. Both roads show',
           ground: 'Stepped: the trunk\'s back and the green 6 m over the low road; +5 m tee to green',
-          height: 'Stepped (high road, low road)', dial: 'Length: 335 yd', shots: { tee: 'A lay-up to a number onto the trunk (bold), or driver straight (low road)', approach: 'A wedge with the green in sight, or a blind pitch up a bank' }, hazard: 'Down the left: the fallen giant', surround: 'A drop (the bank down to the low road); sand front right',
+          height: 'Stepped (high road, low road)', dial: 'Length: 335 yd', shots: { tee: 'Driver held on a 26 m strip (bold), or a hybrid laid up short of a tree (safe)', approach: 'A wedge with the green in sight, or a blind mid iron up a bank' }, hazard: 'Down the left: the fallen giant; centre right: the sentinel', surround: 'A drop (the bank down to the low road); two sand hollows right',
         },
       };
     },
@@ -286,14 +289,14 @@ export const HOLES = [
     build: (P, L, len) => ({
       // the platform tees: Redwood 25 m up, Cedar on the lower landing (12 m up) round the other side of the trunk;
       // Rowan and Hazel on the floor
-      tees: { redwood: 0, cedar: [7, 13], rowan: [22, 6], hazel: [46, -6] },
+      tees: { redwood: 0, cedar: [8, 21], rowan: [22, 6], hazel: [46, -6] },
       teeY: { redwood: 25, cedar: 12 },
       tipsY: 31,
       bunkers: [],
       green: { k: 1.0, lobes: [[0, 0, 11.5, 14, 22], [5, 8, 6.5, 5.5, 0]], apron: 3, contour: [{ fall: 30, pct: 1.6 }, { ridge: [[-6, -6], [7, 5]], h: 0.25, w: 3 }], style: 'Angled from front left to back right, the brook in front and down the left; falling 1.6% toward the brook with a gentle spine; moss banks behind and right gather a long ball' },
       forms: [{ at: P(len + 14, 10), rx: 14, rz: 9, h: 2.2, label: 'the moss bank' }],
       trunks: [
-        { job: 'the stair tree (its first branches 90 m up: open over the platform)', list: [{ s: -6, off: 10, r: 5.5, tall: 112, low: 0.8 }] },
+        { job: 'the stair tree: its crown 90 m up, three great limbs low down each carrying a tee, the stair round its trunk', list: [{ s: -6, off: 15, r: 5.5, tall: 112, low: 0.8, stair: true }] },
         { job: 'behind the green', list: [[len + 32, -22, 5], [len + 36, 24, 5.2]] },
         { job: 'the light shaft\'s sides', list: [[70, -44, 4.8], [78, 46, 5]] },
       ],

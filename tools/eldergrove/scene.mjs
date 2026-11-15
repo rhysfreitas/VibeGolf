@@ -159,8 +159,9 @@ export function buildHole(h) {
   const rootAt = (s, off) => { const R = h.root; if (!R) return 0; return R.h * (1 - smooth((Math.abs(off) - R.w / 2) / 1.6)) * smooth((s - R.s0) / 8) * (1 - smooth((s - R.s1) / 8)); };
   const lineExtra = (s, off) => crossAt(s, off) + rootAt(s, off);
   const teeHead = headingAt(h.line, 1), tc = Math.cos(teeHead), ts = Math.sin(teeHead);
-  const teePads = Object.entries(h.teePts).map(([key, p]) => ({ k: key, x: p[0], z: p[1], lift: (h.teeY || {})[key] || 0 }));
-  const onPad = (t, x, z, m = 0) => { const [u, v] = [(x - t.x) * tc + (z - t.z) * ts, (x - t.x) * ts - (z - t.z) * tc]; return Math.abs(u) < 5 + m && Math.abs(v) < 6 + m; };
+  // a deck (a raised tee) runs on 8.5 m behind the ball and 3.5 m in front of it, so the drop shows from the tee
+  const teePads = Object.entries(h.teePts).map(([key, p]) => ({ k: key, x: p[0], z: p[1], lift: (h.teeY || {})[key] || 0, back: (h.teeY || {})[key] ? 2.5 : 0 }));
+  const onPad = (t, x, z, m = 0) => { const [u, v] = [(x - t.x) * tc + (z - t.z) * ts, (x - t.x) * ts - (z - t.z) * tc]; return Math.abs(u) < 5 + m && Math.abs(v + (t.back || 0)) < 6 + m; };
 
   const L0 = h.line, sd = [L0[1][0] - L0[0][0], L0[1][1] - L0[0][1]], sl0 = Math.hypot(...sd), ed = [L0.at(-1)[0] - L0.at(-2)[0], L0.at(-1)[1] - L0.at(-2)[1]], el0 = Math.hypot(...ed);
   const blendS = (x, z) => {
@@ -207,14 +208,15 @@ export function buildHole(h) {
     const raw = baseAbs(x, z) - h.base + shapesAt(...Wh(x, z)).y; return y + (pinBase - raw) * t;
   };
   for (const t of teePads) t.y = level(t.x, t.z, base(t.x, t.z)) + 0.4 + t.lift;
-  const tipsPad = h.tipsPt ? { x: h.tipsPt[0], z: h.tipsPt[1], lift: h.tipsY || 0 } : null;
+  const tipsPad = h.tipsPt ? { x: h.tipsPt[0], z: h.tipsPt[1], lift: h.tipsY || 0, back: h.tipsY ? 2.5 : 0 } : null;
   if (tipsPad) tipsPad.y = level(tipsPad.x, tipsPad.z, base(tipsPad.x, tipsPad.z)) + tipsPad.lift;
 
-  function ownGround(x, z) {
+  // floor = true: the ground under a deck (a tee grown on a limb of the stair tree), for drawing round it
+  function ownGround(x, z, floor = false) {
     const [X, Z] = Wh(x, z), wa = waterAt(X, Z);
     if (wa && gm(x, z) > 2) return wa.level - h.base;
-    for (const t of teePads) if (onPad(t, x, z)) return t.y;
-    if (tipsPad && tipsPad.lift && onPad(tipsPad, x, z)) return tipsPad.y;
+    for (const t of teePads) if (onPad(t, x, z) && !(floor && t.lift)) return t.y;
+    if (!floor && tipsPad && tipsPad.lift && onPad(tipsPad, x, z)) return tipsPad.y;
     let y = level(x, z, base(x, z));
     for (const t of teePads) { if (t.lift) continue; const d = Math.hypot(x - t.x, z - t.z); if (d < 12) y = lerp(t.y, y, smooth((d - 6) / 6)); }   // a platform stands sheer: no blend
     if (tipsPad && !tipsPad.lift) { const d = Math.hypot(x - tipsPad.x, z - tipsPad.z); if (d < 16) y = lerp(tipsPad.y, y, smooth((d - 8) / 8)); }
@@ -251,13 +253,28 @@ export function buildHole(h) {
     if (fd < 70 && noise2(X / 23, Z / 23, 10) > 0.35) return 'fern';   // drifts of fern out on the floor
     return 'litter';
   }
-  return { h, ownGround, ownSurface, gm, fairwayD, inBunker, bunkers, teePads, base: h.base, baseAbs, along, tipsPad, edgeM };
+  // the decks: each raised tee is the flat, mossy end of a limb grown out of the stair tree (Rhys, 15 November: "grown
+  // out of the tree rather than a raised ground platform"). For the ball a deck is ground (its pad, 10 x 12 m, at the
+  // tee's height); the limb that carries it, and the stair round the trunk, are drawn
+  const decks = [...teePads.filter(t => t.lift), ...(tipsPad && tipsPad.lift ? [{ ...tipsPad, k: 'tips' }] : [])].map(t => {
+    const cor = []; for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a), e = 4;   // a rounded pad, a superellipse inside the 10 x 12 m the ball plays on
+      const u = 5 * Math.sign(c) * Math.abs(c) ** (2 / e), v = 6 * Math.sign(sn) * Math.abs(sn) ** (2 / e) - t.back; cor.push([t.x + u * tc + v * ts, t.z + u * ts - v * tc]); }
+    return { k: t.k, x: t.x - t.back * ts, z: t.z + t.back * tc, y: t.y, outline: cor };
+  });
+  const st = h.trunkPts.find(t => t.stair);
+  const limbs = st ? decks.map(d => {
+    const dx = d.x - st.x, dz = d.z - st.z, l = Math.hypot(dx, dz), ux = dx / l, uz = dz / l;
+    // from the bark, 7 m below the deck, rising out to the deck's middle (the last 5 m under the pad, flattening into it)
+    return { from: [st.x + ux * st.r * 0.95, d.y - 7, st.z + uz * st.r * 0.95], knee: [st.x + ux * (st.r + (l - st.r) * 0.45), d.y - 3.2, st.z + uz * (st.r + (l - st.r) * 0.45)], to: [d.x, d.y - 1.2, d.z], r0: 2.6, r1: 1.7, k: d.k, reach: l - st.r };
+  }) : [];
+  const stair = st ? { x: st.x, z: st.z, r: st.r, top: Math.max(...decks.map(d => d.y)) } : null;
+  return { h, ownGround, ownSurface, gm, fairwayD, inBunker, bunkers, teePads, base: h.base, baseAbs, along, tipsPad, edgeM, onPad, decks, limbs, stair };
 }
 const OWN = HOLES.map(buildHole);
 
 // ---- the ground between the holes (world, absolute heights)
 const TIPS_W = HOLES.map((h, k) => OWN[k].tipsPad ? [...WOR[k](OWN[k].tipsPad.x, OWN[k].tipsPad.z), OWN[k].tipsPad.y + OWN[k].base, OWN[k].tipsPad.lift] : null).filter(Boolean);
-export function worldAt(X, Z) {
+export function worldAt(X, Z, floor = false) {
   let best = -1, bd = Infinity;
   const near = [];
   for (let k = 0; k < HOLES.length; k++) { const d = distLine(WL[k], X, Z); near.push(d); if (d < bd) { bd = d; best = k; } }
@@ -268,19 +285,21 @@ export function worldAt(X, Z) {
   if (bd > 240) { const sh = shapesAt(X, Z); y = V(X, Z) + sh.y; }
   else {
     let fw = 0, fy = 0;
-    for (let k = 0; k < HOLES.length; k++) { if (near[k] > bd + 60) continue; const wk = Math.pow(1 - smooth((near[k] - bd) / 60), 2) / Math.pow(near[k] + 4, 2); fw += wk; fy += wk * (OWN[k].ownGround(...LOC[k](X, Z)) + OWN[k].base); }
+    for (let k = 0; k < HOLES.length; k++) { if (near[k] > bd + 60) continue; const wk = Math.pow(1 - smooth((near[k] - bd) / 60), 2) / Math.pow(near[k] + 4, 2); fw += wk; fy += wk * (OWN[k].ownGround(...LOC[k](X, Z), floor) + OWN[k].base); }
     y = fy / fw;
     if (bd > 130) y = lerp(y, V(X, Z) + shapesAt(X, Z).y, smooth((bd - 130) / 110));
   }
   // a green or a tee pad belongs to its own hole: its own ground wins over the blend within 10 m of it
+  let deck = false;
   for (let k = 0; k < HOLES.length; k++) {
     if (near[k] > 120) continue;
     const O = OWN[k], [qx, qz] = LOC[k](X, Z), go = O.gm(qx, qz);
     let t = go < 10 ? 1 - smooth((go + 1) / 11) : 0;
-    for (const p of O.teePads) { const d = Math.hypot(qx - p.x, qz - p.z); if (p.lift ? d < 8 : d < 14) t = Math.max(t, p.lift ? 1 : 1 - smooth((d - 7) / 7)); }
-    if (t > 0) y = lerp(y, O.ownGround(qx, qz) + O.base, t);
+    for (const p of O.teePads) { const d = Math.hypot(qx - p.x, qz - p.z); if (p.lift ? d < 8 : d < 14) t = Math.max(t, p.lift ? (floor ? 0 : 1) : 1 - smooth((d - 7) / 7)); if (p.lift && O.onPad(p, qx, qz)) deck = true; }
+    if (O.tipsPad && O.tipsPad.lift && O.onPad(O.tipsPad, qx, qz)) { deck = true; if (!floor) t = 1; }
+    if (t > 0) y = lerp(y, O.ownGround(qx, qz, floor) + O.base, t);
   }
-  for (const [tx, tz, ty, lift] of TIPS_W) { const d = Math.hypot(X - tx, Z - tz); if (lift ? d < 7 : d < 16) y = lift ? (d < 6.2 ? ty : y) : lerp(ty, y, smooth((d - 8) / 8)); }
+  for (const [tx, tz, ty, lift] of TIPS_W) { if (lift) continue; const d = Math.hypot(X - tx, Z - tz); if (d < 16) y = lerp(ty, y, smooth((d - 8) / 8)); }
   // the root flare at a trunk's foot
   const ft = trunkFoot(X, Z); if (ft && ft.d > 0) y += ft.flare;
   let s = bd < 160 ? own.ownSurface(lx, lz) : (ft && ft.d < 0 ? 'bark' : ft && ft.root ? 'root' : openAt(X, Z) > 0.5 ? 'meadow' : noise2(X / 23, Z / 23, 10) > 0.35 ? 'fern' : 'litter');
@@ -289,8 +308,13 @@ export function worldAt(X, Z) {
     const o = OWN[k].ownSurface(...LOC[k](X, Z));
     if (['fairway', 'green', 'fringe', 'sand', 'tee'].includes(o)) { s = o; break; }
   }
-  return { y, s, k: best };
+  return { y, s, k: best, deck };
 }
+// the decks, their limbs and the stair in world space (absolute heights), for drawing from any hole
+const wp3 = (k, p) => { const [X, Z] = WOR[k](p[0], p[2]); return [X, p[1] + OWN[k].base, Z]; };
+export const DECKS = OWN.flatMap((O, k) => O.decks.map(d => ({ hole: k, k: d.k, y: d.y + O.base, at: WOR[k](d.x, d.z), outline: d.outline.map(q => WOR[k](...q)) })));
+export const LIMBS = OWN.flatMap((O, k) => O.limbs.map(l => ({ hole: k, k: l.k, from: wp3(k, l.from), knee: wp3(k, l.knee), to: wp3(k, l.to), r0: l.r0, r1: l.r1, reach: l.reach })));
+export const STAIRS = OWN.flatMap((O, k) => O.stair ? [{ hole: k, at: WOR[k](O.stair.x, O.stair.z), r: O.stair.r, top: O.stair.top + O.base, foot: worldAt(...WOR[k](O.stair.x, O.stair.z)).y }] : []);
 
 // ---- each hole, read through worldAt in its own frame: ground (relative to its base), surface, the solids and
 // the trees near it

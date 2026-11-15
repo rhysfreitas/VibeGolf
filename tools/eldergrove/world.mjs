@@ -130,8 +130,9 @@ export function heartAt(X, Z) {   // { lift, root (0-1: on a root) }
 
 // ---- the fallen giant along the left of the 3rd: its crown end (broken, the ramp up) near the tee, its root end
 // toward the green, its back 28 m wide and 6 m up; the root plate stands on end at the root end
-export const FALLEN = { a: w([347, -409]), b: w([407, -253]), top: 28, h: 6, ramp: 46, flank: 3.5, name: 'the fallen giant' };
-export const ROOTPLATE = { c: w([392, -241]), r: 16, h: 12, t: 4, name: 'the root plate' };   // torn off to the left of the trunk's end, so the high road's wedge passes it
+export const FALLEN = { a: w([347, -409]), b: w([419, -223]),   // round 2: 32 m longer toward the green, so the high road reaches as far as the low road
+  top: 28, h: 6, ramp: 46, flank: 3.5, name: 'the fallen giant' };
+export const ROOTPLATE = { c: w([404, -211]), r: 16, h: 12, t: 4, name: 'the root plate' };   // torn off to the left of the trunk's end, so the high road's wedge passes it
 export function fallenAt(X, Z) {   // { lift, on (0-1: on its back), flank (0-1: on its sides) }
   const A = FALLEN.a, Bp = FALLEN.b, L = [A, Bp], len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]);
   const pr = project(L, X, Z); if (pr.d > FALLEN.top / 2 + 14) return { lift: 0, on: 0, flank: 0 };
