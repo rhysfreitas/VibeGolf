@@ -47,6 +47,37 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | The Buried Kingdom (art pass 1, 14 November 2026) | 3 The Landing | 5L The River Bank | 4 The Causeway ↑ | 4R Sahara | 3 The Sphinx | 5R Hog's Back | 4L The Quarry | 4R The Gate | 4L The Colossi | 36 |
 | Wrecker's Reach (art pass 1, 15 November 2026) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
 | Eldergrove (blockout 15 November 2026; `?c=eldergrove`) | 4L The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
+| Cloudrest (layout approved 15 November 2026; `tools/cloudrest/` started) | 4R The Overlook | 3 The Balcony | 5L ↓ The Hanging Valley | 3 The Needle (the drop, −18 m) | 4L The Broken Ridge | 5R ↑ The Stair | 3 The Alcove | 5L The Tea Terraces | 4S ↓ The Descent | 36 |
+
+- Cloudrest (Rhys's picks, 14-15 November 2026; `claude/cloudrest-layout.md` and `claude/brief-cloudrest.md` in the
+  project; `tools/cloudrest/`): a "roof of the world" course, holes cut into the sides of a misty green gorge: two
+  facing cliffs hung with pines, stone pinnacles in the cloud between, buildings set into the rock, a lived-in cliff
+  monastery in the far wall (the mood of a cliff temple above the clouds, our own: nothing hanging under a lip, no
+  names or designs from any show; shrines and stupas are landmarks beside the holes, never targets). Mist lifting in
+  late-afternoon light. Its logic: **the wall gives and the mist takes** (a ball into the cliff drops back onto the
+  shelf; only an outer edge is penalty ground, a stroke and a drop as in the Aerie's clouds), and **the air is thin**
+  (the ball flies about 10% further, flatter, with less curve and less wind; the first course where the air is a
+  design element). A journey, not a loop (the first routing, a circuit round a cirque with every bend left, was
+  rejected): down the western cliff (1-4), across the gorge on a ridge (5), up the eastern cliff (6-7), through the
+  tea terraces behind the monastery (8), down three tiers to its courtyard (9). Par 36, 4 3 5 3 4 5 3 5 4, three
+  par 3s and three par 5s; card 3,690 yd from the Summit tees (plays about 3,355); tees Summit, Ridge, Ledge, Terrace,
+  Pinnacle tips (switched off). 1 The Overlook 4 440 (fan, fall-away along a 62 m shelf, the drop left behind a kerb),
+  2 The Balcony 3 180 (across a gulf, balcony to balcony over a cleft 50 m deep), 3 The Hanging Valley 5 650 (an
+  irregular bowl, half-pipe, a stream; 650 yd on the card, past real golf there; no decision, the breather),
+  4 The Needle 3 155 (the course's one drop par 3, to a 330 m² green on a pillar, all carry), 5 The Broken Ridge 4 510
+  (broken, hog's back along a crest of joined pinnacles, a catch shelf below the north side; lay up or carry the
+  notch), 6 The Stair 5 600 (hourglass, a table top under a 9 m face with a pilgrim stair, then a 35 m climb),
+  7 The Alcove 3 225 (uphill to a shelf, the whole hole under a rock roof 90 m up), 8 The Tea Terraces 5 555 (split:
+  high road on a 30 m upper terrace, low road on the 55 m lower one; reachable), 9 The Descent 4 375 (stepping stones,
+  three tiers down 45 m in a zigzag to the courtyard; drivable straight at the golden roof). Classic Hog's Back (5);
+  decisions 5 (lay up or carry), 8 (high road or low road), 9 (drivable); bold height forms 6, 8, 9; shelf holes 1
+  and 6 (drop left), 5 (drop right); valley holes with no drop 3 and 8; bends right 1, 6, left 3, 5, 8, a zigzag 9.
+  Landmarks the monastery's golden roof (1, 2, 5, 6, 9), the Needle (3's green, 4, 5), the white stupa (5, 6); reveal
+  the 5th tee out on the ridge. New to the register: thin air; a hole under a rock roof; a bowl fairway; a switchback
+  down a slope; a pillar green; a par 3 balcony to balcony; a fairway along a ridge crest (from the never-used list).
+  Borrowed from the over-used list (two): a chasm beside the fairway, a tee shot off a height (9); one thread of
+  waterfall and one rope bridge as scenery only. No punchbowl, arch or climb to the clubhouse; finishes downhill under
+  the landmark. Same par as another course on four holes at most (checked over every par order in the concept chat).
 
 - Eldergrove (Rhys's picks, 14 November 2026; `claude/eldergrove-layout.md` and `claude/brief-eldergrove.md` in the
   project; `tools/eldergrove/` to come): the first tree course, an ancient endless forest of conifers about 100 m
