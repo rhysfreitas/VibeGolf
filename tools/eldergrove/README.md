@@ -45,4 +45,9 @@ the 6th looks at the tree); the 3rd's high road made the better line: the fallen
 road's side (`out/h3-now-vs-proposed.png`). Then (Rhys, the same morning): the 3rd's green 10 m left (its line now ends at (446, -173)), so the
 high road plays straight down it and the low road comes in across it past the trunk's end; the low road opened on
 the right (to 45-48 m, and the lane past the sentinel 34-38 m wide), so going round is a real line too
-(`out/h3-r2b.png`).
+(`out/h3-r2b.png`). And more ground (Rhys's pick, "roll plus two bigger forms"): the forest's own roll everywhere (`pitMound` in
+world.mjs: a windthrow pit and its mound in each 46 m cell, the trees fallen toward the north-east, and a nurse log
+in each 110 m cell; scene.mjs `rollK` takes it full off the fairways, a third on them and in the playing corridor,
+none within 8 m of every shot's straight line (so a mound never hides a target), none round greens, tees and water); the 4th's green perched on a
+knoll 5 m over the shore (`prof`; a hog's back was tried first, but the shore sits only a metre over the pool; `cross` with h < 0 now raises a spine); the 9th a true fall-away (7 m in
+its last 100 m). `relief.mjs`: nine forms, none twice, no plain hole.

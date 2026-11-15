@@ -108,6 +108,40 @@ export function brookAt(X, Z) {   // { d (metres outside the water), s, bed, hw,
   return { d: pr.d - brookHW(pr.s) * (1 + 1.2 * rv), s: pr.s, bed: bedAtS(pr.s) - RAVINE.deep * rv, hw: brookHW(pr.s), ravine: rv };
 }
 
+// ---- the forest's own roll (round 2, Rhys's pick 15 November: "roll plus two bigger forms"): an old forest floor
+// isn't smooth. Where a giant blew over its roots tore out a pit and left a mound of soil beside it (pit and mound),
+// and old fallen trunks lie rotted into long low humps (nurse logs). Here: one pit and its mound in each 46 m cell
+// (the pit 6-11 m across and 1.1-2 m deep, the mound 1-1.8 m high on its downwind side, the storms from the
+// south-west), and a nurse log in each 110 m cell (30-60 m long, 9 m wide, 0.9-1.6 m high). The holes scale it
+// (scene.mjs `rollK`): full off the fairways, a third on them as soft swells, none on greens, tees and water.
+const hsh2 = (a, b, k) => { const v = Math.sin(a * 127.1 + b * 311.7 + k * 74.7) * 43758.5453; return v - Math.floor(v); };
+const PM = 46, NL = 110, STORM = 40 * Math.PI / 180;   // the trees fell toward the north-east
+export function pitMound(X, Z) {
+  let y = 0;
+  const ci = Math.floor(X / PM), cj = Math.floor(Z / PM);
+  for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
+    if (hsh2(i, j, 9) < 0.18) continue;   // some cells have none
+    const px = (i + 0.15 + 0.7 * hsh2(i, j, 1)) * PM, pz = (j + 0.15 + 0.7 * hsh2(i, j, 2)) * PM;
+    const rp = 3 + 2.5 * hsh2(i, j, 3), dp = 1.1 + 0.9 * hsh2(i, j, 4), a = STORM + (hsh2(i, j, 5) - 0.5) * 0.9;
+    const mx = px + Math.sin(a) * rp * 1.35, mz = pz - Math.cos(a) * rp * 1.35, rm = rp * (1.05 + 0.3 * hsh2(i, j, 6)), hm = 1 + 0.8 * hsh2(i, j, 7);
+    const dpit = Math.hypot(X - px, Z - pz) / rp; if (dpit < 1.6) y -= dp * (1 - smooth(dpit / 1.25));
+    // the mound: an oval across the fall line, steeper toward the pit
+    const ux = Math.sin(a), uz = -Math.cos(a), dx = X - mx, dz = Z - mz, al = dx * ux + dz * uz, ac = dx * uz - dz * ux, dm = Math.hypot(al / (rm * 0.75), ac / rm);
+    if (dm < 1.4) y += hm * Math.pow(Math.max(0, 1 - dm * dm / 1.96), 1.6);
+  }
+  const ni = Math.floor(X / NL), nj = Math.floor(Z / NL);
+  for (let i = ni - 1; i <= ni + 1; i++) for (let j = nj - 1; j <= nj + 1; j++) {
+    if (hsh2(i, j, 19) < 0.3) continue;
+    const cx = (i + 0.2 + 0.6 * hsh2(i, j, 11)) * NL, cz = (j + 0.2 + 0.6 * hsh2(i, j, 12)) * NL, a = STORM + (hsh2(i, j, 13) - 0.5) * 1.6;
+    const half = 15 + 15 * hsh2(i, j, 14), h = 0.9 + 0.7 * hsh2(i, j, 15), ux = Math.sin(a), uz = -Math.cos(a), dx = X - cx, dz = Z - cz;
+    const al = dx * ux + dz * uz, ac = Math.abs(dx * uz - dz * ux); if (ac > 6 || Math.abs(al) > half + 4) continue;
+    y += h * Math.cos(Math.PI / 2 * Math.min(1, ac / 4.5)) ** 2 * (1 - smooth((Math.abs(al) - half) / 4));
+  }
+  return y;
+}
+// how near the water is: 0 at the water's edge, 1 from 14 m out
+export function dryK(X, Z) { const b = brookAt(X, Z), pe = poolE(X, Z); let d = Infinity; if (b) d = Math.min(d, b.d - 4 * b.ravine); d = Math.min(d, (pe - 1) * Math.min(POOL.rx, POOL.rz)); return smooth((d - 2) / 12); }
+
 // ---- the pool inside the 4th's bend: black still water about 110 x 90 m, level 50.2
 export const POOL = { c: w([372, 72]), rx: 56, rz: 44, rot: -24 * Math.PI / 180, p: 2.1, level: 50.2 };
 export const poolE = (X, Z) => seDist({ x: POOL.c[0], z: POOL.c[1], rx: POOL.rx, rz: POOL.rz, rot: POOL.rot, p: POOL.p }, X, Z) + 0.05 * noise2(X / 23, Z / 23, 81) + 0.02 * noise2(X / 8, Z / 8, 82);
@@ -163,6 +197,7 @@ export function wet(X, Z, y) {
   if (pe < 1.7) {
     const r = Math.min(POOL.rx, POOL.rz), into = (pe - 1) * r, bed = POOL.level - 1.6, bank = into < 0 ? Math.max(bed, POOL.level - 0.25 + into * 0.12) : POOL.level + 0.3 + into * 0.05;
     y = lerp(Math.min(y, bank), y, smooth((into - 6) / 26));
+    if (into >= 0) y = Math.max(y, POOL.level + 0.12 + Math.min(into, 10) * 0.02);   // the shore never dips under the water (the 4th's hog's back falls toward it)
   }
   return y;
 }

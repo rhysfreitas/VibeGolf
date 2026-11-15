@@ -38,7 +38,7 @@ export const COURSE = {
     landmarks: 'The heart tree: the reveal is the 9th tee, where it fills the frame 245 m away (Rhys, 14 November: from 1 to 8 it stands 50-85° left of the shot, outside the fixed camera\'s view, glimpsed sideways and from the 1st\'s fan, and reflected in the 4th\'s pool off to the left). The Glade\'s light (from 4 and 6). The fallen giant\'s root plate (from the 2nd green and the 4th tee).',
     rhythm: 'A gentle opener down a valley that feeds; the Avenue straight after; the hardest holes 4 and 5 (across the pool, then up the Glade\'s hillside); the Stair the breather; the Brook reachable; the Hollow a long iron uphill; the Hall to finish under the heart tree. Par 3s 150 and 190; par 4s 335, 400, 420, 440, 465; par 5s 505 and 560.',
     forms: 'Seven fairways, seven forms: 1 fan, 2 strip (an avenue), 3 split, 4 hook, 5 wide strip, 7 broken, 9 island. The two plain strips are on purpose (the Avenue, the Glade). A trunk beside every fairway, each hole\'s trees doing a different job.',
-    heights: '1 half-pipe (a stream valley), 2 crest and run, 3 stepped (bold: high road, low road), 4 level (the pool\'s shore), 5 hillside bench 9% across (bold), 6 the drop (the only one: a tee 25 m up a tree), 7 dip in front (the ravine), 8 uphill to a shelf, 9 fall-away into the amphitheatre.',
+    heights: '1 half-pipe (a stream valley), 2 crest and run, 3 stepped (bold: high road, low road), 4 perched green (a mossy knoll 5 m over the pool\'s shore; round 2), 5 hillside bench 9% across (bold), 6 the drop (the only one: a tee 25 m up a tree), 7 dip in front (the ravine), 8 uphill to a shelf, 9 fall-away into the amphitheatre (round 2: 7 m in the last 100 m).',
     dials: 'One pushed on every hole: 1 a chute (two gate trees 45 m apart), 2 width (34 m between the colonnade\'s fern, 560 yd dead straight: past real golf), 3 length (335 yd), 4 a carry (as much pool as you dare), 5 width (75 m of meadow), 6 height (a tee 25 m up a living tree), 7 length (505 yd, reachable), 8 green inside a burnt-out trunk\'s shell, 9 green surround (an amphitheatre of roots).',
     newBorrowed: 'New to the register: the first tree-lined course; a tunnel of trees; a fairway along a fallen trunk; a tee in a living tree; a meadow hole; a green in a natural amphitheatre; moss and leaf-litter lies. Borrowed (two): a tee shot off a height (the Stair), a green inside a shell (the Hollow). No waterfall, bridge in play, chasm, punchbowl, arch or climb to the clubhouse.',
   },
@@ -221,7 +221,7 @@ export const HOLES = [
         { lobes: [[262, -30, 30, 20, -25]], join: 12, wob: 2.5 }],
       formLine: [[0, 0], L.at(-1)],   // a hook is read against the straight line from tee to green, which it wraps round
       cant: [[140, 270, 5]],   // leans away from the water (falls to the right: 3% where drives land, the floor leaning back toward the pool)
-      prof: [[0, 0], [len, 0]],
+      prof: [[0, 0], [len - 50, 0], [len - 20, 4.6], [len, 5.6]],   // round 2 (Rhys's pick, more ground): the green perched on a mossy knoll 5 m over the shore at the end of the cape
       bunkers: [sand(P(len - 10, 16), 4.2, 3.4, -0.2)],
       green: { k: 0.96, lobes: [[0, 0, 12, 17, -14], [-5, 12, 7, 6, 0], [4, -10, 6, 5, 0]], apron: 3, contour: [{ fall: 30, pct: 1.7 }, { tier: [0, 3], up: 200, h: 0.45, w: 4 }], style: 'Long and angled along the bold line (its long axis turns left), falling 1.7% toward the front right with a tier across its back; a sand hollow right; the pool\'s mossy beach short left' },
       trunks: [
@@ -234,7 +234,7 @@ export const HOLES = [
       boldPath: Lw(408, 124),
       words: {
         story: 'The mirror: a black, still pool, the heart tree standing whole in it.',
-        plays: 'A cape round a black, still pool inside the bend. The safe drive goes up the right, never crosses water and leaves about 160 yd. The more of the pool the drive carries, the shorter the second (up to 40 yd less) and the better the angle into a long green set along the bold line. A mossy beach on the near shore catches a drive that bails out short of the water. The fairway leans 3% away from the pool. From the landing area the heart tree is seen whole for the first time, standing in the water.',
+        plays: 'A cape round a black, still pool inside the bend. The safe drive goes up the right, never crosses water and leaves about 160 yd. The more of the pool the drive carries, the shorter the second (up to 40 yd less) and the better the angle into a long green set along the bold line. A mossy beach on the near shore catches a drive that bails out short of the water. The fairway leans 3% away from the pool, and the green sits up on a mossy knoll 5 m over the shore: short of it the bank sends the ball back down. From the landing area the heart tree is seen whole for the first time, standing in the water.',
         safe: 'Up the right round the shore (228 m), a mid iron in.',
         bold: 'Across the pool to its north shore (about 250 m from the tee), a short iron along the green.',
         miss: 'Left: the mossy beach, then the pool (a stroke and a drop). Right: fern, then the trunks outside the bend. At the green, a sand hollow right; the pool short left.',
@@ -244,8 +244,8 @@ export const HOLES = [
         decision: 'Bite off what you dare: the more pool you carry, the shorter the second (up to 40 yd) and the better the angle into the green',
         miss: 'Small: moss, the beach. Medium: fern, a trunk outside the bend. Big: the pool, left only (penalty on one side). Safe miss: right',
         view: 'In front two framing trunks; in the middle the pool, black and still, and the fairway round its shore; beyond, the light on the green and the Glade\'s brightness through the trees. Both lines show',
-        ground: 'Level: the pool\'s shore (+1 m), the fairway leaning 3% away from the water',
-        height: 'Level (the pool\'s shore)', dial: 'A carry: as much of the pool as you dare', shots: { tee: 'A draw round the pool, or a carry across it', approach: 'A short iron along the green from the bold side, a mid iron across it from the safe side' }, hazard: 'Diagonal: the pool', surround: 'Water short left; sand right',
+        ground: 'Perched green: the shore level, the fairway leaning 3% away from the water, then the green up on a mossy knoll 5 m over the shore at the end of the cape (round 2); short of it the bank sends a ball back down; +5 m tee to green',
+        height: 'Perched green (over the shore)', dial: 'A carry: as much of the pool as you dare', shots: { tee: 'A draw round the pool, or a carry across it', approach: 'A short iron along the green from the bold side, a mid iron across it from the safe side' }, hazard: 'Diagonal: the pool', surround: 'Water short left; sand right',
       },
     }),
   }),
@@ -392,7 +392,7 @@ export const HOLES = [
       // an island: one fairway with the centre root down its middle (left of it 26 m, right of it 42 m)
       fw: [{ e: [[110, 22, 22], [150, 30, 36], [200, 34, 48], [250, 35, 50], [300, 30, 42], [340, 24, 30], [370, 18, 18], [390, 11, 11]], wob: 2.6 },
         { bite: [[172, 0, 9, 8, 0], [200, 0, 12, 8, 0], [232, 0, 12, 8, 0], [262, 0, 12, 8, 0], [282, 0, 8, 7, 0]], join: 9, wob: 0.8 }],
-      prof: [[0, 4], [60, 2], [120, -0.4], [175, -1.6], [240, -0.9], [300, -1.2], [len - 60, -1.6], [len, -3.4]],   // the back tees on a knoll 4 m up and the first leg falling evenly, so both lanes beyond the root show
+      prof: [[0, 4], [60, 2], [120, -0.4], [175, -1.6], [240, -0.9], [300, -1.2], [len - 50, -4.0], [len, -6.8]],   // the back tees on a knoll 4 m up and the first leg falling evenly, so both lanes beyond the root show
       // the centre root: 4 m high down the middle from 169 to 282 m (a root lie, a wall a ball drops at the foot of)
       root: { s0: 169, s1: 282, h: 4, w: 7 },
       reliefLine: [[0, 0], P(150, 6), P(240, 22), L.at(-1)],   // read down the right lane (the centre root is the hazard, not the height form)
@@ -421,7 +421,7 @@ export const HOLES = [
         decision: 'Centre-line hazard: left of the root (26 m, an open approach to the whole green) or right of it (42 m, a blind approach over the root shoulder)',
         miss: 'Small: moss, the root\'s foot. Medium: fern, a trunk, the heart tree\'s buttress roots. Big: deep in the forest. No penalty ground. Safe miss at the green: anywhere into the amphitheatre (it feeds)',
         view: 'In front the forest floor; in the middle the bend round the heart tree\'s roots and the root down the fairway; beyond, the heart tree itself, filling the sky. Both lanes show',
-        ground: 'Fall-away: from a knoll 4 m up, down 10 m in all, the last 3 m of it into the amphitheatre',
+        ground: 'Fall-away: from a knoll 4 m up, down 17 m in all, the last 100 m falling 7 m into the amphitheatre (round 2: it was 3 m): land short and let it release',
         height: 'Fall-away', dial: 'Green surround: an amphitheatre of roots', shots: { tee: 'A fade round the bend, left or right of the root', approach: 'A short iron down the entrance, or a blind one over the shoulder' }, hazard: 'In the centre: the root', surround: 'An amphitheatre of roots that feeds',
       },
     }),

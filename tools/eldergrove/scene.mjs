@@ -16,7 +16,7 @@
 import { seDist, seOutline, smooth, clamp, at, distLine, headingAt, lerp, project, lengthOf } from './geo.mjs';
 import { makeGreen, makeFairway, noise2, noise1 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { V, floorWorld, wet, waterAt, brookAt, poolE, openAt, meadowAt, gladeAt, heartAt, fallenAt, HEART, SHELL, SITES, ROOTPLATE, lineD, w } from './world.mjs';
+import { V, floorWorld, wet, waterAt, pitMound, dryK, brookAt, poolE, openAt, meadowAt, gladeAt, heartAt, fallenAt, HEART, SHELL, SITES, ROOTPLATE, lineD, w } from './world.mjs';
 
 export const SURF = ['litter', 'fern', 'moss', 'fairway', 'fringe', 'green', 'tee', 'sand', 'root', 'meadow', 'water', 'bark', 'void'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
@@ -154,7 +154,7 @@ export function buildHole(h) {
   const inBunker = b => (x, z) => x > b.box[0] && x < b.box[2] && z > b.box[1] && z < b.box[3] && edgeM(b, x, z) < 0;
   const fairwayD = fwD;
   const cantAt = s => { let g = 0; for (const [a, b, gr] of h.cant || []) g += gr * span(s, a, b); return g; };
-  const crossAt = (s, off) => { let g = 0; for (const [a, b, hh, ww] of h.cross || []) g += hh * smooth(Math.abs(off) / ww) * span(s, a, b); return g; };
+  const crossAt = (s, off) => { let g = 0; for (const [a, b, hh, ww] of h.cross || []) g += (hh > 0 ? hh * smooth(Math.abs(off) / ww) : -hh * (1 - smooth(Math.abs(off) / ww))) * span(s, a, b); return g; };   // hh > 0 banks the sides up (a half-pipe), hh < 0 raises a spine down the line (a hog's back)
   // the 9th's centre root: a ridge h high and w wide along the line, steep sides (the ball drops at its foot)
   const rootAt = (s, off) => { const R = h.root; if (!R) return 0; return R.h * (1 - smooth((Math.abs(off) - R.w / 2) / 1.6)) * smooth((s - R.s0) / 8) * (1 - smooth((s - R.s1) / 8)); };
   const lineExtra = (s, off) => crossAt(s, off) + rootAt(s, off);
@@ -192,9 +192,28 @@ export function buildHole(h) {
     return lerp(wet(X, Z, line), V(X, Z), kk);
   }
   // everything but water and tee pads, relative to the hole's base: the shared shapes, the green's contour, the sand
+  // the forest's roll (world.mjs pitMound) as this hole has it: full in the fern and the litter, a third on the
+  // fairway (soft swells), none on or round a green, a tee, the water, the fallen giant, the 9th's centre root
+  const sightSegs = [];   // the shots' straight lines: every tee to every target, every target to the pin
+  for (const tp of Object.values(h.teePts)) for (const tg of h.targets || []) sightSegs.push([tp, tg.at]);
+  for (const tg of h.targets || []) sightSegs.push([tg.at, h.pin]);
+  const segD = ([a, b], x, z) => { const dx = b[0] - a[0], dz = b[1] - a[1], l2 = dx * dx + dz * dz, t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / l2, 0, 1); return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t); };
+  const rollK = (x, z, X, Z, sh) => {
+    if (sh.fallen.lift > 0.3 || sh.root) return 0;
+    let k = dryK(X, Z); if (k <= 0) return 0;
+    const go = gm(x, z); k *= smooth((go - 10) / 14);
+    for (const t of teePads) k *= smooth((Math.hypot(x - t.x, z - t.z) - 10) / 10);
+    if (h.tipsPt) k *= smooth((Math.hypot(x - h.tipsPt[0], z - h.tipsPt[1]) - 9) / 9);
+    const fd = fwD(x, z); k *= 0.33 + 0.67 * smooth((fd + 2) / 10);
+    { const pr = along(x, z); if (pr.s > -20 && pr.s < h.len + 10) k *= 0.33 + 0.67 * smooth((Math.abs(pr.off) - 22) / 14); }
+    { let d = Infinity; for (const sg of sightSegs) d = Math.min(d, segD(sg, x, z)); k *= smooth((d - 8) / 14); }   // and the line of every shot stays clear in sight (none within 8 m of it)   // the playing corridor (the carry from the tee too) gets the fairway's soft swells, so a mound never hides a landing area
+    if (h.root) { const pr = along(x, z); if (Math.abs(pr.off) < h.root.w / 2 + 4 && pr.s > h.root.s0 - 10 && pr.s < h.root.s1 + 10) k = 0; }
+    return k * (1 - 0.5 * openAt(X, Z));
+  };
   function base(x, z) {
-    const [X, Z] = Wh(x, z);
-    let y = baseAbs(x, z) - h.base + shapesAt(X, Z).y;
+    const [X, Z] = Wh(x, z), sh0 = shapesAt(X, Z);
+    let y = baseAbs(x, z) - h.base + sh0.y;
+    { const k = rollK(x, z, X, Z, sh0); if (k > 0) y += k * pitMound(X, Z); }
     const go = gm(x, z);
     if (go < 7 && h.green.contour) { const fade = 1 - smooth((go - 0.5) / 6), [u, v] = gUV(x, z); y += contourAt(h.green.contour, u, v) * fade; }
     for (const b of bunkers) { if (x < b.box[0] || x > b.box[2] || z < b.box[1] || z > b.box[3]) continue; const e = edgeM(b, x, z); if (e < 0.5) y -= b.depth * (1 - smooth((e + 2) / 2.3)) * smooth((go - 0.5) / 1.5); }
@@ -282,12 +301,12 @@ export function worldAt(X, Z, floor = false) {
   const [lx, lz] = LOC[best](X, Z), own = OWN[best];
   if (wa && !(bd < 60 && own.gm(lx, lz) < 2)) return { y: wa.level, s: 'water', k: best };
   let y;
-  if (bd > 240) { const sh = shapesAt(X, Z); y = V(X, Z) + sh.y; }
+  if (bd > 240) { const sh = shapesAt(X, Z); y = V(X, Z) + sh.y + (sh.fallen.lift > 0.3 ? 0 : dryK(X, Z) * pitMound(X, Z) * (1 - 0.5 * openAt(X, Z))); }
   else {
     let fw = 0, fy = 0;
     for (let k = 0; k < HOLES.length; k++) { if (near[k] > bd + 60) continue; const wk = Math.pow(1 - smooth((near[k] - bd) / 60), 2) / Math.pow(near[k] + 4, 2); fw += wk; fy += wk * (OWN[k].ownGround(...LOC[k](X, Z), floor) + OWN[k].base); }
     y = fy / fw;
-    if (bd > 130) y = lerp(y, V(X, Z) + shapesAt(X, Z).y, smooth((bd - 130) / 110));
+    if (bd > 130) { const sh = shapesAt(X, Z); y = lerp(y, V(X, Z) + sh.y + (sh.fallen.lift > 0.3 ? 0 : dryK(X, Z) * pitMound(X, Z) * (1 - 0.5 * openAt(X, Z))), smooth((bd - 130) / 110)); }
   }
   // a green or a tee pad belongs to its own hole: its own ground wins over the blend within 10 m of it
   let deck = false;

@@ -71,8 +71,8 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   climb to the clubhouse; finishes down to a green under the landmark. Same par as another course on four holes at
   most (checked over every par order in the concept chat).
   Plan book round 1 14 November 2026 (`tools/eldergrove/`, `out/eldergrove-plan-book-r1.pdf`): `alike.mjs` 0 of 21 alike (seven
-  forms: fan, ribbon, island, hook, spindle, broken, split), `relief.mjs` nine forms none twice (bold 3 stepped, 5 a 9.6%
-  bench; 6 the drop), `spread.mjs` no cluster (edges: a 905 m² green, a 465 yd par 4, a 505 yd par 5, a 35 m fairway, a
+  forms: fan, ribbon, island, hook, spindle, broken, split), `relief.mjs` nine forms none twice and no plain hole after Rhys's notes of 15 November (bold 3 stepped, 5 a 9.6%
+  bench; 4 a perched green, 9 a fall-away, 6 the drop; the forest floor's own pit-and-mound roll), `spread.mjs` no cluster (edges: a 905 m² green, a 465 yd par 4, a 505 yd par 5, a 35 m fairway, a
   76° bend, a straight hole; the Avenue's "past real golf" is its 560 yd under the colonnade, which the check doesn't
   measure). 97 trunks placed on purpose, about 1,560 in the far forest. Ironwood tips 3,770 yd. Measured from the
   approved lines, the 1st bends left 26° (the layout's table said right) and the 9th right 76° (it said 50°).
