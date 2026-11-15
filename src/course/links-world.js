@@ -78,20 +78,42 @@ export function mapPaint(T) {
 export function lieName(hole, x, z) { return matAt(hole, x, z) === 3 ? 'Wreck' : 'Stone'; }
 
 /* ---------- shapes made once ---------- */
+export const TYPES = new Set(['tussock']);   // the clusters' bodies (they play); main.js's buildTrees leaves them to this file
 let SHAPES = null;
+// a clump of dune grass (marram), drawn as four crossed cards round its middle, each carrying a painted fountain of
+// about 150 long blades (texture below): dense and dark at the base, arching out and over to straw tips, combed
+// toward +x (the instance turns it to lean downwind). About 1.5 m tall and 2.6 m across at unit scale. Cheap (8
+// triangles a clump) and dense, which a few dozen modelled blades never were.
+function grassTexture() {
+  const W = 512, H = 320, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'); let r = 91; const rand = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const col = (t, k) => { const a = [58, 64, 30], m = [118, 126, 62], s = k ? [218, 198, 128] : [170, 176, 96]; const q = t < 0.4 ? a.map((v, i) => v + (m[i] - v) * t / 0.4) : m.map((v, i) => v + (s[i] - v) * (t - 0.4) / 0.6); return `rgb(${q.map(Math.round).join(',')})`; };
+  for (let pass = 0; pass < 2; pass++) for (let b = 0; b < 160; b++) {
+    const side = rand() * 2 - 1, out = Math.abs(side), x0 = W / 2 + side * W * 0.16 * Math.sqrt(rand()), len = H * (0.55 + 0.42 * rand()) * (1 - 0.25 * out);
+    const lean = side * (0.15 + 1.1 * out) + 0.25, straw = rand() < 0.5, wid = 2.2 + 3.2 * rand();
+    const pts = []; let px = x0, py = H, ang = lean * 0.35;
+    for (let k = 0; k <= 8; k++) { pts.push([px, py]); const t = k / 8; ang += lean * 0.11 * (0.6 + 1.6 * t); px += Math.sin(ang) * len / 8; py -= Math.cos(ang) * len / 8; }
+    for (let k = 0; k < 8; k++) { const t = (k + 0.5) / 8; x.strokeStyle = col(pass ? t : t * 0.8, straw); x.lineWidth = wid * (1 - 0.8 * t); x.lineCap = 'round'; x.beginPath(); x.moveTo(...pts[k]); x.lineTo(...pts[k + 1]); x.stroke(); }
+  }
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t;
+}
+function clumpCards() {
+  const pos = [], nor = [], uv = [], n = 4, w = 1.3, h = 1.55;
+  for (let k = 0; k < n; k++) {
+    const a = k / n * Math.PI, ca = Math.cos(a) * w, sa = Math.sin(a) * w, lean = 0.35 * h;
+    const A = [-ca, -0.05, -sa], B = [ca, -0.05, sa], C = [ca + lean, h, sa], D = [-ca + lean, h, -sa];
+    for (const [v, t] of [[A, [0, 0]], [B, [1, 0]], [C, [1, 1]], [A, [0, 0]], [C, [1, 1]], [D, [0, 1]]]) { pos.push(...v); nor.push(0.15, 0.97, 0.15); uv.push(...t); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.userData.keep = true; return g;
+}
 function shapes() {
   if (SHAPES) return SHAPES;
-  // a tussock of dune grass: blades arching up and out from a tight base (unit radius, unit height)
-  const pos = [], N = 9;
-  for (let i = 0; i < N; i++) {
-    const an = i / N * Math.PI * 2 + (i % 3) * 0.4, c = Math.cos(an), s = Math.sin(an), w = 0.16, lean = 0.55 + 0.4 * ((i * 7) % 5) / 5;
-    const P = (t, side) => { const r = 0.25 + lean * t, y = (1 - (1 - t) * (1 - t)) * (0.75 + 0.25 * ((i * 3) % 4) / 4) - 0.08 * t * t; return [c * r - s * w * side * (1 - t), y, s * r + c * w * side * (1 - t)]; };
-    pos.push(...P(0, -1), ...P(0, 1), ...P(0.55, 0.5), ...P(0, -1), ...P(0.55, 0.5), ...P(0.55, -0.5), ...P(0.55, -0.5), ...P(0.55, 0.5), ...P(1, 0));
-  }
-  const tuft = new THREE.BufferGeometry(); tuft.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); tuft.computeVertexNormals();
-  const post = new THREE.CylinderGeometry(0.7, 1, 1, 8); post.translate(0, 0.5, 0);
-  tuft.userData.keep = true; post.userData.keep = true;
-  return (SHAPES = { tuft, post });
+  const post = new THREE.CylinderGeometry(0.7, 1, 1, 8); post.translate(0, 0.5, 0); post.userData.keep = true;
+  const tex = grassTexture(), mat = new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.95, metalness: 0, envMapIntensity: 0.35 });
+  const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex, alphaTest: 0.42 });
+  return (SHAPES = { post, clump: clumpCards(), grassMat: mat, grassDepth: depth });
 }
 
 export function buildLinks(hole, T, box, E, hi, { group, coarse, rockMat }) {
@@ -115,7 +137,6 @@ export function buildLinks(hole, T, box, E, hi, { group, coarse, rockMat }) {
   };
   const wOf = m => [m === 1 ? 1 : 0, m === 2 ? 1 : 0, m === 10 ? 1 : 0, m === 4 || m === 3 ? 1 : 0];
   const split = (Vt, idx, k, k1, k2, k3) => { if (Math.abs(Vt[k * 3 + 1] - Vt[k3 * 3 + 1]) < Math.abs(Vt[k1 * 3 + 1] - Vt[k2 * 3 + 1])) idx.push(k, k2, k3, k, k3, k1); else idx.push(k, k2, k1, k1, k2, k3); };
-  const dunes = [];   // world-map cells of bare dune sand near the hole, for the tussocks beyond the field
   {
     const st = coarse ? 2 : 1, ni = Math.floor((WM.nx - 1) / st), nj = Math.floor((WM.nz - 1) / st);
     const Vt = new Float32Array((ni + 1) * (nj + 1) * 3), Wt = new Float32Array((ni + 1) * (nj + 1) * 4);
@@ -123,7 +144,6 @@ export function buildLinks(hole, T, box, E, hi, { group, coarse, rockMat }) {
       const I = i * st, J = j * st, X = WM.x0 + I * WM.cell, Z = WM.z0 + J * WM.cell, [x, z] = L(X, Z), k = j * (ni + 1) + i;
       let y = LY(wH(I, J)); const m = WM.mDec[J * WM.nx + I], wet = m === 8;
       if (inField(x, z) && !wet) { const g = T.groundAt(x, z); if (g !== null) y = g; }
-      else if (m === 0 && Math.hypot(x - cx, z - cz) < (coarse ? 520 : 760)) dunes.push([x, y, z]);
       Vt.set([x, wet ? y - 0.9 : y - 0.3, z], k * 3); Wt.set(wOf(m), k * 4);
     }
     const idx = [];
@@ -208,35 +228,59 @@ export function buildLinks(hole, T, box, E, hi, { group, coarse, rockMat }) {
     pm.castShadow = true; pm.receiveShadow = true; group.add(pm);
   }
 
-  // ---- tussocks of dune grass: one on every field cell that plays as 'tussock', and scattered on the bare dunes of
-  // the 10 m map out past the field
+  // ---- dune grass: a clump on every field cell that plays as 'tussock' (what you see is what stops the ball), the
+  // clusters out past the field from COURSE.links.grass, and an eyebrow of small clumps along the top edge of every
+  // pot (drawn only). Each clump leans downwind of the prevailing sea wind (from the south-west).
   {
-    const list = [];
+    const near = [], far = [], brow = [];
+    const L0 = L(0, 0), Le = L(Math.SQRT1_2, -Math.SQRT1_2), lean = Math.atan2(-(Le[1] - L0[1]), Le[0] - L0[0]);   // downwind (toward the north-east) in this frame
+    const line = hole.line, dLine = (x, z) => { let d = Infinity; for (let i = 1; i < line.length; i++) { const [ax, az] = line[i - 1], [bx, bz] = line[i], ex = bx - ax, ez = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez))); d = Math.min(d, Math.hypot(x - ax - ex * t, z - az - ez * t)); } return d; };
     if (Fd) {
       const cK = Fd.codes.indexOf('tussock');
       for (let j = 0; j < Fd.nz; j++) for (let i = 0; i < Fd.nx; i++) {
         if (Fd.s[j * Fd.nx + i] !== cK) continue;
-        const x = Fd.x0 + i * Fd.cell + (hash(i, j) - 0.5) * 0.6, z = Fd.z0 + j * Fd.cell + (hash(j, i) - 0.5) * 0.6, g = T.groundAt(x, z);
+        const x = Fd.x0 + i * Fd.cell + (hash(i, j) - 0.5) * 1.1, z = Fd.z0 + j * Fd.cell + (hash(j, i) - 0.5) * 1.1, g = T.groundAt(x, z);
         if (g === null) continue;
-        list.push([x, g - 0.05, z, 0.95 + 0.5 * hash(i + 3, j), 1.0 + 0.5 * hash(i, j + 5)]);
+        const dl = dLine(x, z); if (coarse && dl > 70 && (i + j) % 2) continue;
+        (dl < (coarse ? 70 : 110) ? near : far).push([x, g - 0.06, z, 1.25 + 0.4 * hash(i + 3, j), 1.15 + 0.3 * hash(i, j + 5)]);
       }
     }
-    const per = coarse ? 1 : 2;
-    for (const [x0, y0, z0] of dunes) for (let k = 0; k < per; k++) {
-      const h1 = hash(x0 * 0.37 + k, z0 * 0.21), h2 = hash(z0 * 0.53 + k, x0 * 0.17);
-      if (hash(x0 + k * 3, z0 - k) > 0.55) continue;
-      const x = x0 + (h1 - 0.5) * 10, z = z0 + (h2 - 0.5) * 10;
-      list.push([x, y0 - 0.3, z, 1 + 0.6 * h1, 1.1 + 0.5 * h2]);
+    // clusters whose middle is outside the field: filled with clumps on a 2.2 m grid over their ellipse
+    const wy = (X, Z) => { const fx = Math.max(0, Math.min(WM.nx - 1.001, (X - WM.x0) / WM.cell)), fz = Math.max(0, Math.min(WM.nz - 1.001, (Z - WM.z0) / WM.cell)), i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j;
+      return (wH(i, j) * (1 - u) + wH(i + 1, j) * u) * (1 - v) + (wH(i, j + 1) * (1 - u) + wH(i + 1, j + 1) * u) * v; };
+    for (const [X, Z, rx, rz, rot] of E.grass || []) {
+      const [cx0, cz0] = L(X, Z); if (inField(cx0, cz0) || Math.hypot(cx0 - cx, cz0 - cz) > (coarse ? 520 : 800)) continue;
+      const ca = Math.cos(rot), sa = Math.sin(rot);
+      const st = coarse ? 3.6 : 3; for (let u = -rx; u <= rx; u += st) for (let v = -rz; v <= rz; v += st) {
+        if ((u / rx) ** 2 + (v / rz) ** 2 > 0.9) continue;
+        const Xp = X + u * ca - v * sa + (hash(u + X, v) - 0.5), Zp = Z + u * sa + v * ca + (hash(v, u + Z) - 0.5), [x, z] = L(Xp, Zp);
+        far.push([x, LY(wy(Xp, Zp)) - 0.36, z, 1.55 + 0.4 * hash(Xp, Zp), 1.2 + 0.3 * hash(Zp, Xp)]);
+      }
     }
-    if (list.length) {
-      const tm = new THREE.InstancedMesh(S.tuft, new THREE.MeshStandardMaterial({ color: 0x8a9150, roughness: 0.95, side: THREE.DoubleSide }), list.length);
+    // eyebrows on the pots: small clumps along the higher half of each rim, just outside it
+    for (const b of hole.bunkers || []) {
+      if (b.lie !== 'pot' || !b.outline) continue;
+      const O = b.outline, ys = O.map(p => T.groundAt(p[0], p[1]) ?? 0), mean = ys.reduce((a, v) => a + v, 0) / ys.length;
+      let acc = 0;
+      for (let i = 0; i < O.length; i++) { const p = O[i], q = O[(i + 1) % O.length]; acc += Math.hypot(q[0] - p[0], q[1] - p[1]); if (acc < 1.3) continue; acc = 0;
+        if (ys[i] <= mean + 0.05) continue;
+        const ox = p[0] - b.x, oz = p[1] - b.z, ol = Math.hypot(ox, oz) || 1, x = p[0] + ox / ol * 0.7, z = p[1] + oz / ol * 0.7, g = T.groundAt(x, z);
+        if (g !== null) brow.push([x, g - 0.05, z, 0.45 + 0.15 * hash(x, z), 0.5 + 0.2 * hash(z, x)]); }
+    }
+    const put = (geo, list, shadow) => {
+      if (!list.length) return;
+      const m = new THREE.InstancedMesh(geo, S.grassMat, list.length);
       const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), C = new THREE.Color();
       list.forEach(([x, y, z, r, h], i) => {
-        tm.setMatrixAt(i, M.compose(new THREE.Vector3(x, y, z), Q.setFromAxisAngle(up, hash(x, z) * 6.28), new THREE.Vector3(r, h, r)));
-        tm.setColorAt(i, C.setHSL(0.17 + 0.05 * hash(z, x), 0.28 + 0.12 * hash(x * 2, z), 0.36 + 0.12 * hash(x, z * 2)));
+        m.setMatrixAt(i, M.compose(new THREE.Vector3(x, y, z), Q.setFromAxisAngle(up, lean + (hash(x, z) - 0.5) * 0.7), new THREE.Vector3(r, h, r)));
+        const t = hash(z * 1.3, x * 0.7); m.setColorAt(i, C.setRGB(0.85 + 0.25 * t, 0.88 + 0.2 * t, 0.82 + 0.12 * hash(x * 3, z)));
       });
-      tm.receiveShadow = true; tm.castShadow = !coarse; group.add(tm);
-    }
+      m.castShadow = shadow; m.receiveShadow = true; group.add(m);
+      if (shadow) m.customDepthMaterial = S.grassDepth;   // the blades' shadow, not the cards'
+    };
+    put(S.clump, near, !coarse);
+    put(S.clump, brow, false);
+    put(S.clump, far, false);
   }
   return { trees: [], anims: [] };
 }

@@ -90,7 +90,8 @@ export const HOLES = [
       prof: [[0, 0], [200, 0], [262, -1], [340, -1.2], [420, 0], [len, 0]],
       bunkers: [pot(P(298, 31)), pot(P(392, -21), 2.9), pot(P(len - 21, -13), 2.6)],
       green: { lobes: [[0, 0, 12, 15.5, -8], [-5, 10, 7.5, 6, 0]], apron: 4, contour: [{ fall: 10, pct: 1.7 }, { ridge: [[-10, -9], [8, -3]], h: 0.24, w: 2.6 }], style: 'A pear open at the front, falling 1.7% toward you with a low spine across its middle; short grass runs off tight on every side, so the pitch-and-run is the shot' },
-      grass: [{ at: P(130, -75), r: 30, d: 0.08 }, { at: P(130, 70), r: 25, d: 0.1 }],
+      rows: [{ side: -1, s: [120, 470] }, { side: 1, s: [400, 505] }],
+      clumps: [{ at: P(len + 34, -6), rx: 6, rz: 3.5, job: 'frame behind the green' }],
       targets: [{ name: 'The ridge', at: P(218, -4) }, { name: 'The lay-up', at: P(410, 2) }],
       words: {
         story: 'The hauling ground: out from the inn past the luggers pulled up on the sand, down a fairway the 9th comes home on.',
@@ -121,7 +122,8 @@ export const HOLES = [
       extraFw: [{ at: P(len - 26, -16), rx: 13, rz: 17, rot: 0.4 }],
       forms: [{ world: [38, 773], rx: 30, rz: 9, bearing: 95, h: 2.4, label: 'the bank' }, { world: [-8, 778], rx: 26, rz: 22, h: 5.5, label: 'the false light\'s dune' }],
       bunkers: [pot(P(len - 24, 16), 2.6), pot(P(len - 33, 10), 2.4)],
-      grass: [{ world: [-8, 778], r: 18, d: 0.45 }],
+      rows: [{ side: -1, s: [105, 195] }],
+      clumps: [{ world: [6, 783], rx: 6.5, rz: 4, job: 'the false light\'s dune: a frame' }, { world: [16, 770], rx: 5, rz: 3, job: 'the false light\'s dune' }, { world: [-4, 793], rx: 4.5, rz: 3, job: 'the false light\'s dune' }],
       targets: [],
       words: {
         story: 'The false light: a wreckers\' lantern on a post on the dune behind the green, hung to lure ships onto the bar.',
@@ -154,8 +156,8 @@ export const HOLES = [
         forms: [{ world: [-80, 1004], rx: 62, rz: 19, bearing: GALLEON.bearing, h: -8, p: 2.8, sand: true, label: 'the hollow' }],
         bunkers: [pot(P(len - 13, -12), 2.5), pot(P(len + 11, -8), 2.4), pot(P(len + 5, 13), 2.4)],
         green: { lobes: [[0, 0, 9, 12, 18], [4, -6, 5.5, 5, 0]], apron: 3, contour: [{ fall: 30, pct: 1.8 }, { tier: [-2, 5], up: 190, h: 0.35, w: 4 }], style: 'Small and set from front right to back left, open from the front right (where the bold drive runs in), falling 1.8% toward that opening with a shelf at the back; three pots round its left and back' },
-        grass: [{ world: [-60, 1028], r: 12, d: 0.55 }, { world: [-118, 1024], r: 18, d: 0.5 }, { world: [-48, 990], r: 14, d: 0.45 }],
-        stands: [{ world: [-52, 1027], rx: 3.5, rz: 3.5, h: 1.9, job: 'marker: the far side of the hollow' }],
+        rows: [{ side: -1, s: [60, 140] }, { side: 1, s: [215, 300] }],
+        clumps: [{ world: [-130, 1024], rx: 6, rz: 3.5, bearing: 76, job: 'the hollow\'s far lip (its west end; the lip itself is the bold landing)' }, { world: [-146, 1016], rx: 5, rz: 3, bearing: 60, job: 'the hollow\'s far lip' }],
         boldPath: D(236), reliefLand: 236,
         targets: [{ name: 'The lay-up', at: P(172, -4) }, { name: 'Over the galleon', at: D(236), bold: true }],
         words: {
@@ -194,7 +196,7 @@ export const HOLES = [
         bunkers: [pot(P(199, 22), 2.6), pot(P(214, -18), 2.6), pot(P(len - 21, -12), 2.8, { depth: 2 })],
         green: { k: 0.94, lobes: [[0, 0, 13, 17, -22], [-6, 10, 8, 7, 0], [8, -9, 7, 6, 0]], apron: 3, contour: [{ fall: 40, pct: 1.6 }, { tier: [-3, 7], up: 160, h: 0.5, w: 5 }], style: 'A Road green, long and set at an angle from front right to back left, a deep pot eating its front left and the man-of-war\'s hull hard behind; falling 1.6% toward the front right, with a tier 0.5 m up across its back: run it in from the right' },
         props: [{ kind: 'hull', at: P(len + 22, -4), w: 12, l: 64, h: 10, rot: eh + Math.PI / 2, wall: true, label: 'the man-of-war' }],
-        grass: [{ at: P(140, -46), r: 22, d: 0.35 }, { at: P(140, 46), r: 22, d: 0.35 }, { at: P(300, -42), r: 24, d: 0.38 }, { at: P(300, 42), r: 24, d: 0.3 }],
+        rows: [{ side: -1, s: [110, 190] }, { side: 1, s: [245, 385] }],
         targets: [{ name: 'Short of the neck', at: P(186, 4) }, { name: 'The approach', at: P(330, 2) }],
         words: {
           story: 'The man-of-war: a ship of the line driven up the beach in a gale, her hull now the wall behind the green.',
@@ -226,8 +228,9 @@ export const HOLES = [
       prof: [[0, 4.6], [12, 3.6], [42, 0], [398, 0], [412, 0.5], [len, -1.1]],
       bunkers: [pot(P(len - 26, 15), 2.6)],
       green: { lobes: [[0, 0, 10.5, 15, 12], [-5, 9, 6.5, 6, 0]], apron: 5, contour: [{ fall: 180, pct: 1.4 }, { bowl: [-4, 7], r: 10, h: 0.25 }], style: 'Set along the line of the last leg, falling 1.4% away from you toward the back (land it short and let it release), a bowl at the back left; a tussock stand behind it frames it against the sky' },
-      grass: [{ world: [38, 1670], r: 82, d: 0.7, soft: 14, rim: true }, { at: P(len + 26, -2), r: 12, d: 0.55 }],
-      stands: [{ at: P(len + 24, 4), rx: 6, rz: 4, h: 1.8, job: 'frame behind the green' }],
+      rows: [{ side: -1, s: [300, 400] }],
+      rim: { gap: [8, 16] },   // clusters round the Cauldron's rim, 9-17 m outside its water, so the carries read
+      clumps: [{ at: P(len + 36, 4), rx: 7, rz: 4, job: 'frame behind the green' }],
       targets: [{ name: 'Round the rim', at: P(222, -14) }, { name: 'Over the corner', at: P(238, 18), bold: true }, { name: 'The lay-up', at: P(412, -10) }],
       words: {
         story: 'The Cauldron: a tidal pool inside the point, a frigate sunk in it to her masts.',
@@ -257,7 +260,8 @@ export const HOLES = [
         { at: P(len - 2, -25), rx: 9, rz: 24, h: 3 }, { at: P(len - 2, 25), rx: 9, rz: 24, h: 3 }, { at: P(len + 23, -15), rx: 12, rz: 8, h: 3 }, { at: P(len + 23, 15), rx: 12, rz: 8, h: 3 }],
       green: { lobes: [[0, 0, 13, 16, 8], [-6, -9, 7, 6, 0]], apron: 4, contour: [{ fall: 0, pct: 1.3 }, { bowl: [3, 4], r: 12, h: 0.28 }], style: 'Wide and generous in the hollow, falling 1.3% toward the dune with a shallow bowl in the middle: the banks on three sides gather a ball in; a mown gap at the back' },
       props: [{ kind: 'mast', at: P(84, -3), r: 0.45, h: 13, label: 'the mast on the dune', marker: true }],
-      grass: [{ at: P(84, -40), r: 22, d: 0.65 }, { at: P(84, 40), r: 22, d: 0.65 }, { at: P(84, 0), r: 16, d: 0.25 }, { at: P(len, -40), r: 16, d: 0.55 }, { at: P(len, 40), r: 16, d: 0.55 }],
+      clumps: [{ at: P(78, -12), rx: 6, rz: 3.5, rot: 90, job: 'the dune\'s face: a screen' }, { at: P(84, 9), rx: 6.5, rz: 3.5, rot: 90, job: 'the dune\'s face: a screen' }, { at: P(90, -30), rx: 5, rz: 3, job: 'the dune\'s crest' }, { at: P(88, 30), rx: 5, rz: 3, job: 'the dune\'s crest' },
+        { at: P(len, -40), rx: 6, rz: 3.5, job: 'beyond the bank' }, { at: P(len + 8, 38), rx: 6, rz: 3.5, job: 'beyond the bank' }],
       targets: [],
       words: {
         story: 'The Dell: the green hides in a hollow behind a dune, and all you have is the mast on its crest.',
@@ -291,7 +295,7 @@ export const HOLES = [
         bunkers: [pot(P(len - 17, -10), 2.5)],
         green: { lobes: [[0, 0, 11, 14, -15], [4, 8, 6.5, 5.5, 0]], apron: 3, contour: [{ fall: 0, pct: 1.2 }, { ridge: [[-7, 10], [7, 7]], h: 0.14, w: 3.4 }], style: 'Inside the ribs, falling 1.4% toward the creek, a low spine across it; the ribs behind kick a long ball back on' },
         props: ribs.map(r => ({ ...r, at: [r.x, r.z] })),
-        grass: [{ at: P(16, -26), r: 14, d: 0.5 }, { at: P(16, 26), r: 14, d: 0.5 }],
+        clumps: [{ at: P(len + 2, 34), rx: 5.5, rz: 3, job: 'beside the green' }],
         targets: [],
         words: {
           story: 'The ribs: all that is left of a brig is her keel and her ribs, standing round the green like a fence.',
@@ -327,7 +331,7 @@ export const HOLES = [
         corridor: 10,
         bunkers: pots,
         green: { shared: true, apron: 4 },
-        grass: [{ at: P(420, 60), r: 30, d: 0.3 }],
+        rows: [{ side: 1, s: [100, 500] }],
         targets: [{ name: 'The drive', at: P(226, -4) }, { name: 'The second', at: P(404, 13) }],
         words: {
           story: 'The graveyard: where the bar breaks up what comes ashore, every pot scoured round a keel, an anchor or a spar.',
@@ -362,8 +366,8 @@ export const HOLES = [
         green: { k: 1.02, lobes: [[0, 0, 13, 18, -6], [-6, -10, 9, 7, 0]], apron: 5, contour: [{ fall: 0, pct: 1.5 }, { tier: [3, 6], up: 175, h: 0.4, w: 5 }], style: 'Big and open at the front, its long axis down the line from the table, falling 1.5% toward you with a shelf at the back; two pots right; the inn\'s yard wall behind' },
         props: [{ kind: 'wall', at: P(len + 26, 0), w: 1, l: 64, h: 1.4, rot: eh + Math.PI / 2, soak: 0.3, label: 'the inn\'s yard wall' },
           { kind: 'bell', at: P(224, 7), r: 0.35, h: 4.5, label: 'the bell', marker: true }],
-        stands: [{ at: P(224, 14), rx: 3.2, rz: 3.2, h: 1.8, job: 'marker: the lip beside the bell' }],
-        grass: [{ at: P(150, 40), r: 26, d: 0.45 }, { at: P(150, -40), r: 26, d: 0.3 }],
+        rows: [{ side: -1, s: [100, 175] }, { side: 1, s: [205, 335] }],
+        clumps: [{ at: P(228, 42), rx: 4.5, rz: 3.5, job: 'marker: the table\'s right lip, by the bell' }],
         boldPath: P(258, 4),
         targets: [{ name: 'The low road', at: P(246, -54) }, { name: 'The high road', at: P(258, 4), bold: true }],
         words: {

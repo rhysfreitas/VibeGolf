@@ -43,3 +43,10 @@ about 100 yd from the 9th green (the table's back).
 The blockout (14 November 2026, after Rhys approved round 1): `node emit.mjs`, then `node --test tests/wreckersreach.test.mjs`. Two
 changes the engine asked for: the 4th green's back tier sits 3 m further from the pin (the cup sat on its foot, 4.2%),
 and the 5th's bold target moved 6 m toward the line (it sat on the lobe's edge, which the 2 m field rounds to fescue).
+
+Dune grass in clusters (14 November 2026, after the blockout; Rhys's markup: "more strategically along edges of rough or
+splitting fairways ... significant clusters of grass", then "more in general out in the dunes area"). The random grid of
+small tussocks is gone; `scene.mjs` builds `GRASS` from each hole's `rows` and `clumps`, the Cauldron's `rim`, a stand
+beside every back tee, the shared fairway's screen and swathes out in the dunes (see CLAUDE.md). `out/wreckers-reach-
+grass-proposal.pdf` (built by hand from `out/now/plan<n>.png`, round 1's plans, and the new `out/plan<n>.png`) is what
+Rhys saw before the swathes were thickened.

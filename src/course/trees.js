@@ -12,7 +12,8 @@ import { rng } from './noise.js';
 export const TREE_SHAPES = { oak: [2.5, 3, 1], juniper: [0.5, 1.5, 0.6], pinyon: [1.2, 1.9, 0.7], cotton: [4.5, 3.6, 1.4], mushroom: [3.2, 2.4, 1.8] };
 // chance per metre of hitting a branch inside the canopy
 const DENSITY = { pine: 0.34, oak: 0.3, juniper: 0.5, pinyon: 0.42, cotton: 0.28, mushroom: 0.6, // a giant mushroom's cap is dense
-  cycad: 0.45, fern: 0.35, conifer: 0.3, giant: 0.32, broad: 0.32, cypress: 0.36, fig: 0.38 };   // The Lost Valley's
+  cycad: 0.45, fern: 0.35, conifer: 0.3, giant: 0.32, broad: 0.32, cypress: 0.36, fig: 0.38,   // The Lost Valley's
+  tussock: 0.55 };   // Wrecker's Reach: a cluster of dune grass, dense from the sand up
 
 export function treeBody(t) {
   // a tree with its own body (The Lost Valley's): h tall, its canopy from h * low up to h, cr across in radius, a

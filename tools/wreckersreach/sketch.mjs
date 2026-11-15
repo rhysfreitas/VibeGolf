@@ -9,8 +9,8 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES, BACK, FRONT } from './holes.mjs';
-import { BUILT, toWorld, toLocal, worldAt, densAt, STANDW } from './scene.mjs';
-import { LABELS, TUSSOCK_CELL } from './world.mjs';
+import { BUILT, toWorld, toLocal, worldAt, GRASS, clusterAt } from './scene.mjs';
+import { LABELS } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { at, headingAt, clamp, project } from './geo.mjs';
 
@@ -175,7 +175,7 @@ function renderView(hi, view) {
     else if (o.kind === 'bell') post(o, [80, 64, 48], 0.4, 'bell');
   }
   // tussocks of dune grass near the camera: tufts of arching blades leaning with the wind (from the south-west)
-  { const S = TUSSOCK_CELL, R0 = 230, i0 = Math.floor((cam.pos[0] - R0) / S), i1 = Math.ceil((cam.pos[0] + R0) / S), j0 = Math.floor((cam.pos[2] - R0) / S), j1 = Math.ceil((cam.pos[2] + R0) / S);
+  { const S = 2, R0 = 260, i0 = Math.floor((cam.pos[0] - R0) / S), i1 = Math.ceil((cam.pos[0] + R0) / S), j0 = Math.floor((cam.pos[2] - R0) / S), j1 = Math.ceil((cam.pos[2] + R0) / S);
     const hsh = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
     const lean = (() => { const a = (225 + 180 - h.place.heading) * Math.PI / 180; return [Math.sin(a), -Math.cos(a)]; })();
     const tuft = (x, z, r, tall, d) => { const g = gy(x, z), f = fogAt(d), base = cam.view([x, g, z]); if (base[2] < 2) return;
@@ -184,19 +184,18 @@ function renderView(hi, view) {
       for (let k = 0; k < n; k++) { const a = (k / (n - 1) - 0.5) * 1.8, tx = x + Math.sin(a) * r * 0.9 + lean[0] * tall * 0.35, tz = z + lean[1] * tall * 0.35, top = cam.view([tx, g + tall * (0.75 + 0.25 * Math.cos(a)), tz]); if (top[2] < 1) continue;
         const pt = cam.scr(top); sv += `<path d="M${(pb[0] + a * 2).toFixed(1)},${pb[1].toFixed(1)} Q${((pb[0] + pt[0]) / 2).toFixed(1)},${(pt[1] - 2).toFixed(1)} ${pt[0].toFixed(1)},${pt[1].toFixed(1)}" fill="none" stroke="${k % 2 ? col : col2}" stroke-width="${Math.max(0.6, 0.12 / base[2] * FPX).toFixed(2)}" stroke-linecap="round"/>`; }
       add(d - 0.04, sv); };
-    // the tussocks on the hole's own world (the same jittered grid world.mjs keeps), in world cells
-    const Wc = (x, z) => W(x, z), Lc = LOC[hi];
-    const [wx, wz] = Wc(cam.pos[0], cam.pos[2]);
-    const I0 = Math.floor((wx - R0) / S), I1 = Math.ceil((wx + R0) / S), J0 = Math.floor((wz - R0) / S), J1 = Math.ceil((wz + R0) / S);
-    for (let i = I0; i <= I1; i++) for (let j = J0; j <= J1; j++) {
-      const X = (i + 0.2 + 0.6 * hsh(i, j)) * S, Z = (j + 0.2 + 0.6 * hsh(j, i + 7)) * S, [cx, cz] = Lc(X, Z), d = Math.hypot(cx - cam.pos[0], cz - cam.pos[2]);
-      if (d > R0 || d < 3 || !inView(cx, cz, 0.1)) continue;
-      if (!(hsh(i * 1.7 + 11, j * 1.3 + 4) < densAt(X, Z))) continue;
-      const sf = worldAt(X, Z).s; if (sf !== 'dune' && sf !== 'tussock') continue;
-      tuft(cx, cz, 0.65 + 0.65 * hsh(i + 3, j + 5), 1.1 + 0.4 * hsh(i + 9, j + 1), d);
+    // the clusters of dune grass (scene.mjs GRASS): filled with clumps on a 1.8 m grid where the ground plays as grass
+    const Lc = LOC[hi];
+    for (const g of GRASS) {
+      const [cx, cz] = Lc(...g.c), dc = Math.hypot(cx - cam.pos[0], cz - cam.pos[2]); if (dc > R0 + 10 || !inView(cx, cz, 0.15)) continue;
+      const ca = Math.cos(g.rot), sa = Math.sin(g.rot);
+      for (let u = -g.rx; u <= g.rx; u += 1.8) for (let v = -g.rz; v <= g.rz; v += 1.8) {
+        const X = g.c[0] + u * ca - v * sa + (hsh(u, v + g.seed) - 0.5), Z = g.c[1] + u * sa + v * ca + (hsh(v, u - g.seed) - 0.5);
+        if (clusterAt(X, Z) !== g) continue;
+        const [x, z] = Lc(X, Z), d = Math.hypot(x - cam.pos[0], z - cam.pos[2]); if (d < 3) continue;
+        tuft(x, z, 1.0 + 0.3 * hsh(X, Z), 1.25 + 0.35 * hsh(Z, X), d);
+      }
     }
-    for (const st of STANDW) { const [x, z] = Lc(...st.c), d = Math.hypot(x - cam.pos[0], z - cam.pos[2]); if (d > 600 || !inView(x, z)) continue;
-      for (let k = 0; k < 9; k++) { const a = k * 2.4, rr = Math.sqrt(k / 9) * Math.min(st.rx, st.rz); tuft(x + Math.cos(a) * rr, z + Math.sin(a) * rr, 1.1, st.h || 1.5, d); } }
   }
   // the flag
   { const [px, pz] = h.pin, y = gy(px, pz), d = cam.hd([px, 0, pz]), p = projLine([[px, y, pz], [px, y + 2.4, pz]]);

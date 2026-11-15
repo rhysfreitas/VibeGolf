@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { simulate } from '../src/physics.js';
 import { createTerrain } from '../src/course/terrain.js';
+import { createTreeField } from '../src/course/trees.js';
 import { HOLES, COURSE } from '../src/course/wreckersreach.js';
 
 const T = HOLES.map(h => createTerrain(h));
@@ -17,15 +18,16 @@ const at = (L, s, off = 0) => { let acc = 0; for (let i = 1; i < L.length; i++) 
 // the game's surfaces on this course: main.js plays fairway, tee and collar as 'links' (COURSE.turf = 'links')
 const phys = s => s === 'tee' || s === 'fringe' || s === 'fairway' ? 'links' : s === 'void' ? 'rough' : s;
 // fly a shot from a spot straight at a point, with the rocks solid
-function shoot(i, from, to, shot) {
-  const t = T[i], o = { x: from[0], y: t.groundAt(from[0], from[1]), z: from[1] };
+function shoot(i, from, to, shot, { trees = false, rng = () => 0.99 } = {}) {
+  const t = T[i], TF = trees ? createTreeField(t.trees) : null, o = { x: from[0], y: t.groundAt(from[0], from[1]), z: from[1] };
   const yaw = Math.atan2(to[0] - o.x, -(to[1] - o.z)), c = Math.cos(yaw), s = Math.sin(yaw);
   const wx = (lx, lz) => o.x + lx * c - lz * s, wz = (lx, lz) => o.z + lx * s + lz * c;
   const r = simulate({ HLA: 0, SpinAxis: 0, ...shot }, {
     groundAt: (lx, lz) => { const g = t.groundAt(wx(lx, lz), wz(lx, lz)); return g === null ? null : g - o.y; },
     surfaceAt: (lx, lz) => phys(t.surfaceAt(wx(lx, lz), wz(lx, lz))),
     solidAt: (lx, ly, lz) => { const n = t.solidAt(wx(lx, lz), o.y + ly, wz(lx, lz)); return n && Object.assign([n[0] * c + n[2] * s, n[1], -n[0] * s + n[2] * c], n.soak ? { soak: n.soak } : {}); },
-    voidY: t.voidY - o.y, altFt: COURSE.altFt, rng: () => 0.99,
+    treeAt: TF ? (lx, ly, lz) => { const q = TF.at(wx(lx, lz), o.y + ly, wz(lx, lz)); if (!q) return null; return q.n ? { n: [q.n[0] * c + q.n[2] * s, 0, -q.n[0] * s + q.n[2] * c] } : q; } : undefined,
+    voidY: t.voidY - o.y, altFt: COURSE.altFt, rng,
   });
   return r.pts.map(p => ({ x: wx(p.p[0], p.p[2]), y: o.y + p.p[1], z: wz(p.p[0], p.p[2]), hit: p.hit, phase: p.phase }));
 }
@@ -97,10 +99,10 @@ test('every target is on fairway, and the three decision holes (3, 5, 9) carry a
   assert.deepEqual(HOLES.filter(h => h.targets.some(t => t.bold)).map(h => h.n), [3, 5, 9]);
 });
 
-test('a tour drive from the back tee at the first target hits nothing in the air', () => {
+test('a tour drive from the back tee at the first target hits nothing in the air, dune grass included', () => {
   HOLES.forEach((h, i) => {
     if (h.par === 3) return;
-    const tg = h.targets.find(q => !q.pin), pts = flown(shoot(i, h.tees[BACK], [tg.x, tg.z], DR));
+    const tg = h.targets.find(q => !q.pin), pts = flown(shoot(i, h.tees[BACK], [tg.x, tg.z], DR, { trees: true }));
     assert.ok(!pts.some(p => p.hit), `${h.name}: the drive hit something`);
   });
 });
@@ -184,4 +186,27 @@ test('the 9th: a face of 5 m or more up to the table; the low road beside it', (
   assert.ok(t.groundAt(up.x, up.z) - lo > 4.5, `the table stands ${(t.groundAt(up.x, up.z) - lo).toFixed(1)} m over the ground beside it`);
   // a 7 iron off the table onto the green flies clear
   assert.ok(!flown(shoot(i, [up.x, up.z], h.pin, SEVEN)).some(p => p.hit), 'the approach is clear');
+});
+
+test('dune grass in clusters, placed for jobs: well off the lines, never on a green or a tee, a low ball into one knocked down', () => {
+  const G = COURSE.links.grass;
+  assert.ok(G.length > 250, `${G.length} clusters`);
+  HOLES.forEach((h, i) => {
+    const t = T[i], TF = createTreeField(t.trees), grass = h.plants.filter(p => p.type === 'tussock');
+    assert.ok(grass.length > 30, `${h.name}: grass bodies (${grass.length})`);
+    // every grass cell of the field is 25 m or more off the hole's own line, but for the stand beside its tee
+    const F = h.field, cK = F.codes.indexOf('tussock'), tee = h.tees[BACK];
+    let near = 0; for (let j = 0; j < F.nz; j += 2) for (let k = 0; k < F.nx; k += 2) if (F.s[j * F.nx + k] === cK) { const x = F.x0 + k * 2, z = F.z0 + j * 2; if (dLine(h, x, z) < 25 && Math.hypot(x - tee[0], z - tee[1]) > 30) near++; }
+    if (![1, 5, 6].includes(h.n)) assert.equal(near, 0, `${h.name}: grass within 25 m of the line`);   // the 1st's screen, the 5th's rim and the Dell's face are meant
+    assert.notEqual(t.surfaceAt(...h.pin), 'tussock');
+    // a low punch flown through the biggest body near the line is knocked down or stopped
+    const b = grass.slice().sort((p, q) => dLine(h, p.x, p.z) - dLine(h, q.x, q.z))[0], g = t.groundAt(b.x, b.z);
+    assert.ok(TF.at(b.x, g + 0.7, b.z), `${h.name}: the grass has a body`);
+  });
+  // the Dell's screen on the dune's face: a short iron at the pin flies over it
+  { const k = H('The Dell'), hd = HOLES[k]; assert.ok(!flown(shoot(k, hd.tees[BACK], hd.pin, { Speed: 104, VLA: 18, TotalSpin: 7500 }, { trees: true })).some(p => p.hit), 'over the Dell\'s screen'); }
+  const i = H('The Galleon'), h = HOLES[i], b = h.plants.find(p => p.type === 'tussock' && dLine(h, p.x, p.z) > 30);
+  const d = 40, dir = [b.x - h.pin[0], b.z - h.pin[1]], l = Math.hypot(...dir), from = [b.x + dir[0] / l * d, b.z + dir[1] / l * d];
+  const pts = shoot(i, from, [b.x, b.z], { Speed: 60, VLA: 3, TotalSpin: 2000 }, { trees: true, rng: () => 0.01 });
+  const end = pts.at(-1); assert.ok(Math.hypot(end.x - from[0], end.z - from[1]) < d + b.cr + 2, 'stopped in or at the grass');
 });

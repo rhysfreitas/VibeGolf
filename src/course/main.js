@@ -1008,7 +1008,7 @@ const trunkGeo = new THREE.CylinderGeometry(0.12, 0.22, 1, 6); trunkGeo.translat
 const foliageMat = new THREE.MeshStandardMaterial({ roughness: 0.92, envMapIntensity: 0.5 });
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 });
 function buildTrees(list, group) {
-  list = list.filter(t => t.type !== 'mushroom' && t.type !== 'ohia' && !(VALLEY && VW.TYPES.has(t.type)) && !(KINGDOM && KW.TYPES.has(t.type)) && !t.ringFar);   // ring-world.js draws Halcyon's trees well off the line (ringFar) // cave-world.js draws the giant mushrooms, ember-world.js the ohia, valley-world.js the valley's trees (they still play)
+  list = list.filter(t => t.type !== 'mushroom' && t.type !== 'ohia' && !(VALLEY && VW.TYPES.has(t.type)) && !(KINGDOM && KW.TYPES.has(t.type)) && !(LINKS && LW.TYPES.has(t.type)) && !t.ringFar);   // ring-world.js draws Halcyon's trees well off the line (ringFar) // cave-world.js draws the giant mushrooms, ember-world.js the ohia, valley-world.js the valley's trees (they still play)
   if (!MESA) return skyPines(list, group);
   const pines = list.filter(t => t.type === 'pine'), oaks = list.filter(t => t.type !== 'pine');
   const cones = new THREE.InstancedMesh(coneGeo, foliageMat, pines.length * (ICE ? 6 : 3));

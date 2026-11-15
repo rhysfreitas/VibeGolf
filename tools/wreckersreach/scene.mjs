@@ -14,7 +14,8 @@
 import { seDist, seOutline, smooth, clamp, at, distLine, headingAt, lerp, project, lengthOf } from './geo.mjs';
 import { makeGreen, makeFairway, noise2 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { V, floorWorld, wet, waterAt, beachAt, coastD, cauldronE, creekD, sharedD, dgE, dgContour, DGREEN, STANDS, SITES, tussockAt, tussockDensity, w } from './world.mjs';
+import { V, floorWorld, wet, waterAt, beachAt, coastD, cauldronE, CAULDRON, creekD, sharedD, dgE, dgContour, DGREEN, STANDS, SITES, duneAt, w } from './world.mjs';
+import { rnd } from './geo.mjs';
 
 export const SURF = ['dune', 'fescue', 'fairway', 'fringe', 'green', 'tee', 'pot', 'tussock', 'beach', 'water', 'wreck', 'stone', 'void'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
@@ -33,8 +34,8 @@ const LOC = HOLES.map(toLocal), WOR = HOLES.map(toWorld), WL = HOLES.map((h, k) 
 const HD = HOLES.map(h => h.place.heading * Math.PI / 180);
 
 // ---- things placed in a hole's frame that every hole shares, gathered into world space: forms (dunes, banks,
-// hollows), the hole's props (hulls, masts, ribs, the bell, the wall), stands of dune grass and tussock zones
-const FORMS = [], PROPS = [], STANDW = [...STANDS], ZONES = [];
+// hollows) and the hole's props (hulls, masts, ribs, the bell, the wall); the dune grass is built after the holes
+const FORMS = [], PROPS = [];
 for (const [k, h] of HOLES.entries()) {
   const Wk = WOR[k], hd = HD[k];
   for (const f of h.forms || []) {
@@ -43,8 +44,6 @@ for (const [k, h] of HOLES.entries()) {
     FORMS.push({ ...f, k, c, wrot: rot + hd, rx: f.rx, rz: f.rz, reach: Math.max(f.rx, f.rz) + 10 });
   }
   for (const p of h.props || []) PROPS.push({ ...p, at: Wk(...p.at), wrot: p.rot != null ? p.rot + hd : 0, hole: k });
-  for (const s of h.stands || []) STANDW.push({ ...s, c: s.world ? w(s.world) : Wk(...s.at), rot: s.rot || 0 });
-  for (const g of h.grass || []) ZONES.push({ ...g, c: g.world ? w(g.world) : Wk(...g.at) });
 }
 for (const S of SITES) PROPS.push({ ...S, wrot: S.rot || 0, site: true });
 // a form's lift at a world point (each form is a superellipse turned to its world rotation)
@@ -57,9 +56,6 @@ export function shapesAt(X, Z) {
 const sandForm = (X, Z) => FORMS.some(f => f.sand && seDist({ x: f.c[0], z: f.c[1], rx: f.rx, rz: f.rz, rot: f.wrot, p: f.p }, X, Z) < 0.78);
 // where the world's own ground holds whatever the holes do: the shared fairway and the double green (1 inside)
 export const sharedMask = (X, Z) => Math.max(1 - smooth((sharedD(X, Z) + 14) / 14), 1 - smooth((dgE(X, Z) - 6) / 14));   // 1 inside, fading out over its last 14 m
-// tussocks: the density there (the base on the dunes and the holes' zones), and the clump at a point
-export const densAt = (X, Z) => tussockDensity(X, Z, ZONES);
-const standAt = (X, Z) => { for (const s of STANDW) { if (Math.abs(X - s.c[0]) > 14 || Math.abs(Z - s.c[1]) > 14) continue; const e = seDist({ x: s.c[0], z: s.c[1], rx: s.rx, rz: s.rz, rot: s.rot * Math.PI / 180 }, X, Z) + 0.12 * noise2(X / 3, Z / 3, 9); if (e < 1) return e < 0.72 ? 'tussock' : 'dune'; } return null; };
 
 // a green's contour in its own frame (u right, v toward the back, metres from the pin); directions are degrees
 // clockwise from the front: 0 = toward the tee, 90 = right, 180 = the back. (As tools/buriedkingdom.)
@@ -204,21 +200,111 @@ export function buildHole(h) {
     for (const b of bunkers) if (inBunker(b)(x, z)) return 'pot';
     if (go < (h.green.apron || 3)) return 'fringe';
     for (const t of teePads) if (onPad(t, x, z)) return 'tee';
-    const st = standAt(X, Z); if (st) return st;
+    const cl = clusterAt(X, Z); if (cl && cl.onFw) return 'tussock';   // the screen down the shared fairway
     const fd = fairwayD(x, z);
     if (fd < 0 && slopeOwn(x, z) < (h.mown ?? 0.35)) return 'fairway';
     if (beachAt(X, Z)) return 'beach';
-    if (sandForm(X, Z)) return tussockAt(X, Z, densAt) ? 'tussock' : 'dune';
+    if (cl) return 'tussock';
+    if (sandForm(X, Z)) return 'dune';
     if (go < 11 + 2.5 * noise2(x / 21, z / 21, 9)) return 'fescue';
     if (fd < (h.corridor ?? 10) + 3.5 * noise2(x / 33, z / 33, 8)) return 'fescue';
     for (const t of teePads) if (Math.hypot(x - t.x, z - t.z) < 12) return 'fescue';
     if (tipsPad && Math.hypot(x - tipsPad.x, z - tipsPad.z) < 11) return 'fescue';   // the tips spot: a patch of fescue, never a bunker lie
-    return tussockAt(X, Z, densAt) ? 'tussock' : 'dune';
+    return 'dune';
   }
   return { h, ownGround, ownSurface, gm, fairwayD, inBunker, bunkers, teePads, base: h.base, baseAbs, along, tipsPad, edgeM };
 }
 
 const OWN = HOLES.map(buildHole);
+// ---- dune grass in clusters, each placed for a job (Rhys, 14 November 2026: "more strategically along edges of
+// rough or splitting fairways ... significant clusters of grass"; a ball in one is a hack-out, his pick). A cluster is
+// several dense clumps merged, 1.2-1.6 m tall: an ellipse rx along its long axis by rz across (rot: that axis's
+// direction in world space, radians from +X toward +Z), its edge ragged. They come from: each hole's `rows` (broken
+// rows along one side of the fairway's outer edge, 35 yd or more off the line, never both sides of a landing area),
+// its `clumps` (placed for a job: markers, frames, screens, lips), the Cauldron's rim, a stand beside every back tee
+// (leaning with the prevailing wind: the wind gauge), the screen down the shared fairway (world.mjs STANDS: the one
+// set that stands on fairway), and swathes on the dune crests between the holes, 45 m or more off every line, which
+// break up the distance. Nothing else on the dunes plays as grass: between the clusters it's sand.
+const GRASS = [], DROPPED = [], GRID = new Map(), GC = 12, gkey = (i, j) => i * 100003 + j;
+const blobE = (g, X, Z) => { const dx = X - g.c[0], dz = Z - g.c[1], ca = Math.cos(g.rot), sa = Math.sin(g.rot), u = dx * ca + dz * sa, v = -dx * sa + dz * ca; return Math.hypot(u / g.rx, v / g.rz) + 0.16 * noise2(X / 2.6, Z / 2.6, g.seed % 97); };
+export function clusterAt(X, Z) { const L = GRID.get(gkey(Math.floor(X / GC), Math.floor(Z / GC))); if (L) for (const g of L) if (blobE(g, X, Z) < 1) return g; return null; }
+const ends = g => { const ca = Math.cos(g.rot), sa = Math.sin(g.rot); return [[0, 0], [g.rx, 0], [-g.rx, 0], [0, g.rz], [0, -g.rz], [g.rx * 0.7, g.rz * 0.7], [-g.rx * 0.7, -g.rz * 0.7], [g.rx * 0.7, -g.rz * 0.7], [-g.rx * 0.7, g.rz * 0.7]].map(([u, v]) => [g.c[0] + u * ca - v * sa, g.c[1] + u * sa + v * ca]); };
+// why a cluster can't stand where it was asked (null: it can): water, beach, the double green, a fairway (6 m), a
+// green (9 m), a tee (12 m; 8 m for a tee's own stand), a tips spot, a pot (3 m), or nearer a line than minLine
+function blocked(g, minLine) {
+  for (const [X, Z] of ends(g)) {
+    if (waterAt(X, Z)) return 'water'; if (beachAt(X, Z)) return 'beach'; if (dgE(X, Z) < 8) return 'the double green';
+    if (!g.onFw && sharedD(X, Z) < 5) return 'the shared fairway';
+    for (let k = 0; k < HOLES.length; k++) {
+      const [x, z] = LOC[k](X, Z), d = distLine(HOLES[k].line, x, z); if (d > 240) continue;
+      if (d < minLine) return `${Math.round(d)} m off the ${k + 1}${['st', 'nd', 'rd'][k] || 'th'}'s line`;
+      const O = OWN[k];
+      if (!g.onFw && O.fairwayD(x, z) < 6) return `the ${k + 1} fairway`;
+      if (O.gm(x, z) < 9) return `the ${k + 1} green`;
+      for (const t of O.teePads) if (Math.hypot(x - t.x, z - t.z) < (g.tee === k ? 8 : 12)) return `a ${k + 1} tee`;
+      if (O.tipsPad && Math.hypot(x - O.tipsPad.x, z - O.tipsPad.z) < 12) return 'a tips spot';
+      for (const b of O.bunkers) if (Math.hypot(x - b.x, z - b.z) < 14 && O.edgeM(b, x, z) < 3) return 'a pot';
+    }
+  }
+  return null;
+}
+const addG = g => { GRASS.push(g); const R = Math.max(g.rx, g.rz) * 1.25 + 1; for (let i = Math.floor((g.c[0] - R) / GC); i <= Math.floor((g.c[0] + R) / GC); i++) for (let j = Math.floor((g.c[1] - R) / GC); j <= Math.floor((g.c[1] + R) / GC); j++) { const q = gkey(i, j); if (!GRID.has(q)) GRID.set(q, []); GRID.get(q).push(g); } };
+const lineRot = (k, s) => { const h = HOLES[k], pa = WOR[k](...at(h.line, Math.max(0, s - 1))), pb = WOR[k](...at(h.line, Math.min(h.len, s + 1))); return Math.atan2(pb[1] - pa[1], pb[0] - pa[0]); };
+const bearingRot = b => Math.atan2(-Math.cos(b * Math.PI / 180), Math.sin(b * Math.PI / 180));
+let gseed = 1;
+for (const [k, h] of HOLES.entries()) {
+  const O = OWN[k], R = rnd(500 + h.n * 13);
+  // the job clusters first (they win over rows)
+  for (const c of h.clumps || []) {
+    const lp = c.world ? h.L(...c.world) : c.at, sl = project(h.line, ...lp).s;
+    const g = { c: WOR[k](...lp), rx: c.rx, rz: c.rz, rot: c.bearing != null ? bearingRot(c.bearing) : lineRot(k, sl) + (c.rot || 0) * Math.PI / 180, seed: gseed++, job: c.job, hole: h.n };
+    const why = blocked(g, 0); if (why) DROPPED.push({ hole: h.n, job: c.job, why }); else addG(g);
+  }
+  // a stand beside the back tee, on whichever side has room, a little behind it: it leans with the wind
+  { const t = O.teePads.find(p => p.k === 'galleon') || O.teePads[0];
+    for (const side of [1, -1]) { const p = at(h.line, 0, 0), q = [t.x + side * 17, t.z + 5];
+      const g = { c: WOR[k](...q), rx: 3.6, rz: 2.4, rot: lineRot(k, 1), seed: gseed++, job: 'beside the tee: the wind gauge', hole: h.n, tee: k };
+      void p; if (!blocked(g, 9)) { addG(g); break; } } }
+  // broken rows along the fairway's outer edge
+  for (const row of h.rows || []) {
+    let s = row.s[0];
+    while (s < row.s[1]) {
+      const rx = 3.4 + 3.2 * R(), rz = 2.2 + 1.3 * R();
+      let eo = 0; for (let o = 1; o < 140; o++) if (O.fairwayD(...at(h.line, s, row.side * o)) >= 0) { eo = o; break; }
+      if (O.fairwayD(...at(h.line, s, 0)) >= 0) eo = 0;
+      const base = Math.max(eo + 11 + rz, 32 + rz) + 3 * R();
+      for (const extra of [0, 5, 10]) {
+        const g = { c: WOR[k](...at(h.line, s, row.side * (base + extra))), rx, rz, rot: lineRot(k, s), seed: gseed++, job: 'a row along the fairway', hole: h.n };
+        if (!blocked(g, 32)) { addG(g); break; }
+      }
+      s += 2 * rx + 6 + 9 * R();
+    }
+  }
+  // the Cauldron's rim: clusters 9-17 m outside its water, end to end round it with gaps, so the carries read
+  if (h.rim) {
+    const r0 = Math.min(CAULDRON.rx, CAULDRON.rz), C = CAULDRON.c;
+    for (let th = 0; th < Math.PI * 2;) {
+      const gap = h.rim.gap[0] + (h.rim.gap[1] - h.rim.gap[0]) * R(), rx = 3.6 + 2.6 * R(), dir = [Math.cos(th), Math.sin(th)];
+      let rr = 20; while (rr < 220 && cauldronE(C[0] + dir[0] * rr, C[1] + dir[1] * rr) < 1 + (9 + 8 * R()) / r0) rr += 1;
+      const g = { c: [C[0] + dir[0] * rr, C[1] + dir[1] * rr], rx, rz: 2.2 + 1.2 * R(), rot: th + Math.PI / 2, seed: gseed++, job: 'the Cauldron\'s rim', hole: h.n };
+      if (rr < 220 && !blocked(g, 12)) addG(g);
+      th += (2 * rx + gap) / Math.max(rr, 30);
+    }
+  }
+}
+// the screen down the shared fairway: a broken row of four clusters between its halves, standing on fairway
+for (const st of STANDS) addG({ c: st.c, rx: st.rz + 1, rz: st.rx, rot: bearingRot(9), seed: gseed++, job: 'the screen down the shared fairway', hole: 1, onFw: true });
+// swathes out in the dunes between the holes (Rhys: "more in general out in the dunes area"): a jittered 11 m grid
+// over the whole spit, thick on the crests and still common on the slopes and in the slacks, 40 m or more off every
+// line
+{ const R = rnd(9091);
+  for (let X = -330; X < 430; X += 11) for (let n = -160; n < 1990; n += 11) {
+    const x = X + 11 * R(), Z = -(n + 11 * R()), crest = smooth((duneAt(x, Z) - 1.2) / 4);
+    if (R() > 0.3 + 0.55 * crest) continue;
+    const g = { c: [x, Z], rx: 3.4 + 4.8 * R(), rz: 2.4 + 2.2 * R(), rot: R() * Math.PI, seed: gseed++, job: 'a swathe out in the dunes' };
+    if (!blocked(g, 40)) addG(g);
+  }
+}
 
 // ---- the ground between the holes (world, absolute heights): each hole's own ground near its line, blended into
 // its neighbours' further out and into the world beyond; the surface from the nearest hole
@@ -249,7 +335,7 @@ export function worldAt(X, Z) {
   if (dgE(X, Z) < 0) y = dgSurface(X, Z);   // the double green: one surface whichever hole asks
   for (const [tx, tz, ty] of TIPS_W) { const d = Math.hypot(X - tx, Z - tz); if (d < 16) y = lerp(ty, y, smooth((d - 8) / 8)); }
   // the surface: the nearest hole's, but a fairway, green or pot of any hole near enough wins over another's rough
-  let s = bd < 160 ? own.ownSurface(lx, lz) : (beachAt(X, Z) ? 'beach' : tussockAt(X, Z, densAt) ? 'tussock' : 'dune');
+  let s = bd < 160 ? own.ownSurface(lx, lz) : (beachAt(X, Z) ? 'beach' : clusterAt(X, Z) ? 'tussock' : 'dune');
   if (['fescue', 'dune', 'tussock'].includes(s)) for (let k = 0; k < HOLES.length; k++) {
     if (k === best || near[k] > 150) continue;
     const o = OWN[k].ownSurface(...LOC[k](X, Z));
@@ -292,4 +378,4 @@ export const BUILT = OWN.map((O, k) => {
   const slopeAt = (x, z) => { const d = 1.5, a = ground(x + d, z), b = ground(x - d, z), c = ground(x, z + d), e = ground(x, z - d); return Math.hypot(a - b, c - e) / (2 * d); };
   return { h, ground, surface, own: O, objs, solids, gm: O.gm, fairwayD: O.fairwayD, inBunker: O.inBunker, bunkers: O.bunkers, teePads: O.teePads, base, baseAbs: O.baseAbs, along: O.along, slopeAt };
 });
-export { WL, LOC, WOR, PROF, FORMS, PROPS, STANDW, ZONES };
+export { WL, LOC, WOR, PROF, FORMS, PROPS, GRASS, DROPPED };
