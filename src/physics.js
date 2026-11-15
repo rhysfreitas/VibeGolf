@@ -27,6 +27,9 @@ const SURFACES = {
   beach:   { mu: 0.40, eScale: 0.90, tScale: 0.70, crr: 0.16 },  // firm wet sand: runs like a parkland fairway
   pot:     { mu: 0.90, eScale: 0.25, tScale: 0.20, crr: 1.20 },  // a sod-faced pot: sand (the face's cost is the lie)
   tussock: { mu: 2.00, eScale: 0.08, tScale: 0.08, crr: 3.00 },  // in a clump of dune grass: it stops there
+  // damp turf (Cloudrest, Rhys's pick 15 November 2026): a softer fairway for a course in thin air, where flatter
+  // landings would otherwise double the run. A tour drive at 8,500 ft runs about 20 yd (on fairway there 40; at sea level 17).
+  damp:    { mu: 0.44, eScale: 0.90, tScale: 0.62, crr: 0.21 },
 };
 
 const DEFAULT_COEF = { cd0: 0.2043, cdS: 0.1414, cdLow: 0.2999, cdV: 51.1, clMax: 0.447, s0: 0.1736, clScale: 1.0, spinTau: 19.9 }; // fit to TrackMan PGA Tour averages
@@ -115,6 +118,8 @@ function cor(vn) { return vn < 20 ? Math.max(0.12, 0.510 - 0.0375 * vn + 0.00090
 // opts.treeAt(x,y,z)   -> { n: [nx,0,nz], soak? } against a trunk (soak: the chance it drops at the foot), { density } (chance per metre of hitting a
 //                         branch) inside a canopy, else null
 // opts.rng             -> random numbers in [0, 1) for branch hits (Math.random when omitted)
+// opts.wallSoak        -> the chance a ball that flies into a cliff face of the ground (not a rock) dies against it and
+//                         drops at its foot, as The Reclaim's facades do (Cloudrest's walls: 0.45); otherwise it's knocked back
 function simulate(shot, opts = {}) {
   const env = {
     rho: opts.rho ?? airDensity(opts.tempF ?? 72, opts.altFt ?? 0),
@@ -186,8 +191,9 @@ function simulate(shot, opts = {}) {
         // a cliff face: it came from open air, from under the ground, or from beside a wall that
         // rises above where the ball was (a step up far steeper than any slope)
         if (gPrev === null || prev.pos[1] < gPrev - 0.3 || (gNow - gPrev > 0.6 && prev.pos[1] < gNow - 0.3)) {
-          // flew into a cliff face: knock it back and let it drop
-          s = { pos: prev.pos.slice(), vel: [-prev.vel[0] * 0.25, Math.min(prev.vel[1], 0), -prev.vel[2] * 0.25], spin: prev.spin.map(w => w * 0.3) };
+          // flew into a cliff face: knock it back and let it drop (or, on a course whose walls soak, drop it at the foot)
+          if (opts.wallSoak && rand() < opts.wallSoak) s = { pos: prev.pos.slice(), vel: [-prev.vel[0] * 0.02, Math.min(0, prev.vel[1] * 0.1) - 0.5, -prev.vel[2] * 0.02], spin: [0, 0, 0] };
+          else s = { pos: prev.pos.slice(), vel: [-prev.vel[0] * 0.25, Math.min(prev.vel[1], 0), -prev.vel[2] * 0.25], spin: prev.spin.map(w => w * 0.3) };
           rockHits++;
           if (++wallHits > 40) { outcome = 'void'; break; }
           pts.push({ t, p: s.pos.slice(), phase: landed ? 'bounce' : 'flight' });

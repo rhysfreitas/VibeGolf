@@ -82,8 +82,9 @@ let HOLE = null, ISL = [], T = null;
 const groundAt = (x, z) => T.groundAt(x, z);
 const islandAt = (x, z) => T.islandAt(x, z);
 const surfaceAt = (x, z) => T.surfaceAt(x, z);
-// a links course (COURSE.turf = 'links') runs its fairways, tees and collars firm: physics.js 'links'
-const FIRM = COURSE.turf === 'links' ? 'links' : 'fairway';
+// a links course (COURSE.turf = 'links') runs its fairways, tees and collars firm: physics.js 'links'; a course in thin air
+// (COURSE.turf = 'damp', Cloudrest) runs them soft, so a flatter landing doesn't double the run: physics.js 'damp'
+const FIRM = COURSE.turf === 'links' ? 'links' : COURSE.turf === 'damp' ? 'damp' : 'fairway';
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' || s === 'fairway' ? FIRM : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
 const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: GROVE ? 'Moss' : 'First cut', rough: LINKS ? 'Fescue' : GROVE ? 'Fern' : 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : EMBER ? 'Lava rock' : VALLEY ? 'Meadow' : RING ? 'Lawn' : KINGDOM ? 'Rock' : LINKS ? 'Wreck' : GROVE ? 'Root' : MESA ? 'Native' : 'Rough', sand: KINGDOM || LINKS ? 'Dune' : 'Bunker', waste: EMBER ? 'Scoria' : KINGDOM ? 'Sand' : 'Waste area', water: EMBER ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder', pot: 'Pot bunker', tussock: 'Dune grass', beach: GROVE ? 'Leaf litter' : 'Beach' };
@@ -1435,7 +1436,7 @@ function shotFrame(origin, yaw, live = false) { // live: the real shot, trees an
     } : null,
     cup: { x: cupRel.x * c + cupRel.z * s, z: -cupRel.x * s + cupRel.z * c },
     voidY: T.voidY - origin.y,
-    wind: windInShot(windVec, yaw), altFt: COURSE.altFt || 0, tempF: tempF(),
+    wind: windInShot(windVec, yaw), altFt: COURSE.altFt || 0, tempF: tempF(), wallSoak: COURSE.wallSoak || 0,
   };
 }
 function lieAdjust(shot, lie) {
@@ -1610,6 +1611,16 @@ function updatePreview() {
 }
 
 /* ===================== UI ===================== */
+// what the lie and the air do to this club's carry, as fractions (+0.12 = 12% further): the lie against a fairway lie
+// here, the air (altitude and temperature) against sea level at 72°F, both through the flight model
+function distEffects() {
+  const ci = state.club, k = state.k || 1;
+  const here = { headZ: 0, altFt: COURSE.altFt || 0, tempF: tempF(), lie: 'fairway' };
+  const base = carryForK(ci, k, 0, here) || 1;
+  const sea = carryForK(ci, k, 0, { headZ: 0, altFt: 0, tempF: 72, lie: 'fairway' }) || base;
+  const lie = state.lie && state.lie !== 'green' ? carryForK(ci, k, 0, { ...here, lie: state.lie }) / base - 1 : 0;
+  return { air: base / sea - 1, lie };
+}
 function renderPlan() {
   const tw = $('targets');
   const av = availableTargets();
@@ -1632,7 +1643,20 @@ function renderPlan() {
   const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: (GROVE ? 'Moss' : 'First cut') + ' −2%', rough: (LINKS ? 'Fescue' : GROVE ? 'Fern' : 'Rough') + ' −6%', sand: (KINGDOM || LINKS ? 'Dune' : 'Bunker') + ' −14%', waste: (KINGDOM ? 'Sand' : 'Waste area') + ' −6%', desert: (CAVE ? 'Cave floor' : KINGDOM ? 'Rock' : GROVE ? 'Root' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green', pot: 'Pot bunker: out ~85 yd at most', tussock: 'Dune grass: hack out ~50 yd', beach: (GROVE ? 'Leaf litter' : 'Beach') + ' −3%' };
   const pct = state.k < 0.995 ? ` · ${Math.round(state.k * 100)}%` : '';
   const L = lieSlope(), slopeTxt = [Math.abs(L.up) >= 2 ? `${L.up > 0 ? 'uphill' : 'downhill'} ${Math.round(Math.abs(L.up))}°` : '', Math.abs(L.side) >= 2 ? `ball ${L.side > 0 ? 'above' : 'below'} feet` : ''].filter(Boolean).join(', ');
-  $('pvLie').textContent = `${CLUBS[state.club].name}${pct} · Lie: ${lieNames[state.lie] || state.lie}${slopeTxt ? ' · ' + slopeTxt : ''}`;
+  // the lie and the air, as they change this club's carry (worked out through the flight model, so they're the club's
+  // own numbers: thin air helps a wedge more than a driver, rough costs a driver more than a wedge)
+  const fx = distEffects(), sgn = v => (v > 0 ? '+' : '−') + Math.abs(Math.round(v * 100)) + '%';
+  const lieName = (lieNames[state.lie] || state.lie).replace(/ −\d+%$/, '');
+  const capped = state.lie === 'pot' || state.lie === 'tussock';
+  const lieTxt = lieName + (!capped && Math.abs(fx.lie) >= 0.01 ? ' ' + sgn(fx.lie) : '');
+  $('pvLie').textContent = `${CLUBS[state.club].name}${pct} · Lie: ${lieTxt}${slopeTxt ? ' · ' + slopeTxt : ''}`;
+  const lieEl = $('vLie');
+  if (lieEl) {
+    lieEl.hidden = state.lie === 'green';
+    lieEl.innerHTML = `<span class="lbl">Lie</span> <b style="color:${lieColor(state.lie)}">${lieTxt}</b>` +
+      (Math.abs(fx.air) >= 0.01 ? ` <span class="sep">·</span> <span class="lbl">Air</span> <b>${sgn(fx.air)}</b>` : '');
+    lieEl.title = Math.abs(fx.air) >= 0.01 ? `Carry with this club against a fairway lie, and against sea level at 72°F (${(COURSE.altFt || 0).toLocaleString()} ft, ${tempF()}°F here)` : 'Carry with this club against a fairway lie';
+  }
   $('vClub').textContent = CLUBS[state.club].name + pct;
   if (state.lastSentClub !== state.club) { state.lastSentClub = state.club; launchMonitor.setPlayer({ club: CLUBS[state.club].id }); }
 }

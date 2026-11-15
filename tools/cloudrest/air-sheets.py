@@ -142,7 +142,7 @@ ax.text(0, 1.0, 'Why it matters for the layout', weight='bold', fontsize=9.5, va
 ax.text(0, 0.9, ('Without damp turf a tour drive totals 321 yd,\n+15% not +10%: the 5th\'s notch at 275 yd\n'
                  'swallows lay-ups that ran on, and the 9th\'s\nbold line (287 yd to the green) is reached\n'
                  'by a drive that only runs. With it, 310 yd:\nthe layout\'s numbers hold.\n\n'
-                 'Damp turf is a fairway surface for this\ncourse only (mu 0.42, COR 0.92, turf 0.65,\n'
+                 'Damp turf is a fairway surface for this\ncourse only (mu 0.42, COR 0.92, turf 0.62,\n'
                  'roll 0.19; today\'s fairway 0.40, 1.00,\n0.70, 0.16). It suits the place: green, wet\nand misty. Rough, sand and greens unchanged.'),
         fontsize=8.5, va='top', color='#333', linespacing=1.35)
 ax.text(0, 0.08, 'On the greens', weight='bold', fontsize=9.5, va='top')

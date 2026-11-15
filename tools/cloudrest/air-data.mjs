@@ -3,7 +3,7 @@
 // Nothing here changes the game: the proposed damp turf is a local copy of a surface, not in physics.js.
 import { simulate, airDensity, SURFACES } from '../../src/physics.js';
 
-const ALT = 6600;                        // the proposed altitude (ft): a tour driver carries 10% further at 72°F
+const ALT = 8500;                        // Cloudrest's altitude (ft), Rhys's pick 15 November 2026: an amateur's driver carries 10% further at 72°F
 const MPH = 0.44704, YD = 0.9144;
 const TOUR = [
   ['Driver', 167, 10.9, 2686], ['3 wood', 158, 9.2, 3655], ['Hybrid', 146, 10.2, 4437], ['5 iron', 132, 12.1, 5361],
@@ -42,7 +42,7 @@ const tall = [['A skied drive', { Speed: 150, VLA: 35, TotalSpin: 4500 }], ['A p
   .map(([n, s]) => ({ shot: n, sea: simulate({ HLA: 0, SpinAxis: 0, ...s }, { flightOnly: true, groundAt: () => 0 }).apexFt * 0.3048, here: simulate({ HLA: 0, SpinAxis: 0, ...s }, { altFt: ALT, flightOnly: true, groundAt: () => 0 }).apexFt * 0.3048 }));
 
 // the run: today's fairway in thin air against a damp, softer turf (proposed, not in the game)
-SURFACES.cloudDamp = { mu: 0.42, eScale: 0.92, tScale: 0.65, crr: 0.19 };
+SURFACES.cloudDamp = SURFACES.damp; // in physics.js since Rhys picked it
 const runRow = (c) => {
   const one = (surf, a) => { const r = simulate(shot(c), { surfaceAt: () => surf, altFt: a }); return { carry: r.carry, run: r.total - r.carry, total: r.total }; };
   return { club: c[0], sea: one('fairway', 0), thin: one('fairway', ALT), damp: one('cloudDamp', ALT) };

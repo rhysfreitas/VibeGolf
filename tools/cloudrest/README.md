@@ -28,3 +28,11 @@ What the numbers say:
 - The highest shot the game sees is a skied driver, about 86 m up in thin air; any iron tops out under 53 m.
 
 `out/` is ignored by git.
+
+**Rhys's picks (15 November 2026):** 8,500 ft (an amateur's driver +10%, a tour driver +12%, short irons +15%);
+damp turf (physics.js 'damp', retuned for 8,500 ft: mu 0.44, eScale 0.90, tScale 0.62, crr 0.21; a tour drive runs
+20 yd, against 40 on fairway there and 17 at sea level); walls that soak (`COURSE.wallSoak` 0.45 → physics.js
+`wallSoak`); and instead of a plays-like figure, the course readout's top line now shows the lie and the air as they
+change the selected club's carry, on every course (`distEffects` in main.js). `air-data.mjs` now runs at 8,500 ft;
+the round-0 PDF was drawn at 6,600 ft, before his pick. His four reference screenshots (a cliff monastery on a
+forested crag, a misty pinnacle, a cliff temple's wall) are kept in `out/refs/` for the art pass, not in git.
