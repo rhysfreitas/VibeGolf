@@ -212,6 +212,7 @@ export function buildHole(h) {
     if (go < 11 + 2.5 * noise2(x / 21, z / 21, 9)) return 'fescue';
     if (fd < (h.corridor ?? 10) + 3.5 * noise2(x / 33, z / 33, 8)) return 'fescue';
     for (const t of teePads) if (Math.hypot(x - t.x, z - t.z) < 12) return 'fescue';
+    if (tipsPad && Math.hypot(x - tipsPad.x, z - tipsPad.z) < 11) return 'fescue';   // the tips spot: a patch of fescue, never a bunker lie
     return tussockAt(X, Z, densAt) ? 'tussock' : 'dune';
   }
   return { h, ownGround, ownSurface, gm, fairwayD, inBunker, bunkers, teePads, base: h.base, baseAbs, along, tipsPad, edgeM };
@@ -254,6 +255,7 @@ export function worldAt(X, Z) {
     const o = OWN[k].ownSurface(...LOC[k](X, Z));
     if (['fairway', 'green', 'fringe', 'pot', 'tee'].includes(o)) { s = o; break; }
   }
+  if (s === 'dune' || s === 'tussock') for (const [tx, tz] of TIPS_W) if (Math.hypot(X - tx, Z - tz) < 11) { s = 'fescue'; break; }   // a tips spot nearer another hole's line
   return { y, s, k: best };
 }
 

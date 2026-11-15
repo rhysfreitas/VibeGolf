@@ -45,7 +45,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Emberfell (drawn in round 6; the row above) | 5 Kipuka | 4 Barranco | 4 Lava Tube | 3 ↓ The Crown | 4 d Terraces | 5 Lavafall | 4 The Lake | 3 Cinder Cone (now inside the caldera) | 4 The Heart | 36 |
 | Halcyon Ring (plan book round 5) | 4 Promenade | 3 Walled Garden | 4 Terminator | 5 ↑ Long Window | 3 ↓ Balcony | 4 Long Lake | 4 d Spoke | 5 Aqueduct | 3 the Great Window | 35 |
 | The Buried Kingdom (blockout, 13 November 2026) | 3 The Landing | 5L The River Bank | 4 The Causeway ↑ | 4R Sahara | 3 The Sphinx | 5R Hog's Back | 4L The Quarry | 4R The Gate | 4L The Colossi | 36 |
-| Wrecker's Reach (layout approved 13 November 2026; plan book next) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
+| Wrecker's Reach (blockout, 14 November 2026) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
 
 - Wrecker's Reach (Rhys's picks, 13-14 November 2026; `claude/wreckers-reach-layout.md`,
   `claude/brief-wreckers-reach.md` and `claude/brief-addendum-wreckers-reach-vegetation.md` in the project;
@@ -72,6 +72,9 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   (the walk from the 8th green 97 m), the galleon 8 m west, the Cauldron 15 m west with a mouth to the north-east, the
   5th tee raised 4.6 m over lowered ground (the pool shows from it), the shared field ending about 100 yd out.
 
+  Blockout 14 November 2026 (Rhys: "Looks good let's build it"): `src/course/wreckersreach.js` from `tools/wreckersreach/emit.mjs`, drawn by
+  `src/course/links-world.js`, theme 'links'. The gate: every hole within +1.0 for both players; the two engine fixes
+  (the 4th green's back tier off the pin, the 5th's bold target onto the lobe) are in CLAUDE.md.
 - The Buried Kingdom (Rhys's picks, 12-13 November 2026; `claude/buried-kingdom-layout.md` and
   `claude/brief-buried-kingdom.md` in the project; `tools/buriedkingdom/`): Egyptian ruins half buried in sand, an
   invented site, in blazing late-morning light; the river (1-3), the plateau (4-6), the cliffs (7-9). Its logic: off

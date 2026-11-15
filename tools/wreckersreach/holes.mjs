@@ -65,6 +65,8 @@ function hole(def) {
   for (const [k, v] of Object.entries(h.tees)) h.yards[k] = yd(v, h.teePts[k]);
   const tp = def.tips || (def.par === 3 ? [-14, 0] : [-34, 0]);
   h.tipsPt = P(...tp); h.tipsYards = yd(tp, h.tipsPt);
+  // a tips tee set off the line (the 4th, 5th, 8th): the back tee's card plus the true distance behind it
+  if (def.par !== 3 && tp[1]) { const b = h.teePts[BACK]; h.tipsYards = Math.round((h.yards[BACK] + Math.hypot(h.tipsPt[0] - b[0], h.tipsPt[1] - b[1]) / YD) / 5) * 5; }
   h.tips = { tee: h.tipsPt, yards: h.tipsYards };
   return { ...def, ...h };
 }
@@ -190,7 +192,7 @@ export const HOLES = [
         // the neck: a dune nose from each side
         forms: [{ at: P(208, 31), rx: 16, rz: 13, h: 3.2, label: 'the neck' }, { at: P(214, -30), rx: 15, rz: 12, h: 3 }],
         bunkers: [pot(P(199, 22), 2.6), pot(P(214, -18), 2.6), pot(P(len - 21, -12), 2.8, { depth: 2 })],
-        green: { k: 0.94, lobes: [[0, 0, 13, 17, -22], [-6, 10, 8, 7, 0], [8, -9, 7, 6, 0]], apron: 3, contour: [{ fall: 40, pct: 1.6 }, { tier: [-3, 4], up: 160, h: 0.5, w: 5 }], style: 'A Road green, long and set at an angle from front right to back left, a deep pot eating its front left and the man-of-war\'s hull hard behind; falling 1.6% toward the front right, with a tier 0.5 m up across its back: run it in from the right' },
+        green: { k: 0.94, lobes: [[0, 0, 13, 17, -22], [-6, 10, 8, 7, 0], [8, -9, 7, 6, 0]], apron: 3, contour: [{ fall: 40, pct: 1.6 }, { tier: [-3, 7], up: 160, h: 0.5, w: 5 }], style: 'A Road green, long and set at an angle from front right to back left, a deep pot eating its front left and the man-of-war\'s hull hard behind; falling 1.6% toward the front right, with a tier 0.5 m up across its back: run it in from the right' },
         props: [{ kind: 'hull', at: P(len + 22, -4), w: 12, l: 64, h: 10, rot: eh + Math.PI / 2, wall: true, label: 'the man-of-war' }],
         grass: [{ at: P(140, -46), r: 22, d: 0.35 }, { at: P(140, 46), r: 22, d: 0.35 }, { at: P(300, -42), r: 24, d: 0.38 }, { at: P(300, 42), r: 24, d: 0.3 }],
         targets: [{ name: 'Short of the neck', at: P(186, 4) }, { name: 'The approach', at: P(330, 2) }],
@@ -226,7 +228,7 @@ export const HOLES = [
       green: { lobes: [[0, 0, 10.5, 15, 12], [-5, 9, 6.5, 6, 0]], apron: 5, contour: [{ fall: 180, pct: 1.4 }, { bowl: [-4, 7], r: 10, h: 0.25 }], style: 'Set along the line of the last leg, falling 1.4% away from you toward the back (land it short and let it release), a bowl at the back left; a tussock stand behind it frames it against the sky' },
       grass: [{ world: [38, 1670], r: 82, d: 0.7, soft: 14, rim: true }, { at: P(len + 26, -2), r: 12, d: 0.55 }],
       stands: [{ at: P(len + 24, 4), rx: 6, rz: 4, h: 1.8, job: 'frame behind the green' }],
-      targets: [{ name: 'Round the rim', at: P(222, -14) }, { name: 'Over the corner', at: P(236, 24), bold: true }, { name: 'The lay-up', at: P(412, -10) }],
+      targets: [{ name: 'Round the rim', at: P(222, -14) }, { name: 'Over the corner', at: P(238, 18), bold: true }, { name: 'The lay-up', at: P(412, -10) }],
       words: {
         story: 'The Cauldron: a tidal pool inside the point, a frigate sunk in it to her masts.',
         plays: 'The reveal: from the 5th tee the point, the Cauldron and the open sea come into view at once, the beacon tower on the left. The hole runs clockwise round the point, 515 yd, with the tidal pool inside the bend and the beach outside it. A fade follows the rim. Two cuts across the pool\'s corners each save 30 to 40 yd, and taken together they make it reachable in two: the drive over its north-west corner to the lobe of fairway inside the first bend, the second over its north-east corner with the frigate\'s masts as the aim point. Round the rim it is three shots with no water in play. The ground falls away into the green: land short.',
