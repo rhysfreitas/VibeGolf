@@ -263,7 +263,7 @@ export function viewsFor(hi) {
   for (const t of h.targets || []) labels.push(L3(t.at, t.name, -46));
   labels.push(L3(pin, 'green', -60));
   for (const f of h.forms || []) if (f.label) labels.push(L3(f.world ? h.L(...f.world) : f.at, f.label, -30, 1));
-  const UP = { 'the heart tree': 40, 'the burnt shell': 16, 'the root plate': 12, 'the Glade': 4 };
+  const UP = { 'the heart tree': 40, 'the hollow stump': 20, 'its fallen top': 10, 'the root plate': 12, 'the Glade': 4 };
   for (const [wp, t] of LABELS) { const p = here(...wp); if (project(h.line, ...p).d < (UP[t] > 20 ? 1500 : 330)) labels.push(L3(p, t, -34, UP[t] ?? 1)); }
   const v = [], sk = h.sketch || {};
   if (h.par === 3) {

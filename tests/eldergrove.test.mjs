@@ -1,6 +1,6 @@
 // Eldergrove (blockout): the sampled forest floor, the course data, and the ball among the giants: trunks that soak,
 // crowns far overhead and meeting in a roof, the forest lies, the fallen giant's high road and the sentinel, the pool and the brook, the
-// Stair's decks, the burnt shell and the heart tree.
+// Stair's decks, the hollow stump and its fallen top, and the heart tree.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { simulate } from '../src/physics.js';
@@ -178,10 +178,14 @@ test('the Stair: its tees on decks 25 m (Redwood) and 12 m (Cedar) up, the floor
   assert.ok(first && Math.hypot(first.x - h.pin[0], first.z - h.pin[1]) < 20, `a wedge from 25 m up lands by the green (${first && Math.hypot(first.x - h.pin[0], first.z - h.pin[1]).toFixed(0)} m off)`);
 });
 
-test('the burnt shell round the 8th green and the root plate are rocks that soak', () => {
+test('the hollow stump round the 8th green and the root plate are rocks that soak; the stump\'s top lies off the play', () => {
   const eight = H('The Hollow'), three = H('The Fallen Giant');
-  const walls = HOLES[eight].rocks.filter(r => r.what === "the shell's wall");
+  const walls = HOLES[eight].rocks.filter(r => r.what === "the stump's wall");
   assert.ok(walls.length >= 12 && walls.every(r => r.soak === 0.45));
+  const hs = walls.map(r => r.h); assert.ok(Math.max(...hs) > 22 && Math.min(...hs) < 12, `a snapped top, low by the gap, high at the hinge (${Math.min(...hs)}-${Math.max(...hs)} m)`);
+  // the fallen top: ground on the forest floor off to the south-east, behind the stump from the tee
+  const G = COURSE.grove.shell.log;
+  assert.ok(G && Math.hypot(G.b[0] - G.a[0], G.b[1] - G.a[1]) > 120, 'the top, about 140 m long');
   assert.ok(HOLES[three].rocks.some(r => r.what === 'the root plate' && r.soak > 0.5));
 });
 

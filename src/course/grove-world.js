@@ -1,7 +1,7 @@
 // Eldergrove (global THREE), blockout: what COURSE.grove holds (world space) put into a hole's frame (hole.frame) and
 // drawn. The forest floor from its height maps (leaf litter, fern, moss, the meadow and the Glade, the fallen giant's
 // bark) in the ground shader's GROVE branch, the brook and the pool as water sheets, every giant as a tapered trunk
-// under a crown far overhead (instanced), the heart tree with its buttresses, the root plate and the burnt shell, and
+// under a crown far overhead (instanced), the heart tree with its buttresses, the root plate, the hollow stump of a snapped giant, and
 // the Stair's decks on their limbs with the stair round the trunk. Out past the plan's forest, more trunks to the
 // mist. The ball's side of it (the tree bodies, the rocks, the surfaces) is in the course module, terrain.js and
 // trees.js; everything here is drawn only. The art pass comes later.
@@ -338,17 +338,9 @@ export function buildGrove(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
     }
   }
 
-  // ---- the root plate (torn up on end, earth and roots) and the burnt shell round the 8th green, from the course's
-  // own boxes; the fallen giant itself is ground (its back is the 3rd's high road)
+  // ---- the root plate (torn up on end, earth and roots), from the course's own boxes; the fallen giant itself is ground (its back is the 3rd's high road)
   {
-    const B = batch(), earth = lin([84, 66, 48]), earthD = lin([60, 48, 36]), char = lin([40, 34, 30]), charD = lin([26, 22, 20]);
-    const block = (X, Z, y, w, l, h, rot, k, kd) => {
-      const [x, z] = L(X, Z), r = rot - a, ux = Math.cos(r), uz = Math.sin(r), vx = Math.sin(r), vz = -Math.cos(r), y0 = LY(y) - 0.6, y1 = LY(y) + h;
-      const P = (su, sv, t) => [x + ux * su * w / 2 + vx * sv * l / 2, t ? y1 : y0, z + uz * su * w / 2 + vz * sv * l / 2];
-      const c = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-      for (let f = 0; f < 4; f++) { const p = c[f], q = c[(f + 1) % 4]; B.quad(P(...p, 0), P(...p, 1), P(...q, 1), P(...q, 0), f % 2 ? k : kd); }
-      B.quad(P(-1, -1, 1), P(-1, 1, 1), P(1, 1, 1), P(1, -1, 1), kd);
-    };
+    const B = batch(), earth = lin([84, 66, 48]), earthD = lin([60, 48, 36]);
     for (const o of E.walls) {
       const [x, z] = L(...o.at); if ((x - cx) ** 2 + (z - cz) ** 2 > 1500 ** 2) continue;
       if (o.kind === 'plate') {   // a disc on end: an octagon of earth with roots round its rim
@@ -356,9 +348,56 @@ export function buildGrove(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
         const ring = [...Array(12)].map((_, k) => { const an = k / 12 * Math.PI * 2; return [Math.cos(an) * R * (0.9 + 0.2 * hash(k, 2)), Math.sin(an) * R * 0.55 * (0.9 + 0.2 * hash(2, k)) + R * 0.5]; });
         const P = (u, h, side) => [px + ux * u + vx * side * o.l / 2, y0 + h, pz + uz * u + vz * side * o.l / 2];
         for (let k = 0; k < 12; k++) { const p = ring[k], q = ring[(k + 1) % 12]; B.quad(P(p[0], p[1], -1), P(q[0], q[1], -1), P(q[0], q[1], 1), P(p[0], p[1], 1), earthD); B.tri(P(0, R * 0.5, -1), P(q[0], q[1], -1), P(p[0], p[1], -1), earth); B.tri(P(0, R * 0.5, 1), P(p[0], p[1], 1), P(q[0], q[1], 1), earth); }
-      } else block(o.at[0], o.at[1], o.y, o.w, o.l, o.h, o.rot, char, charD);
+      }   // the stump's walls are drawn below as one ring, from the same heights
     }
     const m = B.mesh(vc({ flatShading: true })); if (m) group.add(m);
+  }
+  // ---- the hollow stump round the 8th green: a giant that snapped about 20 m up and rotted out from the inside.
+  // Bark outside with moss at its foot, rotten wood inside (punky and orange-brown up high, dark and damp low down,
+  // moss on the lower inside), a jagged break on top with pale splinters, and the rot's ragged edges either side of
+  // the gap toward the tee. Its fallen top is ground (world.mjs TOPLOG): bark flanks and a mossy back in the paint
+  const Sh = E.shell;
+  if (Sh) {
+    const [sx, sz] = L(...Sh.at);
+    if ((sx - cx) ** 2 + (sz - cz) ** 2 < 1600 ** 2) {
+      const B = batch(), Ri = Sh.r, Ro = Sh.r + Sh.t, D = Math.PI / 180;
+      const bark = lin([86, 56, 42]), barkD = lin([60, 40, 31]), moss = lin([72, 90, 42]), mossD = lin([48, 62, 32]), rotL = lin([150, 98, 56]), rotM = lin([112, 72, 44]), rotD = lin([62, 42, 30]), split = lin([178, 140, 98]);
+      const P = (a, r, y) => { const [x, z] = L(Sh.at[0] + Math.sin(a) * r, Sh.at[1] - Math.cos(a) * r); return [x, y, z]; };
+      const gW = (a, r) => { const [x, z] = L(Sh.at[0] + Math.sin(a) * r, Sh.at[1] - Math.cos(a) * r); if (inField(x, z)) { const g = gnd(x, z); if (g !== null) return g; } return LY(Sh.y); };
+      // columns every 2°: the sampled top (every 4°) in between, plus splinters standing up out of the break
+      const cols = [], n = Sh.top.length;
+      for (let q = 0; q <= (n - 1) * 2; q++) {
+        const f = q / 2, i = Math.floor(f), t = f - i, top0 = Sh.top[i] + (Sh.top[Math.min(n - 1, i + 1)] - Sh.top[i]) * t;
+        // a ragged break: a slow wander, a little roughness, and here and there a long splinter standing up (a narrow
+        // spike over a few columns)
+        const g6 = Math.floor(q / 5), inS = (q % 5) / 4, spike = hash(g6, 7.3) > 0.72 ? (3 + 5 * hash(g6, 1.1)) * Math.max(0, 1 - Math.abs(inS - 0.5) * 2.4) : 0;
+        const a = (Sh.a0 + f * 4) * D, sp = 1.8 * Math.sin(q * 0.23 + 1.3) + 1.1 * Math.sin(q * 0.61) + (hash(q * 1.7, 2.1) - 0.5) * 0.7 + spike;
+        const ridge = q % 2 ? 0.35 : -0.25;   // bark ridges and furrows
+        cols.push({ a, top: top0 + sp, ro: Ro + ridge, gi: gW(a, Ri - 0.5), go: gW(a, Ro + 1) });
+      }
+      for (let q = 0; q < cols.length - 1; q++) {
+        const A = cols[q], C = cols[q + 1], k = q % 2 ? bark : barkD, yA = LY(Sh.y), mo = hash(q, 3) < 0.5 ? moss : mossD;
+        const ytA = yA + A.top, ytC = yA + C.top, mA = A.go + 2 + 3 * hash(q, 9), mC = C.go + 2 + 3 * hash(q + 1, 9);
+        // outside: moss round the foot, bark above
+        B.quad(P(A.a, A.ro, A.go - 1.5), P(A.a, A.ro, mA), P(C.a, C.ro, mC), P(C.a, C.ro, C.go - 1.5), mo);
+        B.quad(P(A.a, A.ro, mA), P(A.a, A.ro, ytA), P(C.a, C.ro, ytC), P(C.a, C.ro, mC), k);
+        // inside: damp and dark low with moss, punky orange-brown higher up, the break's edge eaten lower than the bark
+        const iA = A.gi + 2.5, iC = C.gi + 2.5, hA = A.gi + (ytA - A.gi) * 0.55, hC = C.gi + (ytC - C.gi) * 0.55;
+        B.quad(P(C.a, Ri, C.gi - 1.5), P(C.a, Ri, iC), P(A.a, Ri, iA), P(A.a, Ri, A.gi - 1.5), mossD);
+        B.quad(P(C.a, Ri, iC), P(C.a, Ri, hC), P(A.a, Ri, hA), P(A.a, Ri, iA), rotD);
+        const w = 0.5 + 0.5 * Math.sin(q * 0.17 + 2), rk = rotM.map((v, i) => v + (rotL[i] - v) * w);   // patches of fresher, paler rot
+        B.quad(P(C.a, Ri, hC), P(C.a, Ri, ytC - 1.6), P(A.a, Ri, ytA - 1.6), P(A.a, Ri, hA), rk);
+        // the break: from the bark's edge down across the wall to the rotten inside, pale splintered wood
+        B.quad(P(A.a, A.ro, ytA), P(A.a, Ri, ytA - 1.6), P(C.a, Ri, ytC - 1.6), P(C.a, C.ro, ytC), split);
+      }
+      // the rot's ragged ends either side of the gap
+      for (const E2 of [cols[0], cols[cols.length - 1]]) {
+        const y0 = Math.min(E2.gi, E2.go) - 1.5, yt = LY(Sh.y) + E2.top, Rm = (Ri + E2.ro) / 2, da = (E2 === cols[0] ? -1 : 1) * 1.2 * D;
+        B.quad(P(E2.a, Ri, y0), P(E2.a, Ri, yt - 1.6), P(E2.a + da, Rm, yt * 0.7 + y0 * 0.3), P(E2.a + da, Rm, y0), rotD);
+        B.quad(P(E2.a + da, Rm, y0), P(E2.a + da, Rm, yt * 0.7 + y0 * 0.3), P(E2.a, E2.ro, yt), P(E2.a, E2.ro, y0), rotM);
+      }
+      const m = B.mesh(vc({ flatShading: true, side: THREE.DoubleSide })); if (m) group.add(m);
+    }
   }
 
   // ---- the Stair: each raised tee a deck at the end of a limb grown out of the stair tree, the treads spiralling

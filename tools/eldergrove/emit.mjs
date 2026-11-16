@@ -10,7 +10,7 @@
 //   green    a features green with the plan's outline (keepGround: the field already has its shape)
 //   bunkers  the hole's sand by its outlines
 //   rocks    what the ball hits besides the trees, draw: false (grove-world.js draws them): the root plate and the
-//            burnt shell's walls (boxes that soak: a ball that hits them drops at their foot)
+//            hollow stump's walls (boxes that soak: a ball that hits them drops at their foot)
 //   plants   the giants near the play as the game's tree bodies (trees.js: h, cr, low, tr; soak 0.45, so a ball
 //            that hits a trunk drops at its foot about half the time; the crown 60-100 m up); dy sets the trunk's
 //            foot to the plan's (the low side of its root flare)
@@ -24,7 +24,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
 import { BUILT, worldAt, toWorld, toLocal, ALLTREES, WALLS, DECKS, LIMBS, STAIRS, WL } from './scene.mjs';
-import { V, waterAt, POOL, HEART, FALLEN, ROOTPLATE, SHELL, SITES, pitMound, dryK, openAt, fallenAt } from './world.mjs';
+import { V, waterAt, POOL, HEART, FALLEN, ROOTPLATE, SHELL, SITES, TOPLOG, stumpH, pitMound, dryK, openAt, fallenAt } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { distLine } from './geo.mjs';
 import { packHeights } from '../../src/course/field-code.js';
@@ -91,7 +91,7 @@ function holeOut(hi) {
 
   // what the ball hits besides the trees: the root plate and the shell's walls near this hole (draw: false)
   const inBox = (x, z, m = 0) => x > x0 - m && x < x1 + m && z > z0 - m && z < z1 + m;
-  const rocks = B.walls.filter(o => inBox(o.x, o.z, 30)).map(o => ({ type: 'box', x: r1(o.x), z: r1(o.z), w: o.w, d: r2(o.l), rot: r2(o.rot), y: r1(o.y - 0.6), h: r1(o.h + 0.6), soak: o.kind === 'plate' ? 0.6 : 0.45, draw: false, what: o.kind === 'plate' ? 'the root plate' : "the shell's wall" }));
+  const rocks = B.walls.filter(o => inBox(o.x, o.z, 30)).map(o => ({ type: 'box', x: r1(o.x), z: r1(o.z), w: o.w, d: r2(o.l), rot: r2(o.rot), y: r1(o.y - 0.6), h: r1(o.h + 0.6), soak: o.kind === 'plate' ? 0.6 : 0.45, draw: false, what: o.kind === 'plate' ? 'the root plate' : "the stump's wall" }));
 
   // the giants near the field as tree bodies: the trunk soaks, the crown far up; the heart tree whole
   const plants = [];
@@ -155,7 +155,12 @@ const plate = SITES.find(s => s.kind === 'plate');
 const grove = { world, far, trees, walls, level: POOL.level,
   heart: { c: HEART.c, r: HEART.r, h: HEART.h, low: HEART.low, cr: HEART.cr, roots: HEART.roots, y: r2(groundW(HEART.c[0] + HEART.r + 2, HEART.c[1])) },
   fallen, plate: { at: plate.at.map(r1), r: plate.r, h: plate.h, t: plate.t, rot: r2(plate.rot), y: r2(groundW(...plate.at)) },
-  shell: { at: SHELL.c.map(r1), r: SHELL.r, t: SHELL.t, h: SHELL.h },
+  // the hollow stump: its ring of wall (inner radius r, thick t) round the arc that stands (from bearing a0 through a1,
+  // degrees), its top edge `top` sampled every 4° along the arc (the boxes the ball hits carry the same heights)
+  shell: (() => { const a0 = SHELL.open + SHELL.gap / 2, a1 = SHELL.open + 360 - SHELL.gap / 2, top = [];
+    for (let d = a0; d <= a1 + 0.01; d += 4) { const e = Math.min(d - a0, a1 - d); top.push(r1(stumpH(d * Math.PI / 180) * (0.62 + 0.38 * Math.min(1, e / 18)))); }
+    return { at: SHELL.c.map(r1), r: SHELL.r, t: SHELL.t, h: SHELL.h, a0, a1, top, y: r2(groundW(...SHELL.c)), fall: SHELL.fall,
+      log: { a: TOPLOG.a.map(r1), b: TOPLOG.b.map(r1), hw0: TOPLOG.hw0, hw1: TOPLOG.hw1, h0: TOPLOG.h0, h1: TOPLOG.h1 } }; })(),
   decks: DECKS.map(d => ({ k: d.k, y: r2(d.y), at: d.at.map(r1), outline: d.outline.map(p => p.map(r2)) })),
   limbs: LIMBS.map(l => ({ k: l.k, from: l.from.map(r2), knee: l.knee.map(r2), to: l.to.map(r2), r0: l.r0, r1: l.r1 })),
   stairs: STAIRS.map(S => ({ at: S.at.map(r1), r: S.r, top: r2(S.top), foot: r2(S.foot) })) };
@@ -170,7 +175,7 @@ const src = `// Eldergrove: nine holes on the floor of an ancient forest of gian
 // ground is a sampled field (terrain.js prepField): moss plays as first cut, fern and the meadow as rough, leaf litter
 // as beach (firm, it runs), root and bark as native, the brook and the pool as water; its green and sand are outlines
 // over it. Every giant near the play is a tree body (trees.js): its trunk soaks 45% of the balls that hit it (they
-// drop at its foot), its crown starts about 60 m up. The root plate and the burnt shell's walls are rocks the ball
+// drop at its foot), its crown starts about 60 m up. The root plate and the hollow stump's walls are rocks the ball
 // hits; the Stair's tees are decks on limbs of the stair tree (ground for the ball, drawn as grown wood). grove-world.js
 // draws COURSE.grove (the forest once, in world space) into each hole's frame. The tips tee is in the data, switched
 // off: COURSE.tipsSet is not in teeSets, and each hole's tips is not in its tees or yards.

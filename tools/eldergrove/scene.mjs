@@ -16,7 +16,7 @@
 import { seDist, seOutline, smooth, clamp, at, distLine, headingAt, lerp, project, lengthOf } from './geo.mjs';
 import { makeGreen, makeFairway, noise2, noise1 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { V, floorWorld, wet, waterAt, pitMound, dryK, brookAt, poolE, openAt, meadowAt, gladeAt, heartAt, fallenAt, HEART, SHELL, SITES, ROOTPLATE, lineD, lineNear, w } from './world.mjs';
+import { V, floorWorld, wet, waterAt, pitMound, dryK, brookAt, poolE, openAt, meadowAt, gladeAt, heartAt, fallenAt, HEART, SHELL, SITES, ROOTPLATE, lineD, lineNear, stumpH, w } from './world.mjs';
 
 export const SURF = ['litter', 'fern', 'moss', 'fairway', 'fringe', 'green', 'tee', 'sand', 'root', 'meadow', 'water', 'bark', 'void'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
@@ -350,12 +350,12 @@ export const STAIRS = OWN.flatMap((O, k) => O.stair ? [{ hole: k, at: WOR[k](O.s
 // ---- each hole, read through worldAt in its own frame: ground (relative to its base), surface, the solids and
 // the trees near it
 const PLATE = SITES.find(s => s.kind === 'plate'), SHELLS = SITES.find(s => s.kind === 'shell');
-function shellSegs() {   // the shell as 16 wall boxes round an arc (a gap toward the tee)
+function shellSegs() {   // the stump as 16 wall boxes round an arc (a gap toward the tee)
   const out = [], n = 16, c = SHELLS.at, gap = SHELLS.gap * Math.PI / 180, open = SHELLS.open * Math.PI / 180;
   for (let i = 0; i < n; i++) {
     const a = open + gap / 2 + (i + 0.5) * (Math.PI * 2 - gap) / n, R = SHELLS.r + SHELLS.t / 2;   // compass bearing
     const X = c[0] + Math.sin(a) * R, Z = c[1] - Math.cos(a) * R, len = R * (Math.PI * 2 - gap) / n + 1;
-    const hgt = SHELLS.h * (0.72 + 0.28 * Math.abs(Math.sin(i * 1.9 + 0.4))) * (i === 0 || i === n - 1 ? 0.62 : 1);   // a broken top, the ends lower
+    const hgt = stumpH(a) * (i === 0 || i === n - 1 ? 0.62 : 1);   // a snapped top, highest at the hinge, the rotted ends by the gap lower
     out.push({ kind: 'wall', X, Z, w: SHELLS.t, l: len, h: hgt, rot: a + Math.PI / 2 });
   }
   return out;
@@ -375,7 +375,7 @@ export const BUILT = OWN.map((O, k) => {
   function solids(x, z) {
     const out = [];
     for (const t of trees) { if (Math.abs(x - t.x) > t.r + 1 || Math.abs(z - t.z) > t.r + 1) continue; if (Math.hypot(x - t.x, z - t.z) < t.r) out.push([t.y - 0.5, t.y + t.h * t.low, t.heart ? 'the heart tree' : t.snag ? 'the snag' : 'a trunk']); }
-    for (const o of walls) { if (Math.abs(x - o.x) > 40 || Math.abs(z - o.z) > 40) continue; if (inBox(o, x, z)) out.push([o.y - 0.5, o.y + o.h, o.kind === 'plate' ? 'the root plate' : 'the shell\'s wall']); }
+    for (const o of walls) { if (Math.abs(x - o.x) > 40 || Math.abs(z - o.z) > 40) continue; if (inBox(o, x, z)) out.push([o.y - 0.5, o.y + o.h, o.kind === 'plate' ? 'the root plate' : 'the stump\'s wall']); }
     return out;
   }
   // the crowns overhead: the height above (x, z) where a crown begins, or null

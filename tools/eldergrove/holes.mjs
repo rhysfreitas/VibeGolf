@@ -33,14 +33,14 @@ export const COURSE = {
   card: {
     hook: 'Golf on the floor of a forest older than memory: conifers 100 m tall, trunks 8 to 12 m across, the first branches 60 m up. One logic: the trunks are walls (a ball that hits one drops at its foot about half the time, otherwise it comes back off the bark) and the canopy is a roof far above any shot (only a skied ball reaches it, and it is knocked down). Almost no penalty ground: the cost of a miss is being blocked out.',
     skeleton: 'Par 36: 4 5 4 4 4 3 5 3 4 (the traditional card). In from the meadow on a gentle opener; the Avenue (560 yd dead straight) as the early showpiece; the hardest pair 4 and 5; the Stair (a tee 25 m up a living tree) the breather; a reachable par 5 and a long par 3; the finish down into an amphitheatre of roots under the heart tree.',
-    classics: 'Cape (4: the pool), Long (7: the ravine where the second wants to finish). Set pieces: the chute (1: through two gate trees), the wall (8: the burnt shell\'s walls return a long ball). Two more classics welcome.',
+    classics: 'Cape (4: the pool), Long (7: the ravine where the second wants to finish). Set pieces: the chute (1: through two gate trees), the wall (8: the hollow stump\'s walls return a long ball). Two more classics welcome.',
     decisions: 'Four, each a different type: high road or low road (3: the fallen giant\'s back or the floor beside it), bite off what you dare (4: across the pool), go or lay up (7: over the ravine in two), centre-line hazard (9: left or right of the root). One in the last two holes.',
     landmarks: 'The heart tree: the reveal is the 9th tee, where it fills the frame 245 m away (Rhys, 14 November: from 1 to 8 it stands 50-85° left of the shot, outside the fixed camera\'s view, glimpsed sideways and from the 1st\'s fan, and reflected in the 4th\'s pool off to the left). The Glade\'s light (from 4 and 6). The fallen giant\'s root plate (from the 2nd green and the 4th tee).',
     rhythm: 'A gentle opener down a valley that feeds; the Avenue straight after; the hardest holes 4 and 5 (across the pool, then up the Glade\'s hillside); the Stair the breather; the Brook reachable; the Hollow a long iron uphill; the Hall to finish under the heart tree. Par 3s 150 and 190; par 4s 335, 400, 420, 440, 465; par 5s 505 and 560.',
     forms: 'Seven fairways, seven forms: 1 fan, 2 strip (an avenue), 3 split, 4 hook, 5 wide strip, 7 broken, 9 island. The two plain strips are on purpose (the Avenue, the Glade). A trunk beside every fairway, each hole\'s trees doing a different job.',
     heights: '1 half-pipe (a stream valley), 2 crest and run, 3 stepped (bold: high road, low road), 4 perched green (a mossy knoll 5 m over the pool\'s shore; round 2), 5 hillside bench 9% across (bold), 6 the drop (the only one: a tee 25 m up a tree), 7 dip in front (the ravine), 8 uphill to a shelf, 9 fall-away into the amphitheatre (round 2: 7 m in the last 100 m).',
-    dials: 'One pushed on every hole: 1 a chute (two gate trees 45 m apart), 2 width (34 m between the colonnade\'s fern, 560 yd dead straight: past real golf), 3 length (335 yd), 4 a carry (as much pool as you dare), 5 width (75 m of meadow), 6 height (a tee 25 m up a living tree), 7 length (505 yd, reachable), 8 green inside a burnt-out trunk\'s shell, 9 green surround (an amphitheatre of roots).',
-    newBorrowed: 'New to the register: the first tree-lined course; a tunnel of trees; a fairway along a fallen trunk; a tee in a living tree; a meadow hole; a green in a natural amphitheatre; moss and leaf-litter lies. Borrowed (two): a tee shot off a height (the Stair), a green inside a shell (the Hollow). No waterfall, bridge in play, chasm, punchbowl, arch or climb to the clubhouse.',
+    dials: 'One pushed on every hole: 1 a chute (two gate trees 45 m apart), 2 width (34 m between the colonnade\'s fern, 560 yd dead straight: past real golf), 3 length (335 yd), 4 a carry (as much pool as you dare), 5 width (75 m of meadow), 6 height (a tee 25 m up a living tree), 7 length (505 yd, reachable), 8 green inside the hollow stump of a snapped giant, 9 green surround (an amphitheatre of roots).',
+    newBorrowed: 'New to the register: the first tree-lined course; a tunnel of trees; a fairway along a fallen trunk; a tee in a living tree; a meadow hole; a green in a natural amphitheatre; moss and leaf-litter lies. Borrowed (two): a tee shot off a height (the Stair), a green inside a hollow stump (the Hollow). No waterfall, bridge in play, chasm, punchbowl, arch or climb to the clubhouse.',
   },
 };
 export const BACK = 'redwood', FRONT = 'hazel';
@@ -355,32 +355,32 @@ export const HOLES = [
     }),
   }),
 
-  // 8. THE HOLLOW: a long iron up 7 m into the shell of a burnt-out giant
-  hole({ n: 8, name: 'The Hollow', par: 3, world: LINES[7], tips: [-14, 0], shape: 'One shot, uphill into the shell',
+  // 8. THE HOLLOW: a long iron up 7 m into the hollow stump of a giant that snapped
+  hole({ n: 8, name: 'The Hollow', par: 3, world: LINES[7], tips: [-14, 0], shape: 'One shot, uphill into the stump',
     build: (P, L, len) => ({
       tees: { redwood: 0, cedar: [12, -8], rowan: [28, 9], hazel: [56, -6] },
-      // the shelf inside the shell: the green 7 m over the tee; a steep mossy front (about 40%) sends a short ball
+      // the shelf inside the stump: the green 7 m over the tee; a steep mossy front (about 40%) sends a short ball
       // back down
       prof: [[0, 0], [110, 0], [len - 32, -2.2], [len - 22, -0.2], [len, 0], [len + 40, 0]],
       bunkers: [],
-      green: { k: 1.0, lobes: [[0, 0, 12, 14, -8], [4, 8, 7, 6, 0]], apron: 3, contour: [{ fall: 0, pct: 1.8 }, { bowl: [3, 5], r: 11, h: 0.3 }], style: 'Inside the shell, open toward the tee, falling 1.8% toward you with a shallow bowl at the back right; the black walls on three sides return a long or wide ball; the steep mossy front sends a short one back down' },
+      green: { k: 1.0, lobes: [[0, 0, 12, 14, -8], [4, 8, 7, 6, 0]], apron: 3, contour: [{ fall: 0, pct: 1.8 }, { bowl: [3, 5], r: 11, h: 0.3 }], style: 'Inside the stump, open toward the tee, falling 1.8% toward you with a shallow bowl at the back right; the walls of rotten wood on three sides return a long or wide ball; the steep mossy front sends a short one back down' },
       trunks: [
         { job: 'the approach\'s sides', list: [[62, -40, 4.8], [70, 42, 5], [118, -38, 5], [124, 40, 4.6]] },
       ],
       targets: [],
       words: {
-        story: 'The Hollow: a green inside the shell of a burnt-out giant.',
-        plays: 'A long iron, 190 yd, up 7 m to a green inside the shell of a giant that burnt out long ago. Its black walls stand 15 m high round three sides and open toward you: anything long or wide comes back off them. The front is steep moss: a ball that comes up short runs back down the bank. So the shot is to carry all the way and let the walls be the backstop.',
+        story: 'The Hollow: a green inside the stump of a giant that snapped in a storm long ago; its top lies on the forest floor beside it, and the heart of the stump has rotted away.',
+        plays: 'A long iron, 190 yd, up 7 m to a green inside the stump of a giant that snapped long ago and rotted out from the inside. Its walls stand 12-26 m high round three sides, highest at the back right where it broke, and open toward you where the rot ate through: anything long or wide comes back off them. The front is steep moss: a ball that comes up short runs back down the bank. So the shot is to carry all the way and let the walls be the backstop.',
         safe: 'A long iron to the middle, long rather than short.',
         bold: 'At a front pin, just over the bank.',
         miss: 'Short: the mossy front sends it back down 20 m. Long or wide: off the walls and back toward the green. No penalty ground. Safe miss: long',
       },
       card: {
-        type: 'Original (a green in a shell)', form: 'None (par 3)', feature: 'The burnt shell: black walls 15 m high on three sides, open toward the tee', job: 'The walls are helpers (a backstop: the wall set piece) and the frame; the mossy front is a lie-setter that sends a short ball back',
-        decision: 'None: a par 3', miss: 'Small: off the walls. Medium: down the front bank. Big: the forest floor beside the shell. No penalty ground. Safe miss: long',
-        view: 'In front the forest floor rising; in the middle the shell\'s black walls and the green inside them, the flag against the wall; beyond, the shell\'s broken top and the trees. The flag shows',
+        type: 'Original (a green in a hollow stump)', form: 'None (par 3)', feature: 'The hollow stump: walls of rotten wood 12-26 m high on three sides, a jagged break on top, open toward the tee; its fallen top lies off to the south-east', job: 'The walls are helpers (a backstop: the wall set piece) and the frame; the mossy front is a lie-setter that sends a short ball back',
+        decision: 'None: a par 3', miss: 'Small: off the walls. Medium: down the front bank. Big: the forest floor beside the stump. No penalty ground. Safe miss: long',
+        view: 'In front the forest floor rising; in the middle the stump\'s walls and the green inside them, the flag against the wall; above, its jagged break, highest at the back right; to the right, the fallen top running off into the trees. The flag shows',
         ground: 'Uphill to a shelf: +7 m, the front a steep moss bank',
-        height: 'Uphill par 3, to a shelf', dial: 'Green shape: a green inside a burnt-out trunk\'s shell', shots: { tee: null, approach: 'A long iron carried all the way' }, hazard: 'Behind and round the green: the shell (a helper)', surround: 'The wall behind and both sides; a steep front', setPiece: 'The wall (the shell)',
+        height: 'Uphill par 3, to a shelf', dial: 'Green shape: a green inside a hollow stump', shots: { tee: null, approach: 'A long iron carried all the way' }, hazard: 'Behind and round the green: the stump (a helper)', surround: 'The wall behind and both sides; a steep front', setPiece: 'The wall (the stump)',
       },
     }),
   }),

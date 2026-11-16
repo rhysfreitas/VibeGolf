@@ -4,7 +4,7 @@
 // forest to the west (the 1st tee stands in it); a sunlit meadow, the Glade, on a hillside north of the heart tree
 // (the 5th). The brook runs from the Glade's west end past the 6th green, down the 7th's valley, across it in a little
 // ravine, and on south past the 1st green. A black pool inside the 4th's bend. A fallen giant along the 3rd. The
-// burnt shell of a giant round the 8th green. V(X, Z) is the ground without the holes; each hole's ground follows it
+// hollow stump of a snapped giant round the 8th green. V(X, Z) is the ground without the holes; each hole's ground follows it
 // away from its line (scene.mjs). Points below are written [x east, n north] as in claude/eldergrove-layout.md and
 // turned to [X, Z = -n] by `w`.
 //
@@ -73,7 +73,7 @@ export const FLOOR = [
   // the 6th (the floor round the stair tree) and the 7th down its valley, the brook on its east side
   [-170, 300, 62], [-225, 260, 61], [-281, 219, 60.5], [-330, 170, 60], [-340, 120, 59.2], [-350, 70, 58.4], [-360, 20, 57.4], [-370, -20, 56.4], [-380, -60, 55.5],
   [-350, -108, 54.6], [-322, -150, 53.8], [-290, -205, 52.6], [-261, -252, 52], [-430, 100, 63], [-440, -40, 61], [-250, 60, 61], [-245, -80, 57],
-  // the 8th, up 7 m to the shelf inside the burnt shell
+  // the 8th, up 7 m to the shelf inside the hollow stump
   [-200, -300, 50], [-150, -297, 50.5], [-100, -294, 52], [-62, -292, 54.5], [-27, -290, 57], [2, -289, 57.5],
   // the 9th, down round the heart tree to the amphitheatre at its west-north-west foot
   [30, -240, 58], [-20, -214, 57.3], [-80, -182, 56.3], [-140, -150, 55.5], [-128, -100, 54.5], [-115, -50, 53.5], [-102, 0, 52.8], [-89, 54, 52],
@@ -176,7 +176,11 @@ export function heartAt(X, Z) {   // { lift, root (0-1: on a root) }
 export const FALLEN = { a: w([347, -409]), b: w([419, -223]),   // round 2: 32 m longer toward the green, so the high road reaches as far as the low road
   top: 28, h: 6, ramp: 46, flank: 3.5, name: 'the fallen giant' };
 export const ROOTPLATE = { c: w([404, -211]), r: 16, h: 12, t: 4, name: 'the root plate' };   // torn off to the left of the trunk's end, so the high road's wedge passes it
-export function fallenAt(X, Z) {   // { lift, on (0-1: on its back), flank (0-1: on its sides) }
+export function fallenAt(X, Z) {   // { lift, on (0-1: on its back), flank (0-1: on its sides) }: the fallen giant, or the stump's top
+  const g = giantAt(X, Z); if (g.lift > 0) return g;
+  return topAt(X, Z) || g;
+}
+function giantAt(X, Z) {
   const A = FALLEN.a, Bp = FALLEN.b, L = [A, Bp], len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]);
   const pr = project(L, X, Z); if (pr.d > FALLEN.top / 2 + 14) return { lift: 0, on: 0, flank: 0 };
   // past the root end it stops square (the plate); before the crown end the broken crown ramps down to the floor
@@ -217,15 +221,38 @@ export function waterAt(X, Z) {
 }
 
 // ---- the built and grown things that belong to no one hole, in world space (the holes' own trunks are in
-// holes.mjs): the burnt shell round the 8th green, the root plate, the hall's doors, the stair, the root bridge.
+// holes.mjs): the hollow stump round the 8th green, the root plate, the hall's doors, the stair, the root bridge.
 // Boxes { kind, at, w (across), l (along), h, rot (compass bearing of its length), soak }; rings { kind: 'shell' }
-export const SHELL = { c: w([-22, -289]), r: 25, t: 3.5, h: 15, open: 270, gap: 105, name: 'the burnt shell' };   // open toward the west (the tee), the gap 105° wide
+// the 8th: a giant that snapped about 20 m up and rotted out from the inside (16 November, Rhys: "cracked, the top
+// has fallen over, the stump somewhat rotting on the inside", not burnt). The rot ate through the side facing the
+// tee, so the stump is open that way; the walls stand 12-26 m, highest on the side the top fell to (the hinge),
+// their top a jagged break. fall: the compass bearing the top fell along
+export const SHELL = { c: w([-22, -289]), r: 25, t: 3.5, h: 15, open: 270, gap: 105, fall: 140, name: 'the hollow stump' };   // open toward the west (the tee), the gap 105° wide
+// a wall's height at compass bearing a (radians): low at the rotted ends by the gap, rising to the hinge
+export function stumpH(a) {
+  const f = SHELL.fall * Math.PI / 180, toward = Math.max(0, Math.cos(a - f));
+  return 13 + 11 * Math.pow(toward, 1.4) + 2.5 * Math.abs(Math.sin(a * 5.3 + 0.7));
+}
+// the fallen top: lying away to the south-east, off every line (the nearest is the 9th tee, about 80 m off), its
+// broken butt 8 m from the stump, sunk and collapsing as it rots (14 m up at the butt, 5 at the tip), moss on its back
+export const TOPLOG = { a: w([-4, -318]), b: w([86, -428]), hw0: 12, hw1: 4, h0: 13, h1: 5, flank: 4, name: "the stump's fallen top" };
+function topAt(X, Z) {
+  const A = TOPLOG.a, Bp = TOPLOG.b, len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]), ax = (Bp[0] - A[0]) / len, az = (Bp[1] - A[1]) / len;
+  const sA = (X - A[0]) * ax + (Z - A[1]) * az; if (sA < -1 || sA > len + 1) return null;
+  const off = -(X - A[0]) * az + (Z - A[1]) * ax, t = clamp(sA / len, 0, 1);
+  const hw = TOPLOG.hw0 + (TOPLOG.hw1 - TOPLOG.hw0) * t + 1.0 * noise1(sA / 17, 57), e = Math.abs(off) - hw;
+  if (e > TOPLOG.flank + 1) return null;
+  const across = e <= 0 ? 1 : 1 - smooth(e / TOPLOG.flank), H = TOPLOG.h0 + (TOPLOG.h1 - TOPLOG.h0) * t;
+  const back = Math.cos(Math.PI * clamp(off / (hw * 1.1), -1, 1) / 2), ends = smooth((sA + 1) / 2) * (1 - smooth((sA - len + 6) / 6));
+  const sag = 1 - 0.18 * Math.max(0, noise1(sA / 30, 13));   // where it has rotted through, the back sags
+  return { lift: H * (0.55 + 0.45 * back) * sag * across * ends, on: e <= 0 && back > 0.35 ? 1 : 0, flank: (e > 0 || back <= 0.35) && across > 0.05 ? 1 : 0, s: sA, off };
+}   // open toward the west (the tee), the gap 105° wide
 export const SITES = [
   { kind: 'plate', at: ROOTPLATE.c, r: ROOTPLATE.r, h: ROOTPLATE.h, t: ROOTPLATE.t, rot: 21 * Math.PI / 180, name: 'the root plate' },
-  { kind: 'shell', at: SHELL.c, r: SHELL.r, t: SHELL.t, h: SHELL.h, open: SHELL.open, gap: SHELL.gap, name: 'the burnt shell' },
+  { kind: 'shell', at: SHELL.c, r: SHELL.r, t: SHELL.t, h: SHELL.h, open: SHELL.open, gap: SHELL.gap, name: 'the hollow stump' },
   { kind: 'doors', at: w([-62, 92]), w: 14, l: 3, h: 9, rot: 120 * Math.PI / 180, name: "the hall's doors" },
   { kind: 'bridge', at: w([-299, -150]), w: 3, l: 18, h: 1.6, rot: 90 * Math.PI / 180, name: 'the root bridge', scenery: true },
 ];
 export const LABELS = [[w([-650, -470]), 'the meadow'], [w([90, 420]), 'the Glade'], [w([372, 72]), 'the pool'], [[0, 0], 'the heart tree'], [w([-300, 30]), 'the brook'],
-  [w([-294, -203]), 'the ravine'], [w([378, -330]), 'the fallen giant'], [w([-22, -289]), 'the burnt shell']];
+  [w([-294, -203]), 'the ravine'], [w([378, -330]), 'the fallen giant'], [w([-22, -289]), 'the hollow stump'], [w([40, -373]), 'its fallen top']];
 export { floorAt };
