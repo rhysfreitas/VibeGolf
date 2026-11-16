@@ -49,6 +49,36 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Eldergrove (blockout 15 November 2026; `?c=eldergrove`) | 4L The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
 | Cloudrest (layout approved 15 November 2026; plan book round 1 the same night; a playable blockout 16 November, `?c=cloudrest`) | 4R The Overlook | 3 The Balcony | 5L ↓ The Hanging Valley | 3 The Needle (the drop, −18 m) | 4L The Broken Ridge | 5R ↑ The Stair | 3 The Alcove | 5L The Tea Terraces | 4S ↓ The Descent | 36 |
 | The Labyrinth (layout approved 15 November 2026; round 0 in `tools/labyrinth/`) | 5L The Gate | 4 \| The Long Corridor | 4L (or R) The Elbow | 4R The Cistern | 3 The Tower Court | 4R The Hanging Garden | 3 The Two Doors | 3 ↓ The Parapet (the drop, −28 m) | 5R ↓ The Way Out | 35 |
+| Emerald Bay (layout approved 15 November 2026; round 0 in `tools/emeraldbay/`) | 5R The Village | 3 The Leap (the drop, −20 m) | 3 The Tongue | 5L The Coves | 4R The Sandbar | 4L The Saddle | 4R d The Overhang | 3 The Stack | 5L The Hong | 36 |
+
+- Emerald Bay (Rhys's picks, 14-15 November 2026; `claude/emerald-bay-layout.md`, `claude/brief-emerald-bay.md` and
+  `claude/brief-addendum-emerald-bay-look.md` in the project; `tools/emeraldbay/`): the first tropical course, an
+  invented bay "kind of like Krabi/Koh Phi Phi": sheer limestone islands with jungle on top and stalactites under
+  the overhangs, white sand, clear turquoise water, a stilt village, longtail boats, a beach-shack clubhouse; a few
+  bigger islands and many small islets, a chain of holes wrapped once round the bay so each sees others across the
+  water; bright late morning. Two logics: **sand is always playable and water is a stroke** (a cliff gives the
+  ball back onto the sand below, as on Cloudrest), and **the tide is high or low each round**, changing three holes
+  (3, 5, 9); nothing moves in play. Par 36, 5 3 3 5 4 4 4 3 5 (a par 5 opener, back-to-back par 3s at 2-3, a
+  reachable par 5 finish into a hidden lagoon); Marlin 3,300 yd; tees Marlin, Manta, Turtle, Clownfish, Shark tips
+  (switched off). 1 The Village 5 510 (fan, a half-pipe palm valley; reachable), 2 The Leap 3 165 (the drop par 3,
+  −20 m, headland to a sand-ringed islet; the island green), 3 The Tongue 3 200 (level across the water, a sand
+  tongue short of the green at low tide), 4 The Coves 5 585 (scalloped, an 8% hillside bench, three coves bitten
+  in from the bay; Cape), 5 The Sandbar 4 400 (a strip along a sandbar, sea both sides), 6 The Saddle 4 445
+  (island round a 30 m pinnacle, up and over a saddle between two towers; Alps, a blind second), 7 The Overhang
+  4 320 (hook round a cove under a leaning cliff; drivable across it, about 290 yd), 8 The Stack 3 130 (uphill to a
+  320 m² green on a sea stack), 9 The Hong 5 545 (broken, a dip in front: across the tidal flats and a channel,
+  through a sea cave 40 m high into the lagoon; go or lay up; at high tide three shots along a spit). Classics Cape
+  (4), Alps (6); set piece the island green (2). Decisions 4 (bite off), 7 (drivable), 9 (go or lay up). Bold height
+  forms 4, 6; one drop par 3 (2). Landmarks the sea stack (from 1, 4, 5, 7, 9; played at 8), the great overhang
+  (from 4, 5; played under at 7), the cave mouth (from 1, 4, 8); the reveal coming out of the cave into the lagoon.
+  New: a tide that changes holes, a sandbar fairway, a green inside a hollow island, a sea-stack green, a beach hole
+  under a cliff, the first tropical course. Borrowed from the over-used list (two): something to play through (the
+  sea cave), a tee shot off a height (the Leap). No waterfall, bridge, punchbowl or climb to the clubhouse. Same par
+  as another course on four holes at most (checked by script over all thirteen: the Aerie, Rimeholm, Emberfell,
+  Halcyon Ring and the Labyrinth on four).
+  Round 0 16 November 2026 (`tools/emeraldbay/`, `out/emerald-bay-round0.pdf`, before the plan book): the tide as
+  data and as a water level over one ground, the three tide holes at both tides, the sand lies, cliffs and water.
+  Waiting on Rhys's picks.
 
 - The Labyrinth (Rhys's picks, 15 November 2026; `claude/labyrinth-layout.md` and `claude/brief-labyrinth.md` in the
   project; `tools/labyrinth/`): his idea, "kind of like maze runner", made our own: a maze the size of a town
