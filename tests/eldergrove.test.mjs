@@ -1,5 +1,5 @@
 // Eldergrove (blockout): the sampled forest floor, the course data, and the ball among the giants: trunks that soak,
-// crowns far overhead, the forest lies, the fallen giant's high road and the sentinel, the pool and the brook, the
+// crowns far overhead and meeting in a roof, the forest lies, the fallen giant's high road and the sentinel, the pool and the brook, the
 // Stair's decks, the burnt shell and the heart tree.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -97,6 +97,22 @@ test('a tour drive from the back tee at the first target hits no trunk, crown or
     const tg = h.targets.find(q => !q.pin), pts = flown(shoot(i, h.tees[BACK], [tg.x, tg.z], DR));
     assert.ok(!pts.some(p => p.hit), `${h.name}: the drive hit something`);
   });
+});
+
+test('the roof: conifer crowns wide enough that neighbours meet over most of the forest floor, leaning out over the openings', () => {
+  let all = 0, cov = 0, lean = 0, n = 0;
+  HOLES.forEach((h, i) => {
+    const P = h.plants.filter(p => p.type === 'redwood'), F = h.field; let a = 0, c = 0;
+    for (const p of P) { n++; if (Math.hypot(p.ox || 0, p.oz || 0) > 2) lean++; }
+    for (let z = F.z0 + 20; z < F.z0 + (F.nz - 1) * F.cell - 20; z += 10) for (let x = F.x0 + 20; x < F.x0 + (F.nx - 1) * F.cell - 20; x += 10) {
+      if (['fairway', 'green', 'fringe', 'tee', 'water'].includes(T[i].surfaceAt(x, z))) continue;
+      a++; if (P.some(p => Math.hypot(x - p.x - (p.ox || 0), z - p.z - (p.oz || 0)) < p.cr * 0.9)) c++;
+    }
+    assert.ok(c / a > 0.45, `${h.name}: ${(100 * c / a).toFixed(0)}% of the forest floor under a crown`);
+    all += a; cov += c;
+  });
+  assert.ok(cov / all > 0.55, `${(100 * cov / all).toFixed(0)}% of the forest floor under a crown`);
+  assert.ok(lean / n > 0.3, `${lean} of ${n} crowns lean out over an opening`);
 });
 
 test('the giants: every one near the play a tree body whose trunk soaks, its crown 50 m or more up; a ball into a trunk drops at its foot about half the time', () => {

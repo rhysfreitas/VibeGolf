@@ -24,7 +24,7 @@ const HYBRID = { Speed: 132, VLA: 13, TotalSpin: 4600 };   // about 205 yd carry
 const PHYS = { fairway: 'fairway', fringe: 'fairway', tee: 'fairway', green: 'green', moss: 'firstcut', fern: 'rough', meadow: 'rough', litter: 'beach', root: 'desert', bark: 'desert', sand: 'sand', water: 'water', void: 'rough' };
 const SOAK = 0.45;
 const ord = n => n + (['st', 'nd', 'rd'][n - 1] || 'th');
-const TF = BUILT.map(B => createTreeField(B.trees.map(t => ({ x: t.x, y: t.y, z: t.z, h: t.h, cr: t.cr, low: t.low, tr: t.r, type: 'giant', soak: SOAK }))));
+const TF = BUILT.map(B => createTreeField(B.trees.map(t => ({ x: t.x, y: t.y, z: t.z, h: t.h, cr: t.cr, low: t.low, tr: t.r, ox: t.ox, oz: t.oz, type: 'giant', soak: SOAK }))));
 let seed = 11; const rng = () => (seed = seed * 16807 % 2147483647) / 2147483647;
 
 // a drive from p along direction dir (radians from -z in the hole's frame, + right), flown through the trees and

@@ -120,7 +120,8 @@ const sunDir = new THREE.Vector3(0, 1, 0);
 const sun = new THREE.DirectionalLight(0xffd9b0, 2.4);
 sun.castShadow = true;
 sun.shadow.mapSize.set(coarse ? 2048 : 4096, coarse ? 2048 : 4096);
-const SB = MESA ? 150 : 120; Object.assign(sun.shadow.camera, { left: -SB, right: SB, top: SB, bottom: -SB, near: 1, far: 1600 });
+// Eldergrove: the crowns' shadows fall 50-170 m from their trunks, so the box reaches well past the ball
+const SB = GROVE ? 280 : MESA ? 150 : 120; Object.assign(sun.shadow.camera, { left: -SB, right: SB, top: SB, bottom: -SB, near: 1, far: 1600 });
 sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.05;
 scene.add(sun, sun.target);
 const hemi = new THREE.HemisphereLight(0xd6e8ff, 0x6a7a68, 0.45); scene.add(hemi);
@@ -179,9 +180,10 @@ function lightPreset() {
   if (REDROCK && t === 'golden' && w === 'clear') Object.assign(P, { sun: 0xffa255, si: 3.3, hs: 0x9db4dc, hg: 0x8a4a30, hi: 0.5, exp: 0.6, turb: 2.4, ray: 3.0, mie: 0.004, fog: 0xe2b58e, near: 600, far: 6000 });
   if (!MESA && t === 'morning' && w === 'clear') Object.assign(P, { sun: 0xffc48a, si: 3.0, hs: 0xb8cdea, hg: 0xd9d2c4, hi: 0.62, exp: 0.6, turb: 2.6, ray: 1.9, mie: 0.005, fog: 0xece6da, near: 700, far: 5600 });
   if (w === 'haze') { P.turb += 5; P.si *= 0.82; P.hi *= 1.15; P.near *= 0.55; P.far *= 0.6; }
-  // the forest on a misty morning: a low warm sun through the mist, green shade under the canopy, the air thick and
-  // pale between the trunks so the forest fades into it a few hundred metres off
-  if (GROVE && t !== 'night') Object.assign(P, t === 'morning' ? { sun: 0xffd6a4, si: 2.8, hs: 0xa9bcb6, hg: 0x3e4a2e, hi: 0.66, exp: 0.66, turb: 7, ray: 1.4, mie: 0.012 } : {}, { fog: 0xbfc8bd, near: w === 'haze' ? 30 : 90, far: w === 'haze' ? 1150 : 2400 });
+  // the forest on a misty morning: the sun warm through the gaps in the roof of crowns, deep green shade under it (a
+  // dim fill, so the patches of sun stand out), the air thick and pale between the trunks so the forest fades into it
+  // a few hundred metres off
+  if (GROVE && t !== 'night') Object.assign(P, t === 'morning' ? { sun: 0xffd9a8, si: 3.6, hs: 0x93aaa2, hg: 0x34402a, hi: 0.4, exp: 0.74, turb: 7, ray: 1.4, mie: 0.012 } : {}, { fog: 0xa4ae9f, near: w === 'haze' ? 40 : 100, far: w === 'haze' ? 1150 : 2400 });
   if (CITY && w === 'haze' && t !== 'night') { P.fog = 0xd2cdbf; P.near = 70; P.far = 1500; P.turb = 7; P.ray = 1.2; P.si = 2.6; P.hi = 0.5; }
   if (CITY && w === 'clear' && t !== 'night') { P.near = 160; P.far = 2600; }
   if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : DESERT ? 0xa89c92 : CITY ? 0xb4b8b6 : 0xa9b0b6; P.exp *= 1.05; }
@@ -189,7 +191,7 @@ function lightPreset() {
 }
 function applySky(heading = 0) {
   const T0 = TIMES[cond.time] || TIMES.morning, P = lightPreset();
-  const a = RING ? skyAngles(90, cond.time === 'golden' ? 8 : Math.max(8, T0.sunEl * 0.6), heading) : skyAngles(T0.sunAz, EMBER && cond.time === 'golden' ? EMBER_SUN[emberStage] : T0.sunEl, MESA ? heading : 333);   // the ring's sun: through the east glass
+  const a = RING ? skyAngles(90, cond.time === 'golden' ? 8 : Math.max(8, T0.sunEl * 0.6), heading) : skyAngles(T0.sunAz, EMBER && cond.time === 'golden' ? EMBER_SUN[emberStage] : GROVE && cond.time === 'morning' ? 32 : T0.sunEl, MESA ? heading : 333);   // the ring's sun: through the east glass
   sunDir.setFromSphericalCoords(1, a.polar, a.azimuth);
   const skySun = T0.night ? new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(96), skyAngles(300, 0, MESA ? heading : 333).azimuth) : sunDir;
   skyU.turbidity.value = P.turb; skyU.rayleigh.value = P.ray; skyU.mieCoefficient.value = P.mie; skyU.mieDirectionalG.value = 0.85;
@@ -219,6 +221,14 @@ function applySky(heading = 0) {
   const es = new THREE.Scene(), s2 = new THREE.Sky(); s2.scale.setScalar(1000); es.add(s2);
   for (const k of ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) s2.material.uniforms[k].value = skyU[k].value;
   s2.material.uniforms.sunPosition.value.copy(skySun);
+  // under the forest's roof the light that fills the shade is the mist between the trunks and the dark crowns
+  // overhead, with a little sky through the gaps, not the open sky: a dome of those round the light probe
+  if (GROVE && !T0.night) {
+    const g = new THREE.SphereGeometry(500, 32, 16), p = g.attributes.position, c = [], f = new THREE.Color(P.fog).convertSRGBToLinear();
+    const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t), ground = [0.035, 0.03, 0.022], mist = [f.r * 0.36, f.g * 0.37, f.b * 0.35], crown = [0.022, 0.036, 0.026], roof = [0.07, 0.09, 0.09];
+    for (let i = 0; i < p.count; i++) { const y = p.getY(i) / 500; c.push(...(y < -0.04 ? ground : y < 0.12 ? mix(mist, ground, Math.max(0, -y / 0.04)) : y < 0.45 ? mix(mist, crown, (y - 0.12) / 0.33) : mix(crown, roof, (y - 0.45) / 0.55))); }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3)); es.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  }
   if (envRT) envRT.dispose();
   envRT = pmrem.fromScene(es, 0.02); scene.environment = envRT.texture;
   s2.material.dispose(); s2.geometry.dispose();

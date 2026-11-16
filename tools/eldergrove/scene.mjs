@@ -16,7 +16,7 @@
 import { seDist, seOutline, smooth, clamp, at, distLine, headingAt, lerp, project, lengthOf } from './geo.mjs';
 import { makeGreen, makeFairway, noise2, noise1 } from './shapes.mjs';
 import { HOLES } from './holes.mjs';
-import { V, floorWorld, wet, waterAt, pitMound, dryK, brookAt, poolE, openAt, meadowAt, gladeAt, heartAt, fallenAt, HEART, SHELL, SITES, ROOTPLATE, lineD, w } from './world.mjs';
+import { V, floorWorld, wet, waterAt, pitMound, dryK, brookAt, poolE, openAt, meadowAt, gladeAt, heartAt, fallenAt, HEART, SHELL, SITES, ROOTPLATE, lineD, lineNear, w } from './world.mjs';
 
 export const SURF = ['litter', 'fern', 'moss', 'fairway', 'fringe', 'green', 'tee', 'sand', 'root', 'meadow', 'water', 'bark', 'void'];
 const bump = e => e >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * e);
@@ -60,7 +60,7 @@ const hsh = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; 
 export const TRUNKS = [];
 for (const [k, h] of HOLES.entries()) for (const t of h.trunkPts) {
   const [X, Z] = WOR[k](t.x, t.z);
-  TRUNKS.push({ X, Z, r: t.r, hole: k, job: t.job, placed: true, marker: !!t.marker, h: t.snag ? t.h : t.tall || 98 + 8 * hsh(X, Z), low: t.snag ? 0.99 : t.low || 0.6 + 0.04 * hsh(Z, X), cr: t.snag ? 0.4 : 16 + 4 * hsh(X + 3, Z), snag: !!t.snag });
+  TRUNKS.push({ X, Z, r: t.r, hole: k, job: t.job, placed: true, marker: !!t.marker, h: t.snag ? t.h : t.tall || 98 + 8 * hsh(X, Z), low: t.snag ? 0.99 : t.low || 0.52 + 0.04 * hsh(Z, X), cr: t.snag ? 0.4 : 26 + 6 * hsh(X + 3, Z), snag: !!t.snag });
 }
 // the heart tree (the 9th's landmark): a trunk 60 m across, its crown from 143 m up
 TRUNKS.push({ X: HEART.c[0], Z: HEART.c[1], r: HEART.r, hole: 8, job: 'the heart tree', placed: true, heart: true, h: HEART.h, low: HEART.low, cr: HEART.cr });
@@ -77,19 +77,27 @@ const FAR = [];
   for (let i = Math.floor(-1000 / S); i <= Math.ceil(900 / S); i++) for (let j = Math.floor(-800 / S); j <= Math.ceil(900 / S); j++) {
     const X = (i + 0.15 + 0.7 * hsh(i, j)) * S, Z = (j + 0.15 + 0.7 * hsh(j + 5, i)) * S;
     if (hsh(i * 3.1, j * 1.7) < 0.12) continue;   // a few gaps: the cathedral floor
-    if (lineD(X, Z) < 78 || openAt(X, Z) > 0.2 || poolE(X, Z) < 1.4 || Math.hypot(X, Z) < 150) continue;
+    if (lineD(X, Z) < 62 || openAt(X, Z) > 0.2 || poolE(X, Z) < 1.4 || Math.hypot(X, Z) < 150) continue;
     if (Math.hypot(X - SHELL.c[0], Z - SHELL.c[1]) < 55 || fallenAt(X, Z).lift > 0 || Math.hypot(X - ROOTPLATE.c[0], Z - ROOTPLATE.c[1]) < 30) continue;
     const b = brookAt(X, Z); if (b && b.d < 8) continue;
     if (TRUNKS.some(t => Math.hypot(t.X - X, t.Z - Z) < 26 + t.r)) continue;
     if (vistaD(X, Z) < 18 + 2 * 3) continue;
     const r = 4 + 2 * hsh(i + 2, j + 9);
-    FAR.push({ X, Z, r, far: true, h: 92 + 16 * hsh(X, Z), low: 0.58 + 0.06 * hsh(Z, X), cr: 15 + 5 * hsh(X + 3, Z) });
+    FAR.push({ X, Z, r, far: true, h: 96 + 14 * hsh(X, Z), low: 0.53 + 0.04 * hsh(Z, X), cr: 24 + 6 * hsh(X + 3, Z) });   // conifer crowns from about half way up, wide enough that neighbours touch: a roof
   }
 }
 export const ALLTREES = [...TRUNKS, ...FAR];
+// a giant by a hole reaches its crown out over the opening for the light, up to 22% of its crown across, so the
+// crowns from either side nearly meet over the play (55 m and more up). Not the heart tree, snags, the stair tree or
+// one standing in the play itself. (lx, lz) is the crown's centre from the trunk's
+for (const t of ALLTREES) {
+  if (t.heart || t.snag || t.stair) continue;
+  const n = lineNear(t.X, t.Z); if (n.d < 15 || n.d > 120) continue;
+  const k = Math.min(0.22 * t.cr, (120 - n.d) * 0.1); t.lx = (n.px - t.X) / n.d * k; t.lz = (n.pz - t.Z) / n.d * k;
+}
 // a grid over the trees for quick lookups
 const TG = new Map(), TCELL = 40, tkey = (i, j) => i * 100003 + j;
-for (const t of ALLTREES) { const R = Math.max(t.r, t.cr) + 8; for (let i = Math.floor((t.X - R) / TCELL); i <= Math.floor((t.X + R) / TCELL); i++) for (let j = Math.floor((t.Z - R) / TCELL); j <= Math.floor((t.Z + R) / TCELL); j++) { const k = tkey(i, j); if (!TG.has(k)) TG.set(k, []); TG.get(k).push(t); } }
+for (const t of ALLTREES) { const R = Math.max(t.r, t.cr) + 18; for (let i = Math.floor((t.X - R) / TCELL); i <= Math.floor((t.X + R) / TCELL); i++) for (let j = Math.floor((t.Z - R) / TCELL); j <= Math.floor((t.Z + R) / TCELL); j++) { const k = tkey(i, j); if (!TG.has(k)) TG.set(k, []); TG.get(k).push(t); } }
 export const treesNear = (X, Z) => TG.get(tkey(Math.floor(X / TCELL), Math.floor(Z / TCELL))) || [];
 // the foot of a trunk: { d (metres from the bark), t, root (0-1: on a buttress) }
 function trunkFoot(X, Z) {
@@ -355,7 +363,7 @@ export const BUILT = OWN.map((O, k) => {
   const ground = (x, z) => worldAt(...Wk(x, z)).y - base;
   const surface = (x, z) => worldAt(...Wk(x, z)).s;
   // the trees near the hole, in its frame, as the game's tree bodies (trees.js: h, cr, low, tr; soak 0.45)
-  const trees = ALLTREES.filter(t => distLine(WL[k], t.X, t.Z) < 330 || t.heart).map(t => { const [x, z] = Lk(t.X, t.Z); return { x, z, y: worldAt(t.X, t.Z + 0).y - base, X: t.X, Z: t.Z, r: t.r, h: t.h, low: t.low, cr: t.cr, heart: !!t.heart, snag: !!t.snag, marker: !!t.marker, placed: !!t.placed, hole: t.hole, job: t.job }; });
+  const trees = ALLTREES.filter(t => distLine(WL[k], t.X, t.Z) < 330 || t.heart).map(t => { const [x, z] = Lk(t.X, t.Z); const [ex, ez] = Lk(t.X + (t.lx || 0), t.Z + (t.lz || 0)); return { x, z, ox: ex - x, oz: ez - z, y: worldAt(t.X, t.Z + 0).y - base, X: t.X, Z: t.Z, r: t.r, h: t.h, low: t.low, cr: t.cr, heart: !!t.heart, snag: !!t.snag, marker: !!t.marker, placed: !!t.placed, hole: t.hole, job: t.job }; });
   for (const t of trees) { const g = ground(t.x, t.z + t.r + 1); if (g != null) t.y = Math.min(t.y, g); }
   const walls = WALLS.filter(o => distLine(WL[k], o.X, o.Z) < 330).map(o => { const [x, z] = Lk(o.X, o.Z); return { ...o, x, z, rot: o.rot - HD[k], y: worldAt(o.X, o.Z).y - base }; });
   const inBox = (o, x, z) => { const dx = x - o.x, dz = z - o.z, a = dx * Math.sin(o.rot) - dz * Math.cos(o.rot), c = dx * Math.cos(o.rot) + dz * Math.sin(o.rot); return Math.abs(a) < o.l / 2 && Math.abs(c) < o.w / 2; };
@@ -369,7 +377,7 @@ export const BUILT = OWN.map((O, k) => {
   // the crowns overhead: the height above (x, z) where a crown begins, or null
   function crownOver(x, z) {
     let lo = null;
-    for (const t of trees) { const d = Math.hypot(x - t.x, z - t.z); if (d > t.cr) continue; const top = t.y + t.h, bot = t.y + t.h * t.low, cy = (top + bot) / 2, rv = (top - bot) / 2, e = 1 - (d / t.cr) ** 2; const y = cy - rv * Math.sqrt(Math.max(0, e)); lo = lo === null ? y : Math.min(lo, y); }
+    for (const t of trees) { const d = Math.hypot(x - t.x - t.ox, z - t.z - t.oz); if (d > t.cr) continue; const top = t.y + t.h, bot = t.y + t.h * t.low, cy = (top + bot) / 2, rv = (top - bot) / 2, e = 1 - (d / t.cr) ** 2; const y = cy - rv * Math.sqrt(Math.max(0, e)); lo = lo === null ? y : Math.min(lo, y); }
     return lo;
   }
   const slopeAt = (x, z) => { const d = 1.5, a = ground(x + d, z), b = ground(x - d, z), c = ground(x, z + d), e = ground(x, z - d); return Math.hypot(a - b, c - e) / (2 * d); };

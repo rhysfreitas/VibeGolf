@@ -98,7 +98,7 @@ function holeOut(hi) {
   for (const t of B.trees) {
     if (!t.heart && !inBox(t.x, t.z, Math.max(t.cr, 20))) continue;
     const gC = worldAt(t.X, t.Z).y - base, dy = Math.min(0, t.y - gC);
-    plants.push({ x: r1(t.x), z: r1(t.z), type: t.heart ? 'heart' : t.snag ? 'snag' : 'redwood', h: r1(t.h), cr: r1(t.cr), low: r2(t.low), tr: r2(t.r), soak: 0.45, ...(dy < -0.05 ? { dy: r2(dy) } : {}), s: 1, r: r2(((t.x * 7.3 + t.z * 3.1) % 1 + 1) % 1) });
+    plants.push({ x: r1(t.x), z: r1(t.z), type: t.heart ? 'heart' : t.snag ? 'snag' : 'redwood', h: r1(t.h), cr: r1(t.cr), low: r2(t.low), tr: r2(t.r), soak: 0.45, ...(t.ox || t.oz ? { ox: r1(t.ox), oz: r1(t.oz) } : {}), ...(dy < -0.05 ? { dy: r2(dy) } : {}), s: 1, r: r2(((t.x * 7.3 + t.z * 3.1) % 1 + 1) % 1) });
   }
   const heading = Math.round((h.place.heading + Math.atan2(h.pin[0], -h.pin[1]) * 180 / Math.PI + 360) % 360);
   const tees = Object.fromEntries(Object.entries(h.teePts).map(([k, p]) => [k, [r1(p[0]), r1(p[1])]]));
@@ -147,7 +147,7 @@ const stairAt = STAIRS.map(S => S.at);
 const trees = ALLTREES.map(t => {
   let y = groundW(t.X, t.Z); const e = groundW(t.X, t.Z + t.r + 1); if (e != null) y = Math.min(y, e);
   const stair = stairAt.some(p => Math.hypot(p[0] - t.X, p[1] - t.Z) < 1);
-  return [r1(t.X), r1(t.Z), r2(t.r), r1(t.h), r2(t.low), r1(t.cr), r2(y), (t.heart ? 1 : 0) | (t.snag ? 2 : 0) | (t.placed ? 4 : 0) | (t.marker ? 8 : 0) | (stair ? 16 : 0)];
+  return [r1(t.X), r1(t.Z), r2(t.r), r1(t.h), r2(t.low), r1(t.cr), r2(y), (t.heart ? 1 : 0) | (t.snag ? 2 : 0) | (t.placed ? 4 : 0) | (t.marker ? 8 : 0) | (stair ? 16 : 0), r1(t.lx || 0), r1(t.lz || 0)];
 });
 const walls = WALLS.map(o => ({ kind: o.kind, at: [r1(o.X), r1(o.Z)], w: o.w, l: r2(o.l), h: r1(o.h), rot: r2(o.rot), y: r2(groundW(o.X, o.Z)) }));
 const fallen = { a: FALLEN.a.map(r1), b: FALLEN.b.map(r1), top: FALLEN.top, h: FALLEN.h };

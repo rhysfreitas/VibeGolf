@@ -31,6 +31,15 @@ export const LINES = [
   [[30, -240], [-140, -150], [-89, 54]],
 ];
 const WLINES = LINES.map(W);
+// the nearest point on any hole's line: { d, px, pz } (the crowns by a hole lean out over it)
+export const lineNear = (X, Z) => {
+  let b = { d: Infinity, px: X, pz: Z };
+  for (const L of WLINES) for (let i = 0; i < L.length - 1; i++) {
+    const [ax, az] = L[i], [bx, bz] = L[i + 1], dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz, t = Math.max(0, Math.min(1, ((X - ax) * dx + (Z - az) * dz) / l2)), px = ax + dx * t, pz = az + dz * t, d = Math.hypot(X - px, Z - pz);
+    if (d < b.d) b = { d, px, pz };
+  }
+  return b;
+};
 export const lineD = (X, Z) => { let d = Infinity; for (const L of WLINES) d = Math.min(d, project(L, X, Z).d); return d; };
 
 // ---- the floor: a smooth surface through control heights (Gaussian RBFs, as the other plan tools), the holes'
