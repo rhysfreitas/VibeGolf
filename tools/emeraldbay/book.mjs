@@ -1,101 +1,213 @@
-// node tools/emeraldbay/book.mjs : round 0's proposal (the tide and the surfaces) as a white-page A4 landscape PDF,
-// out/emerald-bay-round0.pdf, from out/figs (figs.py) and out/checks.json (checks.mjs).
+// node tools/emeraldbay/book.mjs : the plan book PDF (out/emerald-bay-plan-book-r<ROUND>.pdf), white landscape pages:
+// a cover with the course map, the bay at both tides, the course card, what moved and what is open, the course at a
+// glance, the checks, then one page a hole, two for each tide hole (low tide, high tide): three sketch views across
+// the top; the plan, how it plays, the profile, the cross sections, the green and room for notes under them. Needs
+// sample.mjs, plans.py and sketch.mjs first, and out/review.txt (relief, alike, spread). Prints with Chrome. The views,
+// plans and maps go in as JPEG copies, made here. (After tools/cloudrest/book.mjs.)
 import fs from 'fs';
 import path from 'path';
-import { createRequire } from 'module';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
-const { chromium } = createRequire(import.meta.url)('playwright');
+import { viewsFor } from './sketch.mjs';
+import { COURSE as CRS, HOLES as HH } from './holes.mjs';
+execFileSync('python3', ['-c', "from PIL import Image; import glob; [Image.open(f).convert('RGB').save(f[:-4] + '.jpg', quality=84) for f in glob.glob('out/views/*.png') + glob.glob('out/plan*.png') + glob.glob('out/map-*.png')]"], { cwd: path.dirname(fileURLToPath(import.meta.url)) });
+
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, 'out');
-const C = JSON.parse(fs.readFileSync(path.join(OUT, 'checks.json')));
-const img = f => 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, 'figs', f)).toString('base64');
-const page = (title, body, n) => `<section><header><h2>${title}</h2><span>Emerald Bay · round 0 · the tide and the surfaces · ${n}</span></header>${body}</section>`;
-const SETS = ['marlin', 'manta', 'turtle', 'clownfish'], NAME = { marlin: 'Marlin', manta: 'Manta', turtle: 'Turtle', clownfish: 'Clownfish', shark: 'Shark (tips)' };
-const P = [];
-const h3 = C.h3.res, h5 = C.h5.res, h9 = C.h9.res, L = C.lies;
+const D = JSON.parse(fs.readFileSync(`${OUT}/grid/holes.json`)), TEES = D.teeSets, YD = 0.9144;
+for (const h of D.pages) { const q = HH[h.n - 1]; h.words = q.words; h.card = q.card; h.green = { ...h.green, style: q.green.style }; }   // the words as holes.mjs has them now
+D.holes = D.pages.filter(h => !h.tideHole || h.tide === 'low');   // one row a hole (a tide hole's low-tide page)
+const ROUND = process.env.ROUND || '1', DATE = process.env.DATE || '16 November 2026', BACK = D.back;
+const tideName = h => h.tideHole ? (h.tide === 'low' ? 'low tide' : 'high tide') : '';
+const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : null;
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const img = f => `file://${OUT}/${f}`;
+const shape = h => {
+  if (h.shape) return h.shape;   // round 3 on: each hole names its own shape in holes.mjs
+  const L = h.line; if (L.length < 3) return h.par === 3 ? 'One shot' : 'Straight';
+  const turns = []; for (let i = 1; i < L.length - 1; i++) { const a = [L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]], b = [L[i + 1][0] - L[i][0], L[i + 1][1] - L[i][1]];
+    // x right, -z downrange: a right turn has a positive cross product
+    const cr = a[0] * b[1] - a[1] * b[0]; turns.push(cr > 0 ? 'R' : 'L'); }
+  return turns.length === 1 ? `Dogleg ${turns[0] === 'R' ? 'right' : 'left'}` : turns.join('') === 'LR' ? 'S-bend (left, then right)' : turns.join('') === 'RL' ? 'S-bend (right, then left)' : 'Bends ' + turns.join(' ');
+};
+const lines = n => Array.from({ length: n }, () => '<div class="rule"></div>').join('');
+const card = h => `<table class="card"><tr>${TEES.map(t => `<th><span class="dot" style="background:${t.color}"></span>${t.name}</th>`).join('')}</tr>
+  <tr>${TEES.map(t => `<td>${h.yards[t.id]}</td>`).join('')}</tr></table>`;
+const height = h => { const dh = h.pinY - h.teeY; return `${dh >= 0 ? '+' : '−'}${Math.abs(dh).toFixed(0)} m`; };
 
-P.push(`<section class=cover><header><h2></h2><span>16 November 2026</span></header>
-<h1>Emerald Bay</h1><p class=sub>Round 0: the tide and the surfaces, before the plan book</p>
-<p>The layout is approved. Before any hole is drawn, this round settles the course's two logics as numbers: <b>the tide</b> (what is ground at low water and sea at high, how a round picks it and how you see it) and <b>sand, rock and water</b> (what each lie costs). The three tide holes are drawn at both tides from one ground, with the sea at 0 or 2.4 m. The islands elsewhere are still schematic: the plan book draws them.</p>
-<table class=sum><tr><th>Question</th><th>What the numbers say</th><th>Proposed</th></tr>
-<tr><td>1. The tide</td><td>One ground, two sea levels: low water 0, high water 2.4 m (a Krabi spring range is 2-3 m). Sand between the two is firm wet sand when it is dry. Holes 3, 5 and 9 change; the stack (8) keeps the sea all round at both tides.</td><td>A <b>random roll each round, like the pins</b>, shown on the setup card where you can change it, on the scorecard and on the corner map</td></tr>
-<tr><td>2. Sand</td><td>A 7 iron: 173 yd off fairway, 167 off wet sand (−3%, runs like fairway), 160 off dry sand (−8%), 139 out of a bunker (−20%)</td><td><b>Three sands</b>: dry beach plays as firm sand (the Buried Kingdom's), wet sand as the links courses' beach, bunkers soft</td></tr>
-<tr><td>3. The Sandbar at high water</td><td>As the layout drew it (40 m of grass and 10 m of beach each side) the sea is 33 yd away on both sides: that fails the penalty-ground Must</td><td>An <b>uneven bar</b>: narrow on the open-sea side (water 42 yd), a band of salt-grass rough and dry sand on the bay side (water 62 yd)</td></tr>
-<tr><td>4. Water</td><td>Clear shallows over sand are on screen all the time</td><td><b>Water is water</b>: a stroke and a drop beside where it went in, however shallow</td></tr>
-<tr><td>Cliffs (stated)</td><td>As Cloudrest: soak 0.45, so about three balls in four that fly into rock drop at its foot</td><td>Shore rock and fallen boulders at a cliff's foot a rough lie ("Rock", −14%), never a penalty</td></tr></table>
-<p class=small><b>Changed from the layout doc to make the tide work</b> (lines, pins and yardages unchanged): the 9th's high-water spit runs on the right as the layout says, but hugs the line for its first 150 m so the stack keeps open water round it; the hollow island is drawn west of where the layout's sketch had it (centre (40, 760), 350 × 380 m, the lagoon 200 × 150 m), so the cave runs 424-505 yd along the line and the green sits on the lagoon's beach 40 yd past it (in the sketch the cave was at the corner, where drives land); the 3rd's forward tee stands on a rock in the shallows beside the tongue's tip.</p>
-</section>`);
+const css = `
+@page { size: 11in 8.5in; margin: 0; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'DejaVu Sans', 'Helvetica', sans-serif; color: #222; background: white; }
+.page { width: 11in; height: 8.5in; padding: 0.32in 0.38in; position: relative; page-break-after: always; overflow: hidden; background: white; }
+.page:last-child { page-break-after: auto; }
+h1 { font-size: 34pt; margin: 0; letter-spacing: 0.02em; font-weight: 700; }
+h2 { font-size: 17pt; margin: 0; }
+h3 { font-size: 9.5pt; margin: 8pt 0 3pt; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+p { font-size: 8.6pt; line-height: 1.34; margin: 0 0 4pt; }
+.small { font-size: 7.4pt; color: #555; }
+.ov p { font-size: 7.9pt; line-height: 1.28; margin-bottom: 3pt; }
+.ov h3 { margin-top: 5pt; }
+.foot { position: absolute; bottom: 0.16in; left: 0.38in; right: 0.38in; font-size: 7pt; color: #777; display: flex; justify-content: space-between; }
+.rule { border-bottom: 0.6pt solid #b8b8b8; height: 0.25in; }
+.card { border-collapse: collapse; }
+.card th, .card td { border: 0.6pt solid #999; padding: 1.5pt 7pt; font-size: 7.8pt; text-align: center; }
+.card th { font-weight: 600; background: #f6f6f4; }
+.dot { display: inline-block; width: 7pt; height: 7pt; border-radius: 50%; border: 0.6pt solid #333; margin-right: 3pt; vertical-align: -0.5pt; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12pt; height: 0.5in; }
+.head .facts { font-size: 8.6pt; color: #333; display: flex; gap: 12pt; margin-top: 2pt; }
+.head .facts b { font-weight: 600; }
+.views { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.1in; margin-top: 0.08in; }
+.view img { width: 100%; height: 1.08in; object-fit: cover; object-position: center 60%; border: 0.6pt solid #333; display: block; }
+.view .cap { font-size: 7.2pt; margin-top: 1.5pt; color: #333; }
+.view .cap b { font-weight: 600; }
+.body { display: grid; grid-template-columns: 3.3in 1fr; gap: 0.2in; margin-top: 0.04in; height: 4.62in; }
+.plan img { width: 3.3in; height: 4.45in; object-fit: contain; object-position: center top; border: 0.6pt solid #888; display: block; }
+.glance table.sc { font-size: 6.9pt; } .glance table.sc th, .glance table.sc td { padding: 1.2pt 3pt; } .glance .ov p { font-size: 7.2pt; }
+.side { display: flex; flex-direction: column; min-height: 0; }
+.side p { font-size: 6.5pt; line-height: 1.17; margin-bottom: 1.2pt; }
+.side p.small { font-size: 7pt; }
+.side p.kv { font-size: 6.5pt; line-height: 1.17; margin: 0 0 1.2pt; }
+.kv b { display: inline-block; min-width: 0.5in; font-weight: 600; }
+.side img.prof { width: 100%; max-height: 1.3in; object-fit: contain; object-position: left top; border: 0.6pt solid #ddd; margin-top: 3pt; display: block; }
+.notes { border: 0.6pt solid #333; padding: 3pt 8pt; margin-top: 4pt; flex: 1; min-height: 0.2in; overflow: hidden; }
+.side { overflow: hidden; }
+.gn { display: flex; gap: 6pt; flex: none; margin-top: 4pt; }
+.gn .gimg { width: 1.05in; flex: none; }
+.gn .gimg img { width: 1.05in; height: 1.05in; border: 0.6pt solid #ddd; display: block; }
+.gn .gimg .cap { font-size: 6.3pt; color: #555; line-height: 1.2; margin-top: 1.5pt; }
+.gn img.prof { flex: 1; min-width: 0; width: auto; margin-top: 0; }
+.notes .t { font-size: 7.4pt; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+table.sc { border-collapse: collapse; width: 100%; font-size: 7.6pt; }
+table.sc th, table.sc td { border-bottom: 0.6pt solid #ccc; padding: 1.8pt 4pt; text-align: center; }
+table.sc th { border-bottom: 1pt solid #555; font-weight: 600; }
+table.sc td.l, table.sc th.l { text-align: left; }
+table.sc td.l b { white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 4pt 12pt; font-size: 7.4pt; margin-top: 4pt; }
+.tips { color: #777; font-style: italic; }
+table.cc { border-collapse: collapse; width: 100%; margin-top: 8pt; }
+table.cc th { text-align: left; vertical-align: top; width: 1.35in; font-size: 8pt; font-weight: 600; padding: 3.5pt 8pt 3.5pt 0; border-top: 0.6pt solid #bbb; text-transform: uppercase; letter-spacing: 0.04em; color: #444; }
+table.cc td { font-size: 8.2pt; line-height: 1.3; padding: 3.5pt 0; border-top: 0.6pt solid #bbb; }
+.hc { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1pt 12pt; margin-top: 4pt; padding: 3pt 0; border-top: 0.8pt solid #444; border-bottom: 0.6pt solid #bbb; }
+.hc p { font-size: 6.6pt; line-height: 1.18; margin: 0; }
+.hc p.st { grid-column: 1 / -1; font-size: 7.6pt; font-style: italic; }
+.hc b { font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 6.3pt; color: #444; margin-right: 3pt; font-style: normal; }
+.hc p.dec { color: #8a2d1c; }
+pre.mono { font-family: 'DejaVu Sans Mono', monospace; font-size: 5.1pt; line-height: 1.32; white-space: pre-wrap; margin: 0; }
+.legend span i { display: inline-block; width: 12pt; height: 8pt; border: 0.5pt solid #777; margin-right: 3pt; vertical-align: -1pt; }
+`;
+const SW = { fairway: '#8fcc70', green: '#94de75', rough: '#c2d699', scrub: '#a8bd8c', rock: '#bdb8ad', kerb: '#8c877f', sand: '#f7edcc', water: '#8cb3cc', tea: '#9ec27a', paving: '#dbd1bd', void: '#e6ebf2' };
+const CHECKS = fs.readFileSync(`${OUT}/grid/checks.txt`, 'utf8').split('\n');
+const REVIEW = fs.existsSync(`${OUT}/review.txt`) ? fs.readFileSync(`${OUT}/review.txt`, 'utf8') : '';
 
-P.push(page('The bay at both tides', `<img class=full src="${img('bay.png')}">
-<div class=row><div class=txt style="width:100%"><p>The ground is the same at both tides; only the sea moves (2.4 m). <b>At low water</b> the tongue reaches out from the 3rd green, the Sandbar carries wide aprons of wet sand, and the flats between the 9th tee and the hollow island are dry: firm, rippled, crossed by the creek. <b>At high water</b> the tongue and the flats are under 0.2-1.9 m of clear water, the Sandbar is a 42 m strip with dry sand either side, and the 9th plays along the spit. Every other hole has the same beaches at both tides, only wider at low water. The dotted line in each map is the other tide's waterline.</p></div></div>`, 2));
+const pages = [];
+const tot = k => D.holes.reduce((a, h) => a + h.yards[k], 0), par = D.holes.reduce((a, h) => a + h.par, 0), tips = D.holes.reduce((a, h) => a + h.tipsYards, 0);
+const SWE = { fairway: '#8fcc70', green: '#94de75', rough: '#c2d699', jungle: '#8cad78', rock: '#c2bdb3', sand: '#f2dc9e', drysand: '#fcf5db', wetsand: '#e6dbbd', water: '#9edbdb' };
+const HI = HH.reduce((a, h) => a + (h.versions ? h.versions[1].yards : h.yards)[BACK], 0);
+pages.push(`<div class="page">
+  <div style="display:grid; grid-template-columns: 5.6in 1fr; gap:0.3in; height:100%">
+    <img src="${img('map-low.jpg')}" style="width:5.6in; height:7.75in; border:0.6pt solid #888; object-fit:contain; background:white">
+    <div style="display:flex; flex-direction:column">
+      <h1>Emerald Bay</h1>
+      <p style="font-size:11pt; margin:4pt 0 10pt">A warm bay crowded with limestone islands: sheer cliffs, jungle on top, white sand and clear turquoise water below</p>
+      <p class="small">Plan book · round ${ROUND} · ${DATE}<br>Par ${par} · ${tot(BACK).toLocaleString()} yd from the Marlin tees at low tide, ${HI.toLocaleString()} at high</p>
+      <h3>What this round is</h3>
+      <p>The approved routing and hole cards (15 November) drawn for the first time: the bay as one terrain with the sea as a parameter (low water 0, high water 2.4 m), the three play islands shaped round their holes (the 1st's palm valley between towers, the 4th's shelf and its three coves, the 6th's saddle and pinnacle, the 7th's cove under the leaning cliff), the islet, the stack, the Sandbar and the 9th's flats, channel, spit, cave and lagoon from round 0; fairway outlines from the forms, green shapes, the four tee sets and the Shark tips spot on every hole, targets, and both tides on 3, 5 and 9.</p>
+      <p>Every drive is flown with the game's physics as round 0 settled it: dry sand plays as waste, wet sand as firm beach, bunkers as sand, water a stroke and a drop, cliff faces drop 45% of the balls that hit them at their foot, and the cave's roof and the overhang are solid. Page 4 lists what moved from the layout doc to pass the checks, and what is open for you.</p>
+      <h3>Reading the plans</h3>
+      <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', rough: 'Rough', jungle: 'Jungle (plays as rough)', rock: 'Rock and cliffs (native; a cliff gives the ball back)', sand: 'Bunker', drysand: 'Dry sand (plays as waste)', wetsand: 'Wet sand, dry at low tide (firm: it runs)', water: 'Water (a stroke and a drop)' }).map(([k, v]) => `<span><i style="background:${SWE[k]}"></i>${v}</span>`).join('')}</div>
+      <p class="small" style="margin-top:6pt">North up. Dashed: the playing lines. The map is at low tide; the next page has both. Boxes: the stilt village, the beach shack, longtails. Contours at 10, 20, 40, 80 m and up.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Emerald Bay · VibeGolf</span><span>1</span></div>
+</div>`);
+pages.push(`<div class="page"><h2>The bay at both tides</h2>
+  <p class="small">The ground never moves; the sea stands at low water (0) or high water (2.4 m) for the whole round, rolled like the pins and changeable on the setup screen. What changes: the Tongue on the 3rd (a landing strip at low tide), the Sandbar's wet sand on the 5th, the 9th's flats (low tide: a fairway; high tide: the sea, and the hole plays along the spit), and the beaches everywhere.</p>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.2in; margin-top:6pt">
+    <img src="${img('map-low.jpg')}" style="width:100%; height:6.4in; object-fit:contain; border:0.6pt solid #888">
+    <img src="${img('map-high.jpg')}" style="width:100%; height:6.4in; object-fit:contain; border:0.6pt solid #888">
+  </div>
+  <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>2</span></div></div>`);
+const C = CRS.card || {};
+const cardRows = [['Hook', C.hook], ['Skeleton', C.skeleton], ['Classics', C.classics], ['Decisions', C.decisions], ['Landmarks', C.landmarks], ['Rhythm', C.rhythm], ['Fairway forms', C.forms], ['Height forms', C.heights], ['Dials', C.dials], ['New and borrowed', C.newBorrowed], ['Tips tee', `The ${CRS.tipsSet ? CRS.tipsSet.name : 'tips'} tees, a fifth set at tour length (${tips.toLocaleString()} yd), in the data on every hole and switched off: nothing shows in the game until it is turned on.`]].filter(r => r[1]);
+pages.push(`<div class="page"><h2>The course card</h2>
+  <table class="cc">${cardRows.map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join('')}</table>
+  <div class="notes" style="margin-top:8pt"><div class="t">Notes</div>${lines(3)}</div>
+  <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>3</span></div></div>`);
+const OPEN = JSON.parse(fs.readFileSync(path.join(HERE, 'round1-notes.json')));
+pages.push(`<div class="page"><h2>What moved from the layout doc, and what is open</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.3in; margin-top:6pt">
+    <div><h3>Moved, to pass the checks (the lines and pins are the approved ones)</h3>${OPEN.moved.map(t => `<p>${esc(t)}</p>`).join('')}</div>
+    <div><h3>Open for you</h3>${OPEN.open.map((t, i) => `<p><b>${i + 1}.</b> ${esc(t)}</p>`).join('')}<div class="notes" style="margin-top:8pt; min-height:1.6in"><div class="t">Notes</div>${lines(6)}</div></div>
+  </div>
+  <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>4</span></div></div>`);
 
-const t3 = tide => SETS.concat('shark').map(id => `<tr><td>${NAME[id]}</td><td>${h3.low[id].toPin}</td><td>${h3.low[id].allCarry}</td><td>${h3.high[id].allCarry}</td></tr>`).join('');
-P.push(page('3 The Tongue', `<img class=plan src="${img('h3.png')}"><img class=prof src="${img('h3prof.png')}">
-<div class=row><div class=txt style="width:58%"><p><b>Low water:</b> the back tee carries about 100 yd of water onto the tongue, which runs up to the green; a ball landing on it rolls on as it would on fairway. <b>High water:</b> the tongue is under the sea and the shot is all carry, 192 yd from the back. The green sits on the beach at 5 m under the cliff that gives a long ball back.</p>
-<p><b>The forward tee</b> (Clownfish) is on a rock in the shallows beside the tongue's tip: 87 yd of carry at high water, inside the 90 yd the 60% rule allows the forward set. Turtle stays on the islet: a par 3's back tees may be all carry.</p></div>
-<table class=t style="width:40%"><tr><th>Tee</th><th>To the pin, yd</th><th>Carry at low water</th><th>Carry at high water</th></tr>${t3()}</table></div>`, 3));
+const side = g => g.angle > 8 ? `${g.angle}° R` : g.angle < -8 ? `${-g.angle}° L` : 'straight';
+const rows = D.holes.map(h => { const hi = D.pages.find(q => q.n === h.n && q.tide === 'high' && q.tideHole); return `<tr><td>${h.n}</td><td class="l"><b>${esc(h.name)}</b></td><td>${h.par}</td>${TEES.map(t => `<td>${h.yards[t.id]}</td>`).join('')}<td class="tips">${h.tipsYards}</td><td>${height(h)}</td><td>+${h.rise} / −${h.fall}</td><td class="l">${shape(h)}</td>
+  <td>${h.greenArea}</td><td>${h.greenShape.depth}×${h.greenShape.width} ${side(h.greenShape)}</td><td class="l">${h.targets.filter(t => !t.pin).map(t => `${esc(t.name)} ${t.width ? t.width + ' m' : ''}`).join(', ') || '–'}${hi && hi.yards[BACK] !== h.yards[BACK] ? ` <i>(high tide ${hi.yards[BACK]} yd: ${hi.targets.filter(t => !t.pin).map(t => esc(t.name) + (t.width ? ' ' + t.width + ' m' : '')).join(', ')})</i>` : ''}</td></tr>`; }).join('');
+const p3 = 'all three over water (the Leap 20 m down, the Tongue level with the tide\'s sand, the Stack 3 m up)';
+const hc = h => h.card || {};
+const rows2 = D.holes.map(h => `<tr><td>${h.n}</td><td class="l"><b>${esc(h.name)}</b></td><td class="l">${esc(hc(h).form || '')}</td><td class="l">${esc(hc(h).height || '')}</td><td class="l">${esc(hc(h).dial || '')}</td><td class="l">${/^None/.test(hc(h).decision) ? '–' : esc(hc(h).decision.split(':')[0])}</td><td class="l">${esc(hc(h).hazard || '')}</td><td class="l">${esc(hc(h).surround || '')}</td></tr>`).join('');
+pages.push(`<div class="page glance">
+  <h2>The course at a glance</h2>
+      <table class="sc" style="margin-top:4pt"><tr><th>#</th><th class="l">Hole</th><th>Par</th>${TEES.map(t => `<th><span class="dot" style="background:${t.color}"></span>${t.name}</th>`).join('')}<th class="tips">Shark*</th><th>Tee to green</th><th>Climbs / drops</th><th class="l">Shape</th><th>Green m²</th><th>Green (m), angle</th><th class="l">Landing areas (fairway width)</th></tr>${rows}
+      <tr><td></td><td class="l"><b>Total</b></td><td><b>${par}</b></td>${TEES.map(t => `<td><b>${tot(t.id).toLocaleString()}</b></td>`).join('')}<td class="tips"><b>${tips.toLocaleString()}</b></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table>
+  <p class="small" style="margin-top:3pt">* The Shark tips tees: a fifth set at tour length, in the data and switched off (the hollow ring on the plans). Green: depth along the approach × width, and which way its long axis turns from the approach. Par 3s: ${p3}.</p>
+  <table class="sc" style="margin-top:6pt"><tr><th>#</th><th class="l">Hole</th><th class="l">Fairway form</th><th class="l">Height form</th><th class="l">Dial pushed</th><th class="l">Decision</th><th class="l">Hazard sits</th><th class="l">Round the green</th></tr>${rows2}</table>
+  <div class="ov" style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.3in; margin-top:4pt">
+    <div>
+      <h3>Reading the plans</h3>
+      <p class="small">Tee at the bottom. Dots: the four tees; the hollow ring is the tips spot. Blue dots: targets (red: the bold one), with yards from the Marlin tee. Numbers along the line: yards to the green. Dashed blue: the high-water mark (at low tide the sand below it is dry, firm wet sand). Contours every metre, labelled every 5. A, B, C: where the cross sections cut. Profiles: the ground along the line by surface, the sea at the page's tide, rock overhead as brown bars; red a tour drive (167 mph), blue 150 mph, flown with the game's physics (▼ where each stops). On the 9th at high tide the blue dashes are the route along the spit.</p>
+    </div>
+    <div>
+      <h3>Reading the sketches</h3>
+      <p class="small">Plain shapes from the plan data through a real camera: from the back tee (3.2 m behind the ball, 1.8 m up: the game's eye), the landing area (on a par 3, the forward tee) and short of the green. The sea a flat sheet at the page's tide, karst faces pale grey, the jungle canopy as dark dots, the village and the shack as boxes under thatch, the cave's roof and the overhang as dark slabs. No palms yet; the art pass comes after the blockout.</p>
 
-const t5 = SETS.map(id => `<tr><td>${NAME[id]}</td><td>${h5.low[id].drive}</td><td>${h5.low[id].fairway} m</td><td>${h5.low[id].waterR} / ${h5.low[id].waterL}</td><td>${h5.high[id].waterR} / ${h5.high[id].waterL}</td></tr>`).join('');
-P.push(page('5 The Sandbar', `<img class=plan src="${img('h5.png')}"><img class=prof src="${img('h5sec.png')}">
-<div class=row><div class=txt style="width:56%"><p><b>The finding.</b> With 40 m of grass and 10 m of beach each side at high water (the layout's numbers), the sea is 33 yd from the line on both sides where drives land: a medium miss either way is a penalty, which the Must forbids. <b>Proposed:</b> the bar's grass stays 42 m at both tides (the nine's one tight hole: soft ground for about 20 m either side, as the dial rule asks); on the open-sea side (north) 19 m of dry sand, then wet sand that floods; on the bay side 19 m of salt-grass rough and 18 m of dry sand before the wet. At low water the wet sand adds about 28 m of ground that runs like fairway on each side.</p></div>
-<table class=t style="width:42%"><tr><th>Tee</th><th>Drive, yd</th><th>Fairway</th><th>Yd to the sea, north / south, low water</th><th>High water</th></tr>${t5}</table></div>`, 4));
+    </div>
+  </div>
+  <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>5</span></div>
+</div>`);
+// the checks, as run
+const chk = CHECKS.filter(l => /total|sea stack|cave|overhang|bold line|safe line|straight line|4 bold|shelf's lean|pinnacle|6 from|3 \(|5 \(low\) dry|5 \(high\) dry|The Leap|The Tongue|The Stack|blind|walks|greens with|^!/.test(l));
+pages.push(`<div class="page"><h2>The checks, as run</h2>
+  <div style="display:grid; grid-template-columns: 1.25fr 1fr; gap:0.25in; margin-top:4pt">
+  <div><h3>sample.mjs (the look-at-first list; a line starting ! breaks a rule)</h3><pre class="mono">${esc(chk.join('\n'))}</pre></div>
+  <div><h3>relief.mjs, alike.mjs, spread.mjs</h3><pre class="mono">${esc(REVIEW)}</pre></div></div>
+  <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>6</span></div></div>`);
 
-const s9 = tide => SETS.map(id => { const r = h9[tide].sets[id]; return `<td>${tide === 'low' ? 'flats, ' : `${r.grass} m spit, `}${r.waterR} / ${r.waterL}</td>`; });
-const t9 = SETS.map((id, i) => `<tr><td>${NAME[id]}</td>${s9('low')[i]}${s9('high')[i]}</tr>`).join('');
-const sh = C.h9.shots;
-P.push(page('9 The Hong', `<img class=plan src="${img('h9.png')}"><img class=prof src="${img('h9prof.png')}">
-<div class=row><div class=txt style="width:58%"><p><b>Low water</b> (${h9.low.routeYd} yd): drive across the flats (firm wet sand, nowhere to lose a ball), then <b>go or lay up</b>. The creek crosses the line on a diagonal at ${C.h9.creek.map(s => Math.round(s / 0.9144)).join('-')} yd; the cave runs ${C.h9.caveYd.join('-')} yd. From a 260 m drive the green is ${C.h9.goFrom['260']} yd through the cave; the lay-up carries the creek (${C.h9.layup.carry} yd) to the beach at the cave mouth and leaves ${C.h9.layup.left} yd through it. <b>High water</b> (${h9.high.routeYd} yd, three shots): the flats are under the sea and the hole plays along the spit on the right, which has water on its left only.</p>
-<p><b>The roof.</b> The go shot and the lay-up's third pass ${Math.min(...sh.map(q => q.clearance))} m or more under the 43 m roof; no tee is under it.</p></div>
-<table class=t style="width:40%"><tr><th>Tee</th><th>Low water: where drives land, yd to the sea right / left</th><th>High water</th></tr>${t9}</table></div>`, 5));
+let pg = 7;
+const hcard = h => { const c = h.card || {}, w = h.words || {}; if (!h.card) return '';
+  return `<div class="hc"><p class="st"><b>Story</b>${esc(w.story || '')}</p><p><b>Type</b>${esc(c.type)}; ${esc(c.form)}</p><p><b>Height form</b>${esc(c.height)}</p><p><b>Dial</b>${esc(c.dial)}</p><p><b>Feature</b>${esc(c.feature)}: ${esc(c.job)}</p><p class="${/^None/.test(c.decision) ? '' : 'dec'}"><b>Decision</b>${esc(c.decision)}</p><p><b>Shots</b>${c.shots.tee ? 'Tee: ' + esc(c.shots.tee) + '. ' : ''}Approach: ${esc(c.shots.approach)}</p><p><b>Miss map</b>${esc(c.miss)}</p><p><b>Tee view</b>${esc(c.view)}</p><p><b>Ground</b>${esc(c.ground)}</p></div>`; };
+const mine = (n, tide, th) => CHECKS.filter(l => new RegExp(`^[ !] ${n}( \\((${tide}|${tide} tide)\\))? (landing widths|tee view|bold|tips|green contour|fairway lean|from)`).test(l) && (!th || new RegExp(`^[ !] ${n} \\((${tide}|${tide} tide)\\)`).test(l) || /green contour|fairway lean|bold target/.test(l)) && (th || !/\((low|high)/.test(l) || l.includes('(' + (tide === 'high' ? 'high' : 'low'))) ).map(l => l.replace(new RegExp(`^([ !]) ${n} (\\((low|high)( tide)?\\) )?`), '$1 '));
+for (const h of D.pages) {
+  const w = h.words, dr = h.drives || {};
+  const drv = h.par === 3 ? '' : `<p class="small">Drives from the Marlin tee straight down the first leg${h.route ? ' (at high tide, toward the spit)' : ''}: tour ${Math.round(dr.tour.carry / YD)} yd carry, ${Math.round(dr.tour.total / YD)} total, finishing on ${dr.tour.rest}${dr.tour.rocks ? ' (off rock)' : ''}; 150 mph ${Math.round(dr.mid.carry / YD)} carry, ${Math.round(dr.mid.total / YD)} total, on ${dr.mid.rest}.${h.bold ? ` Along the bold line: ${Object.entries(h.bold.drives).map(([k, v]) => `${k === 'mid' ? '150 mph' : k} finishes on ${v.rest}`).join(', ')}.` : ''}</p>`;
+  const vs = viewsFor(h.n - 1, h.tide);
+  const first = h.targets.filter(t => !t.bold)[0];
+  const cap = v => ({ tee: `<b>From the back tee</b>${first ? ', toward ' + esc(first.name) : ''}`, land: h.par === 3 ? `<b>From the forward tee</b> (${h.yards.clownfish} yd)` : `<b>From the landing area</b> (${esc(first ? first.name : '')})`, green: `<b>Short of the green</b>, ${Math.round(Math.hypot(v.pos[0] - h.pin[0], v.pos[2] - h.pin[1]) / 5) * 5} m out` })[v.id];
+  pages.push(`<div class="page">
+    <div class="head"><div><div class="small">Hole ${h.n}${h.tideHole ? ` · <b style="color:${h.tide === 'low' ? '#7a5a2a' : '#1f5fa8'}">${tideName(h).toUpperCase()}</b>` : ''}</div><h2>${esc(h.name)}${h.tideHole ? ` <span style="font-size:11pt; color:${h.tide === 'low' ? '#7a5a2a' : '#1f5fa8'}">at ${tideName(h)}</span>` : ''}</h2>
+      <div class="facts"><span><b>Par ${h.par}</b></span><span>${shape(h)}</span><span>${height(h)} tee to green (climbs ${h.rise} m, drops ${h.fall} m)</span></div></div>${card(h)}</div>
+    ${h.tideHole && h.tide === 'high' ? `<div class="hc"><p class="st"><b>At high tide</b>${esc(h.note)}</p></div>` : hcard(h).replace('</p><p><b>Type', h.tideHole ? `</p><p class="st" style="color:#7a5a2a"><b>At low tide</b>${esc(h.note)}</p><p><b>Type` : '</p><p><b>Type')}
+    <div class="views" style="grid-template-columns: repeat(${vs.length}, 1fr)">${vs.map(v => `<div class="view"><img src="${img('views/h' + h.id + '_' + v.id + '.jpg')}"><div class="cap">${cap(v)}</div></div>`).join('')}</div>
+    <div class="body">
+      <div class="plan">${h.sections && h.sections.length ? `<img style="height:${4.45 - 0.36 * h.sections.length - 0.1}in" src="${img('plan' + h.id + '.jpg')}"><img style="height:${0.36 * h.sections.length + 0.06}in; margin-top:0.04in; border:0.6pt solid #ddd" src="${img('xsec' + h.id + '.png')}">` : `<img src="${img('plan' + h.id + '.jpg')}">`}</div>
+      <div class="side">
+        <p>${esc(w.plays)}</p>
+        <p class="kv"><b>Safe</b> ${esc(w.safe)}</p>
+        ${w.bold ? `<p class="kv"><b>Bold</b> ${esc(w.bold)}</p>` : ''}
+        <p class="kv"><b>A miss</b> ${esc(w.miss)}</p>
+        <p class="kv"><b>Green</b> ${esc(h.green.style)} (${h.greenShape.depth} m deep × ${h.greenShape.width} m wide, ${h.greenArea} m²).</p>
+        <pre class="mono" style="border-top:0.6pt solid #bbb; padding-top:2pt; margin-top:2pt">${esc([`Targets: ${h.targets.filter(t => !t.pin).map(t => `${t.name} ${t.d} yd, ${t.width} m wide, ${t.toPin} yd left`).join(' · ') || 'the green'}`, ...mine(h.n, h.tide, h.tideHole)].join('\n'))}</pre>
+        ${drv}
+        <div class="gn"><img class="prof" src="${img('prof' + h.id + '.png')}"><div class="gimg"><img src="${img('green' + h.n + '.png')}"><div class="cap">The green: 5 cm contours, arrows downhill (red over 3%), pin areas dashed.</div></div></div>
+        <div class="notes"><div class="t">Notes</div>${lines(h.sections && h.sections.length ? 3 : 4)}</div>
+      </div>
+    </div>
+    <div class="foot"><span>Emerald Bay · hole ${h.n} · ${esc(h.name)}${h.tideHole ? ' · ' + tideName(h) : ''}</span><span>${pg++}</span></div></div>`);
+}
 
-const lieRow = r => `<tr><td>${r.club}</td><td>${r.fairway}</td><td>${r.beach}</td><td>${r.waste}</td><td>${r.rough}</td><td>${r.sand}</td><td>${r.desert}</td></tr>`;
-P.push(page('Sand, rock and water', `<div class=row><div class=txt style="width:50%">
-<p><b>Carry by lie</b> (yards, a tour player's swing through the game's flight model and its lie rules, today's numbers):</p>
-<table class=t style="width:100%"><tr><th>Club</th><th>Fairway</th><th>Wet sand</th><th>Dry sand</th><th>Rough</th><th>Bunker</th><th>Rock</th></tr>${L.rows.map(lieRow).join('')}</table>
-<p><b>Run-out of a drive landing on it</b> (yd): fairway ${L.run.fairway.Driver}, wet sand ${L.run.beach.Driver}, dry sand ${L.run.waste.Driver}, bunker ${L.run.sand.Driver}, rough ${L.run.rough.Driver}. A 7 iron: ${L.run.fairway['7 iron']}, ${L.run.beach['7 iron']}, ${L.run.waste['7 iron']}, ${L.run.sand['7 iron']}, ${L.run.rough['7 iron']}.</p>
-<p><b>Proposed: three sands, all existing surfaces</b> (no physics change):</p>
-<ul><li><b>Dry beach</b> above high water: firm sand, the game's 'waste' (lie "Sand", −8%, the ball stops). The bail-out everywhere: it costs a lie, never a stroke, and you always find the ball.</li>
-<li><b>Wet sand</b> between the tides: 'beach' from Wrecker's Reach (lie "Wet sand", −3%, runs like fairway). It only exists at low water, so low tide plays wider and kinder; high tide tighter.</li>
-<li><b>Bunkers</b> by the greens and in the fairways: soft sand, 'sand' (−20%).</li></ul></div>
-<div class=txt style="width:48%">
-<p><b>Rock</b> (stated in the brief): cliffs are part of the ground and soak a ball at 0.45, as on Cloudrest, where 73% of balls that hit a cliff dropped at its foot and the rest finished within about 10 yd. The foot of every cliff is shore rock and fallen boulders: a rough lie ("Rock", the game's 'desert': −14% and sometimes a bad lie), never a penalty. The cliffs this matters on: behind the 3rd green, the bank along the 4th, the 7th's overhang, the hollow island's walls on the 9th.</p>
-<p><b>Water</b>: everything under the sea at that tide is water: a stroke and a drop beside where it went in, as on every course. The other choice is a playable "Shallows" lie where the water is under about 30 cm (a splash shot, like a bunker). It adds a lie that changes with the tide and a new surface, and a phone can't show 30 cm from 20 cm; I'd keep water as water.</p>
-<p><b>Drawing the water</b> (for the blockout): one sheet at the round's sea level, turquoise over sand, emerald in the lagoon, darker over reef and in a cliff's shade, coloured by the depth under it from the ground the game already has, so it costs one draw.</p></div></div>`, 6));
-
-P.push(page('How the tide is stored, picked and shown', `<div class=row><div class=txt style="width:52%">
-<p><b>One mechanism with the Labyrinth.</b> Its round 0 proposed holes with versions (its two door holes); the tide is the same idea with one roll for three holes. So:</p>
-<pre>COURSE.rolls = [{ id: 'tide', name: 'Tide',
-  options: [{ id: 'low', name: 'Low tide', sea: 0 },
-            { id: 'high', name: 'High tide', sea: 2.4 }] }]
-hole.versions = [
-  { id: 'low',  yards, targets, pins?, tips? },
-  { id: 'high', yards, targets, pins?, tips? } ]
-hole.versionBy = 'tide'   // the Labyrinth's doors: versionBy unset,
-                          // each hole rolls its own</pre>
-<p>A version overrides only what differs (yards, targets, pins, the tips spot). <b>The ground is one field</b> sampled once; the version's sea level decides what is water (ground below it plays as water, with no bed offset), so the module doesn't carry two copies of a hole.</p>
-<p><b>Tools and tests</b> expand every tide hole into both versions and run each: the gate, pins, targets on fairway, landing widths, penalty sides, carries, tips spots, tee views.</p></div>
-<div class=txt style="width:46%">
-<p><b>How a round picks it.</b> A random roll when the round starts, as the pins are, saved with the round (a resumed round keeps its tide). Proposed: the setup screen shows it beside wind and weather (<i>Tide: Low · Random</i>), so you can set it when you want to play one or the other.</p>
-<p><b>How you see it.</b></p><ul>
-<li>The setup card: <i>Tide: High. The tongue on the 3rd and the flats on the 9th are under water.</i></li>
-<li>The scorecard row: <i>9 The Hong · high tide · ${h9.high.routeYd}</i>; the card's yardage is the route that tide plays (the 9th is ${h9.low.routeYd} at low water, ${h9.high.routeYd} at high).</li>
-<li>The corner map paints the round's waterline, so the flats and the tongue show dry or flooded.</li>
-<li>The hole's targets are the version's: at high water the 9th's targets sit on the spit.</li></ul>
-<p class=small>Nothing moves during play: the sea stands where the round set it.</p></div></div>`, 7));
-
-const css = `@page { size: A4 landscape; margin: 0 } body { margin: 0; font: 10.5px/1.42 'DejaVu Sans', Arial, sans-serif; color: #222; background: #fff }
-section { width: 297mm; height: 210mm; box-sizing: border-box; padding: 8mm 11mm; page-break-after: always; overflow: hidden; position: relative }
-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #bbb; margin-bottom: 3mm } header h2 { font-size: 15px; margin: 0 } header span { color: #888; font-size: 9px }
-.cover h1 { font-size: 30px; margin: 3mm 0 1mm } .cover .sub { font-size: 14px; color: #555; margin: 0 0 4mm }
-table { border-collapse: collapse } .sum { width: 100%; margin: 3mm 0 } .sum td, .sum th, .t td, .t th { border: 1px solid #ccc; padding: 3px 6px; vertical-align: top; text-align: left } .sum th, .t th { background: #eef4f2 }
-.sum td:first-child { width: 15%; font-weight: bold } .sum td:last-child { width: 33% } .t { font-size: 9.5px; margin-bottom: 2mm }
-.row { display: flex; gap: 4mm; align-items: flex-start; margin-top: 1.5mm } .txt p { margin: 0 0 2mm } .txt ul { margin: 0 0 2mm; padding-left: 16px } .full { width: 100%; display: block; margin: 0.5mm 0 }
-.plan { display: block; height: 92mm; margin: 0 auto } .prof { display: block; height: 37mm; margin: 0 auto }
-.small { font-size: 9.5px; color: #444 } pre { background: #f3f6f5; padding: 5px 7px; font-size: 9px; margin: 0 0 2mm }`;
-const html = `<!doctype html><html><head><meta charset=utf-8><style>${css}</style></head><body>${P.join('')}</body></html>`;
-fs.writeFileSync(path.join(OUT, 'emerald-bay-round0.html'), html);
-const b = await chromium.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome' });
-const pg = await b.newPage(); await pg.setContent(html, { waitUntil: 'load' });
-await pg.pdf({ path: path.join(OUT, 'emerald-bay-round0.pdf'), format: 'A4', landscape: true, printBackground: true });
-const over = await pg.evaluate(() => [...document.querySelectorAll('section')].map((s, i) => s.scrollHeight > s.clientHeight + 2 ? i + 1 : 0).filter(Boolean));
-console.log('pages', P.length, 'overflow', over);
-await b.close();
+const html = `<!doctype html><html><head><meta charset="utf-8"><title>Emerald Bay plan book</title><style>${css}</style></head><body>${pages.join('\n')}</body></html>`;
+fs.writeFileSync(`${OUT}/book.html`, html);
+const pdf = `${OUT}/emerald-bay-plan-book-r${ROUND}.pdf`;
+execFileSync('google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--no-pdf-header-footer', `--print-to-pdf=${pdf}`, `file://${OUT}/book.html`], { stdio: 'ignore', timeout: 300000 });
+console.log(pdf, (fs.statSync(pdf).size / 1e6).toFixed(1) + ' MB', pages.length, 'pages');

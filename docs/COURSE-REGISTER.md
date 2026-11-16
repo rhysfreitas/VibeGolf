@@ -49,7 +49,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Eldergrove (blockout 15 November 2026; `?c=eldergrove`) | 4L The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
 | Cloudrest (layout approved 15 November 2026; plan book round 1 the same night; a playable blockout 16 November, `?c=cloudrest`) | 4R The Overlook | 3 The Balcony | 5L ↓ The Hanging Valley | 3 The Needle (the drop, −18 m) | 4L The Broken Ridge | 5R ↑ The Stair | 3 The Alcove | 5L The Tea Terraces | 4S ↓ The Descent | 36 |
 | The Labyrinth (layout approved 15 November 2026; round 0 in `tools/labyrinth/`) | 5L The Gate | 4 \| The Long Corridor | 4L (or R) The Elbow | 4R The Cistern | 3 The Tower Court | 4R The Hanging Garden | 3 The Two Doors | 3 ↓ The Parapet (the drop, −28 m) | 5R ↓ The Way Out | 35 |
-| Emerald Bay (layout approved 15 November 2026; round 0 in `tools/emeraldbay/`) | 5R The Village | 3 The Leap (the drop, −20 m) | 3 The Tongue | 5L The Coves | 4R The Sandbar | 4L The Saddle | 4R d The Overhang | 3 The Stack | 5L The Hong | 36 |
+| Emerald Bay (layout approved 15 November 2026; plan book round 1 in `tools/emeraldbay/`, 16 November) | 5R The Village | 3 The Leap (the drop, −20 m) | 3 The Tongue | 5L The Coves | 4R The Sandbar | 4L The Saddle | 4R d The Overhang | 3 The Stack | 5L The Hong | 36 |
 
 - Emerald Bay (Rhys's picks, 14-15 November 2026; `claude/emerald-bay-layout.md`, `claude/brief-emerald-bay.md` and
   `claude/brief-addendum-emerald-bay-look.md` in the project; `tools/emeraldbay/`): the first tropical course, an
