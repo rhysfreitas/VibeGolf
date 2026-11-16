@@ -48,7 +48,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | Wrecker's Reach (art pass 1, 15 November 2026) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
 | Eldergrove (blockout 15 November 2026; `?c=eldergrove`) | 4L The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
 | Cloudrest (layout approved 15 November 2026; plan book round 1 the same night; a playable blockout 16 November, `?c=cloudrest`) | 4R The Overlook | 3 The Balcony | 5L ↓ The Hanging Valley | 3 The Needle (the drop, −18 m) | 4L The Broken Ridge | 5R ↑ The Stair | 3 The Alcove | 5L The Tea Terraces | 4S ↓ The Descent | 36 |
-| The Labyrinth (layout approved 15 November 2026; round 0 in `tools/labyrinth/`) | 5L The Gate | 4 \| The Long Corridor | 4L (or R) The Elbow | 4R The Cistern | 3 The Tower Court | 4R The Hanging Garden | 3 The Two Doors | 3 ↓ The Parapet (the drop, −28 m) | 5R ↓ The Way Out | 35 |
+| The Labyrinth (layout approved 15 November 2026; plan book round 1 in `tools/labyrinth/`) | 5L The Gate | 4 \| The Long Corridor | 4L (or R) The Elbow | 4R The Cistern | 3 The Tower Court | 4R The Hanging Garden | 3 The Two Doors | 3 ↓ The Parapet (the drop, −28 m) | 5R ↓ The Way Out | 35 |
 | Emerald Bay (layout approved 15 November 2026; plan book round 1 in `tools/emeraldbay/`, 16 November) | 5R The Village | 3 The Leap (the drop, −20 m) | 3 The Tongue | 5L The Coves | 4R The Sandbar | 4L The Saddle | 4R d The Overhang | 3 The Stack | 5L The Hong | 36 |
 
 - Emerald Bay (Rhys's picks, 14-15 November 2026; `claude/emerald-bay-layout.md`, `claude/brief-emerald-bay.md` and
@@ -118,6 +118,13 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   Elbow's inside corners low with a court behind, the shut leg a penalty area (a stroke and a drop); doors picked at
   random each round like the pins. Stated and not objected to: the 2nd's end wall leans 12° over a 5 m mown kick bank;
   a two-version hole is one hole with `versions` overriding pin, pins, targets, tips, yards and the shut door.
+  Plan book round 1 16 November 2026 (`out/labyrinth-plan-book-r1.pdf`): the whole maze drawn and flown; every
+  Must passes in `sample.mjs`; `relief`, `alike` (0 of 15 alike: hourglass, ribbon, hook, split, broken twice) and
+  `spread` pass but for "past real golf" (the 2nd's corridor, which the tools can't measure: open). Height forms
+  half-pipe, level, perched green (3's daises), hog's back, across a gulf, table top, uphill, drop, stepped. Moved
+  from the layout: the gate's opening 44 m, the cistern's north wall off the tower court, the 5th's pin 11 m east of
+  the plinth, the 7th's alcoves 40 m wide and 5 m up, the 3rd's tee 10 m east and right-hand green 16 m south (the
+  versions mirror), the 2nd's kick bank 6 m over 16 m, greens falling toward the approach. No tips spot on the 3rd.
 
 - Cloudrest (Rhys's picks, 14-15 November 2026; `claude/cloudrest-layout.md` and `claude/brief-cloudrest.md` in the
   project; `tools/cloudrest/`): a "roof of the world" course, holes cut into the sides of a misty green gorge: two
