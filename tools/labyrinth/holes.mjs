@@ -29,7 +29,7 @@ export const COURSE = {
     decisions: 'Three, three types: bite off what you dare (3, over the Elbow\'s low walls), the long way round (4, the causeway or the stones), go or lay up (9, over the rubble at the breach\'s head). One in the last two holes.',
     landmarks: 'The tower, 120 m (over the walls from 1, 2 and 4; the reveal from the 5th tee, its foot behind the green; from 6, 8 and 9). The lit wall tops on every hole. The whole maze from the 8th tee.',
     rhythm: 'A gentle par 5 through the gate; the long corridor; the Elbow; the cistern and the tower as the middle; a short garden hole; two par 3s; the long way out into the open. Par 3s 135, 175, 205; par 4s 330, 380, 420, 455; par 5s 520 and 585.',
-    forms: 'Six fairways, six forms: 1 hourglass (the gate the waist), 2 strip (a corridor), 3 hook (round the Elbow\'s fallen corner), 4 double (the causeway and the stones), 6 scalloped (wall stubs biting in), 9 broken (the rubble at the breach\'s head).',
+    forms: 'Six fairways, six forms: 1 hourglass (the gate the waist), 2 strip (a corridor), 3 hook (round the Elbow\'s fallen corner; alike.mjs reads it as a bowl), 4 double (the causeway and the stones), 6 scalloped (wall stubs biting in), 9 broken (the rubble at the breach\'s head).',
     heights: '1 half-pipe (the forecourt\'s banks), 2 level with a kick bank at the end wall, 3 level (a corridor), 4 hog\'s back (the causeway), 5 level across a dry moat (par 3), 6 table top (bold: a 7 m terrace face), 7 uphill to a shelf (par 3), 8 the drop (the only one: 28 m off a wall top), 9 stepped (bold: down the breach, 31 m).',
     dials: '1 scale: doors 40 m high; 2 bend: dead straight between 60 m walls (past real golf); 3 bend: a true right angle; 4 one hazard\'s scale: a flooded chamber 250 m across; 5 green size (760 m²); 6 length (330 yd); 7 a second green; 8 height (a tee on a wall top, 28 m up); 9 length (585 yd).',
     newBorrowed: 'New to the register: doors that change the hole each round; a true corridor hole; a right-angle dogleg; a bank shot off a wall on purpose; a fairway along a wall top; a finish that leaves the place. Borrowed (two): something to play through (the gate), a tee shot off a height (8). No waterfall, bridge, punchbowl or climb to the clubhouse.',
@@ -108,15 +108,15 @@ export const HOLES = [
 
   // 3. THE ELBOW: a corridor with a right-angle corner whose inside walls have crumbled to 9-14 m; carry them for a
   // short second, or play to the corner; each round the corridor turns left or right
-  hole(3, 3, { name: 'The Elbow', par: 4, formLine: [LW[3][0], at(LW[3], 190, -60), LW[3].at(-1)], shape: 'A right angle, left (this version) or right',
+  hole(3, 3, { name: 'The Elbow', par: 4, shape: 'A right angle, left (this version) or right',
     tees: { tower: 0, rampart: 20, gate: 45, court: 88 }, tips: null,
-    // a hook (read against the line it wraps round, over the inside court: formLine): leg 1's corridor, then round the corner and down leg 2; the low walls and the court inside the bend are
+    // a hook (alike.mjs reads it as a bowl: a right angle's corner is nearly as wide as the fairway is long): leg 1's corridor, then round the corner and down leg 2; the low walls and the court inside the bend are
     // the hazard the bold line crosses
     fw: [{ e: [[110, 20, 20], [140, 23, 23], [185, 25, 22], [205, 30, 18], [216, 28, 27], [240, 23, 27], [300, 22, 27], [325, 16, 18], [336, 12, 12]], wob: 2 }],
     green: { lobes: [[0, 0, 11.5, 12.5, 15], [-5, 6, 6, 5, 0]], contour: [{ fall: 340, pct: 1.9 }, { bowl: [5, -7], r: 9, h: 0.3 }] },
     bunkers: [sand([326, -15], 5, 3.5, 20)],
     targets: [{ name: 'The corner', at: [196, 2] }, { name: 'Over the broken wall', at: [282, -2], bold: true }],
-    versions: [{ id: 'B', name: 'Right', key: '3B', formLine: [LW['3B'][0], at(LW['3B'], 190, 60), LW['3B'].at(-1)],
+    versions: [{ id: 'B', name: 'Right', key: '3B',
       green: { lobes: [[0, 0, 11.5, 12.5, -15], [5, 6, 6, 5, 0]], contour: [{ fall: 20, pct: 1.9 }, { bowl: [-5, -7], r: 9, h: 0.3 }] },
       fw: [{ e: [[110, 20, 20], [140, 23, 23], [185, 22, 25], [205, 18, 30], [216, 27, 28], [240, 27, 23], [300, 27, 22], [325, 18, 16], [336, 12, 12]], wob: 2 }],
       bunkers: [sand([326, 15], 5, 3.5, -20)],
@@ -128,7 +128,7 @@ export const HOLES = [
       bold: 'A high drive over the low walls inside the bend: 212 yd to clear the far one, landing in the open leg about 60 yd from the green. Short: the court (a shot lost, a recovery back over a 12 m wall).',
       miss: 'Off the tee: rough then the walls; a drive that runs through the corner stops at the outer wall. Over the shut leg\'s low wall: a penalty area (a stroke and a drop). At the green: sand short left (short right in the right-hand version); behind it the leg\'s end wall.',
     },
-    card: { type: 'Cape (over a wall)', form: 'Hook', feature: 'The crumbled inside corner (low walls, a court behind), the gate towers and doors at the corner', job: 'The low walls the hazard of the decision; the outer wall a helper (stops a runner); the doors frame the open way',
+    card: { type: 'Cape (over a wall)', form: 'Hook (read as a bowl)', feature: 'The crumbled inside corner (low walls, a court behind), the gate towers and doors at the corner', job: 'The low walls the hazard of the decision; the outer wall a helper (stops a runner); the doors frame the open way',
       decision: 'Bite off what you dare: the corner then a mid iron (140 m), or 212 yd over the low walls for a wedge; the bold line gains about 80 yd and costs a shot when short', miss: 'Small: rough. Medium: the walls\' foot, the court behind the low walls. Big: over the shut leg\'s low wall (a penalty area). At the green: short of the end wall',
       view: 'The corridor\'s walls stepping down to the low stretches 80 m out, the gate towers at the corner and the outer corner wall closing the view; the open door\'s mouth on one side', ground: 'Level, a corridor; the court behind the low walls a little higher and rough',
       height: 'Level (a corridor)', dial: 'Bend: a true right angle', shots: { tee: 'A lay-up to a number, or a high carry', approach: 'A mid iron, or a full wedge' }, hazard: 'Diagonal: the low walls and court inside the bend', surround: 'Sand short on the inside; the end wall behind' } }),
