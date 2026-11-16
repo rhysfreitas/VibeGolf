@@ -590,10 +590,24 @@ float gFern = inTex > 0.5 ? 0.0 : vW4.x, gMoss = inTex > 0.5 ? 0.0 : step(0.8, v
 vec3 litter = mix(lin(vec3(0.36,0.24,0.15)), lin(vec3(0.46,0.31,0.19)), mid) * (0.78 + 0.4*fine);
 litter = mix(litter, lin(vec3(0.27,0.2,0.13)), smoothstep(0.55, 0.8, fb(p.xz*0.08 + 3.0)) * 0.5);
 litter = mix(litter, lin(vec3(0.33,0.37,0.16)), smoothstep(0.6, 0.85, fb(p.xz*0.05 + 7.0)) * 0.45);
+// art pass 1: the duff of shed redwood needles close by (fine streaks laid every way, lighter fresh ones on darker
+// old), twigs, and carpets of redwood sorrel (bright clover-green, its trefoils speckling the carpet's edge)
+{ float nf = 1.0 - smoothstep(10.0, 45.0, camD);
+  float nd = vn(vec2(p.x*7.0 + p.z*3.1, p.z*1.1 - p.x*0.6)) * 0.5 + vn(vec2(p.x*1.3 - p.z*5.2, p.z*6.4 + p.x*1.9)) * 0.5;
+  litter *= mix(1.0, 0.72 + 0.55 * smoothstep(0.35, 0.8, nd), nf);
+  litter = mix(litter, lin(vec3(0.56,0.36,0.22)), smoothstep(0.78, 0.92, vn(p.xz*9.0 + 4.0)) * 0.5 * nf);
+  vec2 tc = floor(p.xz * 0.5), tf = fract(p.xz * 0.5) - 0.5; float ta = h21(tc) * 6.28, tw = h21(tc + 9.1);
+  float td = abs(dot(tf, vec2(-sin(ta), cos(ta)))), tl = abs(dot(tf, vec2(cos(ta), sin(ta))));
+  litter = mix(litter, lin(vec3(0.2,0.14,0.1)), step(0.62, tw) * (1.0 - smoothstep(0.012, 0.03, td)) * step(tl, 0.36) * nf);
+  float sor = smoothstep(0.5, 0.64, fb(p.xz*0.045 + 11.0) + 0.12*(vn(p.xz*0.6) - 0.5));
+  float tre = smoothstep(0.45, 0.7, vn(p.xz*6.0)) * (0.6 + 0.4*vn(p.xz*13.0 + 2.0));
+  vec3 sorC = mix(lin(vec3(0.25,0.4,0.11)), lin(vec3(0.4,0.56,0.18)), tre) * (0.82 + 0.3*mid);
+  float edge = smoothstep(0.0, 1.0, sor) * (1.0 - smoothstep(0.85, 1.0, sor));
+  litter = mix(litter, sorC, max(sor - edge * (1.0 - tre) * 0.6, 0.0) * 0.9); }
 vec3 fernC = mix(lin(vec3(0.2,0.33,0.12)), lin(vec3(0.27,0.4,0.15)), mid) * (0.7 + 0.5*fine);
 vec3 mossC = mix(lin(vec3(0.33,0.45,0.13)), lin(vec3(0.42,0.52,0.17)), mid) * (0.85 + 0.25*fine);
 vec3 meadowC = mix(lin(vec3(0.42,0.5,0.22)), lin(vec3(0.52,0.56,0.26)), mid) * (0.8 + 0.3*fine);
-vec3 barkC = mix(lin(vec3(0.3,0.2,0.14)), lin(vec3(0.38,0.26,0.18)), vn(p.xz*0.7)) * (0.85 + 0.25*fine);
+vec3 barkC = mix(lin(vec3(0.38,0.21,0.14)), lin(vec3(0.5,0.29,0.19)), vn(p.xz*0.7)) * (0.85 + 0.25*fine);
 scrub = litter;
 scrub = mix(scrub, fernC, gFern);
 scrub = mix(scrub, mossC, gMoss);

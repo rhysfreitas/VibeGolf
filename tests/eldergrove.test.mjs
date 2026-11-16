@@ -199,3 +199,17 @@ test('the Hall: the centre root plays as root, the heart tree stands behind the 
   assert.ok(d > 40 && d < 140, `the green at its foot (${d.toFixed(0)} m from its middle)`);
   assert.ok(len > 380);
 });
+
+test('art pass 1: the herds, the saplings and the ravens off every line and tee', () => {
+  const A = COURSE.grove.art;
+  assert.ok(A && A.herd.length >= 8 && A.sap.length > 300 && A.birds.length >= 3);
+  assert.ok(A.herd.some(h => h[4] === 1) && A.herd.some(h => h[4] === 2), 'a bull elk and deer');
+  // every hole's line and tees (and tips spot) in world space
+  const W = HOLES.map(h => { const F = h.frame, a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
+    const w2 = ([x, z]) => [F.x + x * rx - z * fx, F.z + x * rz - z * fz];
+    return { line: h.line.map(w2), tees: [...Object.values(h.tees), h.tips.tee].map(w2) }; });
+  const segD = (L, X, Z) => { let d = Infinity; for (let i = 1; i < L.length; i++) { const [ax, az] = L[i - 1], [bx, bz] = L[i], dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((X - ax) * dx + (Z - az) * dz) / (dx * dx + dz * dz))); d = Math.min(d, Math.hypot(X - ax - dx * t, Z - az - dz * t)); } return d; };
+  const lineD = (X, Z) => Math.min(...W.map(w => segD(w.line, X, Z))), teeD = (X, Z) => Math.min(...W.flatMap(w => w.tees.map(([x, z]) => Math.hypot(X - x, Z - z))));
+  for (const [X, Z] of A.herd) { assert.ok(lineD(X, Z) >= 69 && teeD(X, Z) >= 74, `an animal at ${X}, ${Z}`); }
+  for (const [X, Z] of A.sap) { assert.ok(lineD(X, Z) >= 27 && teeD(X, Z) >= 39, `a sapling at ${X}, ${Z}`); }
+});

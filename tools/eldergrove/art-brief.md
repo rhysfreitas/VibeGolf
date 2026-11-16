@@ -94,3 +94,13 @@ thick the next tree vanishes; anything in the line of play that isn't a tree; fe
   forests: https://home.nps.gov/olym/learn/nature/temperate-rain-forests.htm).
 - Hollow trunks ("goosepens") from damage and decay, and nurse logs among redwoods (M. D. Vaden:
   https://mdvaden.com/redwood_goosepen.shtml, https://mdvaden.com/redwood_nurse_log.shtml).
+
+## Rhys's picks (16 November 2026)
+
+- **Bark and wood:** coast redwood: red-brown bark in deep furrows and broad ridges, cinnamon where broken, moss up
+  the shady side and round the roots, lichen higher up.
+- **Floor:** ferns and sorrel: clumps of sword fern, sorrel carpets on rust-brown needles, moss on mounds and
+  logs, saplings on the fallen logs.
+- **Light:** gold shafts in mist: deep green shade, warm gold beams through pale green-grey mist, bright patches
+  of sun on the floor.
+- **Details:** elk and deer; motes and birds; fungi and fallen wood. (Not the grown glow.)

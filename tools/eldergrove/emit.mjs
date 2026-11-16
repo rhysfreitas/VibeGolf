@@ -24,7 +24,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
 import { BUILT, worldAt, toWorld, toLocal, ALLTREES, WALLS, DECKS, LIMBS, STAIRS, WL } from './scene.mjs';
-import { V, waterAt, POOL, HEART, FALLEN, ROOTPLATE, SHELL, SITES, TOPLOG, stumpH, pitMound, dryK, openAt, fallenAt } from './world.mjs';
+import { V, waterAt, POOL, HEART, FALLEN, ROOTPLATE, SHELL, SITES, TOPLOG, stumpH, pitMound, dryK, openAt, fallenAt, lineD, meadowAt, gladeAt } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { distLine } from './geo.mjs';
 import { packHeights } from '../../src/course/field-code.js';
@@ -166,6 +166,57 @@ const grove = { world, far, trees, walls, level: POOL.level,
   stairs: STAIRS.map(S => ({ at: S.at.map(r1), r: S.r, top: r2(S.top), foot: r2(S.foot) })) };
 
 const holes = HOLES.map((_, i) => { const o = holeOut(i); process.stdout.write(`${i + 1} `); return o; });
+// ---- art pass 1: what grove-world.js draws off the lines of play (world space). The tees and tips spots in world
+// space; nothing here within reach of them or of a line (tests/eldergrove.test.mjs checks)
+const TEES_W = holes.flatMap(h => { const F = h.frame, a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
+  const W2 = ([x, z]) => [F.x + x * rx - z * fx, F.z + x * rz - z * fz];
+  return [...Object.values(h.tees), ...(h.tips ? [h.tips.tee] : [])].map(W2); });
+const ART = (() => {
+  let sd = 4242; const R = () => (sd = sd * 16807 % 2147483647) / 2147483647;
+  const MOWN = new Set(['fairway', 'green', 'fringe', 'tee', 'sand', 'water']);
+  const teeD = (X, Z) => Math.min(...TEES_W.map(([x, z]) => Math.hypot(X - x, Z - z)));
+  const trunkD = (X, Z) => { let d = Infinity; for (const t of ALLTREES) { const e = Math.hypot(t.X - X, t.Z - Z) - t.r; if (e < d) d = e; } return d; };
+  const free = (X, Z, line, tee) => { if (lineD(X, Z) < line || teeD(X, Z) < tee || waterAt(X, Z)) return null; const g = worldAt(X, Z, true); return MOWN.has(g.s) ? null : g; };
+  // elk in the forest beside the 2nd (Roosevelt elk graze the fern under the redwoods) and the 7th, deer in the Glade
+  // on the 5th: herds grazing or heads up (kind 0 elk cow, 1 bull, 2 doe, 3 fawn; pose 0 head up, 1 grazing), each
+  // 70 m or more off every line and tee, in view from the hole's back tee (150-300 m out, within 35° of the line)
+  const herd = [];
+  const place = (hi, kinds, side) => {
+    const h = holes[hi], F = h.frame, a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
+    const W2 = (x, z) => [F.x + x * rx - z * fx, F.z + x * rz - z * fz], bt = Object.values(h.tees).reduce((p, q) => q[1] > p[1] ? q : p);
+    let best = null;
+    for (let i = 0; i < 900; i++) {
+      const d = 150 + 150 * R(), an = side * (12 + 23 * R()) * Math.PI / 180, [X, Z] = W2(bt[0] + Math.sin(an) * d, bt[1] - Math.cos(an) * d);
+      if (!free(X, Z, 80, 95) || trunkD(X, Z) < 12) continue;
+      const sc = -Math.abs(lineD(X, Z) - 85); if (!best || sc > best[2]) best = [X, Z, sc];
+    }
+    if (!best) return;
+    for (const k of kinds) for (let i = 0; i < 60; i++) {
+      const X = best[0] + (R() - 0.5) * 40, Z = best[1] + (R() - 0.5) * 40, g = free(X, Z, 70, 75);
+      if (!g || trunkD(X, Z) < 3 || herd.some(q => Math.hypot(q[0] - X, q[1] - Z) < 5)) continue;
+      herd.push([r1(X), r1(Z), r2(g.y), r2(R() * 6.283), k, R() < 0.6 ? 1 : 0]); break;
+    }
+  };
+  place(1, [1, 0, 0, 0, 0], 1); place(6, [0, 0, 0], -1); place(4, [2, 2, 3, 2], -1);
+  // young hemlocks: on the fallen giant and the stump's top (nurse logs) and scattered thin on the forest floor;
+  // [X, Z, y, h]; 45 m off the lines and tees (on a log, 28 m), 4 m off a trunk
+  const sap = [];
+  for (const L of [FALLEN, TOPLOG]) for (let i = 0; i < 26; i++) {
+    const t = R(), X = L.a[0] + (L.b[0] - L.a[0]) * t + (R() - 0.5) * 6, Z = L.a[1] + (L.b[1] - L.a[1]) * t + (R() - 0.5) * 6;
+    if (fallenAt(X, Z).on < 0.6) continue; const g = free(X, Z, 28, 40); if (!g) continue;
+    sap.push([r1(X), r1(Z), r2(g.y), r1(1.2 + 3 * R())]);
+  }
+  for (let X = -1000; X < 900; X += 28) for (let Z = -900; Z < 800; Z += 28) {
+    if (R() > 0.32) continue;
+    const x = X + R() * 26, z = Z + R() * 26; if (openAt(x, z) > 0.2 || trunkD(x, z) < 4) continue;
+    const g = free(x, z, 45, 50); if (!g) continue;
+    sap.push([r1(x), r1(z), r2(g.y), r1(2 + 6 * R() ** 2)]);
+  }
+  // ravens wheeling under the roof over the openings: [X, Z, y (over the ground), radius, n]
+  const birds = [[-760, 470, 34, 70, 3], [90, -345, 40, 90, 4], [372, -72, 30, 50, 2], [-22, -289, 30, 34, 2]].map(([X, Z, h, r, n]) => [X, Z, r2(worldAt(X, Z, true).y + h), r, n]);
+  return { herd, sap, birds };
+})();
+grove.art = ART;
 const course = { id: 'eldergrove', name: COURSE.name, theme: 'grove', altFt: COURSE.altFt,
   blurb: 'Golf on the floor of a forest older than memory: giant trunks a hundred metres tall stand in and beside the line, the canopy a roof far above any shot, the mist lifting off the moss. A ball that hits a trunk drops at its foot. The round circles a heart tree sixty metres across and finishes under it.',
   signature: { time: 'morning', wind: 'calm', weather: 'haze', temp: 'cool' },

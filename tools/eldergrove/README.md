@@ -1,6 +1,6 @@
 # Eldergrove: plan tools
 
-Eldergrove is a playable blockout (15 November 2026, `?c=eldergrove`), made from its plan book (round 1, 14 November 2026, and Rhys's notes on it the next morning) by `emit.mjs`: the first tree course. Nine holes on the floor of an
+Eldergrove is a playable blockout (15 November 2026, `?c=eldergrove`; art pass 1 on 16 November: `art-brief.md`, Rhys's picks at its end, and the `ART` block in `emit.mjs`, which lays out the herds, the young hemlocks and the ravens off every line and tee), made from its plan book (round 1, 14 November 2026, and Rhys's notes on it the next morning) by `emit.mjs`: the first tree course. Nine holes on the floor of an
 ancient forest of conifers about 100 m tall (trunks 8-12 m across, first branches about 60 m up), a misty morning,
 one colossal heart tree at the origin. The concept, the skeleton (par 36: 4 5 4 4 4 3 5 3 4), the routing and the
 nine hole cards were approved by Rhys on 14 November 2026 (`claude/eldergrove-layout.md` and
