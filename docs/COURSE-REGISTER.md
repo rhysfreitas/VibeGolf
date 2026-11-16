@@ -78,7 +78,9 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   Halcyon Ring and the Labyrinth on four).
   Round 0 16 November 2026 (`tools/emeraldbay/`, `out/emerald-bay-round0.pdf`, before the plan book): the tide as
   data and as a water level over one ground, the three tide holes at both tides, the sand lies, cliffs and water.
-  Waiting on Rhys's picks.
+  Rhys's picks (all the recommended ones): the tide rolled at random each round like the pins, shown and changeable
+  on the setup screen; three sands (dry beach as firm sand 'waste', wet sand as 'beach', bunkers 'sand'); an uneven
+  Sandbar (open-sea side narrow, a band of rough and dry sand on the bay side); water is water.
 
 - The Labyrinth (Rhys's picks, 15 November 2026; `claude/labyrinth-layout.md` and `claude/brief-labyrinth.md` in the
   project; `tools/labyrinth/`): his idea, "kind of like maze runner", made our own: a maze the size of a town
