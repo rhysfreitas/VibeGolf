@@ -125,6 +125,9 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   from the layout: the gate's opening 44 m, the cistern's north wall off the tower court, the 5th's pin 11 m east of
   the plinth, the 7th's alcoves 40 m wide and 5 m up, the 3rd's tee 10 m east and right-hand green 16 m south (the
   versions mirror), the 2nd's kick bank 6 m over 16 m, greens falling toward the approach. No tips spot on the 3rd.
+  Rhys's picks on round 1 (16 November): the corridor stays the one hole past real golf (by hand: spread can't see
+  walls); the Keystone plays the Tower tee on the 3rd; the 340 m walk from the 3rd's right-hand green stays; the 7th's
+  alcove walls stay as they are.
 
 - Cloudrest (Rhys's picks, 14-15 November 2026; `claude/cloudrest-layout.md` and `claude/brief-cloudrest.md` in the
   project; `tools/cloudrest/`): a "roof of the world" course, holes cut into the sides of a misty green gorge: two
