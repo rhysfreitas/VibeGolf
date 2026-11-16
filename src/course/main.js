@@ -333,7 +333,7 @@ islandMat.onBeforeCompile = sh => {
   if (KINGDOM) { sh.defines = { ...(sh.defines || {}), KINGDOM: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, KW.U); }
   if (LINKS) { sh.defines = { ...(sh.defines || {}), LINKS: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, LW.U); }
   if (GROVE) { sh.defines = { ...(sh.defines || {}), GROVE: '' }; sh.uniforms.uSurf2 = surf2U; }
-  if (CLOUD) { sh.defines = { ...(sh.defines || {}), CLOUD: '' }; sh.uniforms.uSurf2 = surf2U; }
+  if (CLOUD) { sh.defines = { ...(sh.defines || {}), CLOUD: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, CDW.U); }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -355,6 +355,9 @@ uniform sampler2D uSurf2;
 #endif
 #ifdef KINGDOM
 uniform float uKTime; uniform vec3 uKSky;
+#endif
+#ifdef CLOUD
+uniform float uCMist, uCTime;
 #endif
 #ifdef LINKS
 uniform float uLTime, uLSea; uniform vec2 uLWind, uLNorth;
@@ -627,7 +630,7 @@ float cMown = inTex > 0.5 ? 0.0 : vW4.z;
 vec3 grassC = mix(lin(vec3(0.34,0.44,0.2)), lin(vec3(0.43,0.5,0.25)), mid) * (0.8 + 0.34*fine);
 grassC = mix(grassC, lin(vec3(0.5,0.5,0.3)), smoothstep(0.6, 0.85, fb(p.xz*0.03 + 4.0)) * 0.35);
 vec3 scrubC = mix(lin(vec3(0.2,0.29,0.15)), lin(vec3(0.27,0.35,0.18)), mid) * (0.72 + 0.5*fine);
-vec3 teaC = mix(lin(vec3(0.17,0.33,0.12)), lin(vec3(0.22,0.4,0.15)), step(0.5, fract(p.x*0.28 + p.z*0.19))) * (0.85 + 0.25*fine);
+vec3 teaC = mix(lin(vec3(0.15,0.3,0.11)), lin(vec3(0.36,0.3,0.2)), smoothstep(0.55, 0.7, abs(fract(p.y/1.8) - 0.5)*2.0)) * (0.85 + 0.25*fine);   // rows of bushes along the contours, earth paths between
 vec3 paveC = mix(lin(vec3(0.6,0.56,0.48)), lin(vec3(0.68,0.64,0.55)), step(0.5, fract(p.x*0.5)) * step(0.5, fract(p.z*0.5)) * 0.5 + 0.25*mid) * (0.9 + 0.12*fine);
 vec3 graniteC = mix(lin(vec3(0.44,0.43,0.4)), lin(vec3(0.54,0.53,0.49)), vn(p.xz*0.9)) * (0.84 + 0.24*fine);
 scrub = grassC;
@@ -903,17 +906,38 @@ rock = mix(lin(vec3(0.3,0.23,0.16)), lin(vec3(0.38,0.29,0.2)), band) * (0.85 + 0
 rock = mix(rock, barkC * (0.8 + 0.3*smoothstep(0.3, 0.7, vn(vec2(cwG.x*0.9, cwG.y*0.04)))), s2.b); }
 #endif
 #ifdef CLOUD
-// grey granite cliffs: horizontal sheeting joints, vertical cracks, dark wet streaks and moss on the ledges
-rock = mix(lin(vec3(0.42,0.41,0.38)), lin(vec3(0.55,0.54,0.5)), band) * (0.84 + 0.22*fine);
-rock *= 1.0 - 0.18*(1.0 - smoothstep(0.0, 0.08, abs(fract(p.y*0.12 + fb(p.xz*0.02)*0.6) - 0.5)));
-rock = mix(rock, lin(vec3(0.24,0.25,0.22)), smoothstep(0.6, 0.85, fb(vec2((p.x+p.z)*0.05, p.y*0.006))) * 0.45);
-rock = mix(rock, lin(vec3(0.28,0.38,0.16)), smoothstep(0.55, 0.9, vWN.y) * 0.5);
+// buff stone cliffs (art pass 1, Rhys's pick: his cliff-temple pictures): tall slabs between vertical joints that
+// wander, each a shade of its own; ledges every 12-20 m with a shadowed lip and a band of moss on top; dark water
+// streaks running down from each ledge and joint; pale lichen on dry faces; wetter and darker toward the mist. The
+// fine joints fade with distance so far walls don't turn to a grid
+{ vec2 tgC = normalize(vec2(-vWN.z, vWN.x) + vec2(1e-4)); float uC = dot(p.xz, tgC);
+float nearC = 1.0 - smoothstep(220.0, 900.0, camD);
+float jx = uC*0.15 + fb(vec2(p.y*0.018, uC*0.012))*1.7;
+float slab = h21(vec2(floor(jx), 3.0));
+float jl = 1.0 - smoothstep(0.0, 0.035, abs(fract(jx) - 0.5) - 0.465);
+float ly = p.y/15.0 + fb(vec2(uC*0.012, p.y*0.002))*0.9 + slab*0.25;
+float fl = fract(ly), below = 1.0 - fl;
+rock = mix(lin(vec3(0.6,0.56,0.47)), lin(vec3(0.71,0.67,0.57)), vn(vec2(uC*0.02, p.y*0.03)) * 0.7 + slab * 0.3) * (0.86 + 0.2*fine);
+rock = mix(rock, lin(vec3(0.66,0.66,0.55)), smoothstep(0.66, 0.84, fb(vec2(uC*0.09, p.y*0.08) + 5.0)) * 0.5);                       // lichen
+rock *= 0.78 + 0.36 * vn(vec2(uC*0.011, p.y*0.003 + 7.0));                                                                                // big bays and buttresses, so a long wall isn't one tone
+rock = mix(rock, lin(vec3(0.33,0.31,0.26)), smoothstep(0.72, 0.9, vn(vec2(uC*0.028, 2.0 + p.y*0.0015))) * 0.55);                          // dark gullies down the walls
+float streak = smoothstep(0.55, 0.85, vn(vec2(uC*0.55, floor(ly)*3.7))) * exp(-below*2.2) + jl * 0.35 * smoothstep(0.4, 0.7, vn(vec2(uC*0.15, p.y*0.04)));
+rock = mix(rock, lin(vec3(0.27,0.26,0.22)), clamp(streak, 0.0, 1.0) * 0.62);
+rock *= 1.0 - 0.32 * jl * nearC;                                                                                                           // the joints
+rock *= 1.0 - 0.45 * smoothstep(0.86, 0.97, below) * (0.5 + 0.5*nearC);                                                                     // under each ledge's lip
+float mossK = (1.0 - smoothstep(0.0, 0.075, fl)) * smoothstep(0.3, 0.55, vn(vec2(uC*0.08, floor(ly)*1.3)));
+rock = mix(rock, mix(lin(vec3(0.24,0.33,0.15)), lin(vec3(0.31,0.4,0.18)), fine), max(mossK, smoothstep(0.55, 0.85, vWN.y)) * 0.85);       // moss on the ledges and any flatter shelf
+rock = mix(rock, mix(lin(vec3(0.24,0.33,0.15)), lin(vec3(0.31,0.4,0.18)), fine), (1.0 - smoothstep(0.0, 1.4, vDepth)) * step(0.5, vW4.w) * 0.7);   // grass over the lip
+rock = mix(rock, rock * vec3(0.72, 0.76, 0.74), 1.0 - smoothstep(uCMist + 10.0, uCMist + 90.0, p.y)); }                                // wetter toward the mist
 #endif
 #ifdef CITY
 rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0.25*fine);
 rock = mix(rock, lin(vec3(0.27,0.34,0.18)), smoothstep(0.45, 0.72, fb(p.xz*0.3 + p.y*0.2)) * 0.65);
 #endif
 float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
+#ifdef CLOUD
+rw = max(rw, 1.0 - smoothstep(0.62, 0.8, vWN.y));   // the gorge's walls: stone from about 37 degrees
+#endif
 #ifdef LINKS
 rw = max(rw, smoothstep(0.15, 0.5, s2.a) * (1.0 - smoothstep(0.6, 0.86, vWN.y)));   // a pot's face, a little less steep than a blowout's
 #endif
@@ -921,6 +945,9 @@ rw = max(rw, smoothstep(0.15, 0.5, s2.a) * (1.0 - smoothstep(0.6, 0.86, vWN.y)))
 rw = max(rw, max(s2.a, (1.0 - smoothstep(0.55, 0.78, vWN.y)) * (1.0 - s2.g)));   // the wadi's walls: painted rock, and any face steeper than about 40 degrees
 #endif
 col = mix(col, rock, rw);
+#ifdef CLOUD
+col = mix(col, lin(vec3(0.9,0.88,0.85)), smoothstep(uCMist + 26.0, uCMist - 1.0, p.y) * 0.92);   // the stone and grass fade into the sea of clouds at the cliff's foot
+#endif
 #ifdef KINGDOM
 // heat shimmer (art pass 1): within a degree of the horizon, far off, the ground mirrors the sky and wavers
 { float kE = (cameraPosition.y - p.y) / max(camD, 1.0);

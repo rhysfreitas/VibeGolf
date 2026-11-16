@@ -89,3 +89,9 @@ the Summit tee). The Summit tee moved 55 m back onto a knoll 8 m up behind the t
 in `world.mjs`), so it still sees the first tier: 435 yd on the card, 342 yd straight at the green and 54 m down.
 `sample.mjs` treats a drive along the line that lands on the bank below the first tier as lay up or go (as at the
 5th's notch), and pines keep off the ground behind each line's start and off the 9th's bold line (`TEELINES`).
+
+Art pass 1 (16 November 2026): the brief and Rhys's picks are in `art-brief.md`. For it the emitter adds to
+`COURSE.cloud`: `pinnacles` (each pinnacle's centre, top and outline radius every 11.25°, from world.mjs's noise),
+`fins` (the alcove's walls: points along each face with the way into the fin, the floor and the top), `play` (every
+hole's line from the tips and its tees in world space, so `cloud-world.js` keeps scenery off the play) and `falls`
+(the waterfall's lip at the cleft's head). The lamp hall is scenery now (`face: true`), hung on the cliff's face.

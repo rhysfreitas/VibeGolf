@@ -330,7 +330,7 @@ export const SITES = [
   bx('hall', [372, 548], 34, 24, 26, 215, { solid: true, name: 'the golden hall', roof: 'gold' }),
   bx('hall', [326, 584], 22, 16, 18, 200, { solid: true, name: 'the guesthouse (the clubhouse)', roof: 'red' }),
   bx('hall', [340, 500], 26, 18, 22, 190, { solid: true, name: 'the bell tower', roof: 'red' }),
-  bx('hall', [310, 470], 18, 14, 16, 180, { solid: true, name: 'the lamp hall', roof: 'red' }),
+  bx('hall', [310, 470], 18, 14, 16, 180, { name: 'the lamp hall', roof: 'red', face: true }),   // hung on the cliff's face below the monastery (cloud-world.js; scenery: it sits over open air)
   bx('wall', [386, 566], 1.6, 58, 3.2, 126, { solid: true, name: "the courtyard's back wall" }),
   bx('wall', [433, 584], 1.6, 40, 3.2, 35, { solid: true, name: "the courtyard's south-east wall" }),
   bx('wall', [376, 612], 1.6, 40, 3.2, 35, { solid: true, name: "the courtyard's north-west wall" }),

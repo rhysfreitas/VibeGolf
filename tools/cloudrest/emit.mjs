@@ -23,7 +23,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
 import { BUILT, worldAt, toWorld, toLocal, WL, PINES, HD } from './scene.mjs';
-import { V, SITES, MIST, ROOF, WLINES, roofOver, LIP1 } from './world.mjs';
+import { V, SITES, MIST, ROOF, WLINES, roofOver, LIP1, PINNACLES, NEEDLE, WALLS, CLEFT_HEAD, LINES } from './world.mjs';
+import { noise1 } from './shapes.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { at, headingAt } from './geo.mjs';
 import { packHeights } from '../../src/course/field-code.js';
@@ -141,10 +142,33 @@ let far;
   far = { x0: FX0, z0: FZ0, cell: FC, nx: fnx, nz: fnz, y0: fy0, scale: 4, pred: 1, h: b64(packHeights(fq, fnx)), m: b64(fm) };
 }
 const ground = (X, Z) => worldAt(X, Z).y;
-const sites = SITES.map(o => ({ kind: o.kind, name: o.name, at: [r1(o.at[0]), r1(o.at[1])], w: o.w, l: o.l, h: o.h, rot: r2(o.rot), roof: o.roof || null, y: r2(ground(...o.at) ?? MIST) }));
+const sites = SITES.map(o => ({ kind: o.kind, name: o.name, at: [r1(o.at[0]), r1(o.at[1])], w: o.w, l: o.l, h: o.h, rot: r2(o.rot), roof: o.roof || null, y: r2(ground(...o.at) ?? MIST), ...(o.face ? { face: true } : {}) }));
 const pines = PINES.map(t => [r1(t.X), r1(t.Z), r2(t.y), r1(t.h), r2(t.r)]);
 const roof = { under: ROOF.under, boxes: ROOFBOX.map(R => ({ at: [r1(R.X), r1(R.Z)], w: R.w, l: R.l, rot: r2(R.rot), y: r1(R.y), h: R.h })) };
-const cloud = { world, far, mist: MIST, sites, pines, roof };
+// the pinnacles as world.mjs draws them (art pass 1): centre, top and the outline's radius every 11.25 degrees from
+// the same noise, so cloud-world.js can draw each as an irregular column (the 10 m map makes them square blocks)
+const pinnacles = PINNACLES.map(([x, n, r, top], i) => [x, -n, top, Array.from({ length: 32 }, (_, k) => { const a = k / 32 * Math.PI * 2; return r1(r * (1 + 0.16 * noise1(a * 2.2 + 40 + i, 40 + i) + 0.07 * noise1(a * 7 + (40 + i) * 3, 41 + i))); })]);
+pinnacles.push([NEEDLE.c[0], -NEEDLE.c[1], NEEDLE.top - 3.4, Array.from({ length: 32 }, (_, k) => r1(NEEDLE.r * (1 + 0.06 * noise1(k / 32 * Math.PI * 2 * 3, 31))))]);
+// every hole's play in world space (art pass 1): tips, back tee, the line to the pin, and all the tee spots, so the
+// drawn scenery (pines, flags, chortens, birds) keeps off the lines of play and clear of the tees
+const play = HOLES.map((h, k) => { const W = toWorld(h), P = q => W(...q).map(r1); return { line: [P(h.tipsPt), ...h.line.map(P)].filter((q, i, a) => !i || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.5), tees: [...Object.values(h.teePts), h.tipsPt].map(P) }; });
+// the alcove's two walls (art pass 1): fins of rock from the floor to the roof. The 10 m map draws them as cones;
+// cloud-world.js draws each as a wall: points every 6 m along its face with the way into the fin, the floor in front
+// and the top (the roof's underside, plus a little to bury it, where the roof is over it)
+const fins = WALLS.filter(wl => wl.thick).map(wl => {
+  const out = [], P = wl.P;
+  for (let k = 0; k < P.length - 1; k++) { const [ax, az] = P[k], [bx, bz] = P[k + 1], l = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(l / 6));
+    for (let q = 0; q <= n; q++) { if (q === n && k < P.length - 2) continue; const t = q / n, X = ax + (bx - ax) * t, Z = az + (bz - az) * t, tx = (bx - ax) / l, tz = (bz - az) / l;
+      let nx = -tz, nz = tx; const yp = worldAt(X + nx * 10, Z + nz * 10).y ?? -1e9, ym = worldAt(X - nx * 10, Z - nz * 10).y ?? -1e9; if (ym > yp) { nx = -nx; nz = -nz; }
+      const floor = worldAt(X - nx * 7, Z - nz * 7).y ?? MIST, rf = roofOver(X, Z), top = rf !== null ? rf + 8 : floor + wl.h;
+      out.push([r1(X), r1(Z), r2(nx), r2(nz), r1(floor), r1(top)]); } }
+  return { pts: out, thick: wl.thick };
+});
+// the thread of waterfall at the cleft's head (art pass 1): the lip's point, height and the way out over the cleft
+const falls = (() => { const L2 = LINES[1], d = Math.hypot(L2[1][0] - L2[0][0], L2[1][1] - L2[0][1]), lx = -(L2[1][1] - L2[0][1]) / d, ln = (L2[1][0] - L2[0][0]) / d;   // left of travel, toward the gorge, in [x, n]
+  let H = [CLEFT_HEAD[0], CLEFT_HEAD[1]]; for (let k = 0; k < 40 && V(H[0], -H[1]) === null; k++) H = [H[0] - lx, H[1] - ln];   // back from the cleft onto the lip
+  return { X: r1(H[0]), Z: r1(-H[1]), y: r1(V(H[0], -H[1])), ox: r2(lx), oz: r2(-ln) }; })();
+const cloud = { world, far, mist: MIST, sites, pines, roof, pinnacles, play, fins, falls };
 
 const holes = HOLES.map((_, i) => { const o = holeOut(i); process.stdout.write(`${i + 1} `); return o; });
 const course = { id: 'cloudrest', name: COURSE.name, theme: 'cloud', altFt: COURSE.altFt, turf: COURSE.turf, wallSoak: COURSE.wallSoak,
