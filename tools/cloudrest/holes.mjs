@@ -28,10 +28,10 @@ export const COURSE = {
     classics: 'Hog\'s Back (5: the ridge). Its own: the pillar green (4), the alcove (7), the switchback (9), a par 3 balcony to balcony (2). More welcome.',
     decisions: 'Three, three types: lay up or carry the notch (5), high road or low road (8), drivable par 4 (9). One in the last two holes.',
     landmarks: 'The monastery\'s golden roof (from 1, 2, 5, 6, 9); the Needle (from 3\'s green, 4, 5); the white stupa (5, 6). The reveal: the 5th tee, out on the ridge with the gorge running away both sides.',
-    rhythm: 'A gentle shelf to open; a balcony; the hanging valley as a breather; the hardest holes 4-6 (the Needle, the ridge, the Stair); the alcove; the terraces; a short drop home. Par 3s 155, 180, 225; par 4s 375, 440, 510; par 5s 555, 600, 650.',
+    rhythm: 'A gentle shelf to open; a balcony; the hanging valley as a breather; the hardest holes 4-6 (the Needle, the ridge, the Stair); the alcove; the terraces; a short drop home. Par 3s 155, 180, 225; par 4s 435, 440, 510; par 5s 555, 600, 650.',
     forms: 'Six fairways, six forms: 1 fan, 3 bowl (irregular), 5 broken, 6 hourglass, 8 split (upper and lower terrace), 9 stepping stones (three tiers). A wall on one side and a drop on the other is this course\'s plain strip: only the 1st and 6th are shelves, and they differ (one falls away and is wide, one climbs a face).',
-    heights: '1 fall-away along a shelf, 2 across a gulf (par 3), 3 half-pipe, 4 the drop (the only one: 18 m onto a pillar), 5 hog\'s back, 6 table top then a big climb (bold), 7 uphill to a shelf (par 3), 8 stepped: high road, low road (bold), 9 stepped, 45 m down three tiers (bold).',
-    dials: 'One pushed on every hole: 1 width (a 62 m shelf), 2 a carry (over a cleft 50 m deep to the mist), 3 length (650 yd on the card: past real golf there), 4 green size (330 m² on a pillar), 5 width (a 40 m crest), 6 height (a 9 m face, 31 m of climb), 7 scale (the whole hole under an overhang 90 m up), 8 length (reachable: plays 505), 9 height (45 m down three tiers).',
+    heights: '1 fall-away along a shelf, 2 across a gulf (par 3), 3 half-pipe, 4 the drop (the only one: 18 m onto a pillar), 5 hog\'s back, 6 table top then a big climb (bold), 7 uphill to a shelf (par 3), 8 stepped: high road, low road (bold), 9 stepped, 54 m down off a knoll and three tiers (bold).',
+    dials: 'One pushed on every hole: 1 width (a 62 m shelf), 2 a carry (over a cleft 50 m deep to the mist), 3 length (650 yd on the card: past real golf there), 4 green size (330 m² on a pillar), 5 width (a 40 m crest), 6 height (a 9 m face, 31 m of climb), 7 scale (the whole hole under an overhang 90 m up), 8 length (reachable: plays 505), 9 height (54 m down off a knoll and three tiers).',
     newBorrowed: 'New to the register: thin air; a hole under a rock roof; a bowl fairway; a switchback down a slope; a pillar green; a par 3 balcony to balcony; a fairway along a ridge crest. Borrowed (two): a chasm beside the fairway, a tee shot off a height (9). One thread of waterfall and one rope bridge as scenery only. No punchbowl, arch or climb to the clubhouse.',
   },
 };
@@ -297,11 +297,11 @@ export const HOLES = [
     }),
   }),
 
-  // 9. THE DESCENT: three tiers zigzagging 45 m down to the monastery's courtyard; safe: an iron to the first tier and
+  // 9. THE DESCENT: off a granite knoll and down three tiers zigzagging 54 m to the monastery's courtyard; safe: an iron to the first tier and
   // a wedge down; bold: driver straight at the golden roof
-  hole({ n: 9, name: 'The Descent', par: 4, world: LINES[8], tips: [-30, 0], shape: 'A zigzag down three tiers',
+  hole({ n: 9, name: 'The Descent', par: 4, world: LINES[8], tips: [-82, 0], shape: 'A zigzag down three tiers',
     build: (P, L, len) => ({
-      tees: { summit: 0, ridge: [14, -14], ledge: [56, 8], terrace: [96, 38] },
+      tees: { summit: -55, ridge: [14, -14], ledge: [56, 8], terrace: [96, 38] },   // the Summit tee on the knoll's lip (world.mjs KNOLL; Rhys, 16 November: too short)
       flat: 0,   // the tiers are the world's own ground (world.mjs tierAt)
       fw: [{ lobes: [[112, 2, 26, 22], [148, 14, 22, 20, 20]], join: 10, wob: 2.5 }, { lobes: [[234, -3, 30, 28], [262, -8, 22, 22, -10]], join: 10, wob: 2.5 }, { lobes: [[306, 0, 18, 14, 10]], join: 8, wob: 2 }],
       prof: [[0, 0], [len, 0]],
@@ -310,18 +310,18 @@ export const HOLES = [
       targets: [{ name: 'The first tier', at: P(118, 6) }, { name: 'The second tier', at: P(232, -4) }, { name: 'At the golden roof', at: L.at(-1), bold: true, pin: true }],
       words: {
         story: 'The descent: zigzag down three tiers to the monastery\'s courtyard, or drive straight at its golden roof.',
-        plays: 'Three tiers stepping 45 m down the eastern cliff\'s face to the monastery\'s courtyard, the golden roof straight ahead. Safe: an iron to the first tier and a wedge down (or two short irons tier by tier). Bold: driver straight at the golden roof, about 287 yd from the back tee, downhill, in thin air. Short or wide finishes on a tier or a ledge of rough below one, never in the mist. The courtyard walls on three sides hold everything.',
-        safe: 'An iron to the first tier (118 m), a wedge down to the green (or the second tier first).',
-        bold: 'Driver at the golden roof: 262 m tee to pin, 45 m down.',
+        plays: 'From a granite knoll, three tiers stepping 54 m down the eastern cliff\'s face to the monastery\'s courtyard, the golden roof straight ahead. Safe: an iron to the first tier and a wedge down (or two short irons tier by tier). Bold: driver straight at the golden roof, about 342 yd from the back tee, 54 m downhill, in thin air (a tour 5 iron finishes about 50 m short). Short or wide finishes on a tier or a ledge of rough below one, never in the mist. The courtyard walls on three sides hold everything.',
+        safe: 'An iron to the first tier (173 m from the Summit tee), a wedge down to the green (or the second tier first).',
+        bold: 'Driver at the golden roof: 312 m tee to pin, 54 m down.',
         miss: 'Short: a tier, or the bank below it (a downhill pitch). Wide: rough on the tiers\' ends. The courtyard walls hold anything long. Safe miss at the green: short.',
       },
       card: {
         type: 'Original (a switchback down a slope)', form: 'Stepping stones (three tiers)', feature: 'The three tiers and their banks; the courtyard walls; the golden roof', job: 'The tiers are lie-setters (a level stance on each); the walls helpers (they hold a long ball); the golden roof the aim point for the bold drive (it stands beside the green, never a target)',
-        decision: 'Drivable par 4: a 262 m drive straight at the green, 45 m down, or an iron to the first tier and a wedge',
+        decision: 'Drivable par 4: a 312 m drive straight at the green, 54 m down, or an iron to the first tier and a wedge',
         miss: 'Small: a tier or a bank. Medium: rough on the tiers\' ends. Never the mist. Safe miss at the green: short',
-        view: 'From the top terrace the tiers step down in front, the courtyard and the golden roof below and beyond, the gorge on the right',
-        ground: 'Stepped: three tiers 15 m apart; −45 m tee to green',
-        height: 'Stepped, a 45 m drop (bold)', dial: 'Height: 45 m down three tiers', shots: { tee: 'A mid iron to a number, or driver as hard as you like', approach: 'A wedge downhill' }, hazard: 'In front of each tier: the bank (across)', surround: 'Courtyard walls on three sides, paving; no sand',
+        view: 'From the knoll over the top terrace the tiers step down in front, the courtyard and the golden roof below and beyond, the gorge on the right',
+        ground: 'Stepped: the knoll 8 m over the top terrace, three tiers 15 m apart; −54 m tee to green',
+        height: 'Stepped, a 54 m drop (bold)', dial: 'Height: 54 m down off a knoll and three tiers', shots: { tee: 'A mid iron to a number, or driver as hard as you like', approach: 'A wedge downhill' }, hazard: 'In front of each tier: the bank (across)', surround: 'Courtyard walls on three sides, paving; no sand',
       },
     }),
   }),

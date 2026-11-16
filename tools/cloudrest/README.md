@@ -83,3 +83,9 @@ the shader's `CLOUD` branch, cliff faces from every edge down past the mist, the
 over it, water, the boxes under red and gold roofs, the roof slabs, the pines as cones. The notch's far side became
 a slope of scree and the 5th's lay-up moved to 210 m (the gate's player was stuck under a sheer far face).
 `tests/cloudrest.test.mjs` checks the course.
+
+After Rhys's first round (16 November 2026): the Descent played too short (a tour 5 iron reached the green from
+the Summit tee). The Summit tee moved 55 m back onto a knoll 8 m up behind the top terrace (`KNOLL` and `knollAt`
+in `world.mjs`), so it still sees the first tier: 435 yd on the card, 342 yd straight at the green and 54 m down.
+`sample.mjs` treats a drive along the line that lands on the bank below the first tier as lay up or go (as at the
+5th's notch), and pines keep off the ground behind each line's start and off the 9th's bold line (`TEELINES`).

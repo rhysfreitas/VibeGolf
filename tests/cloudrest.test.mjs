@@ -35,7 +35,7 @@ test('nine holes, par 36 (4 3 5 3 4 5 3 5 4), the gorge with four tee sets, thin
   assert.equal(COURSE.theme, 'cloud');
   assert.deepEqual(COURSE.teeSets.map(s => s.id), ['summit', 'ridge', 'ledge', 'terrace']);
   for (const h of HOLES) for (const s of COURSE.teeSets) assert.ok(h.tees[s.id] && h.yards[s.id] > 50, `${h.name} ${s.id}`);
-  assert.equal(HOLES.reduce((a, h) => a + h.yards.summit, 0), 3690);
+  assert.equal(HOLES.reduce((a, h) => a + h.yards.summit, 0), 3750);
   assert.equal(COURSE.altFt, 8500); assert.equal(COURSE.turf, 'damp'); assert.equal(COURSE.wallSoak, 0.45);
   const sea = simulate({ ...DR, HLA: 0, SpinAxis: 0 }, { groundAt: () => 0, flightOnly: true }).carry, here = simulate({ ...DR, HLA: 0, SpinAxis: 0 }, { groundAt: () => 0, flightOnly: true, altFt: COURSE.altFt }).carry;
   assert.ok(here / sea > 1.1 && here / sea < 1.15, `a tour drive carries ${((here / sea - 1) * 100).toFixed(0)}% further`);

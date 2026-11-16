@@ -226,11 +226,14 @@ export function worldAt(X, Z) {
 // ---- pines: on the kerbs, the ledges and the pinnacles' tops (drawn; not yet in play), 26 m or more off every line
 const hsh = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
 export const PINES = [];
+// the play behind each line's start (a back tee or tips set back of it, as the 9th's on its knoll) and the 9th's bold
+// line straight at the green: pines keep off them too
+const TEELINES = HOLES.flatMap((h, k) => { const W = WOR[k], o = [W(...h.tipsPt), W(...h.teePts.summit), W(...h.line[0])], L = [o]; if (h.boldPath) L.push([W(...h.teePts.summit), W(...h.boldPath)]); return L; });
 {
   const S = 14;
   for (let i = Math.floor(-760 / S); i <= Math.ceil(940 / S); i++) for (let j = Math.floor(-1000 / S); j <= Math.ceil(700 / S); j++) {
     const X = (i + 0.1 + 0.8 * hsh(i, j)) * S, Z = (j + 0.1 + 0.8 * hsh(j + 5, i)) * S;
-    if (lineD(X, Z) < 26) continue;
+    if (lineD(X, Z) < 26 || TEELINES.some(L => distLine(L, X, Z) < 26)) continue;
     const r = hsh(i * 3.1, j * 1.7);
     if (inGorge(X, Z) || inCleft(X, Z)) { if (r > 0.45) continue; const v = V(X, Z); if (v === null || ridgeAt(X, Z)) continue; PINES.push({ X, Z, y: v, h: 8 + 7 * hsh(i + 2, j), r: 2.4 + 1.6 * hsh(j, i + 3) }); continue; }
     const lf = liftAt(X, Z); if (lf.face) continue;

@@ -198,6 +198,21 @@ export function tierAt(X, Z) {   // { y, k (0 outside, 1 inside the zone) }
   return { y, k };
 }
 
+// ---- the 9th's back tee: a granite knoll behind the top terrace, 8 m up. Rhys after his first round (16 November
+// 2026): the Descent played too short (a tour 5 iron reached the green from the old Summit tee: 287 yd straight and
+// 45 m down at 8,500 ft). The Summit tee moved 55 m back up the line onto the knoll's lip, the tips on its top: from
+// level ground that far back the first tier would be out of sight, from 8 m up it is as in view as before.
+export const KNOLL = { s0: -52, s1: -100, b: 17, top: 270.5, face: 7 };
+const K9 = (() => { const [a, b] = LINES[8], l = Math.hypot(b[0] - a[0], b[1] - a[1]); return { o: a, u: [(a[0] - b[0]) / l, (a[1] - b[1]) / l] }; })();
+export function knollAt(X, Z) {   // the knoll's height, or null outside it
+  const n = -Z, dx = X - K9.o[0], dn = n - K9.o[1], along = dx * K9.u[0] + dn * K9.u[1], across = -dx * K9.u[1] + dn * K9.u[0];
+  const K = KNOLL, a0 = -K.s0, a1 = -K.s1, mid = (a0 + a1) / 2, ha = (a1 - a0) / 2;
+  const ex = Math.abs(along - mid) - ha, ez = Math.abs(across) - K.b;
+  const sd = Math.hypot(Math.max(ex, 0), Math.max(ez, 0)) + Math.min(Math.max(ex, ez), 0) + 1.6 * noise2(X / 11, Z / 11, 81);
+  if (sd > K.face) return null;
+  return { y: K.top + 0.25 * noise2(X / 17, Z / 17, 82), k: 1 - smooth(sd / K.face) };
+}
+
 // ---- the ground (without walls and kerbs): null over open air
 export function V(X, Z) {
   if (inGorge(X, Z) || inCleft(X, Z)) {
@@ -206,6 +221,7 @@ export function V(X, Z) {
   }
   let y = massif(X, Z);
   const t = tierAt(X, Z); if (t.k > 0) y = lerp(y, t.y, t.k);
+  const kn = knollAt(X, Z); if (kn && kn.y > y) y = lerp(y, kn.y, kn.k);
   return y;
 }
 export const voidAt = (X, Z) => V(X, Z) === null;

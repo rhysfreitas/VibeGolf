@@ -94,7 +94,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   design element). A journey, not a loop (the first routing, a circuit round a cirque with every bend left, was
   rejected): down the western cliff (1-4), across the gorge on a ridge (5), up the eastern cliff (6-7), through the
   tea terraces behind the monastery (8), down three tiers to its courtyard (9). Par 36, 4 3 5 3 4 5 3 5 4, three
-  par 3s and three par 5s; card 3,690 yd from the Summit tees (plays about 3,355); tees Summit, Ridge, Ledge, Terrace,
+  par 3s and three par 5s; card 3,750 yd from the Summit tees; tees Summit, Ridge, Ledge, Terrace,
   Pinnacle tips (switched off). 1 The Overlook 4 440 (fan, fall-away along a 62 m shelf, the drop left behind a kerb),
   2 The Balcony 3 180 (across a gulf, balcony to balcony over a cleft 50 m deep), 3 The Hanging Valley 5 650 (an
   irregular bowl, half-pipe, a stream; 650 yd on the card, past real golf there; no decision, the breather),
@@ -102,8 +102,9 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   (broken, hog's back along a crest of joined pinnacles, a catch shelf below the north side; lay up or carry the
   notch), 6 The Stair 5 600 (hourglass, a table top under a 9 m face with a pilgrim stair, then a 35 m climb),
   7 The Alcove 3 225 (uphill to a shelf, the whole hole under a rock roof 90 m up), 8 The Tea Terraces 5 555 (split:
-  high road on a 30 m upper terrace, low road on the 55 m lower one; reachable), 9 The Descent 4 375 (stepping stones,
-  three tiers down 45 m in a zigzag to the courtyard; drivable straight at the golden roof). Classic Hog's Back (5);
+  high road on a 30 m upper terrace, low road on the 55 m lower one; reachable), 9 The Descent 4 435 (stepping stones,
+  off a granite knoll and three tiers down 54 m in a zigzag to the courtyard; drivable straight at the golden roof:
+  342 yd, a tour 5 iron 67 yd short; the Summit tee moved 55 m back onto the knoll 16 November, Rhys: too short). Classic Hog's Back (5);
   decisions 5 (lay up or carry), 8 (high road or low road), 9 (drivable); bold height forms 6, 8, 9; shelf holes 1
   and 6 (drop left), 5 (drop right); valley holes with no drop 3 and 8; bends right 1, 6, left 3, 5, 8, a zigzag 9.
   Landmarks the monastery's golden roof (1, 2, 5, 6, 9), the Needle (3's green, 4, 5), the white stupa (5, 6); reveal

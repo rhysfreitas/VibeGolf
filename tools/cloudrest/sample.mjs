@@ -47,6 +47,9 @@ function drive(B, p, dir, shot, y0in = null, extra = {}) {
     rest: r.outcome === 'void' ? 'mist' : B.surface(ex, ez), end: [ex, ez], land: [lx, lz], outcome: r.outcome };
 }
 
+// the 9th's bank between the first and second tiers, where a drive along the line from the knoll comes down: a drive
+// there isn't a shot anyone plays (lay up to the first tier, or go at the green), as at the 5th's notch
+const bank9 = (B, h, s) => s > 150 && s < 215 && B.surface(...at(h.line, s)) !== 'fairway';
 const meta = [];
 const SECTIONS = { 1: [150, 260, 340], 5: [180, 258, 360], 6: [200, 270, 400], 8: [250, 380], 9: [60, 120, 230] };
 for (const [i, B] of BUILT.entries()) {
@@ -163,8 +166,8 @@ for (const [i, B] of BUILT.entries()) {
   if (h.par > 3) {
     const c = COURSE.tipsSet.minDrive, s = Math.min(h.len - 1, project(h.line, ...t).s - Math.hypot(t[0] - h.line[0][0], t[1] - h.line[0][1]) * (project(h.line, ...t).s <= 0.01 ? 1 : 0) + c * YD);
     const ln = lanes(B, at(h.line, s), headingAt(h.line, s)), ok = Math.max(0, ...ln) >= 40 || ln.filter(v => v >= 25).length >= 2;
-    const notch = h.n === 5 && Math.abs(s - (NOTCH.s0 + NOTCH.s1) / 2) < 30;
-    land = notch ? ` ${c} yd drive: at the notch, so it lays up or carries;` : ` ${c} yd drive: ${B.surface(...at(h.line, s))}, lanes ${ln.map(Math.round).join(' + ') || 'none'} m;`; landOk = ok || notch || (h.n === 5 && Math.max(0, ...ln) >= 30);
+    const notch = (h.n === 5 && Math.abs(s - (NOTCH.s0 + NOTCH.s1) / 2) < 30) || (h.n === 9 && bank9(B, h, s));
+    land = notch ? ` ${c} yd drive: ${h.n === 9 ? 'on the bank below the first tier, so it lays up or goes at the green' : 'at the notch, so it lays up or carries'};` : ` ${c} yd drive: ${B.surface(...at(h.line, s))}, lanes ${ln.map(Math.round).join(' + ') || 'none'} m;`; landOk = ok || notch || (h.n === 5 && Math.max(0, ...ln) >= 30);
   }
   const ohOk = !oh.solid && (oh.roof === null || oh.roof >= 45);
   const okT = !['water', 'green', 'fairway', 'sand', 'void', 'rock'].includes(ts) && padOk && lenOk && nearF >= 12 && ohOk && landOk;
@@ -173,10 +176,11 @@ for (const [i, B] of BUILT.entries()) {
   if (h.par > 3) {
     const ws = [];
     for (const T of COURSE.teeSets) {
-      const s0 = project(h.line, ...h.teePts[T.id]).s, s = Math.min(h.len - 20, s0 + (T.minDrive || 150) * YD);
+      const tp = h.teePts[T.id], pj = project(h.line, ...tp), s0 = pj.s > 0.01 ? pj.s : -Math.hypot(tp[0] - h.line[0][0], tp[1] - h.line[0][1]), s = Math.min(h.len - 20, s0 + (T.minDrive || 150) * YD);
       const p = at(h.line, s), dir = headingAt(h.line, s), ln = lanes(B, p, dir), wide = Math.max(0, ...ln), ok = wide >= 40 || ln.filter(v => v >= 25).length >= 2;
       ws.push(`${T.name} ${ln.length > 1 ? ln.map(Math.round).join('+') : Math.round(wide)}`);
-      if (!ok && h.n === 5 && Math.abs(s - (NOTCH.s0 + NOTCH.s1) / 2) < 30) R_(`  5 ${T.name} drive (${T.minDrive || 150} yd) would land at the notch: this tee set lays up short of it (${Math.round((NOTCH.s0 - 25 - s0) / YD)} yd) or carries it (${Math.round((NOTCH.s1 + 8 - s0) / YD)} yd)`);
+      if (!ok && h.n === 9 && bank9(B, h, s)) R_(`  9 ${T.name} drive (${T.minDrive || 150} yd) would land on the bank below the first tier: this tee set lays up to the first tier (${Math.round(Math.hypot(h.targets[0].at[0] - h.teePts[T.id][0], h.targets[0].at[1] - h.teePts[T.id][1]) / YD)} yd) or goes at the green (${Math.round(Math.hypot(h.pin[0] - h.teePts[T.id][0], h.pin[1] - h.teePts[T.id][1]) / YD)} yd straight)`);
+      else if (!ok && h.n === 5 && Math.abs(s - (NOTCH.s0 + NOTCH.s1) / 2) < 30) R_(`  5 ${T.name} drive (${T.minDrive || 150} yd) would land at the notch: this tee set lays up short of it (${Math.round((NOTCH.s0 - 25 - s0) / YD)} yd) or carries it (${Math.round((NOTCH.s1 + 8 - s0) / YD)} yd)`);
       else if (!ok) R_(`${h.n === 5 && wide >= 30 ? ' ' : '!'} ${h.n} ${T.name} drive (${T.minDrive || 150} yd) lands on ${B.surface(...p)}, lanes ${ln.map(Math.round).join(', ') || 'none'} m${h.n === 5 && wide >= 30 ? ' (the crest: the nine\'s one tight fairway)' : ''}`);
     }
     R_(`  ${h.n} landing widths (m): ${ws.join(', ')}`);
