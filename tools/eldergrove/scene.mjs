@@ -57,12 +57,16 @@ export function shapesAt(X, Z) {
 
 // ---- the trees: the holes' placed trunks in world space, then the far forest
 const hsh = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+// tall pines (15 November, Rhys: "the canopy foliage at least 2-3 times longer"): giants 150-175 m tall whose crowns
+// start 50-55 m up, so the foliage runs 95-125 m (it was 45-50 m on 100 m trees) and the crown base stays clear of
+// the play as before
+const HT = (X, Z) => 150 + 25 * hsh(X, Z), BASE = (X, Z) => 51.5 + 4 * hsh(Z, X);
 export const TRUNKS = [];
 for (const [k, h] of HOLES.entries()) for (const t of h.trunkPts) {
   const [X, Z] = WOR[k](t.x, t.z);
-  TRUNKS.push({ X, Z, r: t.r, hole: k, job: t.job, placed: true, marker: !!t.marker, h: t.snag ? t.h : t.tall || 98 + 8 * hsh(X, Z), low: t.snag ? 0.99 : t.low || 0.52 + 0.04 * hsh(Z, X), cr: t.snag ? 0.4 : 26 + 6 * hsh(X + 3, Z), snag: !!t.snag });
+  TRUNKS.push({ X, Z, r: t.r, hole: k, job: t.job, placed: true, marker: !!t.marker, h: t.snag ? t.h : t.tall || HT(X, Z), low: t.snag ? 0.99 : t.low || BASE(X, Z) / (t.tall || HT(X, Z)), cr: t.snag ? 0.4 : 26 + 6 * hsh(X + 3, Z), snag: !!t.snag });
 }
-// the heart tree (the 9th's landmark): a trunk 60 m across, its crown from 143 m up
+// the heart tree (the 9th's landmark): a trunk 60 m across, 330 m tall, its crown from 139 m up
 TRUNKS.push({ X: HEART.c[0], Z: HEART.c[1], r: HEART.r, hole: 8, job: 'the heart tree', placed: true, heart: true, h: HEART.h, low: HEART.low, cr: HEART.cr });
 // the vistas to the heart tree (the landmark): the far forest keeps clear of them, so it shows between the trunks
 const wpt = (k, p) => WOR[k](...p);
@@ -83,7 +87,7 @@ const FAR = [];
     if (TRUNKS.some(t => Math.hypot(t.X - X, t.Z - Z) < 26 + t.r)) continue;
     if (vistaD(X, Z) < 18 + 2 * 3) continue;
     const r = 4 + 2 * hsh(i + 2, j + 9);
-    FAR.push({ X, Z, r, far: true, h: 96 + 14 * hsh(X, Z), low: 0.53 + 0.04 * hsh(Z, X), cr: 24 + 6 * hsh(X + 3, Z) });   // conifer crowns from about half way up, wide enough that neighbours touch: a roof
+    FAR.push({ X, Z, r, far: true, h: HT(X, Z), low: BASE(X, Z) / HT(X, Z), cr: 24 + 6 * hsh(X + 3, Z) });   // conifer crowns from 50-55 m up, wide enough that neighbours touch: a roof
   }
 }
 export const ALLTREES = [...TRUNKS, ...FAR];

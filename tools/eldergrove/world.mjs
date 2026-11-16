@@ -157,7 +157,7 @@ export const poolE = (X, Z) => seDist({ x: POOL.c[0], z: POOL.c[1], rx: POOL.rx,
 
 // ---- the heart tree: a trunk 60 m across at the origin, its root mound rising toward it and its buttress roots
 // radiating out to about 100 m (none toward the 9th green: the amphitheatre's roots are the 9th's own, holes.mjs)
-export const HEART = { c: [0, 0], r: 30, h: 260, low: 0.55, cr: 95, roots: 104 };
+export const HEART = { c: [0, 0], r: 30, h: 330, low: 0.42, cr: 95, roots: 104 };   // twice the forest's height, its crown from 139 m
 const BUTTRESS = [20, 62, 105, 150, 196, 238, 345].map(a => a * Math.PI / 180);   // bearings of the big roots (not 270-330: the 9th's side)
 export function heartAt(X, Z) {   // { lift, root (0-1: on a root) }
   const dx = X, dz = Z, r = Math.hypot(dx, dz); if (r > 140) return { lift: 0, root: 0 };

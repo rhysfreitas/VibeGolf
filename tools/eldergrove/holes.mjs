@@ -296,7 +296,7 @@ export const HOLES = [
       green: { k: 1.0, lobes: [[0, 0, 11.5, 14, 22], [5, 8, 6.5, 5.5, 0]], apron: 3, contour: [{ fall: 30, pct: 1.6 }, { ridge: [[-6, -6], [7, 5]], h: 0.25, w: 3 }], style: 'Angled from front left to back right, the brook in front and down the left; falling 1.6% toward the brook with a gentle spine; moss banks behind and right gather a long ball' },
       forms: [{ at: P(len + 14, 10), rx: 14, rz: 9, h: 2.2, label: 'the moss bank' }],
       trunks: [
-        { job: 'the stair tree: its crown 90 m up, three great limbs low down each carrying a tee, the stair round its trunk', list: [{ s: -6, off: 15, r: 5.5, tall: 112, low: 0.8, stair: true }] },
+        { job: 'the stair tree: its crown 90 m up (on a tree 175 m tall), three great limbs low down each carrying a tee, the stair round its trunk', list: [{ s: -6, off: 15, r: 6, tall: 175, low: 0.52, stair: true }] },
         { job: 'behind the green', list: [[len + 32, -22, 5], [len + 36, 24, 5.2]] },
         { job: 'the light shaft\'s sides', list: [[70, -44, 4.8], [78, 46, 5]] },
       ],

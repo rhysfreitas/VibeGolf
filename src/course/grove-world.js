@@ -104,7 +104,7 @@ function shapes() {
   { const p = trunk.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i), f = 1 + 0.55 * Math.max(0, 1 - y / 0.06) ** 2, a = Math.atan2(p.getZ(i), p.getX(i)), lobe = 1 + 0.12 * Math.abs(Math.cos(a * 2.5)) * Math.max(0, 1 - y / 0.1); p.setX(i, p.getX(i) * f * lobe); p.setZ(i, p.getZ(i) * f * lobe); } trunk.computeVertexNormals(); }
   // a crown: an old conifer's, tiers of drooping boughs stacked up a spire (unit radius at its widest, unit height
   // from its lowest bough to its tip), the outline crownR; three of them so neighbours differ, and a plain one far off
-  const crowns = [0, 1, 2].map(v => coniferGeo(9, 10, v, true)), crownFar = coniferGeo(4, 6, 3, false);
+  const crowns = [0, 1, 2].map(v => coniferGeo(14, 10, v, true)), crownFar = coniferGeo(6, 6, 3, false);
   const step = new THREE.BoxGeometry(1, 1, 1); step.translate(0, 0.5, 0);
   for (const g of [trunk, ...crowns, crownFar, step]) g.userData.keep = true;
   return (SHAPES = { trunk, crowns, crownFar, step });
@@ -118,7 +118,7 @@ export const crownR = u => u < 0 || u > 1 ? 0 : u < 0.15 ? 0.85 + u : u < 0.55 ?
 function coniferGeo(N, seg, v, under) {
   const pos = [], col = [], tri = (a, b, c, k) => { pos.push(...a, ...b, ...c); for (let q = 0; q < 3; q++) col.push(k, k * 1.02, k * 0.98); };
   for (let k = 0; k < N; k++) {
-    const ub = k / N * 0.86, ua = Math.min(1, ub + 0.26 + 0.04 * hash(k, v)), R = crownR(ub + 0.05) * (0.88 + 0.22 * hash(v * 3 + k, 1.7)) + 0.04;
+    const ub = k / N * 0.86, ua = Math.min(1, ub + 1.9 / N + 0.03 * hash(k, v)), R = crownR(ub + 0.05) * (0.88 + 0.22 * hash(v * 3 + k, 1.7)) + 0.04;
     const ox = (hash(k * 1.3, v) - 0.5) * 0.16, oz = (hash(v, k * 1.9) - 0.5) * 0.16, rot = hash(k, v + 4) * 6.28;
     const rim = [...Array(seg)].map((_, q) => { const an = rot + q / seg * Math.PI * 2, j = 0.78 + 0.4 * hash(q * 2.1 + k, v * 5.3 + q); return [ox + Math.cos(an) * R * j, ub - 0.025 * j + (hash(q, k + v) - 0.5) * 0.03, oz + Math.sin(an) * R * j]; });
     const apex = [ox * 0.5, ua, oz * 0.5], bot = [ox, ub + 0.07, oz], lit = 0.72 + 0.3 * (ub + ua) / 2;
@@ -225,7 +225,7 @@ export function buildGrove(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
       if (X > -1000 && X < 900 && Z > -800 && Z < 900) continue;   // the plan's own forest is in E.trees
       if (hash(i * 2.3, j * 1.9) < 0.12 || fmM(X, Z) === 5 || fmM(X, Z) === 8) continue;
       const [x, z] = L(X, Z); if ((x - cx) ** 2 + (z - cz) ** 2 > ext * ext) continue;
-      near.push({ x, z, r: 4 + 2 * hash(i + 2, j + 9), h: 96 + 14 * hash(X, Z), low: 0.53 + 0.04 * hash(Z, X), cr: 23 + 6 * hash(X + 3, Z), y: LY(fmH(X, Z)) - 0.5 });
+      const Hh = 150 + 25 * hash(X, Z); near.push({ x, z, r: 4 + 2 * hash(i + 2, j + 9), h: Hh, low: (51.5 + 4 * hash(Z, X)) / Hh, cr: 23 + 6 * hash(X + 3, Z), y: LY(fmH(X, Z)) - 0.5 });
     }
   }
   {
@@ -291,8 +291,8 @@ export function buildGrove(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
       for (let i = Math.floor((ccx - R) / cell); i <= Math.floor((ccx + R) / cell); i++) for (let j = Math.floor((ccz - R) / cell); j <= Math.floor((ccz + R) / cell); j++) { const k = key(i, j); if (!grid.has(k)) grid.set(k, []); grid.get(k).push({ x: ccx, z: ccz, lo, H, cr: R }); }
     }
     const shaded = (x, y, z) => {
-      for (let d = 3; d < 260; d += 3) {
-        const px = x + sunDir.x * d, py = y + sunDir.y * d, pz = z + sunDir.z * d; if (py > y + 125) return false;
+      for (let d = 3; d < 380; d += 3) {
+        const px = x + sunDir.x * d, py = y + sunDir.y * d, pz = z + sunDir.z * d; if (py > y + 185) return false;
         const Lc = grid.get(key(Math.floor(px / cell), Math.floor(pz / cell))); if (!Lc) continue;
         for (const t of Lc) { const r = crownR((py - t.lo) / t.H) * t.cr * 0.8; if (r > 0 && (px - t.x) ** 2 + (pz - t.z) ** 2 < r * r) return true; }
       }
