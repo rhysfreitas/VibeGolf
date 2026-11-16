@@ -65,3 +65,21 @@ and `node book.mjs` → `out/cloudrest-plan-book-r1.pdf` (white landscape pages;
   terraces, the carries, the pinnacles, walks, the golden roof.
 - `plans.py`, `sketch.mjs`, `book.mjs`: the book (it reads JPEG copies of the views, plans and map: `out/*.jpg`, made from the PNGs as in the snippet at the top of `book.mjs`). `round1-notes.json`: what moved from the layout doc and what is
   open, page 3.
+
+## The blockout (16 November 2026)
+
+Rhys on round 1: "This looks really great. I would say build it" (no preference on the open questions: built as the
+book draws it). `node emit.mjs` (about a minute) writes `src/course/cloudrest.js`; don't hand-edit it. Each hole's
+field is sampled every 2 m from `worldAt` with open air stored as gaps (terrain.js reads a gap as no ground: a ball
+over an edge falls and it's a cloud drop), engine codes (fairway, fringe, tee, rough for mountain grass, scrub and the
+tea rows, native 'desert' for rock, the kerbs and the courtyard's paving, sand, water with a 0.8 m bed) and a paint
+byte (0 rough, 1 scrub, 2 rock, 3 kerb, 4 tea, 5 paving, 6 sand, 8 water, 10 mown, 255 open air). The cliffs are part
+of the field's ground, so `COURSE.wallSoak` soaks a ball that flies into one. The monastery's halls, the stupa, the
+gate house, the prayer-wheel house, the cairn and the courtyard's walls are soaking boxes; the balcony's parapet
+throws a ball back; the alcove's roof is slabs of rock 80-90 m up along the 7th (`ROOFBOX`); all `draw: false`.
+`COURSE.cloud` is the gorge once: a 10 m map over the course and a 40 m one out to 5 km (gaps for open air), the
+mist's level, the built things, the pines, the roof. `src/course/cloud-world.js` draws it (blockout): the ground in
+the shader's `CLOUD` branch, cliff faces from every edge down past the mist, the mist sheet with a thinner layer
+over it, water, the boxes under red and gold roofs, the roof slabs, the pines as cones. The notch's far side became
+a slope of scree and the 5th's lay-up moved to 210 m (the gate's player was stuck under a sheer far face).
+`tests/cloudrest.test.mjs` checks the course.

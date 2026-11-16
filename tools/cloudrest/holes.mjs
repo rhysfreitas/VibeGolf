@@ -164,14 +164,14 @@ export const HOLES = [
       targets: [],
       words: {
         story: 'The Needle: a green on top of a lone stone pillar in the gorge.',
-        plays: 'From the hanging valley\'s lip the 4th drops 18 m to a small green on top of a lone stone pillar standing out of the mist, a twisted pine beside the flag. A rim of rock round the back half holds a long ball. Everything short, wide or over the rim\'s ends is in the mist: a stroke and a drop on the pillar\'s near edge.',
+        plays: 'From the hanging valley\'s lip the 4th drops 18 m to a small green on top of a lone stone pillar standing out of the mist, a twisted pine beside the flag. A rim of rock round the back half holds a long ball. Everything short, wide or over the rim\'s ends is in the mist: a stroke, and a drop back on the valley\'s lip.',
         safe: 'A short iron to the middle of the green; the rim forgives long.',
         bold: null,
-        miss: 'Short, left, right: the mist (a stroke and a drop on the pillar). Long: the rim of rock holds it on top. The safe miss is long.',
+        miss: 'Short, left, right: the mist (a stroke, and a drop back on the lip where it went over). Long: the rim of rock holds it on top. The safe miss is long.',
       },
       card: {
         type: 'Original (a pillar green)', form: 'Par 3', feature: 'The Needle: a lone pillar out of the mist, its rim of rock, the twisted pine', job: 'The pillar is the hazard (all carry, the green is the island); the rim a helper (it holds a long ball); the pine a frame',
-        decision: 'None: one shot', miss: 'Everything but long is in the mist; long is held by the rim. A drop on the pillar for a stroke',
+        decision: 'None: one shot', miss: 'Everything but long is in the mist; long is held by the rim. A stroke and a drop back on the lip',
         view: 'The valley\'s lip at your feet, then the gorge; the pillar and its green below and in front, the ridge (the 5th) running away beyond it',
         ground: 'The drop: 18 m down, the course\'s only drop par 3',
         height: 'Drop (the only one)', dial: 'Green size: 330 m² on a pillar', shots: { tee: 'A short iron, high, that stops', approach: '' }, hazard: 'All round: the mist', surround: 'A rim of rock behind; the drop everywhere else',
@@ -191,17 +191,17 @@ export const HOLES = [
       prof: [[0, 0], [len, 0]],
       bunkers: [sand(P(len - 15, -13), 4.5, 3.2, 0.2), sand(P(len + 6, 15), 4, 2.8, -0.4)],
       green: { k: 1, lobes: [[0, 0, 10, 13, -20], [5, 8, 6, 5.5]], apron: 3, contour: [{ fall: 200, pct: 1.8 }, { ridge: [[-8, 1], [9, -1]], h: 0.3, w: 2.8 }], style: 'At the eastern cliff\'s foot, the wall behind it; a spine across it; sand short left' },
-      targets: [{ name: 'Short of the notch', at: P(228, 0) }, { name: 'Over the notch', at: P(285, 0), bold: true }],
+      targets: [{ name: 'Short of the notch', at: P(210, 0) }, { name: 'Over the notch', at: P(298, 0), bold: true }],   // the lay-up 41 m short of the notch: drives that ran on into it were stuck under its far face
       words: {
         story: 'The broken ridge: across the gorge on a crest of joined pinnacles.',
-        plays: 'The reveal: from a tee out on the ridge the gorge runs away on both sides. The hole crosses it along a crest of joined pinnacles, a hog\'s back about 40 m across: only the spine holds. A ball that leaks left drops 8 m to a catch shelf on the north side (a blind shot back up); the south side is the mist, behind a kerb on the flank\'s lip. A notch cuts the ridge 251-265 m out: lay up short of it, or carry it (265 m from the back tee) to the far side. The green sits at the foot of the eastern cliff.',
-        safe: 'A 3 wood or hybrid to 228 m, short of the notch; a long second (about 240 m, a wood in this air).',
-        bold: 'Driver over the notch (a 265 m carry) to 285 m, leaving about 180 m.',
-        miss: 'Left: the flank, then the catch shelf 8 m down (rough, a blind shot back up). Right: the flank to the kerb; over the kerb is the mist. Short of the notch\'s far side: a rock lie in the notch, 10 m down. At the green: the cliff behind returns a long ball; sand short left.',
+        plays: 'The reveal: from a tee out on the ridge the gorge runs away on both sides. The hole crosses it along a crest of joined pinnacles, a hog\'s back about 40 m across: only the spine holds. A ball that leaks left drops 8 m to a catch shelf on the north side (a blind shot back up); the south side is the mist, behind a kerb on the flank\'s lip. A notch cuts the ridge 251-265 m out, its far side a slope of scree you can play up out of: lay up short of it, or carry it (265 m from the back tee) to the far side. The green sits at the foot of the eastern cliff.',
+        safe: 'A 3 wood or hybrid to 210 m, short of the notch; a long second (about 255 m, a wood in this air).',
+        bold: 'Driver over the notch (a 265 m carry, 290 m to land on the fairway beyond its scree) to 298 m, leaving about 170 m.',
+        miss: 'Left: the flank, then the catch shelf 8 m down (rough, a blind shot back up). Right: the flank to the kerb; over the kerb is the mist. Short of the notch\'s far side: a rock lie in the notch, 10 m down, then a pitch up its scree. At the green: the cliff behind returns a long ball; sand short left.',
       },
       card: {
         type: 'Hog\'s Back', form: 'Broken', feature: 'The crest; the catch shelf; the notch; the kerb on the south flank', job: 'The crest is a lie-setter (it sheds a loose ball); the catch shelf a helper (it saves a ball from the mist); the notch a hazard (across); the kerb a helper',
-        decision: 'Lay up or carry: short of the notch (228 m) or over it (a 265 m carry); the bold line leaves about 55 m less',
+        decision: 'Lay up or carry: short of the notch (210 m) or over it (a 265 m carry); the bold line leaves about 70 m less',
         miss: 'Small: the flanks. Medium left: the catch shelf (a blind recovery). Medium right: the kerb. Big right: the mist. Safe miss at the green: long (the wall)',
         view: 'The ridge running away from your feet, the gorge falling away both sides (the reveal), the notch a dark gap at 275 yd, the eastern cliff and the monastery beyond',
         ground: 'Hog\'s back: a crowned crest about 40 m across, the north flank down 8 m to a shelf, the south flank to the mist; +4 m tee to green',
@@ -248,7 +248,7 @@ export const HOLES = [
       flat: 0,   // the alcove's floor is the world's own
       prof: [[0, 0], [150, 0], [178, 3], [len, 3]],
       bunkers: [sand(P(len - 19, 15), 5, 3.5, 0.2), sand(P(len + 14, -12), 4.2, 3, 0.3)],
-      green: { k: 1, lobes: [[0, 0, 13, 16, -8], [-7, -10, 8, 8], [7, 9, 8, 7]], apron: 3, contour: [{ fall: 0, pct: 2.0 }, { ridge: [[-6, -11], [-5, 10]], h: 0.35, w: 3 }], style: 'Big (700 m²) on a shelf 3 m up, a spine down its length; the back wall left; sand short right; the lotus pool short left' },
+      green: { k: 1, lobes: [[0, 0, 13, 16, -8], [-7, -10, 8, 8], [7, 9, 8, 7]], apron: 3, contour: [{ fall: 0, pct: 1.6 }, { ridge: [[-6, -11], [-5, 10]], h: 0.35, w: 3 }], style: 'Big (700 m²) on a shelf 3 m up, a spine down its length; the back wall left; sand short right; the lotus pool short left' },
       targets: [],
       words: {
         story: 'The alcove: a long iron under a roof of rock 90 m up.',

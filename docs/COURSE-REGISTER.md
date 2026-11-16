@@ -47,7 +47,7 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
 | The Buried Kingdom (art pass 1, 14 November 2026) | 3 The Landing | 5L The River Bank | 4 The Causeway ↑ | 4R Sahara | 3 The Sphinx | 5R Hog's Back | 4L The Quarry | 4R The Gate | 4L The Colossi | 36 |
 | Wrecker's Reach (art pass 1, 15 November 2026) | 5 The Hauling Ground | 3 The False Light | 4R d The Galleon | 4L Man-of-War | 5R The Cauldron | 3 The Dell | 3 The Ribs | 5R The Graveyard | 4L The Wrecker's Inn | 36 |
 | Eldergrove (blockout 15 November 2026; `?c=eldergrove`) | 4L The Eaves | 5 \| The Avenue | 4R The Fallen Giant | 4L The Mirror | 4L The Glade | 3 ↓ The Stair | 5L The Brook | 3 The Hollow | 4R The Hall | 36 |
-| Cloudrest (layout approved 15 November 2026; plan book round 1 the same night, `tools/cloudrest/`) | 4R The Overlook | 3 The Balcony | 5L ↓ The Hanging Valley | 3 The Needle (the drop, −18 m) | 4L The Broken Ridge | 5R ↑ The Stair | 3 The Alcove | 5L The Tea Terraces | 4S ↓ The Descent | 36 |
+| Cloudrest (layout approved 15 November 2026; plan book round 1 the same night; a playable blockout 16 November, `?c=cloudrest`) | 4R The Overlook | 3 The Balcony | 5L ↓ The Hanging Valley | 3 The Needle (the drop, −18 m) | 4L The Broken Ridge | 5R ↑ The Stair | 3 The Alcove | 5L The Tea Terraces | 4S ↓ The Descent | 36 |
 | The Labyrinth (layout approved 15 November 2026; round 0 in `tools/labyrinth/`) | 5L The Gate | 4 \| The Long Corridor | 4L (or R) The Elbow | 4R The Cistern | 3 The Tower Court | 4R The Hanging Garden | 3 The Two Doors | 3 ↓ The Parapet (the drop, −28 m) | 5R ↓ The Way Out | 35 |
 
 - The Labyrinth (Rhys's picks, 15 November 2026; `claude/labyrinth-layout.md` and `claude/brief-labyrinth.md` in the

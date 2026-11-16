@@ -96,7 +96,7 @@ export function pinnacleAt(X, Z) {
 // it 251-265 m from the 5th's back tee: a V of rock 10 m deep.
 export const RIDGE = W([[-140, -486], [-110, -480], [120, -430], [316, -308], [345, -290]]);
 const RIDGE_S0 = Math.hypot(30, 6);   // the 5th's back tee sits this far along it
-export const NOTCH = { s0: 251, s1: 265, depth: 10 };
+export const NOTCH = { s0: 251, s1: 265, depth: 10, scree: 34 };
 const ridgeCrest = s => { const t = s - RIDGE_S0; return 190 + 4 * smooth(t / 470) + 0.8 * noise1(t / 37, 51); };
 export function ridgeAt(X, Z) {   // { y, part: 'spine'|'flank'|'shelf'|'kerb'|'notch' } or null
   const pr = project(RIDGE, X, Z), len = lengthOf(RIDGE); if (pr.s < 0.5 || pr.s > len - 0.5 || pr.d > 75) return null;
@@ -122,7 +122,11 @@ export function ridgeAt(X, Z) {   // { y, part: 'spine'|'flank'|'shelf'|'kerb'|'
   }
   // the notch: a V of rock across the whole ridge
   const nm = (NOTCH.s0 + NOTCH.s1) / 2 + RIDGE_S0, nw = (NOTCH.s1 - NOTCH.s0) / 2 + 6;
-  const dn = Math.abs(pr.s - nm); if (dn < nw) { const k = 1 - dn / nw; y -= NOTCH.depth * smooth(k * 1.4); if (k > 0.25) part = 'notch'; }
+  // its near face steep, its far side a slope of scree about 30% that a ball in it can play up (round 1: from a sheer
+  // far face the gate's player was stuck in the notch)
+  const dn = pr.s - nm;
+  if (dn < 0 && -dn < nw) { const k = 1 + dn / nw; y -= NOTCH.depth * smooth(k * 1.4); if (k > 0.25) part = 'notch'; }
+  else if (dn >= 0 && dn < NOTCH.scree) { const k = 1 - dn / NOTCH.scree, d = NOTCH.depth * (dn < nw * 0.3 ? 1 : smooth(k * 1.15)); y -= d; if (d > 2.5) part = 'notch'; }
   // pinnacles joined along it: knobs of rock beyond the play, on the flanks
   return { y, part, off, s: t };
 }
