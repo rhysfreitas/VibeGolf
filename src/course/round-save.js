@@ -15,6 +15,14 @@ export function packRound(s, now = Date.now()) {
   };
 }
 
+// The hole to play after `from`: the first one after it (wrapping round) with no score yet, or -1 when every hole
+// has one (the round is finished). Holes can be played in any order (the scorecard's hole picker), so "next" is the
+// next one still to play, not just from + 1.
+export function nextOpen(scores, from, n) {
+  for (let k = 1; k <= n; k++) { const i = (from + k) % n; if (i !== from && (scores[i] == null)) return i; }
+  return -1;
+}
+
 // The saved round if it can be picked up on this course as it is now, else null.
 // course = { id, holes (count), teeIds }
 export function readRound(raw, course, now = Date.now()) {
@@ -23,7 +31,7 @@ export function readRound(raw, course, now = Date.now()) {
   if (!r || typeof r !== 'object' || r.v !== VERSION || r.course !== course.id) return null;
   if (!(now - r.at >= 0) || now - r.at > ROUND_MAX_AGE) return null;
   if (!Number.isInteger(r.holeIdx) || r.holeIdx < 0 || r.holeIdx >= course.holes) return null;
-  if (r.holed && r.holeIdx >= course.holes - 1) return null;                 // the round was finished
+  if (r.holed && Array.isArray(r.scores) && nextOpen(r.scores, r.holeIdx, course.holes) < 0) return null;   // the round was finished
   if (!r.cond || !course.teeIds.includes(r.cond.tee)) return null;
   if (!Array.isArray(r.ball) || r.ball.length !== 3 || !r.ball.every(Number.isFinite)) return null;
   if (!Number.isInteger(r.strokes) || r.strokes < 0 || typeof r.lie !== 'string') return null;
@@ -37,9 +45,9 @@ export function readRound(raw, course, now = Date.now()) {
 
 // "Hole 4 · 2 strokes · +1 thru 3" for the Resume button.
 export function describeRound(r, pars) {
-  const next = r.holed ? r.holeIdx + 1 : r.holeIdx;
+  const next = r.holed ? nextOpen(r.scores, r.holeIdx, pars.length) : r.holeIdx;
   let played = 0, total = 0, par = 0;
-  r.scores.forEach((s, i) => { if (s != null && pars[i] != null && (i < next)) { played++; total += s; par += pars[i]; } });
+  r.scores.forEach((s, i) => { if (s != null && pars[i] != null && !(i === next && !r.holed)) { played++; total += s; par += pars[i]; } });
   const d = total - par, rel = d === 0 ? 'level' : d > 0 ? `+${d}` : `${d}`;
   const here = r.holed || r.strokes === 0 ? 'on the tee' : `${r.strokes} stroke${r.strokes === 1 ? '' : 's'}`;
   return `Hole ${next + 1} · ${here}` + (played ? ` · ${rel} thru ${played}` : '');

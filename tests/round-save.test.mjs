@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { packRound, readRound, describeRound, ROUND_MAX_AGE } from '../src/course/round-save.js';
+import { packRound, readRound, describeRound, nextOpen, ROUND_MAX_AGE } from '../src/course/round-save.js';
 
 const course = { id: 'aerie', holes: 9, teeIds: ['eagle', 'hawk', 'kestrel', 'wren'] };
 const live = (o = {}) => ({ courseId: 'aerie', cond: { tee: 'hawk', time: 'morning', wind: 'breeze', windFrom: 'random', weather: 'clear', temp: 'mild', teeChosen: true },
@@ -21,7 +21,23 @@ test('holed out mid-round: it resumes on the next tee; a finished round is not k
   const r = readRound(packRound(live({ holed: true, scores: [4, 5, 3, 5] }), 0), course, 1);
   assert.ok(r.holed);
   assert.equal(describeRound(r, [4, 4, 3, 5, 4, 3, 4, 4, 5]), 'Hole 5 · on the tee · +1 thru 4');
-  assert.equal(readRound(packRound(live({ holeIdx: 8, holed: true }), 0), course, 1), null);
+  assert.equal(readRound(packRound(live({ holeIdx: 8, holed: true, scores: [4, 5, 3, 5, 4, 3, 4, 4, 5] }), 0), course, 1), null);
+});
+
+test('holes played in any order: next is the next one still to play, and the round ends when all have a score', () => {
+  assert.equal(nextOpen([4, 5, 3], 2, 9), 3, 'in order, the next hole');
+  assert.equal(nextOpen([4, null, 3, null, null, null, null, null, 5], 8, 9), 1, 'after the 9th, back round to the 2nd');
+  assert.equal(nextOpen([4, 5], 6, 9), 7, 'from a hole picked out of order, on from there');
+  assert.equal(nextOpen([4, 5, 3, 5, 4, 3, 4, 4, 5], 8, 9), -1, 'every hole scored: finished');
+  assert.equal(nextOpen([4, 5, 3, 5, 4, 3, 4, 4], 2, 9), 8, 'only the 9th left');
+  // the 9th holed out first: not finished, it resumes on the 1st
+  const sc = []; sc[8] = 4;
+  const r = readRound(packRound(live({ holeIdx: 8, holed: true, scores: sc }), 0), course, 1);
+  assert.ok(r, 'kept');
+  assert.equal(describeRound(r, [4, 4, 3, 5, 4, 3, 4, 4, 5]), 'Hole 1 · on the tee · -1 thru 1');
+  // replaying a hole that has a score: its old score isn't counted while it's being played again
+  const r2 = readRound(packRound(live({ holeIdx: 1, strokes: 1, scores: [4, 5, 3] }), 0), course, 1);
+  assert.equal(describeRound(r2, [4, 4, 3, 5, 4, 3, 4, 4, 5]), 'Hole 2 · 1 stroke · level thru 2');
 });
 
 test('a save is refused when it is stale, for another course, for tees that no longer exist, or broken', () => {

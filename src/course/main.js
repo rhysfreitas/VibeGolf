@@ -11,7 +11,7 @@ import { recorder } from '../recorder.js';
 import { createLiveQueue } from '../live-queue.js';
 import { keepAwake } from '../wake.js';
 import { attachAdaptiveRes } from '../adaptive-res.js';
-import { packRound, readRound, describeRound } from './round-save.js';
+import { packRound, readRound, describeRound, nextOpen } from './round-save.js';
 import { createMinimap } from './minimap.js';
 import { createSimTool } from '../sim-tool.js';
 import { cumulusBanks, skyPines, clumpGeo, clumpMat } from '../world/sky-art.js';
@@ -2018,28 +2018,57 @@ function putt() {
 function holeOut() {
   state.phase = 'holed'; ball.visible = false;
   state.scores[state.holeIdx] = state.strokes;
-  if (state.holeIdx === HOLES.length - 1) clearRound(); else saveRound(true);
+  if (nextOpen(state.scores, state.holeIdx, HOLES.length) < 0) clearRound(); else saveRound(true);
   const diff = state.strokes - HOLE.par;
   const word = state.strokes === 1 ? 'Hole in one' : ({ '-3': 'Albatross', '-2': 'Eagle', '-1': 'Birdie', '0': 'Par', '1': 'Bogey', '2': 'Double bogey' }[diff] || `+${diff}`);
   toast(word, `${state.strokes} strokes on ${HOLE.name}`, 2800);
   tick(220, 0.12, 0.6); setTimeout(() => tick(180, 0.15, 0.5), 90);
   setPhaseUI();
-  setTimeout(() => showCard(true), 2400);
+  const at = state.holeIdx;
+  setTimeout(() => { if (state.phase === 'holed' && state.holeIdx === at) showCard(true); }, 2400);   // not if a hole was picked meanwhile
 }
+// The scorecard is also the hole picker (Rhys, 16 November 2026: "skip around on course holes"): tap a hole's row,
+// then the button plays it from the tee. Two steps, so a stray tap mid-hole doesn't throw the strokes away. Holes
+// can be played in any order; "next" is the next one still to play (round-save.js nextOpen), and the round is
+// complete when every hole has a score.
+const cardState = { afterHole: false, pick: null };
+const ballMoving = () => ['flight', 'rest', 'rolling'].includes(state.phase);
 function showCard(afterHole) {
-  const rows = HOLES.map((h, i) => { const s = state.scores[i]; const d = s != null ? s - h.par : null; return `<tr><td>${i + 1}</td><td class="nm">${h.name}</td><td>${yardsOf(h)}</td><td>${h.par}</td><td class="${d < 0 ? 'u' : d > 0 ? 'o' : ''}">${s ?? '—'}</td></tr>`; }).join('');
+  cardState.afterHole = afterHole; cardState.pick = null;
+  drawCard();
+  $('card').hidden = false;
+}
+function drawCard() {
+  const { afterHole, pick } = cardState, canPick = !ballMoving() && state.phase !== 'setup';
+  const rows = HOLES.map((h, i) => { const s = state.scores[i]; const d = s != null ? s - h.par : null; const cls = [i === state.holeIdx && state.phase !== 'holed' ? 'here' : '', i === pick ? 'picked' : ''].filter(Boolean).join(' '); return `<tr data-h="${i}"${cls ? ` class="${cls}"` : ''}><td>${i + 1}</td><td class="nm">${h.name}</td><td>${yardsOf(h)}</td><td>${h.par}</td><td class="${d < 0 ? 'u' : d > 0 ? 'o' : ''}">${s ?? '—'}</td></tr>`; }).join('');
   const played = state.scores.filter(s => s != null), parPlayed = HOLES.filter((h, i) => state.scores[i] != null).reduce((a, h) => a + h.par, 0);
   const tot = played.reduce((a, b) => a + b, 0), rel = tot - parPlayed;
   $('scTable').innerHTML = `<thead><tr><th>Hole</th><th></th><th>Yds</th><th>Par</th><th>Score</th></tr></thead><tbody>${rows}<tr><td></td><td class="nm">Total</td><td>${HOLES.reduce((a, h) => a + yardsOf(h), 0)}</td><td>${HOLES.reduce((a, h) => a + h.par, 0)}</td><td class="${rel < 0 ? 'u' : rel > 0 ? 'o' : ''}">${played.length ? tot + ` (${rel === 0 ? 'E' : rel > 0 ? '+' + rel : rel})` : '—'}</td></tr></tbody>`;
-  const last = state.holeIdx === HOLES.length - 1 && afterHole;
+  const nx = nextOpen(state.scores, state.holeIdx, HOLES.length), last = afterHole && nx < 0;
   const set = TEE_SETS.find(t => t.id === cond.tee);
+  $('scTable').classList.toggle('pickable', canPick);
   $('cardSub').textContent = (afterHole ? `Hole ${state.holeIdx + 1} complete` : 'Scorecard') + (TEE_SETS.length > 1 ? ` · ${set.name} tees` : '');
   $('cardTitle').textContent = last ? 'Round complete' : COURSE.name;
-  $('cardNext').textContent = last ? 'Play again' : 'Next hole';
-  $('cardNext').hidden = !afterHole;
-  $('card').hidden = false;
+  const midHole = state.phase !== 'holed' && state.strokes > 0;
+  if (pick != null) {
+    $('cardNext').textContent = pick === state.holeIdx && state.phase !== 'holed' ? `Restart hole ${pick + 1}` : `Play hole ${pick + 1}`;
+    $('cardNote').textContent = midHole ? `The ${state.strokes} stroke${state.strokes === 1 ? '' : 's'} on hole ${state.holeIdx + 1} won't count.` : '';
+  } else {
+    $('cardNext').textContent = last ? 'Play again' : nx === state.holeIdx + 1 ? 'Next hole' : `Play hole ${nx + 1}`;
+    $('cardNote').textContent = !canPick ? (state.phase === 'setup' ? '' : 'Pick a hole once the ball stops.') : 'Tap a hole to play it.';
+  }
+  $('cardNext').hidden = !(afterHole || pick != null);
 }
-$('cardNext').onclick = () => { $('card').hidden = true; if (state.holeIdx === HOLES.length - 1) { state.scores = []; openSetup(); } else startHole(state.holeIdx + 1); };
+$('scTable').onclick = e => {
+  const tr = e.target.closest('tr[data-h]'); if (!tr || ballMoving() || state.phase === 'setup') return;
+  const i = +tr.dataset.h; cardState.pick = cardState.pick === i ? null : i; drawCard();
+};
+function playHole(i) { $('card').hidden = true; startHole(i); saveRound(); }
+$('cardNext').onclick = () => {
+  if (cardState.pick != null) { playHole(cardState.pick); return; }
+  const nx = nextOpen(state.scores, state.holeIdx, HOLES.length);
+  if (nx < 0) { $('card').hidden = true; state.scores = []; openSetup(); } else playHole(nx);
+};
 $('cardClose').onclick = () => { $('card').hidden = true; };
 $('btnCard').onclick = () => showCard(false);
 
@@ -2363,7 +2392,7 @@ function resumeRound(r) {
   Object.assign(cond, r.cond); cond.teeChosen = true;
   try { localStorage.setItem(TEE_KEY, cond.tee); } catch (e) { /* storage off */ }
   $('setup').hidden = true; windRoll = r.windRoll; state.scores = r.scores.slice(); state.pinPick = r.pinPick.slice(); state.once = new Set(r.once || []);
-  startHole(r.holed ? r.holeIdx + 1 : r.holeIdx); initAudio();
+  startHole(r.holed ? nextOpen(r.scores, r.holeIdx, HOLES.length) : r.holeIdx); initAudio();
   if (r.holed) return;                       // holed out before leaving: the next hole from its tee
   const g = groundAt(r.ball[0], r.ball[2]);
   state.strokes = r.strokes;
