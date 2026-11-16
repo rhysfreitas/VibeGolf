@@ -197,7 +197,8 @@ function lightPreset() {
 }
 function applySky(heading = 0) {
   const T0 = TIMES[cond.time] || TIMES.morning, P = lightPreset();
-  const a = RING ? skyAngles(90, cond.time === 'golden' ? 8 : Math.max(8, T0.sunEl * 0.6), heading) : skyAngles(T0.sunAz, EMBER && cond.time === 'golden' ? EMBER_SUN[emberStage] : GROVE && cond.time === 'morning' ? 32 : T0.sunEl, MESA ? heading : 333);   // the ring's sun: through the east glass
+  // Cloudrest's golden hour stands the sun at 20°: at 8.5° a pine 26 m off the line laid a shadow 80 m long across the play
+  const a = RING ? skyAngles(90, cond.time === 'golden' ? 8 : Math.max(8, T0.sunEl * 0.6), heading) : skyAngles(T0.sunAz, EMBER && cond.time === 'golden' ? EMBER_SUN[emberStage] : GROVE && cond.time === 'morning' ? 32 : CLOUD && cond.time === 'golden' ? 20 : T0.sunEl, MESA ? heading : 333);   // the ring's sun: through the east glass
   sunDir.setFromSphericalCoords(1, a.polar, a.azimuth);
   const skySun = T0.night ? new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(96), skyAngles(300, 0, MESA ? heading : 333).azimuth) : sunDir;
   skyU.turbidity.value = P.turb; skyU.rayleigh.value = P.ray; skyU.mieCoefficient.value = P.mie; skyU.mieDirectionalG.value = 0.85;
@@ -370,7 +371,31 @@ float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); retu
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),u.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x), u.y); }
 float fb(vec2 p){ return vn(p)*0.5 + vn(p*2.07+3.1)*0.25 + vn(p*4.13+7.7)*0.125 + vn(p*8.4+1.3)*0.0625; }
 vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
-float strataLine(float y){ return smoothstep(0.0, 0.25, abs(fract(y*0.11) - 0.5)); }`)
+float strataLine(float y){ return smoothstep(0.0, 0.25, abs(fract(y*0.11) - 0.5)); }
+#ifdef CLOUD
+// Cloudrest's buff stone along a wall, u the distance along it: tall slabs between wandering vertical joints, ledges
+// every 12-20 m with a shadowed lip, dark streaks and gullies, pale lichen. Returns the colour; ly (the ledge
+// coordinate) out for the moss. Read twice (along x and along z) and blended by the wall's facing, so a curved wall
+// keeps its scale (u from the normal's tangent swings by hundreds of metres round a bend: hairline stripes)
+vec3 cloudStone(float uC, vec3 p, float camD, out float lyO){
+float fn = mix(fb(vec2(uC, p.y)*1.3), 0.5, smoothstep(20.0, 80.0, camD));
+vec3 rock;
+float nearC = 1.0 - smoothstep(220.0, 900.0, camD);
+float jx = uC*0.15 + fb(vec2(p.y*0.018, uC*0.012))*1.7;
+float slab = h21(vec2(floor(jx), 3.0));
+float jl = 1.0 - smoothstep(0.0, 0.035, abs(fract(jx) - 0.5) - 0.465);
+float ly = p.y/15.0 + fb(vec2(uC*0.012, p.y*0.002))*0.9 + slab*0.25;
+float fl = fract(ly), below = 1.0 - fl;
+rock = mix(lin(vec3(0.6,0.56,0.47)), lin(vec3(0.71,0.67,0.57)), vn(vec2(uC*0.02, p.y*0.03)) * 0.7 + slab * 0.3) * (0.86 + 0.2*fn);
+rock = mix(rock, lin(vec3(0.66,0.66,0.55)), smoothstep(0.66, 0.84, fb(vec2(uC*0.09, p.y*0.08) + 5.0)) * 0.5);                       // lichen
+rock *= 0.78 + 0.36 * vn(vec2(uC*0.011, p.y*0.003 + 7.0));                                                                                // big bays and buttresses, so a long wall isn't one tone
+rock = mix(rock, lin(vec3(0.33,0.31,0.26)), smoothstep(0.72, 0.9, vn(vec2(uC*0.028, 2.0 + p.y*0.0015))) * 0.55);                          // dark gullies down the walls
+float streak = smoothstep(0.55, 0.85, vn(vec2(uC*0.55, floor(ly)*3.7))) * exp(-below*2.2) + jl * 0.35 * smoothstep(0.4, 0.7, vn(vec2(uC*0.15, p.y*0.04)));
+rock = mix(rock, lin(vec3(0.27,0.26,0.22)), clamp(streak, 0.0, 1.0) * 0.62);
+rock *= 1.0 - 0.32 * jl * nearC;                                                                                                           // the joints
+rock *= 1.0 - 0.45 * smoothstep(0.86, 0.97, below) * (0.5 + 0.5*nearC);                                                                     // under each ledge's lip
+lyO = (1.0 - smoothstep(0.0, 0.075, fl)) * smoothstep(0.3, 0.55, vn(vec2(uC*0.08, floor(ly)*1.3))); return rock; }   // lyO: the moss on the ledges
+#endif`)
     .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 #ifdef ICE
 for (int i = 0; i < 24; i++) { if (i >= uPoolN) break; vec4 L = uPools[i]; float d = length(vWPos.xz - L.xy); float f = 1.0 - smoothstep(0.0, L.z, d); totalEmissiveRadiance += vec3(1.0, 0.6, 0.28) * f * f * L.w * diffuseColor.rgb; }
@@ -910,22 +935,11 @@ rock = mix(rock, barkC * (0.8 + 0.3*smoothstep(0.3, 0.7, vn(vec2(cwG.x*0.9, cwG.
 // wander, each a shade of its own; ledges every 12-20 m with a shadowed lip and a band of moss on top; dark water
 // streaks running down from each ledge and joint; pale lichen on dry faces; wetter and darker toward the mist. The
 // fine joints fade with distance so far walls don't turn to a grid
-{ vec2 tgC = normalize(vec2(-vWN.z, vWN.x) + vec2(1e-4)); float uC = dot(p.xz, tgC);
-float nearC = 1.0 - smoothstep(220.0, 900.0, camD);
-float jx = uC*0.15 + fb(vec2(p.y*0.018, uC*0.012))*1.7;
-float slab = h21(vec2(floor(jx), 3.0));
-float jl = 1.0 - smoothstep(0.0, 0.035, abs(fract(jx) - 0.5) - 0.465);
-float ly = p.y/15.0 + fb(vec2(uC*0.012, p.y*0.002))*0.9 + slab*0.25;
-float fl = fract(ly), below = 1.0 - fl;
-rock = mix(lin(vec3(0.6,0.56,0.47)), lin(vec3(0.71,0.67,0.57)), vn(vec2(uC*0.02, p.y*0.03)) * 0.7 + slab * 0.3) * (0.86 + 0.2*fine);
-rock = mix(rock, lin(vec3(0.66,0.66,0.55)), smoothstep(0.66, 0.84, fb(vec2(uC*0.09, p.y*0.08) + 5.0)) * 0.5);                       // lichen
-rock *= 0.78 + 0.36 * vn(vec2(uC*0.011, p.y*0.003 + 7.0));                                                                                // big bays and buttresses, so a long wall isn't one tone
-rock = mix(rock, lin(vec3(0.33,0.31,0.26)), smoothstep(0.72, 0.9, vn(vec2(uC*0.028, 2.0 + p.y*0.0015))) * 0.55);                          // dark gullies down the walls
-float streak = smoothstep(0.55, 0.85, vn(vec2(uC*0.55, floor(ly)*3.7))) * exp(-below*2.2) + jl * 0.35 * smoothstep(0.4, 0.7, vn(vec2(uC*0.15, p.y*0.04)));
-rock = mix(rock, lin(vec3(0.27,0.26,0.22)), clamp(streak, 0.0, 1.0) * 0.62);
-rock *= 1.0 - 0.32 * jl * nearC;                                                                                                           // the joints
-rock *= 1.0 - 0.45 * smoothstep(0.86, 0.97, below) * (0.5 + 0.5*nearC);                                                                     // under each ledge's lip
-float mossK = (1.0 - smoothstep(0.0, 0.075, fl)) * smoothstep(0.3, 0.55, vn(vec2(uC*0.08, floor(ly)*1.3)));
+{ vec2 nC = abs(vWN.xz) + vec2(1e-4); nC *= nC; nC *= nC; float wZ = nC.y / (nC.x + nC.y);   // facing z: the wall runs along x
+vec3 rA = vec3(0.0), rB = vec3(0.0); float lA = 0.0, lB = 0.0;
+if (wZ > 0.02) rA = cloudStone(p.x, p, camD, lA);
+if (wZ < 0.98) rB = cloudStone(p.z, p, camD, lB);
+rock = rA * wZ + rB * (1.0 - wZ); float mossK = mix(lB, lA, wZ);
 rock = mix(rock, mix(lin(vec3(0.24,0.33,0.15)), lin(vec3(0.31,0.4,0.18)), fine), max(mossK, smoothstep(0.55, 0.85, vWN.y)) * 0.85);       // moss on the ledges and any flatter shelf
 rock = mix(rock, mix(lin(vec3(0.24,0.33,0.15)), lin(vec3(0.31,0.4,0.18)), fine), (1.0 - smoothstep(0.0, 1.4, vDepth)) * step(0.5, vW4.w) * 0.7);   // grass over the lip
 rock = mix(rock, rock * vec3(0.72, 0.76, 0.74), 1.0 - smoothstep(uCMist + 10.0, uCMist + 90.0, p.y)); }                                // wetter toward the mist

@@ -169,6 +169,27 @@ function shapes() {
 }
 const mapOf = M => { if (!M.hDec) { M.hDec = dec(M.h, Int16Array); if (M.pred) unpackHeights(M.hDec, M.nx); M.mDec = dec(M.m, Uint8Array); } return M; };
 
+// smooth normals for a triangle soup: each corner takes the summed (area-weighted) normals of the triangles that share
+// its position and face within about 70° of its own, so walls shade in curves while a crown's rim or a thin fin stays crisp
+function weldNormals(P) {
+  const n = P.length / 9, TN = new Float32Array(n * 3), K = new Map(), keys = new Array(n * 3);
+  for (let t = 0; t < n; t++) {
+    const o = t * 9, ux = P[o + 3] - P[o], uy = P[o + 4] - P[o + 1], uz = P[o + 5] - P[o + 2], vx = P[o + 6] - P[o], vy = P[o + 7] - P[o + 1], vz = P[o + 8] - P[o + 2];
+    TN[t * 3] = uy * vz - uz * vy; TN[t * 3 + 1] = uz * vx - ux * vz; TN[t * 3 + 2] = ux * vy - uy * vx;
+    for (let c = 0; c < 3; c++) { const q = o + c * 3, k = Math.round(P[q] * 20) + ',' + Math.round(P[q + 1] * 20) + ',' + Math.round(P[q + 2] * 20); keys[t * 3 + c] = k; let L = K.get(k); if (!L) K.set(k, L = []); L.push(t); }
+  }
+  const N = new Float32Array(P.length);
+  for (let t = 0; t < n; t++) {
+    const ax = TN[t * 3], ay = TN[t * 3 + 1], az = TN[t * 3 + 2], al = Math.hypot(ax, ay, az) || 1;
+    for (let c = 0; c < 3; c++) {
+      let sx = 0, sy = 0, sz = 0;
+      for (const u of K.get(keys[t * 3 + c])) { const bx = TN[u * 3], by = TN[u * 3 + 1], bz = TN[u * 3 + 2]; if ((ax * bx + ay * by + az * bz) > 0.34 * al * (Math.hypot(bx, by, bz) || 1)) { sx += bx; sy += by; sz += bz; } }
+      const l = Math.hypot(sx, sy, sz) || 1, q = t * 9 + c * 3; N[q] = sx / l; N[q + 1] = sy / l; N[q + 2] = sz / l;
+    }
+  }
+  return N;
+}
+
 export function buildCloud(hole, T, box, E, hi, { group, coarse, rockMat, sunDir }) {
   const S = shapes();
   const F = hole.frame, a = F.heading * Math.PI / 180, fx = Math.sin(a), fz = -Math.cos(a), rx = Math.cos(a), rz = Math.sin(a);
@@ -208,20 +229,43 @@ export function buildCloud(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
   const FP = [], FW = [], FD = [], edges = [];
   const wob = (x, z, d) => { const A = Math.min(7, d * 0.22), X = x + F.x, Z = z + F.z;
     return [A * (vn2(X / 46, Z / 46, 3) * 2 - 1) + A * 0.22 * (vn2(X / 13, Z / 13, 5) * 2 - 1), A * (vn2(X / 46 + 9, Z / 46, 4) * 2 - 1) + A * 0.22 * (vn2(X / 13 + 4, Z / 13, 6) * 2 - 1)]; };
-  const face = (p, q, out) => {   // p, q: the top corners (hole frame); out: [x, z] a point over the gap
-    const bot = MY - 14, D = Math.max(p[1], q[1]) - bot; if (D <= 0.5) return;
-    const fine = Math.hypot(q[0] - p[0], q[2] - p[2]) < 4;   // the field's 2 m edges: fewer rows (they're many)
-    const rows = (fine ? [0, 1.6, 9, 40] : [0, 1.6, 7, 24, 55, 110, 200]).filter(d => d < D - 4); rows.push(D);
-    const at = (P, d) => { if (d === 0) return [P[0], P[1], P[2]]; const w = wob(P[0], P[2], d); return [P[0] + w[0], P[1] - d, P[2] + w[1]]; };
-    const mx = (p[0] + q[0]) / 2, mz = (p[2] + q[2]) / 2, ex = q[0] - p[0], ez = q[2] - p[2];
-    const flip = (ez * (out[0] - mx) - ex * (out[1] - mz)) < 0;   // wind so the face looks out over the gap (unflipped, its normal is (ez, 0, -ex))
-    for (let r = 0; r < rows.length - 1; r++) {
-      const a = at(p, rows[r]), b = at(q, rows[r]), c = at(q, rows[r + 1]), d = at(p, rows[r + 1]);
-      const tri = (u, v, w, du, dv, dw) => { FP.push(...u, ...v, ...w); FD.push(du, dv, dw); for (let k = 0; k < 3; k++) FW.push(0, 0, 0, 1); };
-      if (flip) { tri(a, c, b, rows[r], rows[r + 1], rows[r]); tri(a, d, c, rows[r], rows[r + 1], rows[r + 1]); }
-      else { tri(a, b, c, rows[r], rows[r], rows[r + 1]); tri(a, c, d, rows[r], rows[r + 1], rows[r + 1]); }
+  // A face's top row is the ground's edge itself (a staircase of the map's cells); from a few metres down its corners are
+  // pulled onto the outline smoothed over about a cell and a half (sc: the cell size of the map the edge came from), so
+  // the walls run in curves, not steps. Faces are queued and drawn once every edge is known
+  const QF = [], CN = new Map();
+  const face = (p, q, out, sc) => { QF.push([p, q, out, sc]); if (sc) for (const P of [p, q]) { let c = CN.get(sc); if (!c) CN.set(sc, c = new Map()); c.set(Math.round(P[0] * 10) + ',' + Math.round(P[2] * 10), P); } };
+  let GRID = null;
+  const smoothAt = (P, sc) => {   // the outline near P, smoothed (a Gaussian over the unique corners within 2.5 sigma)
+    const g = GRID.get(sc); if (!g) return [P[0], P[2]];
+    const sg = 1.3 * sc, R = 2.5 * sg, cs = g.cs, i0 = Math.floor((P[0] - R) / cs), i1 = Math.floor((P[0] + R) / cs), j0 = Math.floor((P[2] - R) / cs), j1 = Math.floor((P[2] + R) / cs);
+    let sx = 0, sz = 0, sw = 0;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const L2 = g.m.get(i + ',' + j); if (L2) for (const c of L2) { const d2 = (c[0] - P[0]) ** 2 + (c[2] - P[2]) ** 2; if (d2 > R * R) continue; const w = Math.exp(-d2 / (2 * sg * sg)); sx += w * c[0]; sz += w * c[2]; sw += w; } }
+    return sw ? [sx / sw, sz / sw] : [P[0], P[2]];
+  };
+  const SM = new Map();
+  const facePt = (P, d, sc) => {   // the face's point d m under the top corner P
+    if (d === 0) return [P[0], P[1], P[2]];
+    const k = sc + ':' + Math.round(P[0] * 10) + ',' + Math.round(P[2] * 10); let s2 = SM.get(k); if (!s2) SM.set(k, s2 = sc ? smoothAt(P, sc) : [P[0], P[2]]);
+    const f = Math.min(1, d / 6), bx = P[0] + (s2[0] - P[0]) * f, bz = P[2] + (s2[1] - P[2]) * f, w = wob(bx, bz, d);
+    return [bx + w[0], P[1] - d, bz + w[1]];
+  };
+  const drawFaces = () => {
+    GRID = new Map();
+    for (const [sc, c] of CN) { const cs = 3.25 * sc, m = new Map(); for (const P of c.values()) { const k = Math.floor(P[0] / cs) + ',' + Math.floor(P[2] / cs); let L2 = m.get(k); if (!L2) m.set(k, L2 = []); L2.push(P); } GRID.set(sc, { cs, m }); }
+    for (const [p, q, out, sc] of QF) {
+      const bot = MY - 14, D = Math.max(p[1], q[1]) - bot; if (D <= 0.5) continue;
+      const fine = sc < 4;   // the field's 2 m edges: fewer rows (they're many)
+      const rows = (fine ? [0, 1.6, 9, 40] : [0, 1.6, 7, 24, 55, 110, 200]).filter(d => d < D - 4); rows.push(D);
+      const mx = (p[0] + q[0]) / 2, mz = (p[2] + q[2]) / 2, ex = q[0] - p[0], ez = q[2] - p[2];
+      const flip = (ez * (out[0] - mx) - ex * (out[1] - mz)) < 0;   // wind so the face looks out over the gap (unflipped, its normal is (ez, 0, -ex))
+      for (let r = 0; r < rows.length - 1; r++) {
+        const a = facePt(p, rows[r], sc), b = facePt(q, rows[r], sc), c = facePt(q, rows[r + 1], sc), d = facePt(p, rows[r + 1], sc);
+        const tri = (u, v, w, du, dv, dw) => { FP.push(...u, ...v, ...w); FD.push(du, dv, dw); for (let k = 0; k < 3; k++) FW.push(0, 0, 0, 1); };
+        if (flip) { tri(a, c, b, rows[r], rows[r + 1], rows[r]); tri(a, d, c, rows[r], rows[r + 1], rows[r + 1]); }
+        else { tri(a, b, c, rows[r], rows[r], rows[r + 1]); tri(a, c, d, rows[r], rows[r + 1], rows[r + 1]); }
+      }
+      if (D > 30) edges.push({ p, q, out, D, sc });
     }
-    if (D > 30) edges.push({ p, q, out, D });
   };
   const drawMap = (M, skip, st, sink) => {
     const ni = Math.floor((M.nx - 1) / st), nj = Math.floor((M.nz - 1) / st);
@@ -234,7 +278,7 @@ export function buildCloud(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
       if (inField(x, z) && !wet[k]) { const g = gnd(x, z); if (g !== null) y = g; }
       Vt.set([x, y - sink, z], k * 3); Wt.set(wOf(m), k * 4);
     }
-    const idx = [], P = p => [Vt[p * 3], Vt[p * 3 + 1], Vt[p * 3 + 2]], C = p => [Vt[p * 3], Vt[p * 3 + 2]];
+    const idx = [], P = p => [Vt[p * 3], Vt[p * 3 + 1], Vt[p * 3 + 2]], C = p => [Vt[p * 3], Vt[p * 3 + 2]]; const sc = M.cell * st;
     for (let j = 0; j < nj; j++) for (let i = 0; i < ni; i++) {
       const k = j * (ni + 1) + i, k1 = k + 1, k2 = k + ni + 1, k3 = k2 + 1, q = [k, k1, k2, k3];
       if (skip(q, Vt, Wx)) continue;
@@ -244,13 +288,16 @@ export function buildCloud(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
       // an edge over open air: the ground's triangle that has all three corners, and faces down from the edge
       if (n === 1) { const tri = [[k, k2, k3], [k, k3, k1], [k, k2, k1], [k1, k2, k3]].find(t => t.every(p => !gap[p])); if (tri) idx.push(...tri); }
       const ring = [k, k1, k3, k2];
-      for (let e = 0; e < 4; e++) { const p = ring[e], o = ring[(e + 1) % 4], g2 = ring[(e + 2) % 4], g3 = ring[(e + 3) % 4]; if (!gap[p] && !gap[o] && (gap[g2] || gap[g3])) face(P(o), P(p), gap[g2] ? C(g2) : C(g3)); }
-      for (let e = 0; e < 4; e++) { const p = ring[e]; if (gap[p]) continue; const o = ring[(e + 1) % 4], b2 = ring[(e + 3) % 4]; if (gap[o] && gap[b2]) { const A = P(p), G = C(ring[(e + 2) % 4]); face([A[0] - 1.5, A[1], A[2] - 1.5], [A[0] + 1.5, A[1], A[2] + 1.5], G); face([A[0] - 1.5, A[1], A[2] + 1.5], [A[0] + 1.5, A[1], A[2] - 1.5], G); } }
+      for (let e = 0; e < 4; e++) { const p = ring[e], o = ring[(e + 1) % 4], g2 = ring[(e + 2) % 4], g3 = ring[(e + 3) % 4]; if (!gap[p] && !gap[o] && (gap[g2] || gap[g3])) face(P(o), P(p), gap[g2] ? C(g2) : C(g3), sc); }
+      for (let e = 0; e < 4; e++) { const p = ring[e]; if (gap[p]) continue; const o = ring[(e + 1) % 4], b2 = ring[(e + 3) % 4]; if (gap[o] && gap[b2]) { const A = P(p), G = C(ring[(e + 2) % 4]); face([A[0] - 1.5, A[1], A[2] - 1.5], [A[0] + 1.5, A[1], A[2] + 1.5], G, 0); face([A[0] - 1.5, A[1], A[2] + 1.5], [A[0] + 1.5, A[1], A[2] - 1.5], G, 0); } }
     }
     group.add(groundMesh(Vt, Wt, idx));
   };
   const WM = mapOf(E.world), FM = mapOf(E.far);
-  drawMap(WM, q => false && q, coarse ? 2 : 1, 0.3);
+  // inside the hole's box the playfield draws the ground; the map's 10 m chords there would cut up through it on any
+  // curved slope (big flat facets up the gorge's sides), so only quads with open air or reaching past the box are drawn
+  const inBox = (x, z) => x > box.x0 + 1 && x < box.x1 - 1 && z > box.z0 + 1 && z < box.z1 - 1;
+  drawMap(WM, (q, Vt) => q.every(p => { const x = Vt[p * 3], z = Vt[p * 3 + 2]; return inBox(x, z) && gnd(x, z) !== null; }), coarse ? 2 : 1, 0.3);
   const ix0 = WM.x0 + 30, ix1 = WM.x0 + (WM.nx - 1) * WM.cell - 30, iz0 = WM.z0 + 30, iz1 = WM.z0 + (WM.nz - 1) * WM.cell - 30;
   drawMap(FM, (q, Vt, Wx) => q.every(p => Wx[p * 2] > ix0 && Wx[p * 2] < ix1 && Wx[p * 2 + 1] > iz0 && Wx[p * 2 + 1] < iz1), coarse ? 2 : 1, 0.8);
   // the field's own edges over open air, at its 2 m cells (the 10 m map's faces are too coarse up close)
@@ -260,12 +307,13 @@ export function buildCloud(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
     for (let j = 0; j < Fd.nz; j++) for (let i = 0; i < Fd.nx; i++) {
       if (nanAt(i, j)) continue;
       const x = Fd.x0 + i * Fd.cell, z = Fd.z0 + j * Fd.cell, y = yAt(i, j), c = Fd.cell / 2;
-      if (nanAt(i + 1, j)) face([x + c, y, z + c], [x + c, y, z - c], [x + 3 * c, z]);
-      if (nanAt(i - 1, j)) face([x - c, y, z - c], [x - c, y, z + c], [x - 3 * c, z]);
-      if (nanAt(i, j + 1)) face([x - c, y, z + c], [x + c, y, z + c], [x, z + 3 * c]);
-      if (nanAt(i, j - 1)) face([x + c, y, z - c], [x - c, y, z - c], [x, z - 3 * c]);
+      if (nanAt(i + 1, j)) face([x + c, y, z + c], [x + c, y, z - c], [x + 3 * c, z], Fd.cell);
+      if (nanAt(i - 1, j)) face([x - c, y, z - c], [x - c, y, z + c], [x - 3 * c, z], Fd.cell);
+      if (nanAt(i, j + 1)) face([x - c, y, z + c], [x + c, y, z + c], [x, z + 3 * c], Fd.cell);
+      if (nanAt(i, j - 1)) face([x + c, y, z - c], [x - c, y, z - c], [x, z - 3 * c], Fd.cell);
     }
   }
+  drawFaces();
   // the pinnacles (art pass 1): irregular columns from the emitter's outlines, a little wider than the 10 m map's
   // square blocks so they hide them, swelling and leaning with depth, under a grassy crown; not where this hole's own
   // field draws the pinnacle (the Needle on the 4th)
@@ -295,7 +343,7 @@ export function buildCloud(hole, T, box, E, hi, { group, coarse, rockMat, sunDir
     }
   }
   if (FP.length) {
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(FP, 3)); g.setAttribute('aW', new THREE.Float32BufferAttribute(FW, 4)); g.setAttribute('aDepth', new THREE.Float32BufferAttribute(FD, 1)); g.computeVertexNormals();
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(FP, 3)); g.setAttribute('aW', new THREE.Float32BufferAttribute(FW, 4)); g.setAttribute('aDepth', new THREE.Float32BufferAttribute(FD, 1)); g.setAttribute('normal', new THREE.Float32BufferAttribute(weldNormals(FP), 3));
     const m = new THREE.Mesh(g, rockMat); m.castShadow = true; m.receiveShadow = true; group.add(m);
   }
   // the stream and the pools inside the field: a sheet 0.8 m over the bed on every cell that plays as water
@@ -506,7 +554,7 @@ totalEmissiveRadiance += diffuseColor.rgb * vec3(0.14, 0.15, 0.18) + vec3(1.0, 0
       for (let i = 0; i < N; i++) { side(P(i, 0, 0), P(i + 1, 0, 0), P(i + 1, 0, 1), P(i, 0, 1)); side(P(i, N, 0), P(i + 1, N, 0), P(i + 1, N, 1), P(i, N, 1)); }
       for (let j = 0; j < N; j++) { side(P(0, j, 0), P(0, j + 1, 0), P(0, j + 1, 1), P(0, j, 1)); side(P(N, j, 0), P(N, j + 1, 0), P(N, j + 1, 1), P(N, j, 1)); }
     }
-    if (RP.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(RP, 3)); g.setAttribute('aW', new THREE.Float32BufferAttribute(RWt, 4)); g.setAttribute('aDepth', new THREE.Float32BufferAttribute(RD, 1)); g.computeVertexNormals();
+    if (RP.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(RP, 3)); g.setAttribute('aW', new THREE.Float32BufferAttribute(RWt, 4)); g.setAttribute('aDepth', new THREE.Float32BufferAttribute(RD, 1)); g.setAttribute('normal', new THREE.Float32BufferAttribute(weldNormals(RP), 3));
       const m = new THREE.Mesh(g, rockMat); m.castShadow = true; m.receiveShadow = true; group.add(m); }
   }
 
@@ -540,9 +588,9 @@ totalEmissiveRadiance += diffuseColor.rgb * vec3(0.14, 0.15, 0.18) + vec3(1.0, 0
       const len = Math.hypot(e.q[0] - e.p[0], e.q[2] - e.p[2]), mx = (e.p[0] + e.q[0]) / 2, mz = (e.p[2] + e.q[2]) / 2;
       if ((mx - cx) ** 2 + (mz - cz) ** 2 > R2) continue;
       if (hash(mx * 0.7, mz * 1.3) > len / (e.pin ? 22 : 38)) continue;
-      const d = 6 + Math.min(e.D * 0.55, 80) * hash(mz, mx), w = wob(mx, mz, d), ox = e.out[0] - mx, oz = e.out[1] - mz, ol = Math.hypot(ox, oz) || 1;
+      const d = 6 + Math.min(e.D * 0.55, 80) * hash(mz, mx), A = facePt(e.p, d, e.sc), B = facePt(e.q, d, e.sc), ox = e.out[0] - mx, oz = e.out[1] - mz, ol = Math.hypot(ox, oz) || 1;
       if (!clear(mx, mz, 18)) continue;
-      cliff.push({ x: mx + w[0] - ox / ol * 0.6, y: Math.max(e.p[1], e.q[1]) - d, z: mz + w[1] - oz / ol * 0.6, h: 6 + 7 * hash(mx, d), wx: ox / ol, wz: oz / ol });
+      cliff.push({ x: (A[0] + B[0]) / 2 - ox / ol * 0.6, y: Math.max(e.p[1], e.q[1]) - d, z: (A[2] + B[2]) / 2 - oz / ol * 0.6, h: 6 + 7 * hash(mx, d), wx: ox / ol, wz: oz / ol });
     }
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, flatShading: true });
     const inst = (geo, list, place) => {
@@ -566,7 +614,7 @@ totalEmissiveRadiance += diffuseColor.rgb * vec3(0.14, 0.15, 0.18) + vec3(1.0, 0
       const lenAt = P => Math.min(e.D - 6, 9 + 24 * vn2((P[0] + F.x) / 8, (P[2] + F.z) / 8, 12));
       const la = lenAt(e.p), lb = lenAt(e.q), ua = (e.p[0] + e.p[2]) / 6, ub = ua + Math.hypot(e.q[0] - e.p[0], e.q[2] - e.p[2]) / 6;
       for (let r = 0; r < 4; r++) {
-        const t0 = r / 4, t1 = (r + 1) / 4, pt = (P, l, t) => { const d = l * t, w = d > 0 ? wob(P[0], P[2], d) : [0, 0]; return [P[0] + w[0] + nx, P[1] - d + 0.3, P[2] + w[1] + nz]; };
+        const t0 = r / 4, t1 = (r + 1) / 4, pt = (P, l, t) => { const Q = facePt(P, l * t, e.sc); return [Q[0] + nx, Q[1] + 0.3, Q[2] + nz]; };
         const A = pt(e.p, la, t0), B = pt(e.q, lb, t0), C = pt(e.q, lb, t1), D = pt(e.p, la, t1);
         VP.push(...A, ...B, ...C, ...A, ...C, ...D); VU.push(ua, 1 - t0, ub, 1 - t0, ub, 1 - t1, ua, 1 - t0, ub, 1 - t1, ua, 1 - t1);
       }

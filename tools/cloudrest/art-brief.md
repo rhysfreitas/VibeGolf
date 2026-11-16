@@ -143,6 +143,18 @@ monastery, the rope bridge and the waterfall, birds**.
   face. All scenery, 26 m or more off every hole's play (`COURSE.cloud.play`) and clear of the tees.
 - **Cost** (perf.mjs against c2a0948, software): +34–47% frame time, +36–39% meshes, +40–60% triangles.
 
+## Fixes after Rhys's look (16 November 2026)
+
+Rhys: "something off with the shadows. A bunch of tree shadows that don't really make sense ... a lot of the cliff stuff is very jagged."
+
+- **Shadows.** At golden hour's 8.5° a pine's shadow is about 7 times its height, so pines 26 m off the line (and behind the camera) laid streaks 80 m long across the fairways. Cloudrest's golden sun now stands at 20° (shadows about 2.7 times the height), still warm and low.
+- **Cliff outlines.** The faces dropped straight down from the map cells' edges, a staircase (2 m in the field, 10 m on the world map) that read as stripes when lit. The top row is still the ground's edge; from 6 m down each corner follows the outline smoothed over 1.3 cells (`facePt`), so the walls curve. Vines and the cliff pines sit on the same surface.
+- **Shading.** Faces and the alcove's fins take welded smooth normals (`weldNormals`) instead of one per triangle.
+- **Facets up the slopes.** Inside the hole's box the 10 m map no longer draws over the playfield (its chords cut up through any curved slope as big flat facets, the mountainside on the 1st).
+- **Hairline stripes.** The stone pattern ran along the wall's tangent from its normal; on a curved wall that coordinate swings by hundreds of metres. It is now read along x and along z and blended by facing (`cloudStone`).
+
+Cost: no change in triangles, +0–2% frame time.
+
 ## Candidates for the next pass
 
 The 8th's landing view faces the dark upper terrace wall from close by; the alcove back wall's west end still
