@@ -112,8 +112,12 @@ build"); Emberfell's row stays here until its layout is approved. Check a new co
   Round 0 15 November 2026 (`tools/labyrinth/`, `out/labyrinth-round0.pdf`, before the plan book): the view from the
   camera inside the corridors, wall soak, the 2nd's bank shot (it needs a mown bank of about 29% at the wall's foot),
   the Elbow's corner redrawn as low broken walls with a court behind (the layout's rubble heap didn't read from the
-  tee; bold carry 212 yd from round 0's back tee), sliding doors, and how two-version holes are stored. Waiting on
-  Rhys's picks.
+  tee; bold carry 212 yd from round 0's back tee), sliding doors, and how two-version holes are stored. Rhys's picks
+  (16 November, all as recommended): the 2nd's walls version D (60 m, dressed, two stretches of its left wall fallen to
+  14 m where the tower shows); walls soak 45% bare stone, 80% ivy, 3 m of rubble at every wall's foot; both of the
+  Elbow's inside corners low with a court behind, the shut leg a penalty area (a stroke and a drop); doors picked at
+  random each round like the pins. Stated and not objected to: the 2nd's end wall leans 12° over a 5 m mown kick bank;
+  a two-version hole is one hole with `versions` overriding pin, pins, targets, tips, yards and the shut door.
 
 - Cloudrest (Rhys's picks, 14-15 November 2026; `claude/cloudrest-layout.md` and `claude/brief-cloudrest.md` in the
   project; `tools/cloudrest/`): a "roof of the world" course, holes cut into the sides of a misty green gorge: two
