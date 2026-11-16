@@ -122,7 +122,7 @@ export function overhangAt(X, Z) {
 
 // the 4th's coves, [s, inner edge's off, along] in its line's frame: each bites in from the sea on the left as far as
 // its inner edge, so the bold line (tee to green, straight) crosses all three
-const COVES4 = [[122, -44, 44], [342, -50, 40], [452, -13, 24]];
+const COVES4 = [[122, -44, 44], [386, -46, 34], [452, -13, 24]];   // the second moved on 44 m (Rhys, 16 November: a 290 yd drive on the bold line lands short of it)
 export const COVES = COVES4.map(([s, inner, ra]) => { const rc = 80, off = inner - rc, [X, Z] = onLine(3, s, off), [X2, Z2] = onLine(3, s + 1, off); return { X, Z, ra, rc, ux: X2 - X, uz: Z2 - Z, s, off, inner }; });
 const coveIn = (X, Z) => { let best = -Infinity; for (const c of COVES) { const dx = X - c.X, dz = Z - c.Z, a = dx * c.ux + dz * c.uz, b = -dx * c.uz + dz * c.ux, e = Math.hypot(a / c.ra, b / c.rc); best = Math.max(best, (1 - e) * Math.min(c.ra, c.rc)); } return best; };
 export const COVE7 = se(316, 946, 80, 40, 40, 2.1);   // the 7th's cove

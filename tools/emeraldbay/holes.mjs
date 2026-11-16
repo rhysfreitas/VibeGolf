@@ -182,24 +182,25 @@ export const HOLES = [
   // from the left, each with a beach at its head
   hole({ n: 4, name: 'The Coves', par: 5, world: LINES[3], pinS: 510, tips: [-40, -8], shape: 'Dogleg left (45°), along a shelf',
     build: (P, L, len, Lw) => ({
-      tees: { marlin: -25, manta: [4, 6], turtle: [44, -6], clownfish: [80, 6] }, teeLift: { marlin: 1.5, manta: 1 },
+      tees: { marlin: -12, manta: [6, 6], turtle: [44, -6], clownfish: [80, 6] }, teeLift: { marlin: 1.5, manta: 1 },
       // scalloped: the coves bite the left edge, the jungle bank bulges into the right between them
       // the left edge swells out between the coves (the bold landing at 212 m is the first swell) and pulls in at each
       // cove's head; the right edge does the opposite against the jungle bank, so the middle weaves
-      fw: [{ e: [[96, 12, 13], [140, 20, 24], [176, 50, 21], [208, 90, 19], [240, 50, 24], [280, 38, 34], [312, 30, 44], [345, 26, 32], [380, 40, 22], [410, 40, 22], [434, 12, 34], [452, 4, 30], [474, 10, 20], [490, 10, 10]], wob: 2 }],
+      fw: [{ e: [[96, 12, 13], [140, 20, 24], [176, 50, 21], [208, 88, 19], [240, 56, 24], [280, 50, 32], [312, 52, 40], [340, 34, 34], [370, 24, 28], [398, 24, 24], [420, 30, 26], [436, 12, 34], [452, 4, 30], [474, 10, 20], [490, 10, 10]], wob: 2 },
+        { lobes: [[312, -84, 42, 27, 23]], join: 18, wob: 2.5 }],   // the bold landing on the straight line, 290 yd out, short of the second cove
       bunkers: [sand(P(176, 34), 8, 4.2, 0.2), sand(P(len - 15, 15), 5, 3.4, -0.3), sand(P(len + 10, -14), 4.2, 3, 0.3)],
       green: { k: 1, lobes: [[0, 0, 11.5, 14.5, -15], [6, -8, 7, 7], [-5, 8, 7, 6.5]], apron: 3.5, contour: [{ fall: 70, pct: 1.8 }, { ridge: [[-10, 10], [9, 2]], h: 0.3, w: 3 }], style: 'Turned along the bold line, falling 1.8% to the right with the shelf, a spine across it; sand right and long left; the third cove short left' },
-      targets: [{ name: 'The shelf', at: P(222, 4) }, { name: 'Between the coves', at: P(212, -80), bold: true }, { name: 'Past the second cove', at: P(402, 10) }],
+      targets: [{ name: 'The shelf', at: P(222, 4) }, { name: 'Between the coves', at: P(312, -83), bold: true }, { name: 'Past the second cove', at: P(418, 12) }],
       words: {
         story: 'The coves: along a shelf above the bay, three coves biting in from the left.',
-        plays: 'The long shore hole. From the top of the cliff behind the 3rd green the 4th runs along a shelf 12-18 m above the bay\'s east shore, leaning 8% away from the water into a jungle bank on the right. Three coves bite in from the left, each with a beach at its head as the bail-out. Skirt them along the shelf and it is three shots with no water crossed. Carry the first cove from the tee to the shelf between the first two, then the second and third with a wood, and it is reachable in two. From the tee you look back across the bay at the 1st, 7th, 8th and 9th at once.',
-        safe: 'Driver along the shelf (222 m), a fairway wood past the second cove (402 m), a short iron.',
-        bold: 'Driver over the first cove to the shelf between the coves (a 200 m carry), then a wood over the second and third coves at the green (about 255 m).',
+        plays: 'The long shore hole. From the top of the cliff behind the 3rd green the 4th runs along a shelf 12-18 m above the bay\'s east shore, leaning 8% away from the water into a jungle bank on the right. Three coves bite in from the left, each with a beach at its head as the bail-out. Skirt them along the shelf and it is three shots with no water crossed. Carry the first cove from the tee to the shelf between the first two coves, 290 yd out on the straight line, and the green is about 235 yd away over the second and third: reachable in two. From the tee you look back across the bay at the 1st, 7th, 8th and 9th at once.',
+        safe: 'Driver along the shelf (222 m), a fairway wood past the second cove (418 m), a wedge.',
+        bold: 'Driver over the first cove to the shelf between the coves, 290 yd out (a 190 yd carry), then a 3 wood or hybrid over the second and third coves at the green (about 235 yd).',
         miss: 'Right: the jungle bank, a ball kicks back down the lean. Left: rough, then a cove\'s beach (dry sand), then the sea (a stroke and a drop). At the green: the third cove short left, sand right and long left.',
       },
       card: {
         type: 'Cape (three coves to bite off)', form: 'Scalloped', feature: 'The three coves and their beaches; the shelf\'s lean; the jungle bank', job: 'The coves are hazards (diagonal, from the left); their beaches helpers (a dry bail-out); the bank a helper (it feeds a ball back)',
-        decision: 'Bite off what you dare: along the shelf (three shots, no water) or over the coves (reachable in two); the bold line saves about 45 yd',
+        decision: 'Bite off what you dare: along the shelf (three shots, no water) or over the coves (a 290 yd drive leaves 235: reachable in two); the bold line saves about 40 yd',
         miss: 'Small: rough. Medium left: a cove\'s beach. Big left: the sea. Right: the bank (never a penalty). Safe miss at the green: right',
         view: 'In front the shelf along the cliff top, the first cove biting in on the left with its beach; across the bay the village island, the cove on island C, the stack and the hollow island',
         ground: 'Hillside bench: 8% across, down to the right (away from the water), into the jungle bank; climbs 6 m to the corner and falls 8 m to the green',

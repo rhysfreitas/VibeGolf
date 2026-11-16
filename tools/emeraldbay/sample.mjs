@@ -329,6 +329,11 @@ const wd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
   R_(`  4 the straight line tee to green (${Math.round(D / YD)} yd) crosses water at ${wet.map(([a, b]) => `${Math.round(a / YD)}-${Math.round(b / YD)}`).join(', ')} yd (the coves)`);
   const bt = h.targets.find(q => q.bold), st = h.targets[0], lay = h.targets[2];
   R_(`  4 bold: the shelf between the coves ${Math.round(wd(back, bt.at) / YD)} yd from the Marlin tee, leaves ${Math.round(wd(bt.at, bp) / YD)} yd; safe: the shelf ${Math.round(wd(back, st.at) / YD)} yd leaves ${Math.round(wd(st.at, bp) / YD)}, past the second cove leaves ${Math.round(wd(lay.at, bp) / YD)}`);
+  { const dir = Math.atan2(bp[0] - bt.at[0], -(bp[1] - bt.at[1])), out = [];
+    for (const [nm, sh] of [['3 wood (150 mph)', WOOD3], ['a tour 3 wood (158 mph)', { Speed: 158, VLA: 10.2, TotalSpin: 3600 }], ['hybrid', HYBRID]]) { seed = 61; const r = drive(B, bt.at, dir, sh); out.push(`${nm} ${Math.round(r.carry / YD)} carry, finishes ${r.rest} ${Math.round(wd(r.end, bp) / YD)} yd from the pin`); }
+    R_(`  4 the second from "${bt.name}" (${Math.round(wd(bt.at, bp) / YD)} yd): ${out.join('; ')}`);
+    seed = 62; const dd = Object.entries(DRIVES).map(([nm, sh]) => { const r = drive(B, back, Math.atan2(bt.at[0] - back[0], -(bt.at[1] - back[1])), sh); return `${nm} ${Math.round(r.total / YD)} yd, ${r.rest}, ${Math.round(wd(r.end, bp) / YD)} left`; });
+    R_(`  4 drives at "${bt.name}" from the Marlin tee: ${dd.join('; ')}`); }
   const ls = leanAlong(B, 120, 450, 14).map(x => x[1]); R_(`  4 the shelf's lean where it is fairway: ${(ls.reduce((a, b) => a + b, 0) / ls.length).toFixed(1)}% (+ falls right, away from the water), ${Math.min(...ls).toFixed(1)} to ${Math.max(...ls).toFixed(1)}`);
 }
 // the 6th: the pinnacle, the crest and the blind second
