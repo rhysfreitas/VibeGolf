@@ -11,8 +11,18 @@ export const OUT = path.join(REPO, 'tools/review/out');
 fs.mkdirSync(OUT, { recursive: true });
 
 // course id -> module file in src/course/
-export const MODULES = { aerie: 'aerie', redmesa: 'red-mesa', hollowmere: 'hollowmere', reclaim: 'reclaim', rimeholm: 'rimeholm', emberfell: 'emberfell', lostvalley: 'lostvalley', halcyon: 'halcyon', buriedkingdom: 'buriedkingdom', wreckersreach: 'wreckersreach', eldergrove: 'eldergrove', cloudrest: 'cloudrest' };
-export const loadCourse = c => import(path.join(REPO, 'src/course', `${MODULES[c]}.js`));
+export const MODULES = { aerie: 'aerie', redmesa: 'red-mesa', hollowmere: 'hollowmere', reclaim: 'reclaim', rimeholm: 'rimeholm', emberfell: 'emberfell', lostvalley: 'lostvalley', halcyon: 'halcyon', buriedkingdom: 'buriedkingdom', wreckersreach: 'wreckersreach', eldergrove: 'eldergrove', cloudrest: 'cloudrest', emeraldbay: 'emeraldbay' };
+// a course that rolls something each round (Emerald Bay's tide: versions.js) is loaded as it plays with ROLLS (an
+// environment variable, 'tide=high'), else each roll's first option
+export const loadCourse = async c => {
+  const m = await import(path.join(REPO, 'src/course', `${MODULES[c]}.js`));
+  if (m.COURSE.rolls) {
+    const { applyPicks } = await import(path.join(REPO, 'src/course/versions.js'));
+    const env = Object.fromEntries((process.env.ROLLS || '').split(',').filter(Boolean).map(kv => kv.split('=')));
+    applyPicks(m.COURSE, m.HOLES, Object.fromEntries(m.COURSE.rolls.map(r => [r.id, env[r.id] || r.options[0].id])));
+  }
+  return m;
+};
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };

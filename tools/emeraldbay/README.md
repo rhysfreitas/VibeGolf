@@ -89,3 +89,23 @@ Set up like `tools/cloudrest/` (copied and changed: the sea instead of open air,
   plans, profiles, cross sections, greens, maps, the sketch views and `out/emerald-bay-plan-book-r1.pdf`.
   `round1-notes.json` is the book's page of what moved and what is open. `node ../review/relief.mjs emeraldbay`,
   `alike.mjs`, `spread.mjs` read it (`PLANNED`).
+
+## The blockout (16 November 2026)
+
+Rhys on plan book round 1 and the 4th's markup: "build it". `node emit.mjs` (about a minute) writes
+`src/course/emeraldbay.js` from the plan data; don't hand-edit the module.
+
+- Each hole's `field` is sampled every 2 m from `worldAt(X, Z, 'low')`: heights (the sea bed is the real ground, no
+  bed cut under the water), engine codes from `PHYS` and a paint byte `m` (0 salt grass, 1 jungle, 2 rock, 3 dry sand,
+  4 wet sand, 6 bunker sand, 8 water at low tide, 10 mown). The tide is one rule in the game (terrain.js `fieldSurf`):
+  ground below the round's sea is water. The emitter checks the rule against the plan book's own high tide on every
+  cell and prints the misses (none).
+- Greens and bunkers are outlines over the field; the sea cave's roof (along the 9th's line) and the overhang (along
+  the 7th's) are slabs of rock 30 m thick at the underside's lowest point under each (`slabs`), the beach shack and
+  the stilt houses soaking boxes. A tide hole carries `versionBy: 'tide'` and `versions` (`low`, `high`: note,
+  targets, yards, tips yards); its plain targets and yards are the low tide's.
+- `COURSE.rolls` is the tide (`src/course/versions.js` applies it); `COURSE.bay` is the bay once (a 10 m map over the
+  course and a 40 m one out to 4 km, with the paint; the sites, the play lines, the roof slabs, the landmarks).
+- `src/course/bay-world.js` draws it (the art pass comes later). `tests/emeraldbay.test.mjs` checks it.
+- The review tools read the course at low tide; `ROLLS=tide=high node ../review/design.mjs emeraldbay` (or
+  quickplay) at high.

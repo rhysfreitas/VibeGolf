@@ -12,6 +12,7 @@ export function packRound(s, now = Date.now()) {
     scores: Array.from(s.scores || [], x => (x == null ? null : x)),
     holeIdx: s.holeIdx, strokes: s.strokes, ball: s.ball.map(n => Math.round(n * 100) / 100), lie: s.lie, holed: !!s.holed,
     once: Array.isArray(s.once) ? s.once.filter(k => typeof k === 'string') : [],   // once-a-round events already seen (the Lost Valley's pterosaur)
+    rolls: s.rolls && typeof s.rolls === 'object' ? Object.fromEntries(Object.entries(s.rolls).filter(([k, v]) => typeof v === 'string')) : {},   // what the course rolled (Emerald Bay's tide: versions.js)
   };
 }
 
@@ -39,6 +40,8 @@ export function readRound(raw, course, now = Date.now()) {
   if (!Array.isArray(r.scores) || !Array.isArray(r.pinPick)) return null;
   if (r.once !== undefined && (!Array.isArray(r.once) || !r.once.every(k => typeof k === 'string'))) return null;
   if (r.once === undefined) r.once = [];                                       // saved before once-a-round events
+  if (r.rolls !== undefined && (!r.rolls || typeof r.rolls !== 'object' || Array.isArray(r.rolls) || !Object.values(r.rolls).every(v => typeof v === 'string'))) return null;
+  if (r.rolls === undefined) r.rolls = {};                                     // saved before rolls
   if (!r.holed && r.strokes === 0 && r.holeIdx === 0) return null;            // nothing played yet
   return r;
 }

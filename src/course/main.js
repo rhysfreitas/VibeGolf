@@ -12,6 +12,7 @@ import { createLiveQueue } from '../live-queue.js';
 import { keepAwake } from '../wake.js';
 import { attachAdaptiveRes } from '../adaptive-res.js';
 import { packRound, readRound, describeRound, nextOpen } from './round-save.js';
+import { rollPicks, checkPicks, applyPicks, picksLabel } from './versions.js';
 import { createMinimap } from './minimap.js';
 import { createSimTool } from '../sim-tool.js';
 import { cumulusBanks, skyPines, clumpGeo, clumpMat } from '../world/sky-art.js';
@@ -21,7 +22,7 @@ import { STANCE, stanceView } from '../stance.js';
 
 THREE.ColorManagement.legacyMode = false;
 
-const COURSES = { cloudrest: './cloudrest.js', aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js', rimeholm: './rimeholm.js', emberfell: './emberfell.js', lostvalley: './lostvalley.js', halcyon: './halcyon.js', buriedkingdom: './buriedkingdom.js', wreckersreach: './wreckersreach.js', eldergrove: './eldergrove.js' };
+const COURSES = { emeraldbay: './emeraldbay.js', cloudrest: './cloudrest.js', aerie: './aerie.js', redmesa: './red-mesa.js', aerie2: './aerie.js', hollowmere: './hollowmere.js', reclaim: './reclaim.js', rimeholm: './rimeholm.js', emberfell: './emberfell.js', lostvalley: './lostvalley.js', halcyon: './halcyon.js', buriedkingdom: './buriedkingdom.js', wreckersreach: './wreckersreach.js', eldergrove: './eldergrove.js' };
 const CID = COURSES[new URLSearchParams(location.search).get('c')] ? new URLSearchParams(location.search).get('c') : 'aerie';
 const { COURSE, HOLES, LANDMARKS } = await import(COURSES[CID]);
 const CAVE = COURSE.theme === 'cave'; // underground: built like Red Mesa (floor, playfield, rocks), under a roof
@@ -43,7 +44,9 @@ const LINKS = COURSE.theme === 'links';
 const GROVE = COURSE.theme === 'grove';
 // the sides of a misty gorge (Cloudrest): a sampled field with open air for the mist, cliffs that soak, damp turf, thin air; cloud-world.js draws the gorge
 const CLOUD = COURSE.theme === 'cloud';
-const FIELD = CITY || ICE || EMBER || VALLEY || RING || KINGDOM || LINKS || GROVE || CLOUD;   // ground from a sampled field
+// a bay of limestone islands (Emerald Bay): a sampled field, sand that always plays, water a stroke, the tide rolled each round (versions.js); bay-world.js draws the bay
+const BAY = COURSE.theme === 'bay';
+const FIELD = CITY || ICE || EMBER || VALLEY || RING || KINGDOM || LINKS || GROVE || CLOUD || BAY;   // ground from a sampled field
 const MESA = COURSE.theme === 'mesa' || CAVE || FIELD;
 const DESERT = MESA && !FIELD; // the red-rock colours (fog, the ground shader's native earth)
 const REDROCK = DESERT && !CAVE; // Red Mesa itself: its art (junipers, talus, ragged far mesas)
@@ -60,6 +63,7 @@ const KW = KINGDOM ? await import('./kingdom-world.js') : null;
 const LW = LINKS ? await import('./links-world.js') : null;
 const GW = GROVE ? await import('./grove-world.js') : null;
 const CDW = CLOUD ? await import('./cloud-world.js') : null;
+const BW = BAY ? await import('./bay-world.js') : null;
 const SP = SHAPED ? await import('./sky-props.js') : null;
 const VOID_TEXT = COURSE.voidText || ['Into the clouds', 'Ends in the clouds'];
 document.title = COURSE.name;
@@ -90,7 +94,7 @@ const surfaceAt = (x, z) => T.surfaceAt(x, z);
 const FIRM = COURSE.turf === 'links' ? 'links' : COURSE.turf === 'damp' ? 'damp' : 'fairway';
 const physSurface = (x, z) => { const s = surfaceAt(x, z); return s === 'tee' || s === 'fringe' || s === 'fairway' ? FIRM : s === 'void' ? 'rough' : s; };
 // what each lie is called, and its colour in the readout
-const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: GROVE ? 'Moss' : 'First cut', rough: LINKS ? 'Fescue' : GROVE ? 'Fern' : 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : EMBER ? 'Lava rock' : VALLEY ? 'Meadow' : RING ? 'Lawn' : KINGDOM ? 'Rock' : LINKS ? 'Wreck' : GROVE ? 'Root' : CLOUD ? 'Rock' : MESA ? 'Native' : 'Rough', sand: KINGDOM || LINKS ? 'Dune' : 'Bunker', waste: EMBER ? 'Scoria' : KINGDOM ? 'Sand' : 'Waste area', water: EMBER ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder', pot: 'Pot bunker', tussock: 'Dune grass', beach: GROVE ? 'Leaf litter' : 'Beach' };
+const LIE_NAMES = { tee: 'Tee', fairway: 'Fairway', fringe: 'Fringe', firstcut: GROVE ? 'Moss' : 'First cut', rough: LINKS ? 'Fescue' : GROVE ? 'Fern' : 'Rough', desert: CAVE ? 'Cave floor' : CITY ? 'Street' : ICE ? 'Snow' : EMBER ? 'Lava rock' : VALLEY ? 'Meadow' : RING ? 'Lawn' : KINGDOM ? 'Rock' : LINKS ? 'Wreck' : GROVE ? 'Root' : CLOUD || BAY ? 'Rock' : MESA ? 'Native' : 'Rough', sand: KINGDOM || LINKS ? 'Dune' : 'Bunker', waste: EMBER ? 'Scoria' : KINGDOM || BAY ? 'Sand' : 'Waste area', water: EMBER ? 'Lava' : 'Water', green: 'Green', ice: 'Ice', powder: 'Powder', pot: 'Pot bunker', tussock: 'Dune grass', beach: GROVE ? 'Leaf litter' : BAY ? 'Wet sand' : 'Beach' };
 const lieColor = l => (l === 'rough' || l === 'desert' || l === 'waste' ? 'var(--warn)' : l === 'sand' || l === 'powder' || l === 'pot' || l === 'beach' ? 'var(--sand)' : l === 'tussock' ? 'var(--warn)' : l === 'water' ? 'var(--bad)' : 'var(--ok)');
 
 /* ---------- conditions and tees (set on the round setup screen) ---------- */
@@ -190,6 +194,9 @@ function lightPreset() {
   // the gorge late in the afternoon: a warm low sun from the west on the far wall, cool blue shade, the mist lifting
   // out of the gorge, the air clear above it with a pale haze low down
   if (CLOUD && t !== 'night') Object.assign(P, t === 'golden' ? { sun: 0xffc690, si: 3.0, hs: 0xa9bfd6, hg: 0x5a6a44, hi: 0.6, exp: 0.62, turb: 3.2, ray: 2.2, mie: 0.006 } : {}, { fog: w === 'overcast' ? 0xb9bdbd : 0xdcd6cb, near: w === 'haze' ? 260 : 500, far: w === 'haze' ? 3200 : 5200 });
+  // the bay in a bright late morning: a high white sun, hard shade under the cliffs, a blue fill off the sky and a
+  // warm bounce off the sand, clear salt air with a pale haze far out
+  if (BAY && t !== 'night') Object.assign(P, t === 'midday' ? { sun: 0xfff1dc, si: 3.3, hs: 0x9fc4e6, hg: 0xb8ad8a, hi: 0.62, exp: 0.6, turb: 2.2, ray: 1.6, mie: 0.004 } : {}, { fog: w === 'overcast' ? 0xb5bcc0 : 0xd8e6ee, near: w === 'haze' ? 400 : 700, far: w === 'haze' ? 3600 : 6500 });
   if (CITY && w === 'haze' && t !== 'night') { P.fog = 0xd2cdbf; P.near = 70; P.far = 1500; P.turb = 7; P.ray = 1.2; P.si = 2.6; P.hi = 0.5; }
   if (CITY && w === 'clear' && t !== 'night') { P.near = 160; P.far = 2600; }
   if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : DESERT ? 0xa89c92 : CITY ? 0xb4b8b6 : 0xa9b0b6; P.exp *= 1.05; }
@@ -335,6 +342,7 @@ islandMat.onBeforeCompile = sh => {
   if (LINKS) { sh.defines = { ...(sh.defines || {}), LINKS: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, LW.U); }
   if (GROVE) { sh.defines = { ...(sh.defines || {}), GROVE: '' }; sh.uniforms.uSurf2 = surf2U; }
   if (CLOUD) { sh.defines = { ...(sh.defines || {}), CLOUD: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, CDW.U); }
+  if (BAY) { sh.defines = { ...(sh.defines || {}), BAY: '' }; sh.uniforms.uSurf2 = surf2U; Object.assign(sh.uniforms, BW.U); }
   if (CAVE) sh.defines = { ...(sh.defines || {}), CAVE: '' };
   if (SHAPED) sh.defines = { ...(sh.defines || {}), PAINT: '' };
   sh.vertexShader = sh.vertexShader
@@ -351,8 +359,11 @@ uniform sampler2D uSurf2; uniform vec3 uMoon; uniform vec2 uWind; uniform vec4 u
 uniform sampler2D uSurf2;
 float emberHeat = 0.0, emberGloss = 0.0;
 #endif
-#if defined(VALLEY) || defined(RING) || defined(KINGDOM) || defined(LINKS) || defined(GROVE) || defined(CLOUD)
+#if defined(VALLEY) || defined(RING) || defined(KINGDOM) || defined(LINKS) || defined(GROVE) || defined(CLOUD) || defined(BAY)
 uniform sampler2D uSurf2;
+#endif
+#ifdef BAY
+uniform float uBSea;
 #endif
 #ifdef KINGDOM
 uniform float uKTime; uniform vec3 uKSky;
@@ -666,6 +677,25 @@ scrub = mix(scrub, graniteC, max(s2.a, inTex > 0.5 ? 0.0 : vW4.w) * 0.85);
 scrub = mix(scrub, mix(lin(vec3(0.3,0.47,0.17)), lin(vec3(0.35,0.52,0.2)), mid), cMown);
 dirt = scrub;
 #endif
+#ifdef BAY
+// Emerald Bay (blockout): salt grass, the jungle floor under the palms, white dry sand, darker wet sand, grey
+// limestone. Inside the hole's box from uSurf2 (R jungle, G dry sand, B wet sand, A rock), beyond it from the world
+// mesh's aW (x jungle, y sand: 1 dry, 0.5 wet; z another hole's mown ground, w rock)
+vec4 s2 = inTex > 0.5 ? texture2D(uSurf2, clamp(st, 0.0, 1.0)) : vec4(vW4.x, step(0.75, vW4.y), step(0.25, vW4.y) * (1.0 - step(0.75, vW4.y)), vW4.w);
+float bMown = inTex > 0.5 ? 0.0 : vW4.z;
+vec3 saltC = mix(lin(vec3(0.42,0.5,0.24)), lin(vec3(0.52,0.56,0.3)), mid) * (0.8 + 0.34*fine);
+vec3 jungC = mix(lin(vec3(0.16,0.26,0.1)), lin(vec3(0.22,0.32,0.12)), mid) * (0.72 + 0.5*fine);
+vec3 dryC = mix(lin(vec3(0.9,0.87,0.78)), lin(vec3(0.95,0.92,0.84)), mid) * (0.93 + 0.1*fine);
+vec3 wetC = mix(lin(vec3(0.72,0.66,0.52)), lin(vec3(0.78,0.72,0.58)), mid) * (0.9 + 0.12*fine);
+vec3 limeC = mix(lin(vec3(0.62,0.6,0.55)), lin(vec3(0.72,0.69,0.62)), vn(p.xz*0.9)) * (0.84 + 0.24*fine);
+scrub = saltC;
+scrub = mix(scrub, jungC, s2.r);
+scrub = mix(scrub, dryC, s2.g);
+scrub = mix(scrub, wetC, s2.b);
+scrub = mix(scrub, limeC, s2.a * 0.85);
+scrub = mix(scrub, mix(lin(vec3(0.32,0.55,0.18)), lin(vec3(0.38,0.6,0.21)), mid), bMown);
+dirt = scrub;
+#endif
 #endif
 #ifdef ICE
 // Rimeholm: snow and ice. uSurf: R packed snow (fairways, tees), G grass (green 1, its collar 0.5), B black sand,
@@ -807,6 +837,13 @@ mcut = mix(lin(vec3(0.3,0.45,0.17)), lin(vec3(0.35,0.5,0.2)), mid);
 mrough = mix(grassC, scrubC, smoothstep(0.6, 0.85, fb(p.xz*0.5)) * 0.25);
 msand = mix(lin(vec3(0.78,0.75,0.68)), lin(vec3(0.85,0.82,0.74)), mid) * (0.92 + 0.1*fine);
 #endif
+#ifdef BAY
+// bright tropical turf with stripes; the salt-grass rough; white coral sand in the bunkers
+mfair = mix(lin(vec3(0.3,0.55,0.17)), lin(vec3(0.36,0.62,0.2)), stripe * 0.6) * (0.9 + 0.18*mid) * (0.92 + 0.16*fine);
+mcut = mix(lin(vec3(0.33,0.52,0.19)), lin(vec3(0.38,0.56,0.22)), mid);
+mrough = mix(saltC, jungC, smoothstep(0.6, 0.85, fb(p.xz*0.5)) * 0.2);
+msand = mix(lin(vec3(0.93,0.9,0.82)), lin(vec3(0.97,0.95,0.88)), mid) * (0.94 + 0.08*fine);
+#endif
 col = mix(col, mrough, smoothstep(0.12, 0.5, sf.a));
 col = mix(col, mcut, smoothstep(0.7, 0.95, sf.a));
 col = mix(col, mfair, sf.r); col = mix(col, grn, sf.g);
@@ -818,7 +855,7 @@ col = mix(col, msand, smoothstep(0.35, 0.75, sf.b));
 // red sandstone: strata, pale bands and dark desert varnish down the faces
 float band = fb(vec2(p.y*0.16, (p.x+p.z)*0.003));
 float steep = 1.0 - abs(vWN.y);
-#if !defined(CAVE) && !defined(CITY) && !defined(EMBER) && !defined(VALLEY) && !defined(RING) && !defined(KINGDOM) && !defined(LINKS) && !defined(GROVE) && !defined(CLOUD)
+#if !defined(CAVE) && !defined(CITY) && !defined(EMBER) && !defined(VALLEY) && !defined(RING) && !defined(KINGDOM) && !defined(LINKS) && !defined(GROVE) && !defined(CLOUD) && !defined(BAY)
 // Navajo sandstone: rust to salmon in thick sets, pale bleached bands, fine cross-bedding inside each set,
 // a harder pale caprock along the rim with a shadowed lip under it, and desert varnish streaking down from
 // the pour-offs (strongest near the top, fading down the face, never a full-height stripe)
@@ -944,6 +981,15 @@ rock = mix(rock, mix(lin(vec3(0.24,0.33,0.15)), lin(vec3(0.31,0.4,0.18)), fine),
 rock = mix(rock, mix(lin(vec3(0.24,0.33,0.15)), lin(vec3(0.31,0.4,0.18)), fine), (1.0 - smoothstep(0.0, 1.4, vDepth)) * step(0.5, vW4.w) * 0.7);   // grass over the lip
 rock = mix(rock, rock * vec3(0.72, 0.76, 0.74), 1.0 - smoothstep(uCMist + 10.0, uCMist + 90.0, p.y)); }                                // wetter toward the mist
 #endif
+#ifdef BAY
+// karst limestone: pale grey with orange and black streaks running down the faces, a green tinge where it is damp
+// near the sea, and greener ledges
+rock = mix(lin(vec3(0.6,0.58,0.53)), lin(vec3(0.72,0.69,0.62)), band) * (0.84 + 0.22*fine);
+rock = mix(rock, lin(vec3(0.66,0.44,0.26)), smoothstep(0.55, 0.8, fb(vec2((p.x+p.z)*0.07, p.y*0.01))) * 0.55);
+rock = mix(rock, lin(vec3(0.2,0.2,0.19)), smoothstep(0.62, 0.86, fb(vec2((p.x-p.z)*0.09 + 7.0, p.y*0.008))) * 0.5);
+rock = mix(rock, lin(vec3(0.36,0.4,0.3)), 1.0 - smoothstep(uBSea + 1.0, uBSea + 6.0, p.y));
+rock = mix(rock, lin(vec3(0.2,0.33,0.12)), smoothstep(0.6, 0.9, vWN.y) * 0.6);
+#endif
 #ifdef CITY
 rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0.25*fine);
 rock = mix(rock, lin(vec3(0.27,0.34,0.18)), smoothstep(0.45, 0.72, fb(p.xz*0.3 + p.y*0.2)) * 0.65);
@@ -952,6 +998,9 @@ float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
 #ifdef CLOUD
 rw = max(rw, 1.0 - smoothstep(0.62, 0.8, vWN.y));   // the gorge's walls: stone from about 37 degrees
 #endif
+#ifdef BAY
+rw = max(rw, max(s2.a, 1.0 - smoothstep(0.6, 0.78, vWN.y)));   // the karst: painted rock, and any face steeper than about 40 degrees
+#endif
 #ifdef LINKS
 rw = max(rw, smoothstep(0.15, 0.5, s2.a) * (1.0 - smoothstep(0.6, 0.86, vWN.y)));   // a pot's face, a little less steep than a blowout's
 #endif
@@ -959,6 +1008,13 @@ rw = max(rw, smoothstep(0.15, 0.5, s2.a) * (1.0 - smoothstep(0.6, 0.86, vWN.y)))
 rw = max(rw, max(s2.a, (1.0 - smoothstep(0.55, 0.78, vWN.y)) * (1.0 - s2.g)));   // the wadi's walls: painted rock, and any face steeper than about 40 degrees
 #endif
 col = mix(col, rock, rw);
+#ifdef BAY
+// under the sea (the round's tide): white sand seen through clear water, turquoise in the shallows going to deep blue
+{ float dep = uBSea - p.y;
+vec3 seaC = mix(lin(vec3(0.33,0.8,0.76)), lin(vec3(0.12,0.5,0.62)), smoothstep(0.8, 4.5, dep));
+seaC = mix(seaC, lin(vec3(0.04,0.22,0.38)), smoothstep(4.5, 12.0, dep));
+col = mix(col, seaC * (0.92 + 0.12*fine), smoothstep(-0.02, 0.5, dep)); }
+#endif
 #ifdef CLOUD
 col = mix(col, lin(vec3(0.9,0.88,0.85)), smoothstep(uCMist + 26.0, uCMist - 1.0, p.y) * 0.92);   // the stone and grass fade into the sea of clouds at the cliff's foot
 #endif
@@ -1313,7 +1369,8 @@ function buildHole(h) {
       : KINGDOM ? (() => { const [a, b] = KW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })()
       : LINKS ? (() => { const [a, b] = LW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })()
       : GROVE ? (() => { const [a, b] = GW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })()
-      : CLOUD ? (() => { const [a, b] = CDW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
+      : CLOUD ? (() => { const [a, b] = CDW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })()
+      : BAY ? (() => { const [a, b] = BW.surfaceTextures(T, h, box, coarse ? 1.1 : 0.75); surf2U.value = b; return a; })() : MW.surfaceTexture(T, h, box, coarse ? 1.1 : 0.75);
     surfU.uSurf.value = tex; surfU.uSurfMin.value.set(box.x0, box.z0); surfU.uSurfSize.value.set(box.x1 - box.x0, box.z1 - box.z0); surfU.uFloorY.value = T.floor ? T.floor.y : -1e4;
   }
   for (const I of ISL) buildIsland(I, { seg: MESA ? Math.min(coarse ? 200 : 280, Math.max(96, Math.round(Math.max(I.rx, I.rz) * 1.6))) : coarse ? 120 : 160, side: coarse ? 22 : 30 }, holeGroup, trees);
@@ -1335,6 +1392,7 @@ function buildHole(h) {
     else if (RING) { mesaCtx = RW.buildRing(h, T, box, COURSE.ring, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir, haze: FOG_COLOR.getHex() }); trees.push(...mesaCtx.trees); }
     else if (LINKS) { mesaCtx = LW.buildLinks(h, T, box, COURSE.links, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
     else if (CLOUD) { mesaCtx = CDW.buildCloud(h, T, box, COURSE.cloud, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
+    else if (BAY) { mesaCtx = BW.buildBay(h, T, box, COURSE.bay, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
     else if (GROVE) { mesaCtx = GW.buildGrove(h, T, box, COURSE.grove, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
     else if (KINGDOM) { mesaCtx = KW.buildKingdom(h, T, box, COURSE.kingdom, HOLES.indexOf(h), { group: holeGroup, coarse, rockMat: islandMat, sunDir }); trees.push(...mesaCtx.trees); }
     else if (CITY) { mesaCtx = CTW.buildCity(h, T, box, COURSE.city, HOLES.indexOf(h), { group: holeGroup, coarse, groundMat: playMat, sunDir, beams: cond.weather !== 'overcast' && cond.time !== 'night' }); trees.push(...mesaCtx.trees); }
@@ -1434,7 +1492,7 @@ function buildHole(h) {
     rocks: T.rocks.map(r => ({ type: r.type, x: r.x, z: r.z, r: r.type === 'arch' ? r.ao : r.capR, rot: r.rot || 0, d: r.d || 0, ai: r.ai || 0 })),
     fit: h.line ? [...Object.values(h.tees).map(t => (Array.isArray(t) ? t : [t.x, t.z])), [pp.x, pp.z]] : null,
     // a city course: the map is painted from the ground's surfaces, with the buildings in dark grey
-    paint: ICE ? IW.mapPaint(T, h) : EMBER ? EW.mapPaint(T, h) : VALLEY ? VW.mapPaint(T, h) : RING ? RW.mapPaint(T, h) : KINGDOM ? KW.mapPaint(T, h) : LINKS ? LW.mapPaint(T, h) : GROVE ? GW.mapPaint(T, h) : CLOUD ? CDW.mapPaint(T, h) : CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
+    paint: ICE ? IW.mapPaint(T, h) : EMBER ? EW.mapPaint(T, h) : VALLEY ? VW.mapPaint(T, h) : RING ? RW.mapPaint(T, h) : KINGDOM ? KW.mapPaint(T, h) : LINKS ? LW.mapPaint(T, h) : GROVE ? GW.mapPaint(T, h) : CLOUD ? CDW.mapPaint(T, h) : BAY ? BW.mapPaint(T, h) : CITY ? (() => { const blds = T.rocks.filter(r => r.type === 'box' && r.soak), C = { desert: '#77746d', rough: '#3d6a2b', firstcut: '#4c7d33', fairway: '#5e9a3a', fringe: '#6aa844', green: '#7cc65b', tee: '#86b85e', sand: '#e8d29a', waste: '#c9b98a', water: '#3f7f95', void: '#15110f' };
       return (x, z) => { for (const r of blds) { const dx = x - r.x, dz = z - r.z; if (Math.abs(dx * r.c + dz * r.s) < r.w / 2 && Math.abs(-dx * r.s + dz * r.c) < r.d / 2) return '#3b3a37'; } return C[T.surfaceAt(x, z)] || '#77746d'; }; })() : null,
     feat: { greens: T.features.greens.map(G => featureOutline(G, 'green')), bunkers: T.features.bunkers.map(B => featureOutline(B, 'bunker', 24)), tees: T.features.tees.map(t => featureOutline(t, 'tee')), water: T.features.water.map(W => featureOutline(W, 'water')) },
   });
@@ -1505,6 +1563,8 @@ function drawMinimap() {
 const state = {
   // once: what has happened once this round and doesn't come back (the Lost Valley's pterosaur, 'ptero'); saved with the round
   once: new Set(),
+  // rolls: what the course rolled for this round (COURSE.rolls: Emerald Bay's tide), { rollId: optionId }; saved with the round
+  rolls: null,
   holeIdx: 0, strokes: 0, scores: [], ball: new THREE.Vector3(), lie: 'tee', yaw: 0, camYaw: 0, aimPoint: null,
   club: 0, k: 1, target: 0, tracks: [], previewAim: null, aimCustom: null, phase: 'intro', cam: 'tv', sound: true,
   flight: null, t: 0, restTimer: 0, preview: null, lastShot: null, puttAnim: null, flyT: 0, lastLie: null,
@@ -1749,7 +1809,7 @@ function renderPlan() {
     tw.appendChild(b);
   }
   if (state.aimCustom) { const b = document.createElement('button'); b.className = 'tgt'; b.setAttribute('aria-pressed', 'true'); b.innerHTML = `<b>Your spot</b><span>${yd(Math.hypot(state.aimCustom.x - state.ball.x, state.aimCustom.z - state.ball.z))} yd</span>`; tw.appendChild(b); }
-  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: (GROVE ? 'Moss' : 'First cut') + ' −2%', rough: (LINKS ? 'Fescue' : GROVE ? 'Fern' : 'Rough') + ' −6%', sand: (KINGDOM || LINKS ? 'Dune' : 'Bunker') + ' −14%', waste: (KINGDOM ? 'Sand' : 'Waste area') + ' −6%', desert: (CAVE ? 'Cave floor' : KINGDOM || CLOUD ? 'Rock' : GROVE ? 'Root' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green', pot: 'Pot bunker: out ~85 yd at most', tussock: 'Dune grass: hack out ~50 yd', beach: (GROVE ? 'Leaf litter' : 'Beach') + ' −3%' };
+  const lieNames = { tee: 'Tee box', fairway: 'Fairway', fringe: 'Fringe', firstcut: (GROVE ? 'Moss' : 'First cut') + ' −2%', rough: (LINKS ? 'Fescue' : GROVE ? 'Fern' : 'Rough') + ' −6%', sand: (KINGDOM || LINKS ? 'Dune' : 'Bunker') + ' −14%', waste: (KINGDOM || BAY ? 'Sand' : 'Waste area') + ' −6%', desert: (CAVE ? 'Cave floor' : KINGDOM || CLOUD || BAY ? 'Rock' : GROVE ? 'Root' : MESA ? 'Native' : 'Rough') + ' −10%', green: 'Green', pot: 'Pot bunker: out ~85 yd at most', tussock: 'Dune grass: hack out ~50 yd', beach: (GROVE ? 'Leaf litter' : BAY ? 'Wet sand' : 'Beach') + ' −3%' };
   const pct = state.k < 0.995 ? ` · ${Math.round(state.k * 100)}%` : '';
   const L = lieSlope(), slopeTxt = [Math.abs(L.up) >= 2 ? `${L.up > 0 ? 'uphill' : 'downhill'} ${Math.round(Math.abs(L.up))}°` : '', Math.abs(L.side) >= 2 ? `ball ${L.side > 0 ? 'above' : 'below'} feet` : ''].filter(Boolean).join(', ');
   // the lie and the air, as they change this club's carry (worked out through the flight model, so they're the club's
@@ -1933,7 +1993,7 @@ function finishShot() {
     res = '<span style="color:var(--bad)">Void +1</span>';
   } else {
     state.ball.copy(end); state.lie = surfaceAt(end.x, end.z);
-    res = `<span style="color:${lieColor(state.lie)}">${VALLEY && state.lie === 'desert' ? VW.lieName(HOLE, end.x, end.z) : RING && state.lie === 'desert' ? RW.lieName(HOLE, end.x, end.z) : KINGDOM && state.lie === 'desert' ? KW.lieName(HOLE, end.x, end.z) : LINKS && state.lie === 'desert' ? LW.lieName(HOLE, end.x, end.z) : GROVE && (state.lie === 'desert' || state.lie === 'rough') ? GW.lieName(HOLE, end.x, end.z, state.lie) : CLOUD && (state.lie === 'desert' || state.lie === 'rough') ? CDW.lieName(HOLE, end.x, end.z, state.lie) : KINGDOM && state.lie === 'rough' && KW.isField(HOLE, end.x, end.z) ? 'Field' : RING && state.lie === 'water' && RW.isGlass(HOLE, end.x, end.z) ? 'Glass' : LIE_NAMES[state.lie] || state.lie}</span>`;
+    res = `<span style="color:${lieColor(state.lie)}">${VALLEY && state.lie === 'desert' ? VW.lieName(HOLE, end.x, end.z) : RING && state.lie === 'desert' ? RW.lieName(HOLE, end.x, end.z) : KINGDOM && state.lie === 'desert' ? KW.lieName(HOLE, end.x, end.z) : LINKS && state.lie === 'desert' ? LW.lieName(HOLE, end.x, end.z) : GROVE && (state.lie === 'desert' || state.lie === 'rough') ? GW.lieName(HOLE, end.x, end.z, state.lie) : CLOUD && (state.lie === 'desert' || state.lie === 'rough') ? CDW.lieName(HOLE, end.x, end.z, state.lie) : BAY && state.lie === 'rough' ? BW.lieName(HOLE, end.x, end.z, state.lie) : KINGDOM && state.lie === 'rough' && KW.isField(HOLE, end.x, end.z) ? 'Field' : RING && state.lie === 'water' && RW.isGlass(HOLE, end.x, end.z) ? 'Glass' : LIE_NAMES[state.lie] || state.lie}</span>`;
     state.rimDrop = null;
     if (state.lie === 'water') { // a stroke, and a drop beside where it went in, no nearer the hole
       state.strokes++;
@@ -2102,7 +2162,7 @@ function drawCard() {
   const nx = nextOpen(state.scores, state.holeIdx, HOLES.length), last = afterHole && nx < 0;
   const set = TEE_SETS.find(t => t.id === cond.tee);
   $('scTable').classList.toggle('pickable', canPick);
-  $('cardSub').textContent = (afterHole ? `Hole ${state.holeIdx + 1} complete` : 'Scorecard') + (TEE_SETS.length > 1 ? ` · ${set.name} tees` : '');
+  $('cardSub').textContent = (afterHole ? `Hole ${state.holeIdx + 1} complete` : 'Scorecard') + (TEE_SETS.length > 1 ? ` · ${set.name} tees` : '') + (COURSE.rolls && state.rolls ? ` · ${picksLabel(COURSE.rolls, state.rolls)}` : '');
   $('cardTitle').textContent = last ? 'Round complete' : COURSE.name;
   const midHole = state.phase !== 'holed' && state.strokes > 0;
   if (pick != null) {
@@ -2122,7 +2182,7 @@ function playHole(i) { $('card').hidden = true; startHole(i); saveRound(); }
 $('cardNext').onclick = () => {
   if (cardState.pick != null) { playHole(cardState.pick); return; }
   const nx = nextOpen(state.scores, state.holeIdx, HOLES.length);
-  if (nx < 0) { $('card').hidden = true; state.scores = []; openSetup(); } else playHole(nx);
+  if (nx < 0) { $('card').hidden = true; state.scores = []; state.rolls = null; openSetup(); } else playHole(nx);
 };
 $('cardClose').onclick = () => { $('card').hidden = true; };
 $('btnCard').onclick = () => showCard(false);
@@ -2137,7 +2197,7 @@ function startHole(i) {
   placeBall();
   const pl = HOLE.playsLike, y = yardsOf(HOLE);
   $('iMeta').textContent = `Hole ${i + 1} · Par ${HOLE.par} · ${y} yd` + (Math.abs(pl.yards - y) >= 4 ? ` · plays ${pl.yards}` : '') + (Math.abs(pl.dy) > 6 ? ` · ${pl.dy > 0 ? '↑' : '↓'}${Math.round(Math.abs(pl.dy))} m` : '');
-  $('iName').textContent = HOLE.name; $('iText').textContent = HOLE.blurb;
+  $('iName').textContent = HOLE.name; $('iText').textContent = [HOLE.blurb, HOLE.versionNote].filter(Boolean).join(' ');
   state.phase = 'intro'; state.flyT = 0; setupFlyover();
   setPhaseUI();
   showReadout({ landed: false, carry: 0, total: 0, outcome: 'void', offline: 0, apexFt: 0 }, { Speed: 0, VLA: 0, TotalSpin: 0, SpinAxis: 0 }, '—');
@@ -2439,7 +2499,7 @@ const TEE_KEY = `vibegolf.course.${CID}.tee`;
 const ROUND_KEY = `vibegolf.course.${CID}.round`;
 function saveRound(holed = false) {
   if (!HOLE || state.phase === 'setup') return;
-  try { localStorage.setItem(ROUND_KEY, JSON.stringify(packRound({ courseId: CID, cond, windRoll, pinPick: state.pinPick, scores: state.scores, holeIdx: state.holeIdx, strokes: state.strokes, ball: [state.ball.x, state.ball.y, state.ball.z], lie: state.lie, holed, once: [...state.once] }))); } catch (e) { /* storage off */ }
+  try { localStorage.setItem(ROUND_KEY, JSON.stringify(packRound({ courseId: CID, cond, windRoll, pinPick: state.pinPick, scores: state.scores, holeIdx: state.holeIdx, strokes: state.strokes, ball: [state.ball.x, state.ball.y, state.ball.z], lie: state.lie, holed, once: [...state.once], rolls: state.rolls || {} }))); } catch (e) { /* storage off */ }
 }
 function clearRound() { try { localStorage.removeItem(ROUND_KEY); } catch (e) { /* storage off */ } }
 function savedRound() { try { return readRound(localStorage.getItem(ROUND_KEY), { id: CID, holes: HOLES.length, teeIds: TEE_SETS.map(t => t.id) }); } catch (e) { return null; } }
@@ -2447,6 +2507,7 @@ function resumeRound(r) {
   Object.assign(cond, r.cond); cond.teeChosen = true;
   try { localStorage.setItem(TEE_KEY, cond.tee); } catch (e) { /* storage off */ }
   $('setup').hidden = true; windRoll = r.windRoll; state.scores = r.scores.slice(); state.pinPick = r.pinPick.slice(); state.once = new Set(r.once || []);
+  setRolls(checkPicks(COURSE.rolls, r.rolls) || rollPicks(COURSE.rolls));
   startHole(r.holed ? nextOpen(r.scores, r.holeIdx, HOLES.length) : r.holeIdx); initAudio();
   if (r.holed) return;                       // holed out before leaving: the next hole from its tee
   const g = groundAt(r.ball[0], r.ball[2]);
@@ -2454,8 +2515,28 @@ function resumeRound(r) {
   if (g !== null) { state.ball.set(r.ball[0], g, r.ball[2]); state.lie = r.lie; }   // else the ground has changed: back on the tee, strokes kept
   placeBall(); endIntro();
 }
+// the round's rolls (versions.js): each versioned hole takes its version, every hole the tide's sea level
+function setRolls(p) { state.rolls = p; applyPicks(COURSE, HOLES, p); }
+function drawRolls() {
+  const box = $('suRolls'); if (!box) return;
+  box.innerHTML = ''; box.hidden = !(COURSE.rolls && COURSE.rolls.length);
+  for (const r of COURSE.rolls || []) {
+    const row = document.createElement('div'); row.className = 'suRow';
+    const changed = HOLES.map((h, i) => (h.versionBy === r.id ? i + 1 : null)).filter(Boolean);
+    row.innerHTML = `<span class="lbl">${r.name}</span><div class="segs"></div><p class="note">Rolled for this round${changed.length ? `: hole${changed.length > 1 ? 's' : ''} ${changed.length > 1 ? changed.slice(0, -1).join(', ') + ' and ' + changed.at(-1) : changed[0]} play${changed.length > 1 ? '' : 's'} differently` : ''}.</p>`;
+    const segs = row.querySelector('.segs');
+    for (const o of r.options) {
+      const b = document.createElement('button'); b.textContent = o.name; b.dataset.roll = r.id; b.dataset.opt = o.id; b.setAttribute('aria-pressed', String(state.rolls[r.id] === o.id));
+      b.onclick = () => { if (state.rolls[r.id] === o.id) return; setRolls({ ...state.rolls, [r.id]: o.id }); state.holeIdx = 0; buildHole(HOLES[0]); setupFlyover(); openSetup(); };
+      segs.appendChild(b);
+    }
+    box.appendChild(row);
+  }
+}
 function openSetup() {
   state.phase = 'setup'; state.flyT = 0;
+  if (!state.rolls) setRolls(rollPicks(COURSE.rolls, window.__noVar ? () => 0 : Math.random));
+  drawRolls();
   const sugg = suggestTee(TEE_SETS, recentDrives());
   let saved = null; try { saved = localStorage.getItem(TEE_KEY); } catch (e) { /* storage off */ }
   if (!TEE_SETS.some(t => t.id === cond.tee) || !cond.teeChosen) cond.tee = TEE_SETS.some(t => t.id === saved) ? saved : sugg.id;

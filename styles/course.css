@@ -255,6 +255,9 @@ table.sc tr.picked td:first-child { box-shadow: inset 3px 0 0 var(--flag); paddi
 .suHead p { margin: 0; font-size: 13px; line-height: 1.45; color: #d8e1e3; }
 #suTeeRow { grid-column: 1; }
 .suConds { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 10px; }
+.suRolls { grid-column: 1; display: flex; flex-direction: column; gap: 8px; }
+.suRolls[hidden] { display: none; }
+.suRolls .note { margin: 0; }
 .setupBox .cardBtns { grid-column: 1 / -1; flex-wrap: wrap; }
 #suResume { margin-right: auto; border-color: rgba(245,197,66,0.6); color: var(--flag, #f5c542); }
 .suRow { display: flex; flex-direction: column; gap: 5px; }
@@ -281,4 +284,5 @@ table.sc tr.picked td:first-child { box-shadow: inset 3px 0 0 var(--flag); paddi
 @media (orientation: portrait) {
   .setupBox { grid-template-columns: 1fr; }
   .suConds { grid-column: 1; grid-row: auto; }
+  .suRolls { grid-column: 1; }
 }

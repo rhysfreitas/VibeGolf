@@ -278,12 +278,17 @@ function fieldAt(F, x, z) {
   if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(c) || Number.isNaN(d)) return near;
   return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
 }
-function fieldSurf(F, x, z) {
+// sea: the hole's sea level when the course rolls one (Emerald Bay's tide, versions.js): any cell whose ground is
+// below it is water, whatever the field's codes say (they're the low tide's), except a tee
+function fieldSurf(F, x, z, sea) {
   const i = Math.round((x - F.x0) / F.cell), j = Math.round((z - F.z0) / F.cell);
-  return F.codes[F.s[Math.min(F.nz - 1, Math.max(0, j)) * F.nx + Math.min(F.nx - 1, Math.max(0, i))]];
+  const k = Math.min(F.nz - 1, Math.max(0, j)) * F.nx + Math.min(F.nx - 1, Math.max(0, i)), c = F.codes[F.s[k]];
+  if (sea !== undefined && F.h[k] < sea && c !== 'tee' && c !== 'void') return 'water';
+  return c;
 }
 export function createTerrain(hole) {
   const FLD = hole.field ? prepField(hole.field) : null;
+  const SEA = Number.isFinite(hole.sea) ? hole.sea : undefined;   // the round's sea (versions.js), as it was when the terrain was made
   const ISL = (hole.islands || []).map(I => prepIsland({ ...I, playable: true }));
   const F = hole.floor ? { relief: 1.6, solid: true, washes: [], gorges: [], ...hole.floor } : null;
   if (F) F.gorges = F.gorges.map((g, i) => prepIsland({ seed: 50 + i, ...g, top: F.y, kind: 'gorge' }));
@@ -361,7 +366,7 @@ export function createTerrain(hole) {
   function surfaceAt(x, z) {
     if (FLD) { // features first; a fairway mown up to a green or bunker keeps its fairway (their outer rough gives way)
       if (groundAt(x, z) === null) return 'void';
-      const fs = FT.surfaceAt(x, z, () => groundAt(x, z)), own = fieldSurf(FLD, x, z);
+      const fs = FT.surfaceAt(x, z, () => groundAt(x, z)), own = fieldSurf(FLD, x, z, SEA);
       if (fs && !((fs === 'rough' || fs === 'firstcut') && (own === 'fairway' || own === 'fringe' || own === 'tee'))) return fs;
       return own;
     }

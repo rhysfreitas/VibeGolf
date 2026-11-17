@@ -59,3 +59,11 @@ test('once-a-round events (the Lost Valley\'s pterosaur) are kept with the round
   assert.deepEqual(readRound(JSON.stringify(old), course, 1).once, []);
   assert.equal(readRound({ ...packRound(live(), 0), once: 'ptero' }, course, 1), null, 'a broken list is refused');
 });
+
+test("what the course rolled (Emerald Bay's tide) is kept with the round, and an older save has none", () => {
+  assert.deepEqual(readRound(JSON.stringify(packRound(live({ rolls: { tide: 'high' } }), 0)), course, 1).rolls, { tide: 'high' });
+  const old = packRound(live(), 0); delete old.rolls;
+  assert.deepEqual(readRound(JSON.stringify(old), course, 1).rolls, {});
+  assert.equal(readRound({ ...packRound(live(), 0), rolls: ['high'] }, course, 1), null, 'a broken roll is refused');
+  assert.equal(readRound({ ...packRound(live(), 0), rolls: { tide: 3 } }, course, 1), null);
+});
