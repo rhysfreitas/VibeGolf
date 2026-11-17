@@ -102,7 +102,7 @@ export function buildHole(h) {
     if (v.t === 'karst' || slopeAt(x, z) > 0.75) return 'rock';
     if (v.cave) return 'drysand';
     const fd = fwD(x, z);
-    if (fd < 0 && v.t !== 'sea') return 'fairway';
+    if (fd < 0 && v.t !== 'sea' && !(h.keepBeach && v.t === 'sand')) return 'fairway';   // keepBeach: a beach stays a beach where the fairway runs down to it (the 4th's cove heads)
     if (v.t === 'sand') return 'drysand';
     if (v.t === 'wet' || v.t === 'sea') return 'wetsand';
     if (v.t === 'grass' || v.t === 'rough') return 'rough';

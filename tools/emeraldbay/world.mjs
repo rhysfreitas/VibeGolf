@@ -124,7 +124,12 @@ export function overhangAt(X, Z) {
 // its inner edge, so the bold line (tee to green, straight) crosses all three
 const COVES4 = [[122, -44, 44], [386, -46, 34], [452, -13, 24]];   // the second moved on 44 m (Rhys, 16 November: a 290 yd drive on the bold line lands short of it)
 export const COVES = COVES4.map(([s, inner, ra]) => { const rc = 80, off = inner - rc, [X, Z] = onLine(3, s, off), [X2, Z2] = onLine(3, s + 1, off); return { X, Z, ra, rc, ux: X2 - X, uz: Z2 - Z, s, off, inner }; });
-const coveIn = (X, Z) => { let best = -Infinity; for (const c of COVES) { const dx = X - c.X, dz = Z - c.Z, a = dx * c.ux + dz * c.uz, b = -dx * c.uz + dz * c.ux, e = Math.hypot(a / c.ra, b / c.rc); best = Math.max(best, (1 - e) * Math.min(c.ra, c.rc)); } return best; };
+// the outer end of the land between the second and third coves broke up into islet spires (Rhys, 16 November: a long
+// thin finger of land looked made); the band is sea from 88 m left of the line outward, the spires stand in it
+export const FINGER = { s0: 404, s1: 446, inner: -88 };
+export const SPIRES = [[424, -104, 8, 44], [431, -129, 9.5, 58], [420, -154, 7, 36], [438, -172, 6, 28]].map(([s, off, r, top], i) => { const [X, Z] = onLine(3, s, off); return { X, Z, r, top, seed: 80 + i }; });
+const fingerIn = X_Z => { const c = lineCoord(3, ...X_Z); return Math.min(c.s - FINGER.s0, FINGER.s1 - c.s, FINGER.inner - c.off); };
+const coveIn = (X, Z) => { let best = fingerIn([X, Z]); for (const c of COVES) { const dx = X - c.X, dz = Z - c.Z, a = dx * c.ux + dz * c.uz, b = -dx * c.uz + dz * c.ux, e = Math.hypot(a / c.ra, b / c.rc); best = Math.max(best, (1 - e) * Math.min(c.ra, c.rc)); } return best; };
 export const COVE7 = se(316, 946, 80, 40, 40, 2.1);   // the 7th's cove
 
 // ---- islands: a coast (a union of superellipses, minus cove bites), beaches where listed ([x, n, r, w]: sand w m
@@ -142,6 +147,8 @@ export const ISLANDS = [
   { id: 'C', name: 'island C', seed: 41, se: [se(380, 1098, 330, 196, -4, 2.3), se(445, 925, 66, 88, 15, 2.3), se(652, 1102, 92, 58, 10, 2.2), se(474, 848, 20, 14, 30, 2.2)], bites: (X, Z) => (1 - seDist(COVE7, X, Z)) * 46,
     beaches: [[700, 1060, 70, 22], [700, 1150, 70, 20], [316, 946, 100, 20], [440, 850, 50, 18], [150, 1050, 80, 16]], land: landC,
     towers: [twL(5, 212, -86, 46, 205, 1), twL(5, 218, 88, 44, 196, 2), tw(395, 1262, 56, 200, 3), tw(150, 1205, 64, 165, 4), tw(560, 1238, 42, 140, 5), tw(110, 1110, 34, 120, 6), tw(500, 990, 40, 135, 7)] },
+  // the 4th's islet spires, where the land between its second and third coves breaks up
+  ...SPIRES.map((t, i) => ({ id: 'sp' + i, name: i ? null : 'islet spires', seed: t.seed, se: [{ x: t.X, z: t.Z, rx: t.r, rz: t.r * 0.85, rot: i, p: 2 }], beaches: [], top: t.top, wob: 0.14 })),
   // the sea stack: the 8th green on its flat top
   { id: 'stack', name: 'the sea stack', seed: 51, se: [se(520, 740, 21, 19, 10, 2.6)], beaches: [], top: 8, wob: 0.08, topFlat: true },
   // scenery: islands all round the bay and out to sea (karst, sheer)
@@ -366,7 +373,7 @@ export const SITES = [
 ];
 export const LABELS = [
   [w([0, 205]), 'stilt village'], [w([300, 330]), 'palm valley'], [w([566, 298]), 'the headland'], [w([704, 382]), 'the islet'],
-  [w([800, 440]), 'the tongue'], [w([1100, 640]), 'karst'], [w([870, 880]), 'the coves'], [w([840, 1030]), 'the Sandbar'],
+  [w([800, 440]), 'the tongue'], [w([1100, 640]), 'karst'], [w([870, 880]), 'the coves'], [[SPIRES[1].X, SPIRES[1].Z], 'islet spires'], [w([840, 1030]), 'the Sandbar'],
   [w([420, 1215]), 'the saddle'], [w([300, 975]), 'the cove'], [w([520, 740]), 'the sea stack'], [w([470, 650]), 'tidal flats'],
   [w([20, 728]), 'the lagoon'], [w([235, 735]), 'sea cave'],
 ];

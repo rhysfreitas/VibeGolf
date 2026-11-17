@@ -51,7 +51,8 @@ for h in D['pages']:
     rgb = shaded(hgt, srf, d=st, sea=sea)
     x0, z0 = h['x0'], h['z0']; ext = [x0, x0 + W * st, z0 + H * st, z0]
     L = np.array(h['line'])
-    cx0, cx1 = L[:, 0].min() - 95, L[:, 0].max() + 95; cz0, cz1 = L[:, 1].min() - 60, L[:, 1].max() + 40
+    E = np.vstack([L, np.array(list(h['tees'].values())), np.array([h['tips']])])   # the crop takes in every tee and the tips spot
+    cx0, cx1 = E[:, 0].min() - 95, E[:, 0].max() + 95; cz0, cz1 = E[:, 1].min() - 60, E[:, 1].max() + 34
     w, hh = cx1 - cx0, cz1 - cz0; asp = 7.3 / 5.2
     if hh / w < asp: d = (w * asp - hh) / 2; cz0 -= d; cz1 += d
     else: d = (hh / asp - w) / 2; cx0 -= d; cx1 += d
@@ -88,8 +89,10 @@ for h in D['pages']:
     for t in TEES:
         p = h['tees'].get(t['id'])
         if p: ax.plot(p[0], p[1], 'o', ms=4.2, mfc=t['color'], mec=INK, mew=0.6, zorder=16)
-    tp = h['tips']; ax.plot(tp[0], tp[1], 'o', ms=6.5, mfc='none', mec=INK, mew=0.8, ls='none', zorder=16)
-    ax.annotate(f"tips {h['tipsYards']}", tp, xytext=(6, -2), textcoords='offset points', fontsize=5.2, color='#555', zorder=18)
+    tp = h['tips']; ax.plot(tp[0], tp[1], 'D', ms=6.5, mfc='#5b6670', mec='white', mew=0.8, ls='none', zorder=16)
+    lft = tp[0] > (cx0 + cx1) / 2
+    ax.annotate(f"Shark tips · {h['tipsYards']} yd (switched off)", tp, xytext=(-7 if lft else 7, -2), ha='right' if lft else 'left', textcoords='offset points', fontsize=5.6, color='#3a4048', weight='bold', zorder=18,
+                bbox=dict(boxstyle='round,pad=0.15', fc='white', ec='none', alpha=0.85))
     def flag(p, col='#c0392b'):
         ax.plot(*p, marker='o', ms=2, color=INK, zorder=17); ax.plot([p[0], p[0]], [p[1], p[1] - 9], color=INK, lw=0.7, zorder=17)
         ax.add_patch(Polygon([[p[0], p[1] - 9], [p[0] + 6, p[1] - 7.5], [p[0], p[1] - 6]], fc=col, ec='none', zorder=17))

@@ -32,7 +32,7 @@ export const COURSE = {
     decisions: 'Three, three types: bite off what you dare (4: carry the coves and it is reachable in two), drivable par 4 (7: straight across the cove), go or lay up (9: at low tide, the cave from the flats).',
     landmarks: 'The sea stack (from 1, 4, 5, 7, 9; played at 8); the great overhang (from 4 and 5; played under at 7); the cave mouth in the hollow island (from 1, 4, 8). From the 4th you look across at 1, 7, 8 and 9 at once. The reveal: out of the cave on the 9th into the lagoon.',
     rhythm: 'A reachable par 5 to open; two par 3s over water; the long shore hole (the hardest); the Sandbar; the Saddle; a short beach hole; the stack; the lagoon. Par 3s 130, 165, 200; par 4s 320, 400, 445; par 5s 510, 545 (589 at high tide), 585.',
-    forms: 'Six fairways, six forms: 1 fan (the palm valley opening to the beach), 4 scalloped (coves biting from the left, the jungle bank from the right), 5 strip (the Sandbar: the course\'s one plain strip), 6 island (a doughnut round the pinnacle), 7 hook (round the cove), 9 broken (the flats, the channel, the cave beach).',
+    forms: 'Six fairways, six forms: 1 fan (the palm valley opening to the beach), 4 scalloped by its coves (it reads as a funnel: one sweep over the land between the first two coves, closing to the green), 5 strip (the Sandbar: the course\'s one plain strip), 6 island (a doughnut round the pinnacle), 7 hook (round the cove), 9 broken (the flats, the channel, the cave beach).',
     heights: '1 half-pipe (the palm valley), 2 drop (the only one: 20 m headland to islet), 3 level across the water, 4 hillside bench, 8% across (bold), 5 level (the bar), 6 up and over the saddle (bold), 7 level (a beach), 8 uphill to a rock top, 9 dip in front (the tidal channel).',
     dials: 'One pushed on every hole: 1 length (a reachable par 5 to open), 2 a carry (headland to islet, all water), 3 the tide (a sand tongue short of the green at low water), 4 one hazard\'s scale (three coves), 5 width (the bar: 42 m of grass, wider sand at low water), 6 height (between two towers 200 m tall), 7 length (drivable across the cove), 8 green size (320 m² on a sea stack), 9 scale (through a sea cave 40 m high into a lagoon).',
     newBorrowed: 'New to the register: the first tropical course; a tide that changes holes; a sandbar fairway; a green inside a hollow island; a sea-stack green; a beach hole under a cliff. Borrowed (two): something to play through (the sea cave), a tee shot off a height (the Leap). No waterfall, bridge, punchbowl or climb to the clubhouse.',
@@ -180,14 +180,16 @@ export const HOLES = [
 
   // 4. THE COVES: along a shelf above the bay, leaning 8% away from the water into a jungle bank; three coves bite in
   // from the left, each with a beach at its head
-  hole({ n: 4, name: 'The Coves', par: 5, world: LINES[3], pinS: 510, tips: [-40, -8], shape: 'Dogleg left (45°), along a shelf',
+  hole({ n: 4, name: 'The Coves', par: 5, world: LINES[3], pinS: 510, keepBeach: true, tips: [-40, -8], shape: 'Dogleg left (45°), along a shelf',
     build: (P, L, len, Lw) => ({
       tees: { marlin: -12, manta: [6, 6], turtle: [44, -6], clownfish: [80, 6] }, teeLift: { marlin: 1.5, manta: 1 },
       // scalloped: the coves bite the left edge, the jungle bank bulges into the right between them
       // the left edge swells out between the coves (the bold landing at 212 m is the first swell) and pulls in at each
       // cove's head; the right edge does the opposite against the jungle bank, so the middle weaves
-      fw: [{ e: [[96, 12, 13], [140, 20, 24], [176, 50, 21], [208, 88, 19], [240, 56, 24], [280, 50, 32], [312, 52, 40], [340, 34, 34], [370, 24, 28], [398, 24, 24], [420, 30, 26], [436, 12, 34], [452, 4, 30], [474, 10, 20], [490, 10, 10]], wob: 2 },
-        { lobes: [[312, -84, 42, 27, 23]], join: 18, wob: 2.5 }],   // the bold landing on the straight line, 290 yd out, short of the second cove
+      // the land between the first and second coves is mown in one sweep from the head of the first cove round the outside
+      // of the bold landing to the head of the second (Rhys's markup, 16 November), so the bold landing is part of the
+      // fairway, not a lobe on it
+      fw: [{ e: [[96, 12, 13], [140, 20, 24], [165, 46, 22], [185, 94, 21], [210, 112, 22], [240, 116, 26], [268, 114, 30], [295, 112, 36], [320, 104, 40], [338, 72, 34], [352, 36, 30], [370, 24, 28], [398, 24, 24], [420, 30, 26], [436, 12, 34], [452, 4, 30], [474, 10, 20], [490, 10, 10]], wob: 1.6 }],
       bunkers: [sand(P(176, 34), 8, 4.2, 0.2), sand(P(len - 15, 15), 5, 3.4, -0.3), sand(P(len + 10, -14), 4.2, 3, 0.3)],
       green: { k: 1, lobes: [[0, 0, 11.5, 14.5, -15], [6, -8, 7, 7], [-5, 8, 7, 6.5]], apron: 3.5, contour: [{ fall: 70, pct: 1.8 }, { ridge: [[-10, 10], [9, 2]], h: 0.3, w: 3 }], style: 'Turned along the bold line, falling 1.8% to the right with the shelf, a spine across it; sand right and long left; the third cove short left' },
       targets: [{ name: 'The shelf', at: P(222, 4) }, { name: 'Between the coves', at: P(312, -83), bold: true }, { name: 'Past the second cove', at: P(418, 12) }],
@@ -199,7 +201,7 @@ export const HOLES = [
         miss: 'Right: the jungle bank, a ball kicks back down the lean. Left: rough, then a cove\'s beach (dry sand), then the sea (a stroke and a drop). At the green: the third cove short left, sand right and long left.',
       },
       card: {
-        type: 'Cape (three coves to bite off)', form: 'Scalloped', feature: 'The three coves and their beaches; the shelf\'s lean; the jungle bank', job: 'The coves are hazards (diagonal, from the left); their beaches helpers (a dry bail-out); the bank a helper (it feeds a ball back)',
+        type: 'Cape (three coves to bite off)', form: 'Scalloped by the coves (alike.mjs reads a funnel: wide over the land between the first two coves, closing to the green)', feature: 'The three coves and their beaches; the shelf\'s lean; the jungle bank', job: 'The coves are hazards (diagonal, from the left); their beaches helpers (a dry bail-out); the bank a helper (it feeds a ball back)',
         decision: 'Bite off what you dare: along the shelf (three shots, no water) or over the coves (a 290 yd drive leaves 235: reachable in two); the bold line saves about 40 yd',
         miss: 'Small: rough. Medium left: a cove\'s beach. Big left: the sea. Right: the bank (never a penalty). Safe miss at the green: right',
         view: 'In front the shelf along the cliff top, the first cove biting in on the left with its beach; across the bay the village island, the cove on island C, the stack and the hollow island',
