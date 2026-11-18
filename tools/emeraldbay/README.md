@@ -138,3 +138,22 @@ with jungle hanging on in patches, a dark notch at the waterline; lumpy crowns o
 the 5 m (study) or 10 m map out to 1.7 km (none on a cliff's rim); the sea as a fresnel sheet (clear looking down, a
 deep sheen across it) over a bed coloured by depth; a tropical sky dome with cumulus (`BW.sky`); longtails with a
 prow post and canopy; the near map leaves the hole's box to the playfield.
+
+## Layout round 2: whole islands (17 November 2026)
+
+Rhys on the study: "way way more like what I was thinking ... redo the course". `r2/` is the re-laid routing on whole
+islands, built like the study (study the look, then the plan book draws the real shapes):
+- `bay.mjs`: the bay in world space (plan [x, n] → X, Z = −n): five whole islands (`ISLANDS`: A, the Maya island, a
+  horseshoe round a cove opening north; B with the shelf on its west wall; C with the 7th's cove; the Sentinel; D, the
+  Hong, hollow round its lagoon), the gap between C and the Sentinel (`GAP`), the sea cave into the Hong (`CAVE`), the
+  stack, the islets (the Drop's islet, the cay), `FLATS` (strips at an island's foot: beach or wall edge, a lean, a
+  peak), the tidal flats and the Sandbar, the Drop's ledge (`LEDGE`, 60 m up the cove's head wall) and the nine
+  (`HOLES`, lines in plan). Par order kept (5 3 3 5 4 4 4 3 5), 3,368 yd from the back at low tide.
+- `node map.mjs && python3 map.py`: the plan with the nine (`out/r2/map.png`).
+- `node emit.mjs`: a course module of it (`out/r2/emeraldbay.js`, not in git); `node render.mjs [view ...]` (CHROME
+  set): the aerials and a view from six tees (`out/r2/<view>.png`).
+- `node proposal.mjs`: the routing proposal on white landscape pages (`out/emerald-bay-routing-r2.pdf`).
+The holes: 1 the Village into the cove along its west terrace; 2 the Drop, off the ledge to the islet green in the
+cove (the only hole up top); 3 the Tongue, across the cove to the beach under the east wall; 4 the Coves on B's
+shelf; 5 the Sandbar to C; 6 the Gap, through the floor between C and the Sentinel (new, for the Saddle); 7 the
+Overhang; 8 the Stack; 9 the Hong across the flats and through the cave. Next: Rhys's verdict, then plan book round 2.
