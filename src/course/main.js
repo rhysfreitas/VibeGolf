@@ -196,7 +196,7 @@ function lightPreset() {
   if (CLOUD && t !== 'night') Object.assign(P, t === 'golden' ? { sun: 0xffc690, si: 3.0, hs: 0xa9bfd6, hg: 0x5a6a44, hi: 0.6, exp: 0.62, turb: 3.2, ray: 2.2, mie: 0.006 } : {}, { fog: w === 'overcast' ? 0xb9bdbd : 0xdcd6cb, near: w === 'haze' ? 260 : 500, far: w === 'haze' ? 3200 : 5200 });
   // the bay in a bright late morning: a high white sun, hard shade under the cliffs, a blue fill off the sky and a
   // warm bounce off the sand, clear salt air with a pale haze far out
-  if (BAY && t !== 'night') Object.assign(P, t === 'midday' ? { sun: 0xfff1dc, si: 3.3, hs: 0x9fc4e6, hg: 0xb8ad8a, hi: 0.62, exp: 0.6, turb: 2.2, ray: 1.6, mie: 0.004 } : {}, { fog: w === 'overcast' ? 0xb5bcc0 : 0xd8e6ee, near: w === 'haze' ? 400 : 700, far: w === 'haze' ? 3600 : 6500 });
+  if (BAY && t !== 'night') Object.assign(P, t === 'midday' ? { sun: 0xfff1dc, si: 3.3, hs: 0x9fc4e6, hg: 0x8c9a6a, hi: 0.62, exp: 0.6, turb: 1.4, ray: 2.6, mie: 0.003 } : {}, { fog: w === 'overcast' ? 0xb5bcc0 : 0xc4dcec, near: w === 'haze' ? 400 : 1100, far: w === 'haze' ? 3600 : 9000 });
   if (CITY && w === 'haze' && t !== 'night') { P.fog = 0xd2cdbf; P.near = 70; P.far = 1500; P.turb = 7; P.ray = 1.2; P.si = 2.6; P.hi = 0.5; }
   if (CITY && w === 'clear' && t !== 'night') { P.near = 160; P.far = 2600; }
   if (w === 'overcast') { P.turb = 14; P.ray = 0.5; P.si *= 0.32; P.hi *= 1.9; P.near *= 0.5; P.far *= 0.5; P.fog = t === 'night' ? 0x0c1018 : DESERT ? 0xa89c92 : CITY ? 0xb4b8b6 : 0xa9b0b6; P.exp *= 1.05; }
@@ -225,6 +225,7 @@ function applySky(heading = 0) {
   // the storm clearing (art pass 1): links-world.js draws the sky (the deck going away east, gold-edged cumulus, rays
   // from the low sun); overhead the broken cloud thickens and darkens toward the east (uBias: east in this frame)
   if (LINKS) { const dome = !T0.night && cond.weather !== 'overcast'; sky.visible = !dome; LW.sky(dome, sunDir, P.fog); }
+  if (BAY) { const dome = !T0.night && cond.weather !== 'overcast'; sky.visible = !dome; BW.sky(dome, sunDir); }   // a tropical blue dome with fair-weather cumulus (bay-world.js)
   if (LINKS && cityClouds) { const u = cityClouds.material.uniforms, ha = heading * Math.PI / 180; cityClouds.visible = !T0.night && cond.weather !== 'overcast'; u.uCov.value = cond.weather === 'haze' ? 0.55 : 0.4; u.uSun.value = sunDir; u.uHaze.value.set(P.fog); u.uBias.value.set(Math.cos(ha), -Math.sin(ha), cond.weather === 'clear' ? 0.26 : 0.12); }
   if (VALLEY && cityClouds) { cityClouds.visible = !T0.night && cond.weather !== 'overcast'; cityClouds.material.uniforms.uCov.value = cond.weather === 'haze' ? 0.47 : 0.32; cityClouds.material.uniforms.uSun.value = sunDir; cityClouds.material.uniforms.uHaze.value.set(P.fog); }
   if (CITY) { const misty = cond.weather === 'overcast' && !T0.night; sky.visible = !misty; scene.background = misty ? FOG_COLOR : null;
@@ -364,6 +365,7 @@ uniform sampler2D uSurf2;
 #endif
 #ifdef BAY
 uniform float uBSea;
+uniform sampler2D uBRock, uBCan;
 #endif
 #ifdef KINGDOM
 uniform float uKTime; uniform vec3 uKSky;
@@ -684,15 +686,22 @@ dirt = scrub;
 vec4 s2 = inTex > 0.5 ? texture2D(uSurf2, clamp(st, 0.0, 1.0)) : vec4(vW4.x, step(0.75, vW4.y), step(0.25, vW4.y) * (1.0 - step(0.75, vW4.y)), vW4.w);
 float bMown = inTex > 0.5 ? 0.0 : vW4.z;
 vec3 saltC = mix(lin(vec3(0.42,0.5,0.24)), lin(vec3(0.52,0.56,0.3)), mid) * (0.8 + 0.34*fine);
-vec3 jungC = mix(lin(vec3(0.16,0.26,0.1)), lin(vec3(0.22,0.32,0.12)), mid) * (0.72 + 0.5*fine);
+// the jungle canopy (Phi Phi, Koh Hong): crowns 6-12 m across, dark in the gaps, sunlit ones yellow-green, darker stands
+// read across a slope on steep ground (along it and up it), so the crowns don't smear down a face
+float bJs = 1.0 - smoothstep(0.6, 0.72, vWN.y), bJu = mix(p.z, p.x, abs(vWN.z) / (abs(vWN.x) + abs(vWN.z) + 1e-4));
+// triplanar: from above, and from the two sides, weighted by the normal (no mixing of coordinates, which swirls)
+vec3 bTw = pow(abs(vWN), vec3(4.0)); bTw /= bTw.x + bTw.y + bTw.z;
+vec3 bC1 = texture2D(uBCan, p.xz / 150.0).rgb * bTw.y + texture2D(uBCan, vec2(p.z, -p.y) / 150.0).rgb * bTw.x + texture2D(uBCan, vec2(p.x, -p.y) / 150.0).rgb * bTw.z;
+vec3 bC2 = texture2D(uBCan, p.xz / 560.0 + 0.31).rgb * bTw.y + texture2D(uBCan, vec2(p.z, -p.y) / 560.0 + 0.31).rgb * bTw.x + texture2D(uBCan, vec2(p.x, -p.y) / 560.0 + 0.31).rgb * bTw.z;
+vec3 jungC = lin(mix(bC1, bC2, 0.35)) * (0.62 + 0.24 * fb(p.xz*0.004 + 2.0));   // deep tropical greens, as in the photos
+jungC = mix(jungC, jungC * vec3(0.8, 0.9, 0.85), smoothstep(0.55, 0.8, fb(p.xz*0.012 + 9.0)) * 0.6);   // darker stands
 vec3 dryC = mix(lin(vec3(0.9,0.87,0.78)), lin(vec3(0.95,0.92,0.84)), mid) * (0.93 + 0.1*fine);
 vec3 wetC = mix(lin(vec3(0.72,0.66,0.52)), lin(vec3(0.78,0.72,0.58)), mid) * (0.9 + 0.12*fine);
 vec3 limeC = mix(lin(vec3(0.62,0.6,0.55)), lin(vec3(0.72,0.69,0.62)), vn(p.xz*0.9)) * (0.84 + 0.24*fine);
 scrub = saltC;
-scrub = mix(scrub, jungC, s2.r);
+scrub = mix(scrub, jungC, clamp(s2.r + s2.a, 0.0, 1.0));   // steep ground painted as rock is still jungle until the normal says it is a wall
 scrub = mix(scrub, dryC, s2.g);
 scrub = mix(scrub, wetC, s2.b);
-scrub = mix(scrub, limeC, s2.a * 0.85);
 scrub = mix(scrub, mix(lin(vec3(0.32,0.55,0.18)), lin(vec3(0.38,0.6,0.21)), mid), bMown);
 dirt = scrub;
 #endif
@@ -982,13 +991,22 @@ rock = mix(rock, mix(lin(vec3(0.24,0.33,0.15)), lin(vec3(0.31,0.4,0.18)), fine),
 rock = mix(rock, rock * vec3(0.72, 0.76, 0.74), 1.0 - smoothstep(uCMist + 10.0, uCMist + 90.0, p.y)); }                                // wetter toward the mist
 #endif
 #ifdef BAY
-// karst limestone: pale grey with orange and black streaks running down the faces, a green tinge where it is damp
-// near the sea, and greener ledges
-rock = mix(lin(vec3(0.6,0.58,0.53)), lin(vec3(0.72,0.69,0.62)), band) * (0.84 + 0.22*fine);
-rock = mix(rock, lin(vec3(0.66,0.44,0.26)), smoothstep(0.55, 0.8, fb(vec2((p.x+p.z)*0.07, p.y*0.01))) * 0.55);
-rock = mix(rock, lin(vec3(0.2,0.2,0.19)), smoothstep(0.62, 0.86, fb(vec2((p.x-p.z)*0.09 + 7.0, p.y*0.008))) * 0.5);
-rock = mix(rock, lin(vec3(0.36,0.4,0.3)), 1.0 - smoothstep(uBSea + 1.0, uBSea + 6.0, p.y));
-rock = mix(rock, lin(vec3(0.2,0.33,0.12)), smoothstep(0.6, 0.9, vWN.y) * 0.6);
+// karst limestone (Koh Hong, Phi Phi Leh): cream and pale grey walls, orange stains, long black streaks hanging from
+// the lips, a dark notch at the waterline. Read along the wall (x or z, blended by its facing) against height, so a
+// streak runs straight down whichever way the wall faces
+float bwx = abs(vWN.z) / (abs(vWN.x) + abs(vWN.z) + 1e-4), bu = mix(p.z, p.x, bwx);
+float bStk = fb(vec2(bu*0.12, p.y*0.006)), bStk2 = fb(vec2(bu*0.4 + 4.0, p.y*0.016));
+// the painted limestone (bay-world.js), 64 m a repeat up close and 240 m for the large stains and streaks
+vec2 bwt = pow(abs(vWN.xz), vec2(4.0)); bwt /= bwt.x + bwt.y + 1e-5;
+vec3 bR1 = texture2D(uBRock, vec2(p.z, -p.y) / 64.0).rgb * bwt.x + texture2D(uBRock, vec2(p.x, -p.y) / 64.0).rgb * bwt.y;
+vec3 bR2 = texture2D(uBRock, vec2(p.z, -p.y) / 240.0 + 0.27).rgb * bwt.x + texture2D(uBRock, vec2(p.x, -p.y) / 240.0 + 0.27).rgb * bwt.y;
+rock = lin(bR1) * 0.6 + lin(bR2) * 0.55;
+rock *= 0.85;
+// close to: bedding ledges every few metres, pitting and knobs, shade under the overhangs
+float bNear = 1.0 - smoothstep(60.0, 220.0, camD);
+rock *= mix(1.0, 0.82 + 0.3 * fb(vec2(bu*1.3, p.y*1.3) + 5.0), bNear * 0.6);
+rock *= (0.86 + 0.24*fine) * (0.92 + 0.16*fb(vec2(bu*0.25, p.y*0.02)));
+rock = mix(rock, lin(vec3(0.11,0.12,0.1)), (1.0 - smoothstep(1.2, 3.6, p.y - uBSea)) * step(-1.0, p.y - uBSea));
 #endif
 #ifdef CITY
 rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0.25*fine);
@@ -999,7 +1017,10 @@ float rw = max(vW4.w, 1.0 - smoothstep(0.42, 0.62, vWN.y));
 rw = max(rw, 1.0 - smoothstep(0.62, 0.8, vWN.y));   // the gorge's walls: stone from about 37 degrees
 #endif
 #ifdef BAY
-rw = max(rw, max(s2.a, 1.0 - smoothstep(0.6, 0.78, vWN.y)));   // the karst: painted rock, and any face steeper than about 40 degrees
+// the karst: bare from about 63 degrees; between that and sheer, jungle hangs on in patches (more on the gentler
+// faces), so walls read as streaked stone broken by green, as in the photos
+{ float bSteep = 1.0 - smoothstep(0.16, 0.34, vWN.y), bVeg = smoothstep(0.44, 0.6, fb(vec2(bu*0.018, p.y*0.03) + 5.0));
+  rw = bSteep * (1.0 - bVeg * mix(0.3, 0.95, smoothstep(0.06, 0.22, vWN.y))); }
 #endif
 #ifdef LINKS
 rw = max(rw, smoothstep(0.15, 0.5, s2.a) * (1.0 - smoothstep(0.6, 0.86, vWN.y)));   // a pot's face, a little less steep than a blowout's
@@ -1011,8 +1032,9 @@ col = mix(col, rock, rw);
 #ifdef BAY
 // under the sea (the round's tide): white sand seen through clear water, turquoise in the shallows going to deep blue
 { float dep = uBSea - p.y;
-vec3 seaC = mix(lin(vec3(0.33,0.8,0.76)), lin(vec3(0.12,0.5,0.62)), smoothstep(0.8, 4.5, dep));
-seaC = mix(seaC, lin(vec3(0.04,0.22,0.38)), smoothstep(4.5, 12.0, dep));
+vec3 seaC = mix(lin(vec3(0.3,0.72,0.66)), lin(vec3(0.04,0.58,0.58)), smoothstep(0.2, 1.8, dep));
+seaC = mix(seaC, lin(vec3(0.0,0.4,0.5)), smoothstep(2.0, 6.0, dep));
+seaC = mix(seaC, lin(vec3(0.0,0.14,0.36)), smoothstep(7.0, 18.0, dep));
 col = mix(col, seaC * (0.92 + 0.12*fine), smoothstep(-0.02, 0.5, dep)); }
 #endif
 #ifdef CLOUD

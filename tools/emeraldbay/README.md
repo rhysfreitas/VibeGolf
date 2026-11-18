@@ -109,3 +109,32 @@ Rhys on plan book round 1 and the 4th's markup: "build it". `node emit.mjs` (abo
 - `src/course/bay-world.js` draws it (the art pass comes later). `tests/emeraldbay.test.mjs` checks it.
 - The review tools read the course at low tide; `ROLLS=tide=high node ../review/design.mjs emeraldbay` (or
   quickplay) at high.
+
+## The island study (17 November 2026)
+
+Rhys on the blockout: the islands didn't look or feel like his photos (Maya Bay from the beach and the air, Koh
+Hong's streaked wall, the longtail between sheer walls, Krabi's islets joined by a sandbar), because round 1 cut
+valleys through them. His picks: the big islands stay whole; most of the golf at their foot (shelves with a side lean,
+like the 4th and 7th); up top only a par 3 dropping down; through the rock only the sea cave and one natural gap; the
+Sandbar kept; fresh layout welcome; an island study first. The photos are in `out/refs/` (not in git).
+
+`study/` builds one whole island in the game to agree the look before any hole is re-laid:
+- `island.mjs`: the Massif, a horseshoe of jungle-covered karst round a cove opening south (Maya Bay), in world space:
+  a ragged coast from superellipses (`coast`), sheer walls 60-180 m from the sea, a steep jungle climb to a lumpy
+  body 150-200 m up, rounded summits on it (`PEAKS`); a white beach at the cove's head and smaller ones (`BEACHES`);
+  the Shelf along the east arm's outer side (a bench 13-16 m up, about 70 m wide, leaning 6% to the sea, measured
+  in from the east coast: `eastCoast`); a ledge 70 m up the cove's west wall, open to the cove; a gap 30 m wide
+  between the west arm and a tower (`GAP`); a sandbar dry along its crest at low tide out to a domed islet (`BAR`);
+  far islands; three study holes (the Shelf, the Drop, the Sandbar).
+- `node map.mjs && python3 map.py`: a top-down map (`out/study/map.png`).
+- `node emit.mjs`: the study as a course module (`out/study/emeraldbay.js`, not in git) in the real module's format.
+- `node render.mjs [view ...]` (CHROME set): course.html with the study module served in place of
+  `src/course/emeraldbay.js`, from fixed poses matched to the photos (`out/study/<view>.png`; about 1-2 min a view).
+
+What the study changed in the game (they apply to Emerald Bay as it is too): bay-world.js paints two canvas textures
+once (karst limestone with stains and hanging streaks, and a jungle canopy of leafy crowns) that the ground shader's
+`BAY` branch reads triplanar at two scales; jungle on everything up to about 70 degrees, bare streaked rock past it
+with jungle hanging on in patches, a dark notch at the waterline; lumpy crowns over the jungle near the hole and on
+the 5 m (study) or 10 m map out to 1.7 km (none on a cliff's rim); the sea as a fresnel sheet (clear looking down, a
+deep sheen across it) over a bed coloured by depth; a tropical sky dome with cumulus (`BW.sky`); longtails with a
+prow post and canopy; the near map leaves the hole's box to the playfield.

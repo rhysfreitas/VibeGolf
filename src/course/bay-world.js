@@ -9,7 +9,7 @@
 import { unpackHeights } from './field-code.js';
 
 export const TYPES = new Set();   // nothing for main.js's buildTrees to leave to us (the palms are scenery, drawn here)
-export const U = { uBSea: { value: 0 } };
+export const U = { uBSea: { value: 0 }, uBRock: { value: null }, uBCan: { value: null } };
 const lin = c => c.map(v => Math.pow(v / 255, 2.2));
 const dec = (b64, T) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
 const hash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
@@ -76,6 +76,87 @@ export function mapPaint(T, hole) {
 // what a rough lie is called, from the paint under the ball: the jungle floor or salt grass
 export function lieName(hole, x, z) { return matAt(hole, x, z) === 1 ? 'Jungle' : 'Rough'; }
 
+/* ---------- textures made once: karst limestone and the jungle canopy (canvas, tileable), which the ground
+   shader's BAY branch reads across a wall (along it and up it) and across the canopy (from above, or along and up a
+   steep slope), at two scales so neither repeats visibly ---------- */
+let TEX = null;
+function textures() {
+  if (TEX) return TEX;
+  const S = 1024, mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; return [c, c.getContext('2d')]; };
+  let seed = 7; const R = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const wrap = (f) => { for (const dx of [-S, 0, S]) for (const dy of [-S, 0, S]) f(dx, dy); };
+  const tex = c => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.needsUpdate = true; return t; };
+  // the rock: cream and grey limestone in soft patches, orange stains, long black and grey streaks hanging down
+  // (wider and darker toward their tops), bedding lines, pitting
+  const [rc, rg] = mk();
+  rg.fillStyle = '#c2bcb0'; rg.fillRect(0, 0, S, S);
+  const blob = (x, y, rx, ry, col, a) => wrap((dx, dy) => { const g = rg.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, rx); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); rg.save(); rg.translate(x + dx, y + dy); rg.scale(1, ry / rx); rg.translate(-(x + dx), -(y + dy)); rg.fillStyle = g; rg.beginPath(); rg.arc(x + dx, y + dy, rx, 0, 6.283); rg.fill(); rg.restore(); });
+  for (let i = 0; i < 160; i++) blob(R() * S, R() * S, 60 + R() * 170, 140 + R() * 400, ['226,220,206', '150,148,142', '204,198,186', '120,118,112', '236,232,222'][i % 5], 0.35 + R() * 0.35);
+  for (let i = 0; i < 55; i++) blob(R() * S, R() * S, 30 + R() * 90, 120 + R() * 380, ['206,138,78', '186,112,60', '222,168,110'][i % 3], 0.3 + R() * 0.35);
+  rg.filter = 'blur(3px)';
+  for (let i = 0; i < 130; i++) {
+    const x0 = R() * S, y0 = R() * S, len = 120 + R() * R() * 900, w0 = 4 + R() * R() * 80, dark = R() < 0.6, a = dark ? 0.2 + R() * 0.5 : 0.12 + R() * 0.22, ph = R() * 6;
+    wrap((dx, dy) => {
+      const g = rg.createLinearGradient(0, y0 + dy, 0, y0 + dy + len); const col = dark ? '26,26,24' : '96,96,90';
+      g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(0.6, `rgba(${col},${a * 0.65})`); g.addColorStop(1, `rgba(${col},0)`);
+      rg.fillStyle = g; rg.beginPath();
+      for (let t = 0; t <= 1.0001; t += 0.1) { const y = y0 + dy + t * len, w = w0 * (1 - 0.55 * t), xx = x0 + dx + 7 * Math.sin(t * 4 + ph); t === 0 ? rg.moveTo(xx - w / 2, y) : rg.lineTo(xx - w / 2, y); }
+      for (let t = 1; t >= -0.0001; t -= 0.1) { const y = y0 + dy + t * len, w = w0 * (1 - 0.55 * t), xx = x0 + dx + 7 * Math.sin(t * 4 + ph); rg.lineTo(xx + w / 2, y); }
+      rg.fill();
+    });
+  }
+  rg.filter = 'none';
+  for (let i = 0; i < 9000; i++) { const x = R() * S, y = R() * S, r = 0.6 + R() * 1.6; rg.fillStyle = R() < 0.55 ? 'rgba(50,46,40,0.28)' : 'rgba(240,234,220,0.22)'; rg.beginPath(); rg.arc(x, y, r, 0, 6.283); rg.fill(); }
+  // the canopy: crowns packed edge to edge, each lit from one side with a dark rim, in mixed greens
+  const [cc, cg] = mk();
+  cg.fillStyle = '#16290f'; cg.fillRect(0, 0, S, S);
+  const greens = ['44,82,26', '58,98,30', '34,66,22', '76,112,34', '96,128,40', '50,90,40', '28,56,24', '110,138,46'];
+  for (let i = 0; i < 1500; i++) {
+    const x = R() * S, y = R() * S, r = 14 + R() * R() * 44, col = greens[Math.floor(R() * greens.length)].split(',').map(Number), k = 0.75 + R() * 0.4, nm = 5 + Math.floor(R() * 8);
+    for (let m = 0; m < nm; m++) {
+      const a = R() * 6.283, d = R() * r * 0.6, mx = x + Math.cos(a) * d, my = y + Math.sin(a) * d, mr = r * (0.35 + R() * 0.35), kk = k * (0.85 + R() * 0.3);
+      wrap((dx, dy) => {
+        const g = cg.createRadialGradient(mx + dx - mr * 0.3, my + dy - mr * 0.3, mr * 0.15, mx + dx, my + dy, mr);
+        g.addColorStop(0, `rgb(${col.map(c => Math.min(255, c * kk * 1.25) | 0)})`); g.addColorStop(0.7, `rgb(${col.map(c => c * kk | 0)})`); g.addColorStop(1, `rgba(${col.map(c => c * kk * 0.5 | 0)},0.9)`);
+        cg.fillStyle = g; cg.beginPath(); cg.arc(mx + dx, my + dy, mr, 0, 6.283); cg.fill();
+      });
+    }
+  }
+  for (let i = 0; i < 30000; i++) { const x = R() * S, y = R() * S; cg.fillStyle = R() < 0.5 ? 'rgba(10,20,6,0.35)' : 'rgba(170,200,90,0.18)'; cg.fillRect(x, y, 1.5, 1.5); }
+  return (TEX = { rock: tex(rc), can: tex(cc) });
+}
+
+/* ---------- the sky: a tropical blue (THREE.Sky goes pale with the sun this high), fair-weather cumulus low round
+   the horizon, a pale haze at the sea ---------- */
+const SKY = { on: true, sun: new THREE.Vector3(0.3, 0.9, 0.2) }, DOMES = new Set();
+export function sky(on, sunDir) { SKY.on = on; if (sunDir) SKY.sun.copy(sunDir); for (const d of DOMES) d.visible = on; }
+function skyDome() {
+  const m = new THREE.ShaderMaterial({ uniforms: { uSun: { value: SKY.sun } }, side: THREE.BackSide, depthWrite: false, fog: false,
+    vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform vec3 uSun; varying vec3 vW;
+float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
+float fb(vec2 p){ float a = 0.0, w = 0.5; for (int i = 0; i < 5; i++) { a += w * n(p); p *= 2.03; w *= 0.5; } return a; }
+void main(){
+  vec3 d = normalize(vW - cameraPosition); float e = max(d.y, 0.0);
+  vec3 zen = vec3(0.05, 0.3, 1.15), mid = vec3(0.25, 0.7, 1.75), hor = vec3(1.25, 1.6, 1.9);
+  vec3 col = mix(hor, mid, smoothstep(0.0, 0.16, e)); col = mix(col, zen, smoothstep(0.1, 0.8, e));
+  // cumulus: puffy, flat-based, thickest a few degrees up, thinning overhead
+  vec2 q = d.xz / (d.y + 0.08) * 1.6;
+  float c = fb(q + 3.0) * 0.7 + fb(q * 3.1) * 0.3;
+  float band = smoothstep(0.0, 0.05, d.y) * (1.0 - smoothstep(0.18, 0.5, d.y));
+  float cl = smoothstep(0.52, 0.72, c) * band;
+  vec3 cloud = mix(vec3(1.4, 1.5, 1.65), vec3(2.1, 2.05, 1.95), smoothstep(0.55, 0.85, c));
+  col = mix(col, cloud, cl * 0.92);
+  float su = max(dot(d, normalize(uSun)), 0.0); col += vec3(1.6, 1.45, 1.2) * (pow(su, 8.0) * 0.25 + pow(su, 300.0) * 4.0);
+  gl_FragColor = vec4(col, 1.0);
+#include <tonemapping_fragment>
+#include <encodings_fragment>
+}` });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(11000, 48, 24), m); mesh.renderOrder = -10; mesh.frustumCulled = false; mesh.visible = SKY.on;
+  DOMES.add(mesh); return mesh;
+}
+
 /* ---------- shapes made once ---------- */
 let SHAPES = null;
 function shapes() {
@@ -83,8 +164,13 @@ function shapes() {
   const crown = new THREE.ConeGeometry(1, 1, 7, 1, true); crown.translate(0, -0.5, 0); crown.rotateX(Math.PI);   // a flat, drooping umbrella of fronds
   { const p = crown.attributes.position; for (let i = 0; i < p.count; i++) { const a = Math.atan2(p.getZ(i), p.getX(i)), r = 1 + 0.22 * Math.sin(a * 7); p.setX(i, p.getX(i) * r); p.setZ(i, p.getZ(i) * r); } crown.computeVertexNormals(); }
   const trunk = new THREE.CylinderGeometry(0.2, 0.32, 1, 6, 1, true); trunk.translate(0, 0.5, 0);
-  for (const g of [crown, trunk]) g.userData.keep = true;
-  return (SHAPES = { crown, trunk });
+  // a jungle crown: a lumpy, flattened ball (two levels of detail)
+  const lump = (det, seed) => { const g = new THREE.IcosahedronGeometry(1, det), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = 1 + 0.16 * Math.sin(x * 5.1 + seed) * Math.sin(z * 4.3 + y * 3.7 + seed) + 0.08 * Math.sin(x * 11 + z * 9 + seed); p.setXYZ(i, x * k, y * k * 0.85, z * k); }
+    g.computeVertexNormals(); return g; };
+  const canopy = lump(2, 1.3), canopyFar = lump(1, 2.1);
+  for (const g of [crown, trunk, canopy, canopyFar]) g.userData.keep = true;
+  return (SHAPES = { crown, trunk, canopy, canopyFar });
 }
 const mapOf = M => { if (!M.hDec) { M.hDec = dec(M.h, Int16Array); if (M.pred) unpackHeights(M.hDec, M.nx); M.mDec = dec(M.m, Uint8Array); } return M; };
 // distance from (X, Z) to the nearest line of play or tee, world space
@@ -111,6 +197,8 @@ export function buildBay(hole, T, box, E, hi, { group, coarse, rockMat }) {
   const vc = (o = {}) => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, ...o });
   const SEA = Number.isFinite(hole.sea) ? hole.sea : LY(0);
   U.uBSea.value = SEA;
+  { const T = textures(); U.uBRock.value = T.rock; U.uBCan.value = T.can; }
+  { for (const d of [...DOMES]) if (!d.parent || !d.parent.parent) DOMES.delete(d); const dome = skyDome(); dome.position.set(cx, 0, cz); group.add(dome); }
   const gnd = (x, z) => T.groundAt(x, z);
 
   // ---- the ground from the 10 m and 40 m maps: this hole's field where it has one (so the edges meet the playfield),
@@ -141,14 +229,25 @@ export function buildBay(hole, T, box, E, hi, { group, coarse, rockMat }) {
     group.add(groundMesh(Vt, Wt, idx));
   };
   const WM = mapOf(E.world), FM = mapOf(E.far);
-  drawMap(WM, () => false, coarse ? 2 : 1, 0.3);
+  // the near map leaves the hole's field to the playfield (its coarser walls would poke through the field's)
+  const inF = (X, Z, m) => { const [x, z] = L(X, Z); return x > box.x0 + m && z > box.z0 + m && x < box.x1 - m && z < box.z1 - m; };
+  drawMap(WM, (q, Wx) => q.every(p => inF(Wx[p * 2], Wx[p * 2 + 1], 4)), coarse ? 2 : 1, 0.3);
   const ix0 = WM.x0 + 30, ix1 = WM.x0 + (WM.nx - 1) * WM.cell - 30, iz0 = WM.z0 + 30, iz1 = WM.z0 + (WM.nz - 1) * WM.cell - 30;
   drawMap(FM, (q, Wx) => q.every(p => Wx[p * 2] > ix0 && Wx[p * 2] < ix1 && Wx[p * 2 + 1] > iz0 && Wx[p * 2 + 1] < iz1), 1, 0.8);
 
   // ---- the sea: one sheet at the round's level, clear (the shader colours what is under it), with the sky's sheen
   {
     const R = 7000, g = new THREE.PlaneGeometry(R * 2, R * 2, 1, 1); g.rotateX(-Math.PI / 2);
-    const sea = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x2b8f98, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.32, depthWrite: false, envMapIntensity: 1.3 }));
+    // clear when you look down into it (the ground shader colours the bed by depth), turning to a deep sky-blue sheen
+    // at a low angle across it, as the photos' water does from a beach
+    const mat = new THREE.MeshStandardMaterial({ color: 0x0a6e78, roughness: 0.16, metalness: 0.0, transparent: true, opacity: 1, depthWrite: false });
+    mat.onBeforeCompile = sh => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
+        { float fr = pow(1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0), 3.0);
+          diffuseColor.a = mix(0.12, 0.8, fr);
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.012, 0.07, 0.16), fr * 0.7); }`);
+    };
+    const sea = new THREE.Mesh(g, mat);
     sea.position.set(cx, SEA, cz); sea.renderOrder = 1; sea.receiveShadow = true; group.add(sea);
   }
 
@@ -182,10 +281,13 @@ export function buildBay(hole, T, box, E, hi, { group, coarse, rockMat }) {
         const deck = Math.max(y, HW) + 1.2, vx = Math.sin(r), vz = -Math.cos(r);
         box3(x, z, deck, o.w, o.l, 0.25, r, wood, woodD);
         for (let t = -0.5; t <= 0.5; t += 0.125) box3(x + vx * t * o.l, z + vz * t * o.l, deck - 6, 0.3, 0.3, 6, r, woodD, woodD);
-      } else if (o.kind === 'longtail') {   // a long, narrow boat riding at the tide's level, a raised prow
-        const sy = Math.max(SEA, y) - 0.1;
-        box3(x, z, sy - 0.4, o.w, o.l, 0.9, r, hullC, lin([50, 80, 112]), 0.9);
-        const vx = Math.sin(r), vz = -Math.cos(r); box3(x + vx * o.l * 0.45, z + vz * o.l * 0.45, sy + 0.4, 0.5, 1.2, 1.4, r, red, red, 0.4);
+      } else if (o.kind === 'longtail') {   // a longtail: a long dark hull riding at the tide's level, its prow rising in a post hung with ribbons, a canopy amidships
+        const sy = Math.max(SEA, y) - 0.15, vx = Math.sin(r), vz = -Math.cos(r), hull = lin([70, 48, 32]), hullD = lin([46, 32, 22]), tarp = lin([40, 90, 150]);
+        for (let t = -0.42; t <= 0.42; t += 0.12) { const k = 1 - Math.pow(Math.abs(t) / 0.5, 2.2); box3(x + vx * t * o.l, z + vz * t * o.l, sy - 0.35 + (t > 0.3 ? (t - 0.3) * 4 : 0), o.w * (0.35 + 0.65 * k), o.l * 0.13, 0.95, r, hull, hullD); }
+        box3(x + vx * o.l * 0.52, z + vz * o.l * 0.52, sy + 0.3, 0.32, 0.5, 2.0, r, hullD, hullD, 0.6);
+        box3(x + vx * o.l * 0.53, z + vz * o.l * 0.53, sy + 1.4, 0.7, 0.2, 0.8, r, red, lin([230, 190, 60]));
+        box3(x - vx * o.l * 0.05, z - vz * o.l * 0.05, sy + 1.9, o.w * 0.9, o.l * 0.35, 0.12, r, tarp, tarp);
+        for (const t of [-0.2, 0.1]) for (const sd of [-1, 1]) { const ux = Math.cos(r), uz = Math.sin(r); box3(x + vx * t * o.l + ux * sd * o.w * 0.38, z + vz * t * o.l + uz * sd * o.w * 0.38, sy + 0.5, 0.08, 0.08, 1.4, r, woodD, woodD); }
       } else if (o.kind === 'marker') { box3(x, z, y - 0.3, 0.5, 0.5, o.h + 0.3, r, white, white); box3(x, z, y + o.h - 1.2, 0.9, 0.9, 1.2, r, red, red); }
       else if (o.kind === 'tree') { box3(x, z, y - 0.3, 0.8, 0.8, o.h * 0.7, r + 0.4, woodD, woodD, 0.5); box3(x + 1.5, z, y + o.h * 0.55, 5, 4, 2.4, r, lin([52, 88, 44]), lin([40, 70, 36]), 0.6); }
     }
@@ -198,14 +300,57 @@ export function buildBay(hole, T, box, E, hi, { group, coarse, rockMat }) {
     const m = B.mesh(vc({ flatShading: true, side: THREE.DoubleSide })); if (m) group.add(m);
   }
 
+  // ---- the jungle canopy: lumpy crowns on every jungle cell (the hole's field, then the 10 m map out to 1.6 km),
+  // packed so the islands' slopes and ridgelines read as forest; none on bare rock, none within 6 m of the play
+  {
+    const nearC = [], farC = [], pick = (x, z, y, r, far) => (far ? farC : nearC).push({ x, z, y, r });
+    if (Fd) {
+      if (!Fd.mDec) Fd.mDec = dec(Fd.m, Uint8Array);
+      const st = coarse ? 4 : 3, C = Fd.codes;
+      for (let j = 0; j < Fd.nz; j += st) for (let i = 0; i < Fd.nx; i += st) {
+        const k = j * Fd.nx + i; if (Fd.mDec[k] !== 1 && !(Fd.mDec[k] === 2 && hash(i * 0.37, j * 0.91) < 0.3)) continue;
+        { const px = Fd.x0 + i * Fd.cell, pz = Fd.z0 + j * Fd.cell; if (Object.values(hole.tees).some(t => Math.hypot(px - t[0], pz - t[1]) < 30)) continue; }
+        let clear = true;
+        for (let dj = -3; dj <= 3 && clear; dj += 3) for (let di = -3; di <= 3; di += 3) { const kk = Math.min(Fd.nz - 1, Math.max(0, j + dj)) * Fd.nx + Math.min(Fd.nx - 1, Math.max(0, i + di)); const m = Fd.mDec[kk]; if (m === 10 || m === 0 || m === 3) { clear = false; break; } }
+        if (!clear) continue;
+        const x = Fd.x0 + (i + (hash(i, j) - 0.5) * st) * Fd.cell, z = Fd.z0 + (j + (hash(j, i) - 0.5) * st) * Fd.cell, y = gnd(x, z);
+        if (y === null) continue; const sl = Math.hypot(gnd(x + 2, z) - gnd(x - 2, z), gnd(x, z + 2) - gnd(x, z - 2)) / 4;
+        if (sl > 1.0) { if (hash(i * 5.3, j * 2.9) < 0.22) { const r = 2.2 + 2.4 * hash(j, i * 3.1); pick(x, z, y, r, false); } continue; }
+        const r = 4.6 + 3.6 * hash(i * 1.3, j * 0.7); pick(x, z, y - r * 0.15, r, false);
+      }
+    }
+    const R2 = (coarse ? 1300 : 1700) ** 2;
+    for (let j = 0; j < WM.nz; j++) for (let i = 0; i < WM.nx; i++) {
+      if (WM.mDec[j * WM.nx + i] !== 1) continue;
+      const X = WM.x0 + (i + hash(i, j) - 0.5) * WM.cell, Z = WM.z0 + (j + hash(j, i) - 0.5) * WM.cell, [x, z] = L(X, Z);
+      if (inField(x, z) || (x - cx) ** 2 + (z - cz) ** 2 > R2) continue;
+      const fi = (X - WM.x0) / WM.cell, fj = (Z - WM.z0) / WM.cell, i0 = Math.max(0, Math.min(WM.nx - 2, Math.floor(fi))), j0 = Math.max(0, Math.min(WM.nz - 2, Math.floor(fj))), u = fi - i0, v = fj - j0, hh = (a, b) => WM.hDec[b * WM.nx + a] / WM.scale + WM.y0;
+      const hs = [hh(i0, j0), hh(i0 + 1, j0), hh(i0, j0 + 1), hh(i0 + 1, j0 + 1)]; if (Math.max(...hs) - Math.min(...hs) > WM.cell * 1.2) continue;   // not on a cliff's rim
+      const y = LY(hs[0] * (1 - u) * (1 - v) + hs[1] * u * (1 - v) + hs[2] * (1 - u) * v + hs[3] * u * v), r = 6 + 4 * hash(i * 2.1, j);
+      pick(x, z, y + r * 0.2, r, (x - cx) ** 2 + (z - cz) ** 2 > 700 ** 2);
+    }
+    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), C = new THREE.Color(), P = new THREE.Vector3(), Sc = new THREE.Vector3();
+    const greens = [[10, 28, 10], [16, 40, 12], [26, 54, 14], [40, 70, 18], [22, 46, 18], [56, 82, 22], [18, 38, 16]];
+    for (const [list, geo] of [[nearC, S.canopy], [farC, S.canopyFar]]) {
+      if (!list.length) continue;
+      const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0 }), list.length);
+      list.forEach((t, k) => {
+        im.setMatrixAt(k, M.compose(P.set(t.x, t.y, t.z), Q.setFromAxisAngle(up, hash(t.x, t.z) * 6.28), Sc.set(t.r, t.r * (0.62 + 0.25 * hash(t.z, t.x)), t.r)));
+        const g = greens[Math.floor(hash(t.x * 3.3, t.z * 1.7) * greens.length)], v = 0.85 + 0.3 * hash(t.z * 2, t.x);
+        im.setColorAt(k, C.setRGB(...lin(g.map(c => c * v))));
+      });
+      im.castShadow = true; im.receiveShadow = true; group.add(im);
+    }
+  }
+
   // ---- palms: on the jungle and the dry sand of the 10 m map within reach of the hole, 28 m or more off every line
   // of play and tee, leaning a little toward the sea
   {
     const near = [], R2 = (coarse ? 1100 : 1500) ** 2, step = coarse ? 3 : 2;
     for (let j = 0; j < WM.nz; j += step) for (let i = 0; i < WM.nx; i += step) {
-      const m = WM.mDec[j * WM.nx + i]; if (m !== 1 && m !== 3) continue;
+      const m = WM.mDec[j * WM.nx + i]; if (m !== 3) continue;
       const X = WM.x0 + (i + hash(i, j) - 0.5) * WM.cell, Z = WM.z0 + (j + hash(j, i) - 0.5) * WM.cell;
-      if (hash(i * 3.1, j * 1.7) > (m === 1 ? 0.55 : 0.18)) continue;
+      if (hash(i * 3.1, j * 1.7) > 0.35) continue;
       const [x, z] = L(X, Z); if ((x - cx) ** 2 + (z - cz) ** 2 > R2) continue;
       if (playD(E, X, Z) < 28) continue;
       const y = inField(x, z) ? gnd(x, z) : LY(WM.hDec[j * WM.nx + i] / WM.scale + WM.y0);
