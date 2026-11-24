@@ -157,3 +157,21 @@ The holes: 1 the Village into the cove along its west terrace; 2 the Drop, off t
 cove (the only hole up top); 3 the Tongue, across the cove to the beach under the east wall; 4 the Coves on B's
 shelf; 5 the Sandbar to C; 6 the Gap, through the floor between C and the Sentinel (new, for the Saddle); 7 the
 Overhang; 8 the Stack; 9 the Hong across the flats and through the cave. Next: Rhys's verdict, then plan book round 2.
+
+## Layout round 3: water between the islands (24 November 2026)
+
+Rhys on round 2: "everything is a bit tight and the holes are all on the inside of their islands which is giving a
+sense that there isn't any water between the islands"; he liked the study's horseshoe with only the green in the
+middle of the U and the holes wrapping round the outside. `r3/` is set up like `r2/` (same tools; `bay.mjs` holds the
+bay) with:
+- the islands spread over about 1.8 by 1.6 km with open channels between every pair (about 290 m Maya island to B,
+  290 m B to C, 180 m to the Hong, the open middle of the bay with the stack and the cay);
+- the golf on the outer shores: 1 up the Maya island's west side, 4 on B's outer east shelf, 7 round a cove on C's
+  north shore;
+- inside the horseshoe only the Drop: a notch at the lip 60 m up the cove's east wall (`LEDGE`, found by sampling the
+  wall face on the line to the islet) and the green alone on a sand islet in the cove (`ISLETS[0]`);
+- the 3rd from the east arm's tip across the channel's mouth to an islet, with a tide tongue (`BARS`: the tongue's
+  crest 1.5 m is under the sea at high tide; the Sandbar's 3.1 m stays dry);
+- par order kept (5 3 3 5 4 4 4 3 5): 5 3 4 5 3 4 4 3 5 would match Halcyon Ring on six holes. 3,288 yd.
+`node proposal.mjs` writes `out/emerald-bay-routing-r3.pdf`. From the high aerial poses a dark shape shows at the far
+map's southern edge (nothing in the ground data there); the proposal crops it.
