@@ -50,7 +50,7 @@ export function buildHole(h) {
   const GR = makeGreen(h.pin, endHead, { seed: 70 + h.n, ...h.green });
   const gm = GR.gm, gUV = GR.uv;
   const fwD = makeFairway(h.line, h.fw || []);
-  const bunkers = (h.bunkers || []).map((b, i) => ({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, side: Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45, depth: 1.0 }));
+  const bunkers = (h.bunkers || []).map((b, i) => ({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, side: Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45, depth: b.kind === 'pot' ? 1.6 : 1.0, kind: b.kind }));
   const bunkerE = (b, x, z) => seDist(b, x, z) + 0.1 * noise2(x / 3, z / 3, b.seed);
   for (const b of bunkers) {   // a greenside one sits at least 2.5 m outside the green's edge
     if (!b.side) continue;
@@ -63,7 +63,8 @@ export function buildHole(h) {
   const inBunker = b => (x, z) => x > b.box[0] && x < b.box[2] && z > b.box[1] && z < b.box[3] && edgeM(b, x, z) < 0;
   const teeHead = headingAt(h.line, 1), tc = Math.cos(teeHead), ts = Math.sin(teeHead);
   const teePads = Object.entries(h.teePts).map(([key, p]) => ({ k: key, x: p[0], z: p[1] }));
-  const onPad = (t, x, z, m = 0) => { const u = (x - t.x) * tc + (z - t.z) * ts, v = (x - t.x) * ts - (z - t.z) * tc; return Math.abs(u) < 5 + m && Math.abs(v) < 6 + m; };
+  const front = h.padFront ?? 6;   // a pad at a lip stops short of it (the Drop's notch: the tee looks straight down)
+  const onPad = (t, x, z, m = 0) => { const u = (x - t.x) * tc + (z - t.z) * ts, v = (x - t.x) * ts - (z - t.z) * tc; return Math.abs(u) < 5 + m && v < front + m && v > -6 - m; };
   const base = V(...Wh(...h.teePts.marlin)).y + 0.3;
 
   const raw = (x, z) => V(...Wh(x, z)).y - base;
@@ -74,11 +75,11 @@ export function buildHole(h) {
     const go = gm(x, z);
     if (go < 9) { const t = 1 - smooth((go + 1) / 10); y = lerp(y, pinY, t); }
     if (go < 7 && h.green.contour) { const fade = 1 - smooth((go - 0.5) / 6), [u, v] = gUV(x, z); y += contourAt(h.green.contour, u, v) * fade; }
-    for (const b of bunkers) { if (x < b.box[0] || x > b.box[2] || z < b.box[1] || z > b.box[3]) continue; const e = edgeM(b, x, z); if (e < 0.5) y -= b.depth * (1 - smooth((e + 2) / 2.3)) * smooth((go - 0.5) / 1.5); }
+    for (const b of bunkers) { if (x < b.box[0] || x > b.box[2] || z < b.box[1] || z > b.box[3]) continue; const e = edgeM(b, x, z); if (e < 0.5) y -= Math.min(b.depth, Math.max(0.3, y - 2.7)) * (1 - smooth((e + 2) / 2.3)) * smooth((go - 0.5) / 1.5); }   // a bunker on a low beach stays above high water
     return y;
   }
   // tee pads: level, 0.3 m over the highest ground under them
-  for (const t of teePads) { let m = -Infinity; for (const u of [-5, 0, 5]) for (const v of [-6, 0, 6]) m = Math.max(m, shaped(t.x + u * tc - v * ts, t.z + u * ts + v * tc)); t.y = m + 0.3 + ((h.teeLift || {})[t.k] || 0); }   // teeLift: a raised pad (the 4th's back tees, to see over the first cove)
+  for (const t of teePads) { let m = -Infinity; for (const u of [-5, 0, 5]) for (const v of [-6, 0, front]) m = Math.max(m, shaped(t.x + u * tc - v * ts, t.z + u * ts + v * tc)); t.y = m + 0.3 + ((h.teeLift || {})[t.k] || 0); }   // teeLift: a raised pad (the 4th's back tees, to see over the first cove)
   const tipsPad = h.tipsPt ? { x: h.tipsPt[0], z: h.tipsPt[1] } : null;
   if (tipsPad) { let m = -Infinity; for (const u of [-5, 0, 5]) for (const v of [-6, 0, 6]) m = Math.max(m, shaped(tipsPad.x + u * tc - v * ts, tipsPad.z + u * ts + v * tc)); tipsPad.y = m + 0.2; }
   function ground(x, z) {

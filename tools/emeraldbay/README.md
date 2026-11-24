@@ -175,3 +175,29 @@ bay) with:
 - par order kept (5 3 3 5 4 4 4 3 5): 5 3 4 5 3 4 4 3 5 would match Halcyon Ring on six holes. 3,279 yd.
 `node proposal.mjs` writes `out/emerald-bay-routing-r3.pdf`. From the high aerial poses a dark shape shows at the far
 map's southern edge (nothing in the ground data there); the proposal crops it.
+
+## Plan book round 2 (24 November 2026)
+
+Rhys approved layout round 3 ("Approve, go to the plan book", with the 4th moved to the inside). The plan tools
+now draw it: `world.mjs`, `holes.mjs` and `round2-notes.json` were rewritten on the round 3 islands; `scene.mjs`,
+`sample.mjs` and `book.mjs` keep their jobs (`ROUND=2` is the default). `node sample.mjs`, `python3 plans.py`,
+`node sketch.mjs`, `node book.mjs` give `out/emerald-bay-plan-book-r2.pdf`.
+
+- `world.mjs`: the bay as `r3/bay.mjs` built it (whole massifs, `FLATS` at their feet, islets), with the hole
+  features drawn properly. Flats take `seaSide` (a terrace at a wall's foot: grass to the wall, a beach or, when it
+  stands over 6 m, a low coral cliff on its sea side), `land` (grass across, a short beach `bank` only where it meets
+  open water), `steps` ([s, dh, w] along the flat), `pipe`/`pipeW` (a dished floor, no noise). The 1st's terraces
+  step down 4 m twice (`west`); the 4th's shelf leans 9% into B and climbs (`shelf`), its coves (`COVES`) bitten in
+  from the channel; the Sandbar (`BAR`, uneven) and the 3rd's tongue (`TONGUE`) win over any flat they overlap
+  (`tideBits`); the gap's walls come down to the slot's floor (extra superellipses on C and the Sentinel), the floor a
+  half-pipe out to C's north beach (`gapfloor`, `gapexit`); the overhang (`OVER`) cuts C back to its foot and the beach
+  runs in under it; the stack, its rim and spire; the 9th's flats (`TIDAL`), spit (`SPIT`: dry on its south side,
+  narrow toward the stack), creek (`CREEK`), cave (`CAVE`, `caveRoofAt`), the wall-foot beach and the perched shelf
+  in the lagoon. The Drop's notch (`LEDGE`) runs 30 m back so the tips spot stands in it, and its tee is at the lip.
+- `holes.mjs`: the nine on the new lines (`LINES` in world.mjs), cards and words; `padFront` stops a tee pad short of
+  a lip (the Drop's: a pad that ran 6 m on hid the islet); a bunker takes `kind: 'pot'` (1.6 m deep), and every
+  bunker stays above high water on a low beach (`scene.mjs`).
+- Checks: no Must broken at either tide; relief (bold 1 stepped and 4 bench), alike (0 of 15 alike) and spread
+  (the 9th's 1,400 m² green past real golf) pass. One Should is open: the 6th's bold landing is about 1° out of sight.
+- Not yet rebuilt: `emit.mjs` (the blockout) still reads round 1's features; the round 0 tools (`checks.mjs`,
+  `dump.mjs`, `figs.py`) ran against round 0's world and are kept as a record.

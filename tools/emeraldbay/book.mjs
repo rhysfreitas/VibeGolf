@@ -16,7 +16,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE,
 const D = JSON.parse(fs.readFileSync(`${OUT}/grid/holes.json`)), TEES = D.teeSets, YD = 0.9144;
 for (const h of D.pages) { const q = HH[h.n - 1]; h.words = q.words; h.card = q.card; h.green = { ...h.green, style: q.green.style }; }   // the words as holes.mjs has them now
 D.holes = D.pages.filter(h => !h.tideHole || h.tide === 'low');   // one row a hole (a tide hole's low-tide page)
-const ROUND = process.env.ROUND || '1', DATE = process.env.DATE || '16 November 2026', BACK = D.back;
+const ROUND = process.env.ROUND || '2', DATE = process.env.DATE || '24 November 2026', BACK = D.back;
 const tideName = h => h.tideHole ? (h.tide === 'low' ? 'low tide' : 'high tide') : '';
 const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : null;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -108,10 +108,10 @@ pages.push(`<div class="page">
     <img src="${img('map-low.jpg')}" style="width:5.6in; height:7.75in; border:0.6pt solid #888; object-fit:contain; background:white">
     <div style="display:flex; flex-direction:column">
       <h1>Emerald Bay</h1>
-      <p style="font-size:11pt; margin:4pt 0 10pt">A warm bay crowded with limestone islands: sheer cliffs, jungle on top, white sand and clear turquoise water below</p>
+      <p style="font-size:11pt; margin:4pt 0 10pt">A warm bay of whole limestone islands with open water between them: sheer cliffs, jungle on top, white sand and clear turquoise water below</p>
       <p class="small">Plan book · round ${ROUND} · ${DATE}<br>Par ${par} · ${tot(BACK).toLocaleString()} yd from the Marlin tees at low tide, ${HI.toLocaleString()} at high</p>
       <h3>What this round is</h3>
-      <p>The approved routing and hole cards (15 November) drawn for the first time: the bay as one terrain with the sea as a parameter (low water 0, high water 2.4 m), the three play islands shaped round their holes (the 1st's palm valley between towers, the 4th's shelf and its three coves, the 6th's saddle and pinnacle, the 7th's cove under the leaning cliff), the islet, the stack, the Sandbar and the 9th's flats, channel, spit, cave and lagoon from round 0; fairway outlines from the forms, green shapes, the four tee sets and the Shark tips spot on every hole, targets, and both tides on 3, 5 and 9.</p>
+      <p>Layout round 3 (approved 24 November, with the 4th on an inside shore) drawn for the first time: five whole islands spread out with open water between them, the golf on their outer shores on terraces, beaches and shelves at their feet, the 4th up B\'s inside wall over the channel, only the Drop\'s green inside the Maya island\'s horseshoe; the sea as a parameter (low water 0, high water 2.4 m); fairway outlines from the forms, green shapes, the four tee sets and the Shark tips spot on every hole, targets, and both tides on 3, 5 and 9.</p>
       <p>Every drive is flown with the game's physics as round 0 settled it: dry sand plays as waste, wet sand as firm beach, bunkers as sand, water a stroke and a drop, cliff faces drop 45% of the balls that hit them at their foot, and the cave's roof and the overhang are solid. Page 4 lists what moved from the layout doc to pass the checks, and what is open for you.</p>
       <h3>Reading the plans</h3>
       <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', rough: 'Rough', jungle: 'Jungle (plays as rough)', rock: 'Rock and cliffs (native; a cliff gives the ball back)', sand: 'Bunker', drysand: 'Dry sand (plays as waste)', wetsand: 'Wet sand, dry at low tide (firm: it runs)', water: 'Water (a stroke and a drop)' }).map(([k, v]) => `<span><i style="background:${SWE[k]}"></i>${v}</span>`).join('')}</div>
@@ -133,7 +133,7 @@ pages.push(`<div class="page"><h2>The course card</h2>
   <table class="cc">${cardRows.map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join('')}</table>
   <div class="notes" style="margin-top:8pt"><div class="t">Notes</div>${lines(3)}</div>
   <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>3</span></div></div>`);
-const OPEN = JSON.parse(fs.readFileSync(path.join(HERE, 'round1-notes.json')));
+const OPEN = JSON.parse(fs.readFileSync(path.join(HERE, `round${ROUND}-notes.json`)));
 pages.push(`<div class="page"><h2>What moved from the layout doc, and what is open</h2>
   <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.3in; margin-top:6pt">
     <div><h3>Moved, to pass the checks (the lines and pins are the approved ones)</h3>${OPEN.moved.map(t => `<p>${esc(t)}</p>`).join('')}</div>

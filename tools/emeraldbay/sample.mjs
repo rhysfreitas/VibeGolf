@@ -11,7 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE, BACK, FRONT, TIDE_HOLES } from './holes.mjs';
 import { built, SURF, PHYS, toWorld, worldAt, WL, LOC, WOR } from './scene.mjs';
-import { LABELS, SITES, TIDES, w, WLINES, V, CAVE, OVER, overhangAt, caveRoofAt, STACK, PINNACLE, COVES, TONGUE } from './world.mjs';
+import { LABELS, SITES, TIDES, w, WLINES, V, CAVE, OVER, overhangAt, caveRoofAt, STACK, COVES, TONGUE } from './world.mjs';
 import { project, at, lengthOf, YD, headingAt, distLine, lineOf } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
 import { greenStats, leanAlong } from './greens.mjs';
@@ -90,7 +90,7 @@ for (const pg of PAGES) {
 }
 
 // the course map, at each tide: the world's surface and a hillshade from its heights
-const WR = 4, X0 = -280, X1 = 1300, Z0 = -1420, Z1 = -60;
+const WR = 4, X0 = -660, X1 = 1240, Z0 = -1180, Z1 = 460;
 const MW = Math.ceil((X1 - X0) / WR), MH = Math.ceil((Z1 - Z0) / WR);
 for (const tide of ['low', 'high']) {
   const ms = new Uint8Array(MW * MH), mh = new Float32Array(MW * MH);
@@ -120,7 +120,7 @@ const lanes = (B, p, dir) => {
   return out;
 };
 const TIDES2 = ['low', 'high'];
-R_(`Emerald Bay plan book round 1 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
+R_(`Emerald Bay plan book round 2 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
 R_(`  total: low tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[0].yards : h.yards)[BACK], 0)} yd, high tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[1].yards : h.yards)[BACK], 0)} yd; par ${HOLES.reduce((a, h) => a + h.par, 0)}`);
 for (const [k, h] of HOLES.entries()) {
   const B = built(k, 'low'), [x, z] = h.pin, d = 1, gx = (B.ground(x + d, z) - B.ground(x - d, z)) / (2 * d), gz = (B.ground(x, z + d) - B.ground(x, z - d)) / (2 * d);
@@ -276,18 +276,18 @@ for (const [k, h] of HOLES.entries()) for (const tide of h.versions ? TIDES2 : [
     else R_(`${S.inFrame && !S.hid ? ' ' : '!'} ${h.n} bold target "${bt.name}" from the Marlin tee: ${S.hid ? 'hidden by ' + S.hid : S.inFrame ? 'in sight' : 'out of the frame'} (${S.ang.toFixed(1)}°)`); }
   // approaches: from each landing target the flag (on the 6th from short of the crest it is blind by design)
   if (h.par > 3) for (const q of tg.filter(q => !q.pin)) { const S2 = sight(B, q.at, h.pin, B.ground(...h.pin) + 2.1), dd = Math.hypot(q.at[0] - h.pin[0], q.at[1] - h.pin[1]);
-    if (dd < 252) R_(`${S2.hid && h.n !== 6 ? '!' : ' '} ${h.n}${v ? ' (' + tide + ')' : ''} from "${q.name}" (${Math.round(dd / YD)} yd) the flag is ${S2.hid ? 'hidden by ' + S2.hid + (h.n === 6 ? ' (the Alps: blind on purpose)' : '') : 'in sight'}`); }
+    if (dd < 252) R_(`${S2.hid && h.n !== 6 ? '!' : ' '} ${h.n}${v ? ' (' + tide + ')' : ''} from "${q.name}" (${Math.round(dd / YD)} yd) the flag is ${S2.hid ? 'hidden by ' + S2.hid + (h.n === 6 ? ' (blind round the corner: the price of laying up)' : '') : 'in sight'}`); }
 }
 R_(`${blind <= 2 ? ' ' : '!'} blind tee shots from the back tees: ${blind}; two a nine at most`);
 lap('views');
 
 // ---- the brief's look-at-first list
 const wd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-// the sea stack (and its spire) from 1, 4, 5, 7, 9: in the 90° frame, and how tall on a phone (a 40 px landmark is
+// the sea stack (and its spire) from 3-7 and 9: in the 90° frame, and how tall on a phone (a 40 px landmark is
 // about 22 m at 250 m: 455 px per radian of height)
 {
   const S = STACK.spire, out = [];
-  for (const n of [1, 4, 5, 7, 9]) { const k = n - 1, h = HOLES[k], B = built(k, 'high');
+  for (const n of [3, 4, 5, 6, 7, 9]) { const k = n - 1, h = HOLES[k], B = built(k, 'high');
     const pts = [['tee', h.teePts[BACK], (h.targets.find(q => !q.bold) || { at: h.pin }).at], ...h.targets.filter(q => !q.pin && !q.bold).map(q => [q.name, q.at, h.pin])];
     for (const [name, p, aimL] of pts) { const P0 = WOR[k](...p), aim = WOR[k](...aimL), dist = Math.hypot(S.X - P0[0], S.Z - P0[1]);
       let b = Math.atan2(S.X - P0[0], -(S.Z - P0[1])) - Math.atan2(aim[0] - P0[0], -(aim[1] - P0[1])); b = Math.atan2(Math.sin(b), Math.cos(b)); const deg = Math.round(b * 180 / Math.PI);
@@ -336,12 +336,12 @@ const wd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
     R_(`  4 drives at "${bt.name}" from the Marlin tee: ${dd.join('; ')}`); }
   const ls = leanAlong(B, 120, 450, 14).map(x => x[1]); R_(`  4 the shelf's lean where it is fairway: ${(ls.reduce((a, b) => a + b, 0) / ls.length).toFixed(1)}% (+ falls right, away from the water), ${Math.min(...ls).toFixed(1)} to ${Math.max(...ls).toFixed(1)}`);
 }
-// the 6th: the pinnacle, the crest and the blind second
+// the 6th: the slot's floor between the walls, the neck, and the green from either side of it
 {
-  const k = 5, h = HOLES[k], B = built(k, 'high'), pin6 = WOR[k] ? LOC[k](PINNACLE.X, PINNACLE.Z) : null, pr = project(h.line, ...pin6);
-  const crest = B.ground(...at(h.line, 245)) + B.base;
-  R_(`  6 the pinnacle ${Math.round(pr.s)} m out (${Math.round((pr.s + 24) / YD)} yd from the Marlin tee), ${PINNACLE.h} m tall; the crest at 245 m, ${crest.toFixed(0)} m up; tee ${(B.ground(...h.teePts[BACK]) + B.base).toFixed(0)} m, green ${(B.ground(...h.pin) + B.base).toFixed(0)} m`);
-  for (const s of [180, 210, 250, 280, 300, 315]) { const S = sight(B, at(h.line, s), h.pin, B.ground(...h.pin) + 2.1); R_(`  6 from ${s} m out (${Math.round((s + 24) / YD)} yd) the flag is ${S.hid ? 'hidden (' + S.hid + ')' : 'in sight'}`); }
+  const k = 5, h = HOLES[k], B = built(k, 'high'), base = B.ground(...h.teePts[BACK]), parts = [];
+  for (const s of [60, 120, 180, 226, 260]) { const side = sg => { for (let o = 0; o <= 120; o += 1) { const g = B.ground(...at(h.line, s, o * sg)); if (g === null || g - base > 8) return o; } return 120; }; parts.push(`${s} m: ${side(-1) + side(1)} m (${side(-1)} left, ${side(1)} right)`); }
+  R_(`  6 the slot's floor (to where the wall stands 8 m over the tee): ${parts.join('; ')}`);
+  for (const t of h.targets) { const S = sight(B, t.at, h.pin, B.ground(...h.pin) + 2.1); R_(`  6 from "${t.name}" (${Math.round(wd(h.teePts[BACK], t.at) / YD)} yd out, ${Math.round(wd(t.at, h.pin) / YD)} to go) the flag is ${S.hid ? 'hidden (' + S.hid + ')' : 'in sight'}`); }
 }
 // the 3rd: the tongue at each tide; the 5th: the bar's dry ground each side at each tide
 {
