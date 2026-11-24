@@ -91,9 +91,10 @@ export const FLATS = [
   { id: 'head', island: 'A', line: [[-120, 75], [0, 95], [120, 75]], hw: 40, y: [3.2, 3.2], lean: 0, edge: 'beach', sand: true },
   // 3: the beach on the east arm's south tip
   { id: 'etip', island: 'A', line: [[320, -330], [425, -348]], hw: 30, y: [3.4, 3.6], lean: 0, edge: 'beach' },
-  // 4: B's south-east beach (the tee), then the shelf along B's outer east wall, 11-16 m up, leaning 8% into the wall
-  { id: 'bse', island: 'B', line: [[1070, -150], [1110, -90]], hw: 30, y: [4, 6], lean: 0, edge: 'beach' },
-  { id: 'shelf', island: 'B', line: [[1092, -112], [1110, -70], [1176, 40], [1180, 230], [1112, 410]], hw: 52, y: [11, 12], lean: -0.08, edge: 'wall', peak: 16 },
+  // 4 (the one hole on an inside shore, Rhys 24 November): B's south-west beach (the tee), then the shelf along B's
+  // west wall over the channel, facing the Maya island, 11-16 m up, leaning 8% into the wall
+  { id: 'bsw', island: 'B', line: [[830, -150], [790, -90]], hw: 30, y: [4, 6], lean: 0, edge: 'beach' },
+  { id: 'shelf', island: 'B', line: [[808, -112], [790, -70], [724, 40], [720, 230], [796, 420]], hw: 52, y: [11, 12], lean: 0.08, edge: 'wall', peak: 16 },
   // 5: B's north point (the tee); C's south-east beach at the gap's mouth (the green)
   { id: 'bnorth', island: 'B', line: [[980, 515], [1065, 470]], hw: 32, y: [5, 4.5], lean: 0, edge: 'beach' },
   { id: 'gapmouth', island: 'C', line: [[880, 770], [800, 778]], hw: 36, y: [3.4, 3.6], lean: 0, edge: 'beach' },
@@ -194,7 +195,7 @@ export const HOLES = [
   { n: 1, name: 'The Village', par: 5, line: [[-475, -170], [-548, 40], [-492, 290]] },
   { n: 2, name: 'The Drop', par: 3, line: [[LEDGE.x, LEDGE.n], [10, -95]] },
   { n: 3, name: 'The Tongue', par: 3, line: [[420, -345], [596, -385]] },
-  { n: 4, name: 'The Coves', par: 5, line: [[1096, -102], [1172, 40], [1176, 230], [1110, 400]] },
+  { n: 4, name: 'The Coves', par: 5, line: [[804, -102], [728, 40], [724, 230], [786, 392]] },
   { n: 5, name: 'The Sandbar', par: 4, line: [[1055, 480], [905, 640], [838, 772]] },
   { n: 6, name: 'The Gap', par: 4, line: [[832, 795], [833, 1000], [700, 1112]] },
   { n: 7, name: 'The Overhang', par: 4, line: [[668, 1122], [545, 1042], [425, 1090]] },

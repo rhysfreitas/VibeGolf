@@ -18,8 +18,8 @@ const CARDS = {
     story: "A cliff stair climbs to a ledge 60 m up the cove's east wall. The green sits alone on a sand islet in the middle of the cove, as in the island study: the head beach behind it, the cove's mouth and the open bay to the left. Plays about 158 yd.", was: 'off the head wall; the 1st and 3rd shared the cove with it' },
   3: { faces: 'ESE', bend: 'one shot', form: 'par 3', height: 'level, across the water', dial: 'the tide: a sand tongue in front at low water', decision: 'none',
     story: "From the beach on the east arm's south tip across the mouth of the channel between the Maya island and B, to a green on a small islet. Low tide: a tongue of sand runs out toward you; land on it and run up. High tide: all carry.", was: 'across the inside of the cove' },
-  4: { faces: 'N', bend: 'gentle left (two turns, 48°)', form: 'scalloped', height: 'hillside bench, 8% into the wall (bold)', dial: "one hazard's scale: three coves", decision: 'bite off what you dare',
-    story: "On B's outer east side: a shelf 11-16 m up the wall, leaning into it, the open sea below on the right. Coves bite in from the sea. Carry them and it is reachable in two; skirt them and it is three shots with no water crossed.", was: "on B's west wall, facing the Maya island" },
+  4: { faces: 'N', bend: 'gentle right (two turns, 49°)', form: 'scalloped', height: 'hillside bench, 8% into the wall (bold)', dial: "one hazard's scale: three coves", decision: 'bite off what you dare',
+    story: "The one hole on an inside shore: up a shelf 11-16 m up B's west wall, leaning into it, the channel below on the left with the Maya island across the water. Coves bite in from the channel. Carry them and it is reachable in two; skirt them and it is three shots with no water crossed.", was: "on B's west wall too, but with the Maya island 110 m away; now 290 m" },
   5: { faces: 'NW', bend: 'right 16°', form: 'ribbon (a sandbar)', height: 'level', dial: 'width: 70 m at low tide, 40 m at high', decision: 'none',
     story: "Off B's north point along a bar of white sand and salt grass across the open channel to C, sea on both sides, to a green on the beach at the gap's mouth with the Sentinel over it. High tide narrows the bar to 40 m with a strip of beach each side.", was: 'kept, the channel it crosses about twice as wide' },
   6: { faces: 'N, then NW', bend: 'left 50°', form: 'hourglass (the neck is the gap)', height: 'half-pipe (the floor between the walls)', dial: 'width: a 60-70 m floor between walls 150 m tall', decision: 'bottle: drive into the neck, or lay back in its mouth',
@@ -53,22 +53,22 @@ table { border-collapse: collapse; font-size: 8.8pt; width: 100%; } td { border-
 <div class="two" style="grid-template-columns: 0.95fr 1fr"><div><img src="${img('map')}"><p class="note">Low tide. Red: each hole's line, tee number, yellow dot the pin. North up; about 2.4 km across.</p></div>
 <div><h2>What changed from round 2</h2><ul>
 <li style="margin-top:0"><b>The islands spread out</b> over about 1.8 by 1.6 km (round 2: 1.2 by 1.4), with open channels between every pair: about 290 m between the Maya island and B, 290 m from B to C (the Sandbar crosses it), 180 m to the Hong, and the open middle of the bay with the stack and the cay in it.</li>
-<li><b>The golf is on the outer shores.</b> 1 up the Maya island's west side, 4 on B's east side, 7 on C's north side: each with the open sea beside it.</li>
+<li><b>The golf is on the outer shores</b> (1 up the Maya island's west side, 7 on C's north side), <b>but for the 4th</b>, which runs up B's inside wall over the channel with the Maya island across the water, as you asked.</li>
 <li><b>Only the Drop's green is inside the horseshoe</b>, alone on an islet in the cove, as in the island study. The cove's head beach is left as beach.</li>
-<li><b>The 3rd crosses water</b> from the east arm's tip to an islet in the channel's mouth.</li>
+<li><b>The 3rd crosses water</b> from the east arm's tip to an islet in the channel's mouth, and the 4th tees off just across from it.</li>
 <li><b>Par order unchanged</b> (5 3 3 5 4 4 4 3 5, par 36). I tried 5 3 4 5 3 4 4 3 5, but it matches Halcyon Ring on six holes. ${total.toLocaleString()} yd from the back at low tide (rough until the plan book).</li></ul>
 <h2 style="margin-top:3mm">The nine</h2><table class="sum">${HOLES.map(h => `<tr><td>${h.n}. ${esc(h.name)}</td><td>par ${h.par}</td><td>${yd(h)} yd</td><td>${esc(CARDS[h.n].faces)}</td><td>${esc(CARDS[h.n].decision)}</td></tr>`).join('')}</table></div></div></div>
 <div class="page"><h2>The bay, rendered in the game</h2><div class="grid2">${view('baynorth', 'From the north.', 'Front: C with the Sentinel (6, 7) and the Hong (9), the stack between. Back: the Maya island (1-3) and B (4).')}${view('bay', 'From the south-east.', 'B in front (4, 5), the Maya island left (1-3), C and the Sentinel behind, the Hong far left.')}</div>
 <p class="note" style="margin-top:3mm">The cave shows as an open slot here; its roof is rock (as in round 1), drawn in the build. The walls up close, the crowns and the palms are blockout quality.</p></div>
 <div class="page"><h2>From the tees (1-6)</h2><div class="grid3">
 ${view('cove1', '1 The Village:', 'up the outer west shore.')}${view('drop2', '2 The Drop:', 'off the ledge to the islet in the cove.')}${view('tongue3', '3 The Tongue:', 'across the channel\'s mouth.')}
-${view('shelf4', '4 The Coves:', 'up the shelf on B\'s outer east wall.')}${view('sandbar5', '5 The Sandbar:', 'across the channel to C.')}${view('gap6', '6 The Gap:', 'between C and the Sentinel.')}</div></div>
+${view('shelf4', '4 The Coves:', 'up the shelf on B\'s inside wall, over the channel.')}${view('sandbar5', '5 The Sandbar:', 'across the channel to C.')}${view('gap6', '6 The Gap:', 'between C and the Sentinel.')}</div></div>
 <div class="page"><h2>From the tees (7-9)</h2><div class="grid3">
 ${view('overhang7', '7 The Overhang:', 'round the cove on C\'s north shore.')}${view('stack8', '8 The Stack:', 'out to the stack in the open bay.')}${view('hong9', '9 The Hong:', 'across the flats to the cave.')}</div>
 <p class="note" style="margin-top:4mm">The cave shows as an open slot here; its roof is rock (as in round 1), drawn in the build. The walls close up, the crowns and the palms are blockout quality.</p></div>
 <div class="page"><h2>Course card</h2><div class="two"><div><ul>
-<li><b>Hook:</b> a warm bay of whole limestone islands with open water between them: sheer and jungle-clad, white sand and clear turquoise water. Sand always plays and water is a stroke; the tide is high or low each round (3, 5, 9).</li>
-<li><b>Skeleton:</b> par 36, 5 3 3 5 4 4 4 3 5 (as approved). Par 3s 126, 185 (plays about 158, 56 m down) and 197; par 4s 302, 402 and 414; par 5s 523, 556 and 583.</li>
+<li><b>Hook:</b> a warm bay of whole limestone islands with open water between them, the golf mostly round their outer shores: sheer and jungle-clad, white sand and clear turquoise water. Sand always plays and water is a stroke; the tide is high or low each round (3, 5, 9).</li>
+<li><b>Skeleton:</b> par 36, 5 3 3 5 4 4 4 3 5 (as approved). Par 3s 126, 185 (plays about 158, 56 m down) and 197; par 4s 302, 402 and 414; par 5s 523, 556 and 574.</li>
 <li><b>Decisions (four, four types):</b>
   <ul><li>bite off what you dare (4)</li><li>bottle (6)</li><li>drivable par 4 (7)</li><li>go or lay up (9)</li></ul></li>
 <li><b>Set pieces:</b> island green (2), postage stamp (8).</li>
@@ -77,12 +77,12 @@ ${view('overhang7', '7 The Overhang:', 'round the cove on C\'s north shore.')}${
   <ul><li>bold: the drop (2), hillside bench (4)</li><li>moderate: crest and run (1), half-pipe (6), uphill (8), dip in front (9)</li><li>plain: the Sandbar (5) and the beach (7)</li></ul></li>
 <li><b>Fairway forms:</b> fan, scalloped, ribbon, hourglass, hook and broken. No two alike.</li></ul></div><div><ul>
 <li><b>Landmarks:</b>
-  <ul><li>the stack, alone in the bay: seen from 5, 7 and 9, played at 8</li><li>the Sentinel and the gap: seen from 4 and 5, played through at 6</li><li>the Maya island's cove: seen from the boats, played into at 2</li><li>the Hong: across the water from 1, played into at 9</li></ul></li>
+  <ul><li>the stack, alone in the bay: seen from 5, 7 and 9, played at 8</li><li>the Sentinel and the gap: seen from 5, played through at 6</li><li>the Maya island's cove: seen from the boats, played into at 2</li><li>the Hong: across the water from 1, played into at 9</li></ul></li>
 <li><b>Reveals:</b> the cove opening below you from the ledge (2), and the lagoon out of the cave (9).</li>
 <li><b>Compass:</b> N, WSW, ESE, N, NW, N then NW, W, SW, W: all four quarters.</li>
-<li><b>Bends:</b> right 1, 5, 7; left 4, 6; the 9th an S.</li>
+<li><b>Bends:</b> right 1, 4, 5, 7; left 6 and 9 (two easy turns).</li>
 <li><b>Getting round:</b>
-  <ul><li>a cliff path over the head of the island from 1 to the ledge on 2</li><li>longtail boats: out of the cove to the 3rd tee, from the Tongue islet to B, from the stack to the cay, and from the lagoon back to the stilt village</li><li>on foot round C's beaches (5 to 8)</li></ul></li>
+  <ul><li>a cliff path over the head of the island from 1 to the ledge on 2</li><li>longtail boats: out of the cove to the 3rd tee, from the Tongue islet across to B, from the stack to the cay, and from the lagoon back to the stilt village</li><li>on foot round C's beaches (5 to 8)</li></ul></li>
 <li><b>Against the Musts</b> (the plan book measures them):
   <ul><li>no forced carry on a par 4 or 5: each cove on 4, the cove on 7 and the channel on 9 have a way round</li><li>water on one side of a landing at most: the Sandbar keeps beach both sides at high tide</li></ul></li></ul></div></div></div>
 <div class="page"><h2>Hole cards (1-6)</h2><div class="cards">${HOLES.slice(0, 6).map(cardRow).join('')}</div></div>

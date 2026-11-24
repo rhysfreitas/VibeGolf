@@ -15,7 +15,7 @@ const POSES = [
   ['cove1', 0, [-468, 9.5, 205], [-545, 10, -40], 60],               // the 1st: up the Maya island's outer west shore
   ['drop2', 1, [172, 66.5, 36.9], [10, 4, 95], 62],               // the 2nd: off the ledge to the islet in the cove
   ['tongue3', 2, [404, 8.5, 342], [596, 4, 385], 60],               // the 3rd: across the channel's mouth to the islet
-  ['shelf4', 3, [1094.5, 17.5, 104.8], [1174, 15, -60], 58],             // the 4th: up the shelf on B's outer east wall
+  ['shelf4', 3, [805.5, 17.5, 104.8], [726, 15, -60], 58],             // the 4th: up the shelf on B's outer east wall
   ['sandbar5', 4, [1072, 9.5, -462], [838, 4, -772], 60],           // the 5th: along the sandbar to the gap's mouth
   ['gap6', 5, [832, 8.5, -772], [833, 18, -1000], 60],              // the 6th: through the gap
   ['overhang7', 6, [692, 8.5, -1132], [480, 8, -1060], 62],          // the 7th: round the cove on C's north shore
