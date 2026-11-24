@@ -89,7 +89,7 @@ LAYOUTS = {
   'golf': {'slices3': lambda: slices(GOLF[:3]), 'slices4': lambda: slices(GOLF[:4], 0.3), 'grid4': lambda: grid(GOLF[:4], 2, 2), 'fan3': lambda: fan(GOLF[:3], 3), 'grid6': lambda: grid(GOLF[:3] + ['halcyon', 'cloudrest', 'lostvalley'], 3, 2)},
   'games': {'grid7': lambda: grid(GAMES, 4, 2, soon_tile), 'grid6': lambda: grid(GAMES[:6], 3, 2), 'fan5': lambda: fan(GAMES, 5), 'slices4': lambda: slices([GAMES[0], GAMES[1], GAMES[4], GAMES[6]], 0.3)},
 }
-PICK = {'golf': 'slices3', 'games': 'grid7'}
+PICK = {'golf': 'slices4', 'games': 'slices4'}
 
 # a gamma lift for a course whose tile reads too dark at menu size (its dusk is darker than the menu around it)
 LIFT = {'emberfell': 0.8}
