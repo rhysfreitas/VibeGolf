@@ -120,7 +120,7 @@ const lanes = (B, p, dir) => {
   return out;
 };
 const TIDES2 = ['low', 'high'];
-R_(`Emerald Bay plan book round 4 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
+R_(`Emerald Bay plan book round 5 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
 R_(`  total: low tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[0].yards : h.yards)[BACK], 0)} yd, high tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[1].yards : h.yards)[BACK], 0)} yd; par ${HOLES.reduce((a, h) => a + h.par, 0)}`);
 for (const [k, h] of HOLES.entries()) {
   const B = built(k, 'low'), [x, z] = h.pin, d = 1, gx = (B.ground(x + d, z) - B.ground(x - d, z)) / (2 * d), gz = (B.ground(x, z + d) - B.ground(x, z - d)) / (2 * d);
@@ -173,7 +173,9 @@ for (const [k, h] of HOLES.entries()) {
       for (const T of COURSE.teeSets) {
         const tp = h.teePts[T.id], P = RL ? [tp, ...RL.slice(1)] : [tp, ...h.line.slice(1).filter(q => project(h.line, ...q).s > project(h.line, ...tp).s)];
         const len = plen(P); let wet = 0, run = 0;
-        for (let s = 2; s < Math.min(len, 260); s += 1) { const q = alongPoly(P, s); if (B.surface(...q) === 'water') run++; else { wet = Math.max(wet, run ? s : 0); if (run && s > 40) break; run = 0; } }
+        // stop at 30 m of dry ground past the tee: water after that is a lay-up's carry, not the tee shot's (the 9th's gap)
+        let dry = 0;
+        for (let s = 2; s < Math.min(len, 260); s += 1) { const q = alongPoly(P, s); if (B.surface(...q) === 'water') { run++; dry = 0; } else { wet = Math.max(wet, run ? s : 0); if (run && s > 40) break; run = 0; if (++dry >= 30 && s > 30) break; } }
         const cap = 0.6 * (T.minDrive || 150) * YD; fc.push(`${T.name} ${Math.round(wet / YD)} yd${wet > cap ? ' (OVER 60%)' : ''}`);
       }
       R_(`${fc.some(q => /OVER/.test(q)) ? '!' : ' '} ${h.n}${tag} forced carry over water along the line: ${fc.join(', ')}`);
@@ -272,7 +274,8 @@ for (const [k, h] of HOLES.entries()) for (const tide of h.versions ? TIDES2 : [
     if (!ok) { R_(`! ${h.n}${v ? ' (' + tide + ')' : ''} ${T.name} tee: ${what} is ${S.hid ? 'hidden by ' + S.hid : 'out of the frame'} (${S.ang.toFixed(1)}°)`); if (T.id === BACK) blind++; }
   }
   R_(`  ${h.n}${v ? ' (' + tide + ')' : ''} tee view: ${out.join('; ')}`);
-  for (const bt of tg.filter(q => q.bold)) { const S = sight(B, h.teePts[BACK], bt.at, B.playGround(...bt.at) + (bt.pin ? 2.1 : 0.3)), M = !bt.pin && S.hid ? sight(B, h.teePts[BACK], bt.at, B.playGround(...bt.at) + 2.5) : null;
+  // `second`: a bold target for the second shot (the 9th's green from the island), not seen from the tee
+  for (const bt of tg.filter(q => q.bold && !q.second)) { const S = sight(B, h.teePts[BACK], bt.at, B.playGround(...bt.at) + (bt.pin ? 2.1 : 0.3)), M = !bt.pin && S.hid ? sight(B, h.teePts[BACK], bt.at, B.playGround(...bt.at) + 2.5) : null;
     if (M && M.inFrame && !M.hid) R_(`  ${h.n} bold target "${bt.name}" from the Marlin tee: its ground hidden by ${S.hid}, a 2.5 m marker on it in sight (${M.ang.toFixed(1)}°): a marker goes there`);
     else R_(`${S.inFrame && !S.hid ? ' ' : '!'} ${h.n} bold target "${bt.name}" from the Marlin tee: ${S.hid ? 'hidden by ' + S.hid : S.inFrame ? 'in sight' : 'out of the frame'} (${S.ang.toFixed(1)}°)`); }
   // approaches: from each landing target the flag (on the 6th from short of the crest it is blind by design)
@@ -306,12 +309,17 @@ const wd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
       const shots = d > 205 ? [['3 wood', WOOD3], ['hybrid', HYBRID]] : d > 150 ? [['hybrid', HYBRID], ['7 iron', IRON7]] : [['7 iron', IRON7], ['wedge', { Speed: 90, VLA: 26, TotalSpin: 9000 }]];
       const res = shots.map(([nm, sh]) => { seed = 77; const r = drive(Bt, q.at, dir, sh); return `${nm} ${Math.round(r.carry / YD)} carry, apex ${r.apex.toFixed(0)} m, ${r.rocks ? 'hits the roof, ' : ''}finishes ${r.rest} ${Math.round(wd(r.end, h.pin) / YD)} yd from the pin`; });
       R_(`  9 (${tide}) from "${q.name}" (${d} yd): the flag ${S.hid ? 'HIDDEN by ' + S.hid : 'in sight through the cave'} (${S.ang.toFixed(1)}°); ${res.join('; ')}`); } }
-  const lay = h.targets.find(q => q.name === 'The cave beach'), isl = h.versions[0].targets.find(q => q.island);
+  const lay = h.targets.find(q => q.name === 'The intermediate fairway'), isl = h.versions[0].targets.find(q => q.island);
   // the island: how far from each tee, the carry over the water to it, what it leaves; whether it is gone at high tide
   const Bl = built(k, 'low'), Bh = built(k, 'high'), cr = {};
   for (const [id, T] of Object.entries(h.teePts)) { const d = wd(T, isl.at); let c = null; for (let f = 0.3; f <= 1; f += 0.005) { const p = [T[0] + (isl.at[0] - T[0]) * f, T[1] + (isl.at[1] - T[1]) * f]; if (Bl.surface(...p, 'low') === 'fairway') { c = d * f; break; } } cr[id] = `${Math.round(d / YD)} yd (carry ${c ? Math.round(c / YD) : '?'})`; }
   let dry = 0, all = 0; for (let x = -40; x <= 40; x += 2) for (let z = -40; z <= 40; z += 2) { const p = [isl.at[0] + x, isl.at[1] + z]; if (Bl.surface(...p, 'low') !== 'fairway') continue; all++; if (Bh.surface(...p, 'high') !== 'water') dry++; }
   R_(`  9 (low) the island fairway from the tees: ${Object.entries(cr).map(([k2, v]) => k2 + ' ' + v).join(', ')}; it leaves ${Math.round(wd(isl.at, h.pin) / YD)} yd; the lay-up on the cave beach leaves ${Math.round(wd(lay.at, h.pin) / YD)} yd`);
+  // the long way: the farthest fairway on the right fairway (just short of the sea at its end), what it leaves, and a
+  // 3 wood from there straight at the green
+  { let far = null; for (let s2 = 300; s2 > 150; s2 -= 1) { const p = at(h.line, s2); if (Bl.surface(...p, 'low') === 'fairway') { far = [s2, p]; break; } }
+    const dir = Math.atan2(h.pin[0] - far[1][0], -(h.pin[1] - far[1][1])); seed = 77; const r = drive(Bl, far[1], dir, WOOD3);
+    R_(`  9 the right fairway ends ${Math.round(far[0] / YD)} yd from the Marlin tee and leaves ${Math.round(wd(far[1], h.pin) / YD)} yd; a 3 wood from there at the green finishes ${r.rest} ${Math.round(wd(r.end, h.pin) / YD)} yd from the pin`); }
   R_(`  9 (high) the island fairway: ${all} cells, ${dry} still above the sea${dry ? ' !' : ' (gone)'}`);
 }
 // the 7th: the overhang against the highest shots; the bold drive across the cove

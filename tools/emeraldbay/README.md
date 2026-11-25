@@ -236,3 +236,21 @@ From Rhys's markup on round 3 ("use your judgment on 9"). `ROUND=4` is the defau
 - The 8th's tees spread to 145, 130, 110, 95 yd; the Shark tips stay at 160 (15 yd behind the Marlin tee).
 - `book.mjs`: a hole page is a flex column, so a long card shrinks the plan instead of pushing it into the footer.
 - Checks: no `!` at either tide; relief, alike (0 of 15; the 9th reads as a split) and spread pass. 3,310 yd.
+
+## Plan book round 5 (25 November 2026)
+
+Rhys on round 4: the drawing meant "redo the fairway to green outline and move the tee box to the red circle", so that
+taking the right fairway is three shots, with water between the end of the right fairway and the next (intermediate)
+fairway "so that you can't go long enough to give yourself 230-250 in". `ROUND=5` is the default; `round5-notes.json`.
+
+- The 9th's tee on `the tee rock` (an islet 6.5 m high in the open water south-west of the cay, `ISLETS`); the island
+  fairway straight over the sea from it (281 yd, a 257 yd carry; 238 left through the cave).
+- `SPITS` in world.mjs replaces the one spit: the right fairway's (`cap: 'end'`: past its end the land drops into the
+  sea within a few metres) and the intermediate fairway's down to the cave beach (`cap: 'start'`), with 35-50 m of
+  water between. `spitAt()` is laid both in the floor and over the flats in `V`, so the cave beach's beach edge can't
+  cut the intermediate fairway. The right fairway's fairway ends 285 yd from the Marlin tee, leaving 306 yd.
+- The moat round the island is measured in metres from its outline (3-19 m), not the superellipse's scaled distance.
+- `sample.mjs`: the forced-carry check stops after 30 m of dry ground past the tee; a target with `second: true` (a bold
+  target for the second shot) isn't looked for from the tee; it reports where the right fairway ends and what it leaves.
+- `../review/relief.mjs` reads a plan that gives `B.sea` on the water's surface, not the sea bed.
+- Checks: no `!` at either tide; relief (bold 1, 4, 7), alike (0 of 15; the 9th reads as broken) and spread pass. 3,315 yd.

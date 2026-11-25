@@ -88,7 +88,7 @@ export function heightForm(line, groundAt, onFw, par, landAt = null) {
 export async function courseRelief(c) {
   if (PLANNED.includes(c)) {
     const S = await import(path.join(REPO, 'tools', c, 'scene.mjs')), H = await import(path.join(REPO, 'tools', c, 'holes.mjs'));
-    return { name: H.COURSE.name, holes: H.HOLES.map((h, i) => { const B = S.BUILT[i]; return { n: i + 1, name: h.name, r: heightForm(h.reliefLine || h.line, (x, z) => B.ground(x, z), (x, z) => B.surface(x, z) === 'fairway', h.par, h.reliefLand) }; }) };   // reliefLand: where its drive lands on that line, when the default (62% of it) is wrong   // reliefLine: a hole whose height form is on its bold line (a valley carry beside a level way round)
+    return { name: H.COURSE.name, holes: H.HOLES.map((h, i) => { const B = S.BUILT[i]; return { n: i + 1, name: h.name, r: heightForm(h.reliefLine || h.line, (x, z) => B.sea !== undefined ? Math.max(B.ground(x, z), B.sea) : B.ground(x, z), (x, z) => B.surface(x, z) === 'fairway', h.par, h.reliefLand) }; }) };   // reliefLand: where its drive lands on that line, when the default (62% of it) is wrong   // a plan that gives its sea level (`B.sea`, Emerald Bay) is read on the water's surface, not the sea bed   // reliefLine: a hole whose height form is on its bold line (a valley carry beside a level way round)
   }
   const { COURSE, HOLES } = await loadCourse(c), back = COURSE.teeSets[0].id;
   return { name: COURSE.name, holes: HOLES.map((h, i) => {
