@@ -11,7 +11,7 @@
 // y up from the hole's `base`, the back tee's height). `route` turns the world line ([x east, n north]) into `legs`
 // and `place`; `L(x, n)` turns a world point into the hole's frame. The ground is the world's own (world.mjs V).
 import { lineOf, lengthOf, at, headingAt, YD } from './geo.mjs';
-import { ISLAND9, SPITS } from './world.mjs';
+import { ISLAND9, smoothPoly } from './world.mjs';
 import { LINES, TIDES } from './world.mjs';
 
 export const COURSE = {
@@ -342,28 +342,24 @@ export const HOLES = [
     // the cave beach. Taking the right fairway it is three shots for everyone: no drive can run on to within about
     // 300 yd of the green. Only the island (a 255 yd carry, gone at high tide) gets you there in two.
     build: (P, L, len, Lw) => {
-      const O = ISLAND9.o, isl = [];
-      for (let k = 0; k < 28; k++) { const a = k / 28 * 2 * Math.PI; isl.push(Lw(O.x + 30 * Math.cos(a), -O.z + 18 * Math.sin(a))); }
-      const island = Lw(O.x, -O.z);
-      // the intermediate fairway: a band down its spit (`SPITS[1]`, plan coordinates) from 14 m in to the cave beach
-      const [a, b] = SPITS[1].line, dl = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / dl, un = (b[1] - a[1]) / dl, rx = un, rn = -ux, mid = [];
-      for (let t = 14; t <= dl; t += 7) mid.push(Lw(a[0] + ux * t - rx * 17, a[1] + un * t - rn * 17));
-      for (let t = dl; t >= 14; t -= 7) mid.push(Lw(a[0] + ux * t + rx * 20, a[1] + un * t + rn * 20));
+      // round 6 (Rhys, 25 November): the island fairway a triangle, its point toward the tee (`ISLAND9`), and one
+      // fairway from the cave's mouth up round the cave beach, the shape he drew (plan coordinates)
+      const isl = ISLAND9.plan.map(p => Lw(p[0], p[1])), island = Lw(...ISLAND9.centre);
+      const mouth = smoothPoly([[-213, 760], [-206, 773], [-196, 790], [-186, 808], [-176, 823], [-161, 832], [-146, 831], [-135, 824], [-133, 808], [-138, 791], [-144, 774], [-150, 757], [-157, 741], [-166, 731], [-178, 731], [-192, 739], [-205, 746]], 2, true).map(p => Lw(p[0], p[1]));
       return {
         tees: { marlin: 0, manta: [14, 6], turtle: [64, 4], clownfish: [102, -4] },
         // the split form: the right fairway up from the tee rock, stopping short of the sea; the intermediate fairway
         // over the gap down to the cave beach; the cave's floor mown through to the green; the island on the left
         fw: [{ e: [[142, 21, 21], [180, 24, 27], [225, 25, 28], [262, 22, 24]], wob: 2 },
-          { poly: mid, wob: 2.5 },
-          { lobes: [[400, 0, 16, 22, 0]], join: 10, wob: 2 },
+          { poly: mouth, wob: 2 },
           { e: [[414, 12, 12], [470, 13, 13], [len - 22, 11, 11]], wob: 1.5 },
           { poly: isl, wob: 2.5 }],
         bunkers: [sand(P(len - 20, -20), 4.6, 3.2, 0.3), sand(P(len + 18, 16), 4.2, 3), sand(P(len + 4, -26), 3.6, 3, 0.5)],
         green: { k: 1.2, lobes: [[0, 0, 15, 17, 8], [-9, -10, 9, 8.5], [8, 11, 9, 8]], apron: 4, contour: [{ fall: 40, pct: 1.6 }, { tier: [0, 3], up: 0, h: 0.4, w: 3.5 }], style: 'Huge (1,400 m²) on a shelf 4 m over the cave floor, a back tier, tilted toward the lagoon; sand short left, long right and left; the beach shack behind' },
-        targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The intermediate fairway', at: Lw(-150, 782) }],
+        targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The intermediate fairway', at: Lw(-158, 790) }],
         versions: [
           { id: 'low', note: 'Low tide: the island fairway is out of the water, a moat all round it. Carry about 255 yd of open sea onto it and the green is about 240 yd away, straight through the cave. By the right fairway it is three shots.',
-            targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The island', at: island, bold: true, island: true }, { name: 'The intermediate fairway', at: Lw(-150, 782) }, { name: 'Through the cave', at: L.at(-1), bold: true, pin: true, second: true }] },
+            targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The island', at: island, bold: true, island: true }, { name: 'The intermediate fairway', at: Lw(-158, 790) }, { name: 'Through the cave', at: L.at(-1), bold: true, pin: true, second: true }] },
           { id: 'high', note: 'High tide: the island fairway is under the sea. Three shots: the right fairway, over the gap to the intermediate fairway at the cave\'s mouth, a short iron through the cave.' },
         ],
         words: {

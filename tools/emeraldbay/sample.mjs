@@ -11,7 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE, BACK, FRONT, TIDE_HOLES } from './holes.mjs';
 import { built, SURF, PHYS, toWorld, worldAt, WL, LOC, WOR } from './scene.mjs';
-import { LABELS, SITES, TIDES, w, WLINES, V, CAVE, OVER, overhangAt, caveRoofAt, STACK, COVES, TONGUE } from './world.mjs';
+import { LABELS, SITES, TIDES, w, WLINES, V, CAVE, OVER, overhangAt, caveRoofAt, STACK, COVES, TONGUE, ISLAND9 } from './world.mjs';
 import { project, at, lengthOf, YD, headingAt, distLine, lineOf } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
 import { greenStats, leanAlong } from './greens.mjs';
@@ -120,7 +120,7 @@ const lanes = (B, p, dir) => {
   return out;
 };
 const TIDES2 = ['low', 'high'];
-R_(`Emerald Bay plan book round 5 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
+R_(`Emerald Bay plan book round 6 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
 R_(`  total: low tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[0].yards : h.yards)[BACK], 0)} yd, high tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[1].yards : h.yards)[BACK], 0)} yd; par ${HOLES.reduce((a, h) => a + h.par, 0)}`);
 for (const [k, h] of HOLES.entries()) {
   const B = built(k, 'low'), [x, z] = h.pin, d = 1, gx = (B.ground(x + d, z) - B.ground(x - d, z)) / (2 * d), gz = (B.ground(x, z + d) - B.ground(x, z - d)) / (2 * d);
@@ -313,7 +313,9 @@ const wd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
   // the island: how far from each tee, the carry over the water to it, what it leaves; whether it is gone at high tide
   const Bl = built(k, 'low'), Bh = built(k, 'high'), cr = {};
   for (const [id, T] of Object.entries(h.teePts)) { const d = wd(T, isl.at); let c = null; for (let f = 0.3; f <= 1; f += 0.005) { const p = [T[0] + (isl.at[0] - T[0]) * f, T[1] + (isl.at[1] - T[1]) * f]; if (Bl.surface(...p, 'low') === 'fairway') { c = d * f; break; } } cr[id] = `${Math.round(d / YD)} yd (carry ${c ? Math.round(c / YD) : '?'})`; }
-  let dry = 0, all = 0; for (let x = -40; x <= 40; x += 2) for (let z = -40; z <= 40; z += 2) { const p = [isl.at[0] + x, isl.at[1] + z]; if (Bl.surface(...p, 'low') !== 'fairway') continue; all++; if (Bh.surface(...p, 'high') !== 'water') dry++; }
+  const IP = ISLAND9.plan.map(q => h.L(q[0], q[1])), inIP = (X, Z) => { let c = false; for (let i = 0, j = IP.length - 1; i < IP.length; j = i++) { const [xi, zi] = IP[i], [xj, zj] = IP[j]; if ((zi > Z) !== (zj > Z) && X < (xj - xi) * (Z - zi) / (zj - zi) + xi) c = !c; } return c; };
+  let dry = 0, all = 0; for (let x = -50; x <= 50; x += 2) for (let z = -50; z <= 50; z += 2) { const p = [isl.at[0] + x, isl.at[1] + z]; if (!inIP(...p) || Bl.surface(...p, 'low') !== 'fairway') continue;   // only the island's own fairway (round 6: the cave beach's fairway comes within 40 m)
+ all++; if (Bh.surface(...p, 'high') !== 'water') dry++; }
   R_(`  9 (low) the island fairway from the tees: ${Object.entries(cr).map(([k2, v]) => k2 + ' ' + v).join(', ')}; it leaves ${Math.round(wd(isl.at, h.pin) / YD)} yd; the lay-up on the cave beach leaves ${Math.round(wd(lay.at, h.pin) / YD)} yd`);
   // the long way: the farthest fairway on the right fairway (just short of the sea at its end), what it leaves, and a
   // 3 wood from there straight at the green

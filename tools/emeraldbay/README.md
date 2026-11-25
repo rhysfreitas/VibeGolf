@@ -254,3 +254,25 @@ fairway "so that you can't go long enough to give yourself 230-250 in". `ROUND=5
   target for the second shot) isn't looked for from the tee; it reports where the right fairway ends and what it leaves.
 - `../review/relief.mjs` reads a plan that gives `B.sea` on the water's surface, not the sea bed.
 - Checks: no `!` at either tide; relief (bold 1, 4, 7), alike (0 of 15; the 9th reads as broken) and spread pass. 3,315 yd.
+## Plan book round 6 (25 November 2026)
+
+Rhys's markup on round 5's 9th: the cave entrance more natural (his red line the beach, his green outline one connected
+fairway round the cave's mouth), the island fairway a triangle "rewarded a little more as you hit longer", water between
+it and the right fairway with a natural sandbar round it, and "round more of the areas ... natural sand bar areas into
+the water rather than a drop off". `ROUND=6` is the default; `round6-notes.json`.
+
+- The 9th's land is three shapes in world.mjs, each a waterline at low water with bands inside it (wet sand to the
+  high-water mark over `wet` m, then dry sand, rough, grass) and a sandbar outside it (`shelf`: 3 m down over 45 m, then
+  on to the bed over 120 m), laid in `V` by `land9` (the highest wins): `CAVELAND` (the cave beach: `shore` his red
+  line, north tower to south tower, `wall` closing it through the towers; the grass rises 0.3 m away from the wall and
+  meets the cave's floor at it), `ISLAND9` (the triangle `tri` with its corners rounded to 10 m by `roundPoly`, `plan`
+  the outline; 1.5 m up, rough 3 m, sand 12 m, then water) and `RIGHT9` (the right fairway's land as rounded boxes in
+  its line's frame, `rbox`: the shore and the grass, ends rounded). `CHANNEL9` keeps his blue channel 2.4 m deep.
+  `SPITS`, `spitAt`, the moat and the `wallfoot` flat are gone. `smoothPoly` (Chaikin) smooths outlines.
+- holes.mjs: the island fairway is `ISLAND9.plan`; the cave beach's fairway one outline (`mouth`) from inside the cave's
+  mouth round the beach; the lay-up target in its middle (164 yd left).
+- `sample.mjs` counts the island's high-tide cells inside the island's outline only (the cave beach's fairway now comes
+  within 40 m of its middle).
+- Checks: no `!` at either tide. The island: a 259 yd carry from the Marlin tee onto its point, 12 m wide at 260 yd,
+  52 m at 290, 291 yd to its middle, 217 left. Water all round it (13 m at least), the tee rock 25 m off the right
+  fairway's land, the gap 41 m. Relief, alike (0 of 15) and spread pass. 3,315 yd.

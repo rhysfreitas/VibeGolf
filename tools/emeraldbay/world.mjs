@@ -117,7 +117,6 @@ export const FLATS = [
   { id: 'cwest', line: [[400, 1080], [335, 990], [312, 898]], hw: 30, y: [4, 5], lean: 0, edge: 'beach' },
   // 9: the beach at the cave mouth and the cave's sand floor through the Hong's east wall; the lagoon's crescent
   { id: 'cavebeach', line: [[-166, 766], [-188, 762], [-268, 748]], hw: 26, y: [3.0, 3.1], lean: 0, edge: 'beach' },
-  { id: 'wallfoot', line: [[-176, 690], [-184, 762], [-176, 834]], hw: 30, y: [3.0, 3.0], lean: 0, edge: 'beach' },
   { id: 'lagoon', line: [[-272, 776], [-298, 742], [-318, 706]], hw: 34, y: [7.4, 7.4], lean: 0, edge: 'beach', land: true, bank: 0.5 },   // a perched shelf of sand and roots on the lagoon's east side, 4 m over the cave floor
 ];
 const FLATW = FLATS.map(f => ({ ...f, P: W(f.line), L: lengthOf(W(f.line)) }));
@@ -171,33 +170,97 @@ function sandbar(X, Z) {
   return y < -5.5 ? null : { y, t };
 }
 
-// ---- the 9th: the tidal flats from the cay to the cave beach (firm sand at low water, under the sea at high), the
-// spit to the right (north) that carries the high-tide route, a creek across the line in front of the cave beach,
-// the sea cave through the Hong's east wall (`CAVE`: along the line, its roof 42 m up) and the lagoon inside
-// the 9th's island fairway, inside the dogleg: low ground (1.5 m) with water round it at both tides, dry at low
-// water and under the sea at high; from it the green is about 240 yd through the cave
-export const ISLAND9 = { o: se(-82, 740, 38, 24, 0, 2.2), top: 1.5 };
-// the spit: the 9th's way round, a hook of sand and salt grass from the cay to the cave beach, dry at high water,
-// a wide band of dry sand on its outside (right of the line), narrow on the inside toward the island
-// the long way round: dry sand wide on the outside, narrow inside, and the inside shelves off steeply (`steep`) so the
-// channel round the island fairway stays water at low tide (Rhys, 25 November: water all round the island)
-// Round 5 (Rhys, 25 November: "you have to go 3 shots if taking the right fairway ... water between the end of the
-// right fairway and the next intermediate fairway"): two spits. The right fairway's runs up from the tee rock and
-// stops short (`cap` 'end': it falls into the sea past its end), a gap of water, then the intermediate fairway's
-// runs down to the cave beach (`cap` 'start'). `dry` is the wide band of dry sand on the right of travel.
-export const SPITS = [
-  { name: 'the right fairway', line: [[84, 610], [-30, 800]], hw: 30, dry: 44, narrow: 6, steep: 16, cap: 'end' },
-  { name: 'the intermediate fairway', line: [[-108, 830], [-163, 766]], hw: 26, dry: 32, narrow: 6, steep: 14, cap: 'start' },
-].map(S => { const P = W(S.line); return { ...S, P, L: lengthOf(P) }; });
-// a spit's ground at (X, Z) over a sea bed `bed`, or null (the 9th's right and intermediate fairways)
-function spitAt(S, X, Z, bed) {
-  const q = project(S.P, X, Z), side = q.off > 0 ? S.dry * smooth((q.s - 20) / 60) + S.narrow : S.narrow, wob = 4 * noise1(q.s / 30, q.off > 0 ? 14 : 15);
-  // a capped end stops short: past it the land drops into the sea within a few metres
-  const k = S.cap === 'end' ? S.P.length - 1 : 0, a = S.P[k], b = S.P[k === 0 ? 1 : k - 1], tl = Math.hypot(a[0] - b[0], a[1] - b[1]), over = ((X - a[0]) * (a[0] - b[0]) + (Z - a[1]) * (a[1] - b[1])) / tl;
-  const o = q.d - wob + 2.5 * Math.max(0, over), end = (S.cap === 'start' ? 1 : smooth(q.s / 30 + 0.3)) * (S.cap === 'end' ? 1 : smooth((S.L - q.s) / 30 + 0.3));
-  if (o >= S.hw + side + 46) return null;
-  let y, t; if (o <= S.hw * 0.75) { y = 3.3 - 0.3 * (o / S.hw) ** 2; t = 'grass'; } else if (o <= S.hw) { y = 3.0; t = 'rough'; } else if (o <= S.hw + side) { y = lerp(2.95, 2.5, (o - S.hw) / side); t = 'sand'; } else { const run = q.off > 0 ? 46 : S.steep; y = lerp(2.4, -3, smooth((o - S.hw - side) / run)); t = y < 0 ? 'sea' : 'wet'; }
-  return { y: lerp(bed, y, Math.max(end, 0.4)), t };
+// ---- the 9th: the tee rock alone in the open water; the right fairway's land running up from it and stopping short
+// in the sea; a gap of water; the cave beach, one piece of land from the north tower's foot round to the south tower's
+// with the sea cave in its back wall; the island fairway inside the dogleg; the lagoon through the cave.
+// Round 6 (Rhys, 25 November: "round more of the areas and make them feel more natural sand bar areas into the water
+// rather than a drop off"): every piece of the 9th's land is a waterline at low water with sand inside it (wet below
+// the high-water mark, then dry) and grass inside that, and outside it a sandbar that shelves away under the sea
+// (`shelf`: 3 m down over 45 m, then on down to the bed over 120 m), so no edge drops off. The cave beach follows his
+// red line; the island is a triangle (narrow toward the tee, wide further out), low enough that the high tide covers it,
+// ringed with sand and with water all round it at low tide; a channel (his blue) between it and the right fairway.
+const chaikin = (P, it = 3, closed = false) => {
+  let Q = P;
+  for (let i = 0; i < it; i++) {
+    const R = [], n = closed ? Q.length : Q.length - 1;
+    for (let j = 0; j < n; j++) { const a = Q[j], b = Q[(j + 1) % Q.length]; R.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]); }
+    Q = closed ? R : [Q[0], ...R, Q[Q.length - 1]];
+  }
+  return Q;
+};
+export const smoothPoly = chaikin;
+const polyD = (P, X, Z, closed) => { let d = Infinity; const n = closed ? P.length : P.length - 1; for (let j = 0; j < n; j++) d = Math.min(d, segQ(P[j], P[(j + 1) % P.length], X, Z).d); return d; };
+const inPoly = (P, X, Z) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > Z) !== (zj > Z) && X < (xj - xi) * (Z - zi) / (zj - zi) + xi) c = !c; } return c; };
+// the sea floor outside a waterline: e metres out, over the bed gy; `drop` m down over `run` m, then on to the bed
+const shelf = (e, gy, drop = 3, run = 45) => e <= run ? -drop * smooth(e / run) : lerp(-drop, Math.min(gy, -drop), smooth((e - run) / 120));
+// a beach: a metres in from the waterline, g metres short of the grass (wet to the high-water mark over `wet` m, then dry)
+const beach = (a, g, wet = 8, top = 2.95) => a < wet ? { y: HW * a / wet, t: 'wet' } : { y: lerp(HW + 0.05, top, clamp((a - wet) / Math.max(1, a - wet + g), 0, 1)), t: 'sand' };
+// the cave beach's waterline (Rhys's red line), north to south, and the side closing it through the towers and the cave
+export const CAVELAND = {
+  shore: W(chaikin([[-216, 893], [-196, 894], [-173, 892], [-152, 883], [-136, 869], [-124, 853], [-115, 835], [-111, 816], [-115, 800], [-124, 789], [-134, 776], [-142, 761], [-149, 745], [-155, 728], [-159, 711], [-163, 694], [-168, 680], [-178, 668], [-194, 662], [-213, 657], [-240, 654]])),
+  wall: W([[-240, 654], [-234, 700], [-224, 738], [-221, 770], [-225, 810], [-229, 860], [-216, 893]]),
+  wet: 8, dry: 4, rough: 4,
+};
+CAVELAND.poly = [...CAVELAND.shore, ...CAVELAND.wall.slice(1, -1)];
+function caveLand(X, Z, gy) {
+  const C = CAVELAND, d = polyD(C.shore, X, Z, false), a = (inPoly(C.poly, X, Z) ? d : -d) + 2.5 * noise2(X / 16, Z / 16, 91);
+  if (a < 0) return a > -170 ? { y: shelf(-a, gy), t: 'sea' } : null;
+  const g = C.wet + C.dry + C.rough;
+  if (a < C.wet + C.dry) return beach(a, C.wet + C.dry - a, C.wet);
+  if (a < g) return { y: 2.97, t: 'rough' };
+  return { y: 3.0 + 0.3 * smooth((a - g) / 30) * smooth(polyD(C.wall, X, Z, false) / 25), t: 'grass' };   // level with the cave's floor where it meets the wall
+}
+// the island fairway: a triangle with its point toward the tee rock (Rhys: "you get rewarded a little more as you hit
+// longer"), 1.5 m up (under the sea at high water), rough 3 m round it, sand 12 m round that, then the moat
+// a convex polygon (counter-clockwise or not) with its corners rounded to radius r: the outline, every few metres
+const roundPoly = (P, r, step = 3) => {
+  const n = P.length, ar = P.reduce((s, p, i) => s + p[0] * P[(i + 1) % n][1] - P[(i + 1) % n][0] * p[1], 0) > 0 ? 1 : -1, out = [];
+  // the polygon inset by r: each edge moved in, neighbours intersected
+  const edge = i => { const a = P[i], b = P[(i + 1) % n], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz), nx = -dz / L * ar, nz = dx / L * ar; return { a: [a[0] + nx * r, a[1] + nz * r], d: [dx, dz], nx, nz }; };
+  const E = P.map((_, i) => edge(i)), I = [];
+  for (let i = 0; i < n; i++) { const e1 = E[(i + n - 1) % n], e2 = E[i], den = e1.d[0] * e2.d[1] - e1.d[1] * e2.d[0], t = ((e2.a[0] - e1.a[0]) * e2.d[1] - (e2.a[1] - e1.a[1]) * e2.d[0]) / den; I.push({ c: [e1.a[0] + e1.d[0] * t, e1.a[1] + e1.d[1] * t], n1: [-e1.nx, -e1.nz], n2: [-e2.nx, -e2.nz] }); }
+  for (let i = 0; i < n; i++) {
+    const { c, n1, n2 } = I[i], a1 = Math.atan2(n1[1], n1[0]); let a2 = Math.atan2(n2[1], n2[0]), da = a2 - a1;
+    while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+    const k = Math.max(2, Math.ceil(Math.abs(da) * r / step));
+    for (let j = 0; j <= k; j++) { const a = a1 + da * j / k; out.push([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]); }
+    const nx = I[(i + 1) % n].c, L = Math.hypot(nx[0] - c[0], nx[1] - c[1]), m = Math.floor(L / step);
+    for (let j = 1; j < m; j++) out.push([c[0] + n2[0] * r + (nx[0] - c[0]) * j / m, c[1] + n2[1] * r + (nx[1] - c[1]) * j / m]);
+  }
+  return out;
+};
+export const ISLAND9 = { tri: [[-70, 710], [-102, 776], [-135, 705]], plan: null, top: 1.5, rough: 3, sand: 12 };
+ISLAND9.plan = roundPoly(ISLAND9.tri, 10);
+ISLAND9.core = W(ISLAND9.plan);
+ISLAND9.centre = [ISLAND9.plan.reduce((s, p) => s + p[0], 0) / ISLAND9.plan.length, ISLAND9.plan.reduce((s, p) => s + p[1], 0) / ISLAND9.plan.length];
+function island9(X, Z, gy) {
+  const I = ISLAND9, d = polyD(I.core, X, Z, true), e = (inPoly(I.core, X, Z) ? -d : d) + 2 * noise2(X / 14, Z / 14, 71);
+  if (e < 0) return { y: I.top + 0.2 * smooth(-e / 14), t: 'grass', island9: true };
+  if (e < I.rough) return { y: I.top - 0.05 * e, t: 'rough', island9: true };
+  const shore = I.rough + I.sand;
+  if (e < shore) return { y: lerp(I.top - 0.2, 0, smooth((e - I.rough) / I.sand)), t: 'wet', island9: true };
+  return e - shore < 150 ? { y: shelf(e - shore, gy, 2.2, 16), t: 'sea' } : null;
+}
+// the right fairway's land: grass down its line (`hw` each side), dry sand narrow on the left and wide on the right,
+// a beach round it; its ends rounded (`r0` at the tee rock, `r1` at the far end, which lies `tail` m past the line's end)
+export const RIGHT9 = (() => { const line = [[84, 610], [-30, 800]], P = W(line); return { line, P, L: lengthOf(P), hw: 30, narrow: 4, dry: 44, wet: 8, s0: 4, tail: 27, r0: 28, r1: 34, g0: 12, g1: 4, rg: 16 }; })();
+// a rounded box in (s, off): left half-width wl, right wr, from s0 to s1, corners of radius r; < 0 inside
+const rbox = (s, off, s0, s1, wl, wr, r) => { const dl = off < 0 ? -off - (wl - r) : off - (wr - r), da = Math.max(s0 + r - s, s - (s1 - r)); return Math.hypot(Math.max(dl, 0), Math.max(da, 0)) + Math.min(Math.max(dl, da), 0) - r; };
+function right9(X, Z, gy) {
+  const R = RIGHT9, q = project(R.P, X, Z), s = q.s, off = q.off;
+  const wr = R.hw + R.narrow + R.dry * smooth((s - 30) / 60) + R.wet, wl = R.hw + R.narrow + R.wet, r = s < R.L / 2 ? R.r0 : R.r1;
+  const a = -rbox(s, off, R.s0, R.L + R.tail, wl, wr, r) + 3 * noise1(s / 30, off > 0 ? 14 : 15);
+  if (a < 0) return a > -170 ? { y: shelf(-a, gy), t: 'sea' } : null;
+  const dg = rbox(s, off, R.s0 + R.g0, R.L + R.g1, R.hw, R.hw, R.rg);
+  if (dg < 0) return -dg < R.hw * 0.25 ? { y: 3.0, t: 'rough' } : { y: 3.3 - 0.3 * Math.min(1, (off / R.hw) ** 2), t: 'grass' };
+  return beach(a, dg, R.wet);
+}
+// the channel between the island and the right fairway (Rhys's blue): kept clear water, 2.4 m deep along its middle
+export const CHANNEL9 = W([[-80, 800], [-66, 760], [-52, 722], [-36, 680]]);
+function land9(X, Z, gy) {
+  let best = null;
+  for (const q of [caveLand(X, Z, gy), island9(X, Z, gy), right9(X, Z, gy)]) if (q && (!best || q.y > best.y)) best = q;
+  return best;
 }
 export const CAVE = (() => { const a = project(L9, ...w([-190, 762])).s, b = project(L9, ...w([-266, 749])).s; return { s0: a - 2, s1: b + 2, hw: 28, floor: 3.0, roof: 42 }; })();
 // the cave's roof over (X, Z), absolute metres, or null
@@ -315,9 +378,7 @@ function V0(X, Z) {
   let g = { y: bed, t: bed < 0 ? 'sea' : bed < HW ? 'wet' : 'sand' };
   const take = q => { if (q && q.y > g.y) g = q; };
   take(tongue(X, Z));
-  { const sd = sdSE(ISLAND9.o, X, Z) + 2.5 * noise2(X / 18, Z / 18, 71); if (sd < 18) { const y = sd < -6 ? ISLAND9.top : lerp(ISLAND9.top - 0.4, -2.2, smooth((sd + 6) / 24)); take({ y, t: sd < -4 ? 'grass' : y < 0 ? 'sea' : 'wet', island9: true }); } }
   take(sandbar(X, Z));
-  for (const S of SPITS) take(spitAt(S, X, Z, bed));
   if (g.t === 'wet' && g.y < 0) g.t = 'sea';
   return { ...g, tidal: tf > 0.5 || undefined };
 }
@@ -347,13 +408,9 @@ export function V(X, Z) {
   if (g.far) return g;
   const h = headland(X, Z);
   if (h && h.y > g.y) g = { ...g, y: h.y, t: h.t, flat: 'headland' };
-  // the moat: water all the way round the island fairway at low tide, about 22 m across (Rhys, 25 November)
-  // (metres out from the outline along the ray from its centre, not the superellipse's scaled distance, which runs
-  // long down the island's long axis and ate into the right fairway)
-  { const O = ISLAND9.o, r = Math.hypot(X - O.x, Z - O.z), sd = r * (1 - 1 / Math.max(1e-6, seDist(O, X, Z))) + 2.5 * noise2(X / 18, Z / 18, 71);
-    if (sd > 3 && sd < 20) { const b = smooth((sd - 3) / 5) * (1 - smooth((sd - 13) / 6)), y = -1.9 * b; if (b > 0.04 && y < g.y) g = { ...g, y, t: 'sea', moat: true }; } }
-  // the 9th's spits over any flat's beach edge (the cave beach's ran across the intermediate fairway)
-  for (const S of SPITS) { const q = spitAt(S, X, Z, -3); if (q && q.y > g.y && q.t !== 'sea') g = { ...g, ...q, flat: S.name }; }
+  // the 9th's land (round 6): the cave beach, the island and the right fairway's land, each shelving into the sea
+  { const q = land9(X, Z, g.y); if (q && q.y > g.y) g = { ...g, ...q, cave: g.cave }; }
+  if (g.y < 0) { const d = polyD(CHANNEL9, X, Z, false); if (d < 16) g = { ...g, y: Math.min(g.y, lerp(-2.4, g.y, smooth((d - 5) / 11))), t: 'sea' }; }
   for (const st of STACKS) {
     const d = Math.hypot(X - st.X, Z - st.Z);
     if (d < st.r + 2.5) { const y = lerp(st.top, Math.min(g.y, -1), smooth((d - st.r + 0.5) / 3)); if (y > g.y) g = { y, t: st.tee && d < st.r - 1.5 ? 'grass' : 'karst', stack: st.name }; }
