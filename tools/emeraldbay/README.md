@@ -276,3 +276,19 @@ the water rather than a drop off". `ROUND=6` is the default; `round6-notes.json`
 - Checks: no `!` at either tide. The island: a 259 yd carry from the Marlin tee onto its point, 12 m wide at 260 yd,
   52 m at 290, 291 yd to its middle, 217 left. Water all round it (13 m at least), the tee rock 25 m off the right
   fairway's land, the gap 41 m. Relief, alike (0 of 15) and spread pass. 3,315 yd.
+
+## Plan book round 7 (25 November 2026)
+
+Rhys's markup on round 6's 9th: "extend the island fairway down some so you don't have to carry it quite so far",
+the main fairway "isn't just a straight slot. Give it some irregular shape", and the cay between the 9th and the 8th
+"seems like a leftover". `ROUND=7` is the default; `round7-notes.json`.
+
+- `ISLAND9.tri` is his outline (the old triangle's top kept, carried down toward the tee rock), rounded to 8 m; sand
+  10 m. The fairway now starts 229 yd from the Marlin tee (about a 230 yd carry) and runs to 319. From its lower part
+  the cave's south tower hides the flag; `ISLAND9.aim` (the bold target) sits on the upper part, where the line to the
+  pin goes through the cave: 287 yd out, 223 left.
+- The right fairway: his outline added as a `poly` (swelling right over the upper half, on to near the land's end) and
+  the ribbon's left edge in and out. `RIGHT9.bulge` widens the grass on the right to match; `tail` 34, `g1` 24. It ends
+  317 yd from the Marlin tee and leaves 281.
+- The cay is gone from `ISLETS`.
+- Checks: no `!` at either tide; relief, alike (0 of 15) and spread pass. 3,315 yd.

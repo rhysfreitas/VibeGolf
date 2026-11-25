@@ -329,7 +329,7 @@ export const HOLES = [
         ground: 'Uphill to a rock top: the green 4 m above the tee',
         height: 'Uphill to a rock top', dial: 'Green size: 320 m² on a sea stack', shots: { tee: 'A short iron, high, that stops', approach: '' }, hazard: 'All round: the sea', surround: 'A rim of rock behind; the sea everywhere else',
         setPiece: 'Postage stamp (on a sea stack)',
-        walk: 'A longtail from the point to the cay (about 200 m)',
+        walk: 'A longtail out to the tee rock',
       },
     }),
   }),
@@ -340,17 +340,19 @@ export const HOLES = [
     // Round 5 (Rhys, 25 November): the tee on a rock down and left in the open water, so the island is straight over
     // the sea from it; the right fairway ends short in the sea, a gap of water, then the intermediate fairway down to
     // the cave beach. Taking the right fairway it is three shots for everyone: no drive can run on to within about
-    // 300 yd of the green. Only the island (a 255 yd carry, gone at high tide) gets you there in two.
+    // 300 yd of the green. Only the island (a 230 yd carry onto it, the cave open from its upper part 260 yd out; gone at high tide) gets you there in two.
     build: (P, L, len, Lw) => {
       // round 6 (Rhys, 25 November): the island fairway a triangle, its point toward the tee (`ISLAND9`), and one
       // fairway from the cave's mouth up round the cave beach, the shape he drew (plan coordinates)
-      const isl = ISLAND9.plan.map(p => Lw(p[0], p[1])), island = Lw(...ISLAND9.centre);
+      const isl = ISLAND9.plan.map(p => Lw(p[0], p[1])), island = Lw(...ISLAND9.aim);   // round 7: the island's upper half, where the cave's mouth opens; from its lower part the south tower hides the flag
       const mouth = smoothPoly([[-213, 760], [-206, 773], [-196, 790], [-186, 808], [-176, 823], [-161, 832], [-146, 831], [-135, 824], [-133, 808], [-138, 791], [-144, 774], [-150, 757], [-157, 741], [-166, 731], [-178, 731], [-192, 739], [-205, 746]], 2, true).map(p => Lw(p[0], p[1]));
       return {
         tees: { marlin: 0, manta: [14, 6], turtle: [64, 4], clownfish: [102, -4] },
         // the split form: the right fairway up from the tee rock, stopping short of the sea; the intermediate fairway
         // over the gap down to the cave beach; the cave's floor mown through to the green; the island on the left
-        fw: [{ e: [[142, 21, 21], [180, 24, 27], [225, 25, 28], [262, 22, 24]], wob: 2 },
+        fw: [{ e: [[136, 15, 17], [158, 24, 21], [185, 17, 27], [212, 27, 28], [238, 19, 28], [262, 26, 24]], wob: 2.5 },   // round 7: the left edge in and out
+          // round 7 (Rhys's outline): the right fairway swells right over its upper half and runs on to the land's end
+          { poly: [[-38, 776], [-45, 787], [-51, 797], [-45, 806], [-34, 817], [-21, 828], [-10, 835], [-2, 829], [9, 812], [23, 792], [40, 768], [51, 748], [51, 740], [48, 727], [48, 714], [50, 702], [35, 698], [5, 745]].map(p => Lw(p[0], p[1])), wob: 2.5 },
           { poly: mouth, wob: 2 },
           { e: [[414, 12, 12], [470, 13, 13], [len - 22, 11, 11]], wob: 1.5 },
           { poly: isl, wob: 2.5 }],
@@ -358,20 +360,20 @@ export const HOLES = [
         green: { k: 1.2, lobes: [[0, 0, 15, 17, 8], [-9, -10, 9, 8.5], [8, 11, 9, 8]], apron: 4, contour: [{ fall: 40, pct: 1.6 }, { tier: [0, 3], up: 0, h: 0.4, w: 3.5 }], style: 'Huge (1,400 m²) on a shelf 4 m over the cave floor, a back tier, tilted toward the lagoon; sand short left, long right and left; the beach shack behind' },
         targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The intermediate fairway', at: Lw(-158, 790) }],
         versions: [
-          { id: 'low', note: 'Low tide: the island fairway is out of the water, a moat all round it. Carry about 255 yd of open sea onto it and the green is about 240 yd away, straight through the cave. By the right fairway it is three shots.',
+          { id: 'low', note: 'Low tide: the island fairway is out of the water, water all round it. Carry about 230 yd of open sea onto it; from its far part, 260 yd out and more, the green is about 225 yd away straight through the cave. By the right fairway it is three shots.',
             targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The island', at: island, bold: true, island: true }, { name: 'The intermediate fairway', at: Lw(-158, 790) }, { name: 'Through the cave', at: L.at(-1), bold: true, pin: true, second: true }] },
           { id: 'high', note: 'High tide: the island fairway is under the sea. Three shots: the right fairway, over the gap to the intermediate fairway at the cave\'s mouth, a short iron through the cave.' },
         ],
         words: {
           story: 'The Hong: over the open sea to an island fairway, or three shots by the right fairway and over a gap, then through a sea cave to a green in a hidden lagoon.',
-          plays: 'A longtail takes you to the tee rock, alone in the open water. Straight ahead, low in the sea with a moat all round it, lies an island of salt grass in line with the dark mouth of a sea cave. To the right a spit runs up from the rock: the right fairway, which stops short in the sea; past a gap of water the intermediate fairway runs down to the cave\'s mouth. Through the cave (40 m high, mown through) the green sits on a shelf 4 m up: 1,400 m², the lagoon below it. By the right fairway it is three shots for everyone: the best drive leaves about 300 yd and can\'t run on. At low tide the island is the way in two: a 255 yd carry over open sea, then about 240 yd straight through the cave. At high tide it is gone.',
+          plays: 'A longtail takes you to the tee rock, alone in the open water. Straight ahead, low in the sea with water all round it, lies an island of salt grass in line with the dark mouth of a sea cave. To the right a spit runs up from the rock: the right fairway, which stops short in the sea; past a gap of water the intermediate fairway runs down to the cave\'s mouth. Through the cave (40 m high, mown through) the green sits on a shelf 4 m up: 1,400 m², the lagoon below it. By the right fairway it is three shots for everyone: the best drive leaves about 280 yd and can\'t run on. At low tide the island is the way in two: a 230 yd carry over open sea reaches it, but only from its far part, 260 yd out and more, is the cave open, about 225 yd straight through it. At high tide it is gone.',
           safe: 'A long iron or wood up the right fairway (about 230 m, short of the sea at its end), a mid iron over the gap to the intermediate fairway at the cave\'s mouth, a short iron through the cave.',
-          bold: 'Low tide only: driver over the open sea onto the island fairway (about a 255 yd carry, 280 out), then a 3 wood straight through the cave at the green (about 240 yd).',
+          bold: 'Low tide only: driver over the open sea onto the far part of the island fairway (about 285 yd out; a 230 yd carry reaches its near end, but from there the cave is hidden), then a 3 wood straight through the cave at the green (about 225 yd).',
           miss: 'Up the right fairway: dry sand on the right, the sea on the left, and the sea past its end (about 295 yd out). Going for the island: the sea all round it. Through the cave: the walls give a ball back; the roof is 40 m up. At the green: sand short left, long right and left; the lagoon left.',
         },
         card: {
           type: 'Original (an island fairway over the open sea, or three shots past a gap; a green out of a sea cave)', form: 'Broken (the right fairway, a gap of water, the intermediate fairway; or the island fairway over the water)', feature: 'The tee rock; the right fairway ending in the sea; the gap; the island and its moat; the sea cave; the lagoon', job: 'The island the bold landing (low tide only); the sea at the right fairway\'s end stops a drive running on; the gap the lay-up\'s carry; the cave an obstacle and the reveal',
-          decision: 'Go or lay up (low tide): carry about 255 yd of open sea onto the island fairway and go at the green through the cave (about 240 yd), or three shots by the right fairway; at high tide it is three shots',
+          decision: 'Go or lay up (low tide): carry the open sea to the far part of the island fairway and go at the green through the cave (about 225 yd), or three shots by the right fairway; at high tide it is three shots',
           miss: 'Small: dry sand right of the right fairway. Medium: the sea on its left. Long: the sea past its end. Going for the island: the sea all round it. Safe miss: right',
           view: 'From the tee rock the island low in the water straight ahead with the cave\'s dark mouth in the Hong\'s wall beyond it, the right fairway running away on the right, the stack and its spire behind on the right',
           ground: 'Perched green: the fairways level, the cave floor level, then a 4 m bank up to the green\'s shelf',

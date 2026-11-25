@@ -71,12 +71,12 @@ export const ISLANDS = {
 const KEYS = Object.keys(ISLANDS);
 // the 6th's gap: the slot between C's east end and the Sentinel, kept open
 export const GAP = { a: w([830, 790]), b: w([835, 1100]) };
-// small islands: [the Drop's islet (the 2nd green, alone in the cove), the Tongue islet (the 3rd green), the cay (the 9th tee)]
+// small islands: [the Drop's islet (the 2nd green, alone in the cove), the Tongue islet (the 3rd green), the 9th's tee rock]
+// (the cay, the 9th's old tee, is gone: round 7, Rhys: "this island seems like a leftover")
 export const ISLETS = [
   { name: 'the Drop islet', o: se(10, -95, 36, 30, 0, 2), y: 3.6, beach: 12 },
   { name: 'the Tongue islet', o: se(600, -385, 48, 36, 10, 2), y: 3.4, beach: 14 },
-  { name: 'the cay', o: se(176, 756, 50, 32, 10, 2), y: 3.2, beach: 14 },
-  // the 9th's tee: a rock in the open water south-west of the cay (Rhys, 25 November: the tee moved down and left)
+  // the 9th's tee: a rock alone in the open water (Rhys, 25 November: the tee moved down and left)
   { name: 'the tee rock', o: se(116, 556, 34, 30, 0, 2), y: 6.5, beach: 8 },
 ];
 // far islands round the horizon
@@ -229,8 +229,11 @@ const roundPoly = (P, r, step = 3) => {
   }
   return out;
 };
-export const ISLAND9 = { tri: [[-70, 710], [-102, 776], [-135, 705]], plan: null, top: 1.5, rough: 3, sand: 12 };
-ISLAND9.plan = roundPoly(ISLAND9.tri, 10);
+// round 7 (Rhys: "extend the island fairway down some so you don't have to carry it quite so far"): his outline
+// carried down toward the tee rock, the old triangle's top kept
+export const ISLAND9 = { tri: [[-102, 776], [-130, 713], [-121, 700], [-108, 686], [-94, 679], [-80, 681], [-67, 687], [-57, 694], [-58, 704], [-72, 730], [-88, 758]], plan: null, top: 1.5, rough: 3, sand: 10 };
+ISLAND9.plan = roundPoly(ISLAND9.tri, 8);
+ISLAND9.aim = [-96, 732];   // the bold target: far enough up the island that the line to the pin goes through the cave
 ISLAND9.core = W(ISLAND9.plan);
 ISLAND9.centre = [ISLAND9.plan.reduce((s, p) => s + p[0], 0) / ISLAND9.plan.length, ISLAND9.plan.reduce((s, p) => s + p[1], 0) / ISLAND9.plan.length];
 function island9(X, Z, gy) {
@@ -243,7 +246,7 @@ function island9(X, Z, gy) {
 }
 // the right fairway's land: grass down its line (`hw` each side), dry sand narrow on the left and wide on the right,
 // a beach round it; its ends rounded (`r0` at the tee rock, `r1` at the far end, which lies `tail` m past the line's end)
-export const RIGHT9 = (() => { const line = [[84, 610], [-30, 800]], P = W(line); return { line, P, L: lengthOf(P), hw: 30, narrow: 4, dry: 44, wet: 8, s0: 4, tail: 27, r0: 28, r1: 34, g0: 12, g1: 4, rg: 16 }; })();
+export const RIGHT9 = (() => { const line = [[84, 610], [-30, 800]], P = W(line); return { line, P, L: lengthOf(P), hw: 30, narrow: 4, dry: 44, wet: 8, s0: 4, tail: 34, r0: 28, r1: 34, g0: 12, g1: 24, rg: 16, bulge: 20 }; })();
 // a rounded box in (s, off): left half-width wl, right wr, from s0 to s1, corners of radius r; < 0 inside
 const rbox = (s, off, s0, s1, wl, wr, r) => { const dl = off < 0 ? -off - (wl - r) : off - (wr - r), da = Math.max(s0 + r - s, s - (s1 - r)); return Math.hypot(Math.max(dl, 0), Math.max(da, 0)) + Math.min(Math.max(dl, da), 0) - r; };
 function right9(X, Z, gy) {
@@ -251,7 +254,8 @@ function right9(X, Z, gy) {
   const wr = R.hw + R.narrow + R.dry * smooth((s - 30) / 60) + R.wet, wl = R.hw + R.narrow + R.wet, r = s < R.L / 2 ? R.r0 : R.r1;
   const a = -rbox(s, off, R.s0, R.L + R.tail, wl, wr, r) + 3 * noise1(s / 30, off > 0 ? 14 : 15);
   if (a < 0) return a > -170 ? { y: shelf(-a, gy), t: 'sea' } : null;
-  const dg = rbox(s, off, R.s0 + R.g0, R.L + R.g1, R.hw, R.hw, R.rg);
+  // round 7: the grass wider on the right over the upper half, under the fairway's bulge (Rhys: not "just a straight slot")
+  const dg = rbox(s, off, R.s0 + R.g0, R.L + R.g1, R.hw, R.hw + R.bulge * smooth((s - 105) / 35), R.rg);
   if (dg < 0) return -dg < R.hw * 0.25 ? { y: 3.0, t: 'rough' } : { y: 3.3 - 0.3 * Math.min(1, (off / R.hw) ** 2), t: 'grass' };
   return beach(a, dg, R.wet);
 }
