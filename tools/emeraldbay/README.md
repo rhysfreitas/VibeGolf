@@ -180,7 +180,7 @@ map's southern edge (nothing in the ground data there); the proposal crops it.
 
 Rhys approved layout round 3 ("Approve, go to the plan book", with the 4th moved to the inside). The plan tools
 now draw it: `world.mjs`, `holes.mjs` and `round2-notes.json` were rewritten on the round 3 islands; `scene.mjs`,
-`sample.mjs` and `book.mjs` keep their jobs (`ROUND=2` is the default). `node sample.mjs`, `python3 plans.py`,
+`sample.mjs` and `book.mjs` keep their jobs (`ROUND=2` gave round 2). `node sample.mjs`, `python3 plans.py`,
 `node sketch.mjs`, `node book.mjs` give `out/emerald-bay-plan-book-r2.pdf`.
 
 - `world.mjs`: the bay as `r3/bay.mjs` built it (whole massifs, `FLATS` at their feet, islets), with the hole
@@ -201,3 +201,24 @@ now draw it: `world.mjs`, `holes.mjs` and `round2-notes.json` were rewritten on 
   (the 9th's 1,400 m² green past real golf) pass. One Should is open: the 6th's bold landing is about 1° out of sight.
 - Not yet rebuilt: `emit.mjs` (the blockout) still reads round 1's features; the round 0 tools (`checks.mjs`,
   `dump.mjs`, `figs.py`) ran against round 0's world and are kept as a record.
+
+
+## Plan book round 3 (24 November 2026)
+
+From Rhys's markup on round 2. `ROUND=3` is now the default in `book.mjs`; `round3-notes.json` lists what moved.
+
+- Sea stacks (`STACKS` in world.mjs, laid on a hole's line by `[k, s, off]`, `r`, `top`; one with `tee` has a mown
+  top): the Drop's Turtle (22 m) and Clownfish (9 m) tees, the 3rd's Clownfish tee (16 m, a Ko Tapu needle in the
+  blockout), and a 28 m stack in the Sandbar's right edge at 205 m (the fairway swells left past it).
+- The 5th's headland (`HEAD5`, `headland()`): the cliff at the gap's mouth brought out round the green, its top 9 m
+  (6 m over the bar), a grass ramp 16 m wide up the green's front-right corner (`ramp`, in the 5th's frame). The 6th's
+  tee stands on its north edge and the slot's floor falls from 9 to 4.3 m to the exit (`gapfloor`, `gapfloor2`).
+  The stacks and the headland are applied over the flats by `V`, which wraps the old function (`V0`).
+- More fall: the 1st's terraces 16, 10 and 4 m (`west`: steps of 6 m, a 4.5% lean to the channel); the 7th's beach
+  leans to the sea (`ccove`, `cnorth`; relief reads it as a hillside bench, 8%).
+- The 9th re-laid as a true dogleg left (`LINES[8]`, 70°): the spit (`SPIT`, dry on its outside) round to the cave
+  beach, and an island fairway inside the dogleg (`ISLAND9`, top 1.5 m: under the sea at high tide). Its low-tide
+  version adds the island as a bold target (`island: true`; `sample.mjs` exempts it from the water-both-sides check
+  and reports the carry from each tee and whether any of it stays dry at high tide). The flats, the creek and
+  round 2's high-tide route are gone.
+- Checks: no `!` at either tide; relief (bold 1, 4, 7; perched greens 5 and 9), alike (0 of 15) and spread pass.

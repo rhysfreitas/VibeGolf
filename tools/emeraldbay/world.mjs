@@ -28,7 +28,7 @@ export const LINES = [
   [[833, 800], [833, 1000], [735, 1116]],               // 6 The Gap: between C and the Sentinel
   [[668, 1122], [545, 1042], [425, 1090]],              // 7 The Overhang: round the cove on C's north shore
   [[318, 915], [224, 842]],                             // 8 The Stack
-  [[198, 752], [-188, 762], [-300, 742]],               // 9 The Hong: across the flats, through the cave
+  [[150, 768], [-45, 872], [-163, 766], [-300, 742]],   // 9 The Hong: a dogleg left along the spit, then through the cave
 ];
 export const WLINES = LINES.map(W);
 export const onLine = (k, s, off = 0) => at(WLINES[k], s, off);
@@ -75,7 +75,7 @@ export const GAP = { a: w([830, 790]), b: w([835, 1100]) };
 export const ISLETS = [
   { name: 'the Drop islet', o: se(10, -95, 36, 30, 0, 2), y: 3.6, beach: 12 },
   { name: 'the Tongue islet', o: se(600, -385, 48, 36, 10, 2), y: 3.4, beach: 14 },
-  { name: 'the cay', o: se(205, 752, 42, 30, 10, 2), y: 3.2, beach: 14 },
+  { name: 'the cay', o: se(165, 760, 42, 30, 10, 2), y: 3.2, beach: 14 },
 ];
 // far islands round the horizon
 const FAR = [
@@ -92,7 +92,7 @@ const FAR = [
 export const FLATS = [
   // 1: the stilt village at the west arm's south tip, then the terrace along the Maya island's outer west shore
   { id: 'vtip', line: [[-380, -330], [-470, -250]], hw: 30, y: [3.4, 4], lean: 0, edge: 'beach' },
-  { id: 'west', line: [[-480, -250], [-512, 45], [-498, 340]], hw: 72, y: [12, 12.5], lean: 0.02, edge: 'beach', seaSide: -1, steps: [[382, -4, 14], [500, -4, 14]] },   // old coral terraces stepping down to the beach: the tee high by the village
+  { id: 'west', line: [[-480, -250], [-512, 45], [-498, 340]], hw: 72, y: [16, 16.5], lean: 0.045, edge: 'beach', seaSide: -1, steps: [[382, -6, 16], [500, -6, 16]] },   // old coral terraces stepping down to the beach: the tee high by the village
   // the cove's head beach (the Maya beach): sand only, nothing played on it
   { id: 'head', line: [[-120, 75], [0, 95], [120, 75]], hw: 40, y: [3.2, 3.2], lean: 0, edge: 'beach', sand: true },
   // 3: the beach on the east arm's south tip
@@ -105,11 +105,12 @@ export const FLATS = [
   { id: 'bnorth', line: [[980, 515], [1088, 456]], hw: 32, y: [5, 4.5], lean: 0, edge: 'beach' },
   { id: 'gapmouth', line: [[880, 770], [800, 778]], hw: 36, y: [3.4, 3.6], lean: 0, edge: 'beach' },
   // 6: the gap's floor between C and the Sentinel, out onto C's north beach
-  { id: 'gapfloor', line: [[830, 785], [832, 960], [835, 1100]], hw: 34, y: [6.4, 4.0], lean: 0, edge: 'beach', land: true, pipe: 2.2, pipeW: 18 },   // a half-pipe: the floor dishes 2.2 m to its middle
+  { id: 'gapfloor', line: [[830, 785], [832, 958]], hw: 34, y: [9.0, 4.3], lean: 0, edge: 'beach', land: true, pipe: 2.2, pipeW: 18 },   // a half-pipe: the floor dishes 2.2 m to its middle
+  { id: 'gapfloor2', line: [[832, 958], [835, 1100]], hw: 34, y: [4.3, 4.0], lean: 0, edge: 'beach', land: true, pipe: 2.2, pipeW: 18 },   // and on out of the slot, level with the exit
   { id: 'gapexit', line: [[833, 960], [833, 1000], [740, 1110]], hw: 40, y: [4.2, 4.0], lean: 0, edge: 'beach', land: true, pipe: 2.2, pipeW: 18 },   // the floor carries on out of the slot to C's north beach
-  { id: 'cnorth', line: [[835, 1100], [720, 1118], [640, 1112]], hw: 40, y: [4.2, 3.6], lean: 0.015, edge: 'beach' },
+  { id: 'cnorth', line: [[835, 1100], [720, 1118], [640, 1112]], hw: 40, y: [4.6, 4.0], lean: -0.03, edge: 'beach' },   // falls toward the open sea on the right
   // 7: the beach round C's north cove under the leaning cliff (wide under the overhang), on to C's north-west beach
-  { id: 'ccove', line: [[650, 1112], [600, 1060], [540, 1035], [480, 1052], [420, 1092]], hw: 34, y: [3.6, 3.8], lean: 0.02, edge: 'beach' },
+  { id: 'ccove', line: [[650, 1112], [600, 1060], [540, 1035], [480, 1052], [420, 1092]], hw: 34, y: [4.4, 4.6], lean: -0.035, edge: 'beach' },   // falls toward the cove and the sea on the right
   // 8: C's west point
   { id: 'cwest', line: [[400, 1080], [335, 990], [312, 898]], hw: 30, y: [4, 5], lean: 0, edge: 'beach' },
   // 9: the beach at the cave mouth and the cave's sand floor through the Hong's east wall; the lagoon's crescent
@@ -122,7 +123,6 @@ const FLATW = FLATS.map(f => ({ ...f, P: W(f.line), L: lengthOf(W(f.line)) }));
 // ---- the 2nd's tees: a notch at the lip 60 m up the cove's east wall (Marlin, Manta), and a rock in the shallows by
 // the wall's foot for the forward tees, open toward the islet
 export const LEDGE = { x: 160.67, n: -40.95, y: 60 };
-export const LEDGE2 = { X: 92, Z: 80, r: 11, top: 4.6 };
 
 // ---- the 3rd's tongue: firm sand reaching back from the islet toward the tee, under the sea at high water
 const L3 = WLINES[2], L5 = WLINES[4], L4 = WLINES[3], L9 = WLINES[8];
@@ -135,7 +135,7 @@ function tongue(X, Z) {
   return y < -5.5 ? null : { y, t: 'wet' };
 }
 // the rock the 3rd's forward tee stands on, in the shallows beside the tongue's tip
-export const TURTLE_ROCK = { s: 98, off: 26, r: 10, top: 5.5 };
+// (the 3rd's forward tee stands on a sea stack: STACKS below)
 
 // ---- the 4th's coves, [s, inner edge's off, along] in its line's frame: each bites in from the channel on the left as
 // far as its inner edge, so the straight line from the back tee to the green crosses all three; a beach at each head
@@ -172,12 +172,14 @@ function sandbar(X, Z) {
 // ---- the 9th: the tidal flats from the cay to the cave beach (firm sand at low water, under the sea at high), the
 // spit to the right (north) that carries the high-tide route, a creek across the line in front of the cave beach,
 // the sea cave through the Hong's east wall (`CAVE`: along the line, its roof 42 m up) and the lagoon inside
-export const TIDAL = { o: se(30, 750, 168, 80, 2, 2.2) };
-export const SPIT = { line: [[198, 770], [110, 792], [-20, 794], [-150, 780]], hw: 30, dry: 44, narrow: 10 };
+// the 9th's island fairway, inside the dogleg: low ground (1.5 m) with water round it at both tides, dry at low
+// water and under the sea at high; from it the green is about 240 yd through the cave
+export const ISLAND9 = { o: se(-82, 740, 38, 24, 0, 2.2), top: 1.5 };
+// the spit: the 9th's way round, a hook of sand and salt grass from the cay to the cave beach, dry at high water,
+// a wide band of dry sand on its outside (right of the line), narrow on the inside toward the island
+export const SPIT = { line: [[150, 768], [-45, 872], [-163, 766]], hw: 30, dry: 44, narrow: 8 };
 const SPITW = W(SPIT.line);
 const SPITL = lengthOf(SPITW);
-export const CREEK = { pts: [[-130, 690], [-140, 730], [-144, 770], [-138, 812], [-122, 850]], hw: 8, bed: -1.6 };
-const CREEKW = W(CREEK.pts);
 export const CAVE = (() => { const a = project(L9, ...w([-190, 762])).s, b = project(L9, ...w([-266, 749])).s; return { s0: a - 2, s1: b + 2, hw: 28, floor: 3.0, roof: 42 }; })();
 // the cave's roof over (X, Z), absolute metres, or null
 export function caveRoofAt(X, Z) {
@@ -225,7 +227,7 @@ const tideBits = (X, Z) => { const a = tongue(X, Z), b = sandbar(X, Z); return a
 
 // V(X, Z): { y, t } where t is what the ground is made of: 'sea' (sea bed), 'wet' (intertidal sand), 'sand' (dry
 // sand), 'grass', 'rough', 'jungle' (jungle floor), 'karst' (rock), and cave: true inside the sea cave (roof overhead)
-export function V(X, Z) {
+function V0(X, Z) {
   // the massifs, with the gap, the cave and the overhang kept open
   let best = null;
   for (let k = 0; k < KEYS.length; k++) { const I = ISLANDS[KEYS[k]], sd = islandSD(I, X, Z); if (!best || sd < best.sd) best = { sd, I, k, id: KEYS[k] }; }
@@ -248,9 +250,8 @@ export function V(X, Z) {
   const near = 4 + 70 * shallow;
   let bed = -(0.6 + 0.5 * noise2(X / 30, Z / 30, 21)) - 24 * smooth((dOut - near) / (60 + 120 * shallow)) - 3 * smooth(dOut / 12) * (1 - shallow);
   bed -= (inCove + inLag) * (1.4 + 2.2 * smooth((dOut - 30) / 120));
-  const tf = 1 - smooth((seDist(TIDAL.o, X, Z) - 0.8) / 0.3);
+  const tf = 0;
   bed -= 2.6 * smooth((fbm(X / 35, Z / 35, 22, 3) - 0.05) / 0.25) * smooth(dOut / 25) * (1 - tf);
-  if (tf > 0) bed = lerp(bed, 1.35 + 0.25 * noise2(X / 25, Z / 25, 12) + 0.08 * Math.sin(X * 0.21 + Z * 0.07), tf);
   // far islands
   for (const F of FAR) {
     const sd = sdSE(F.o, X, Z) + 10 * fbm(X / 80, Z / 80, 11, 2);
@@ -270,11 +271,6 @@ export function V(X, Z) {
   // the 2nd's notch: a pad cut into the cove's east wall at the lip, open toward the islet
   { const lz = -LEDGE.n, o = ISLETS[0].o, dx = o.x - LEDGE.x, dz = o.z - lz, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, q = segQ([LEDGE.x - ux * 30, lz - uz * 30], [LEDGE.x + ux * 60, lz + uz * 60], X, Z);
     if (mY !== null && q.d < 34) { const k = 1 - smooth((q.d - 16) / 18); if (mY > LEDGE.y) return { y: lerp(mY, LEDGE.y, k), t: q.d < 16 && q.t * 90 < 40 ? 'grass' : 'karst', ledge: true }; } }
-  // the 2nd's forward tee rock, in the shallows by the wall's foot
-  const dl = Math.hypot(X - LEDGE2.X, Z - LEDGE2.Z);
-  if (dl < LEDGE2.r + 4) return { y: Math.max(bed, LEDGE2.top * smooth((LEDGE2.r + 4 - dl) / 4)), t: dl < LEDGE2.r ? 'grass' : 'karst' };
-  // the 3rd's turtle rock
-  { const [tx, tz] = at(L3, TURTLE_ROCK.s, TURTLE_ROCK.off), dt = Math.hypot(X - tx, Z - tz); if (dt < TURTLE_ROCK.r + 5) return { y: Math.max(bed, TURTLE_ROCK.top * smooth((TURTLE_ROCK.r + 5 - dt) / 5)), t: dt < TURTLE_ROCK.r ? 'grass' : 'karst' }; }
   // a flat
   if (fl) {
     const f = fl.f, s = fl.q.s; let fy = lerp(f.y[0], f.y[1], smooth(s / f.L)) + (f.peak ? (f.peak - f.y[0]) * Math.sin(Math.PI * clamp(s / f.L, 0, 1)) : 0) + f.lean * fl.q.off + (f.pipe ? 0 : 0.4 * noise2(X / 30, Z / 30, 37));   // a slot's floor is swept smooth
@@ -300,13 +296,46 @@ export function V(X, Z) {
   let g = { y: bed, t: bed < 0 ? 'sea' : bed < HW ? 'wet' : 'sand' };
   const take = q => { if (q && q.y > g.y) g = q; };
   take(tongue(X, Z));
+  { const sd = sdSE(ISLAND9.o, X, Z) + 2.5 * noise2(X / 18, Z / 18, 71); if (sd < 18) { const y = sd < -6 ? ISLAND9.top : lerp(ISLAND9.top - 0.4, -2.2, smooth((sd + 6) / 24)); take({ y, t: sd < -4 ? 'grass' : y < 0 ? 'sea' : 'wet', island9: true }); } }
   take(sandbar(X, Z));
-  { const q = project(SPITW, X, Z), side = q.off < 0 ? SPIT.dry : SPIT.narrow, wob = 4 * noise1(q.s / 30, q.off < 0 ? 14 : 15), o = q.d - wob, end = smooth(q.s / 30 + 0.3) * smooth((SPITL - q.s) / 30 + 0.3);
+  { const q = project(SPITW, X, Z), side = q.off > 0 ? SPIT.dry * smooth((q.s - 20) / 60) + SPIT.narrow : SPIT.narrow, wob = 4 * noise1(q.s / 30, q.off > 0 ? 14 : 15), o = q.d - wob, end = smooth(q.s / 30 + 0.3) * smooth((SPITL - q.s) / 30 + 0.3);
     if (o < SPIT.hw + side + 46) { let y, t; if (o <= SPIT.hw * 0.75) { y = 3.3 - 0.3 * (o / SPIT.hw) ** 2; t = 'grass'; } else if (o <= SPIT.hw) { y = 3.0; t = 'rough'; } else if (o <= SPIT.hw + side) { y = lerp(2.95, 2.5, (o - SPIT.hw) / side); t = 'sand'; } else { y = lerp(2.4, -3, smooth((o - SPIT.hw - side) / 46)); t = y < 0 ? 'sea' : 'wet'; } take({ y: lerp(bed, y, Math.max(end, 0.4)), t }); } }
-  { const c = project(CREEKW, X, Z); if (c.d < CREEK.hw + 8) { const yc = lerp(CREEK.bed, g.y, smooth((c.d - CREEK.hw + 3) / 10)); if (yc < g.y) g = { y: yc, t: c.d < CREEK.hw ? 'sea' : g.t }; } }
   if (g.t === 'wet' && g.y < 0) g.t = 'sea';
   return { ...g, tidal: tf > 0.5 || undefined };
 }
+// ---- sea stacks (the Ko Tapu look: a narrow pinnacle standing in the water): [hole, s, off] in that hole's frame,
+// r the top's radius, top its height. Tee stacks carry a flat grassed top for a tee pad; the Sandbar's is a hazard.
+export const STACKS = [
+  { name: 'the Drop\'s Turtle stack', k: 1, s: 31, off: 7, r: 8, top: 22, tee: 'turtle' },
+  { name: 'the Drop\'s Clownfish stack', k: 1, s: 78, off: -13, r: 8, top: 9, tee: 'clownfish' },
+  { name: 'the Tongue\'s Clownfish stack', k: 2, s: 92, off: 30, r: 9, top: 16, tee: 'clownfish' },
+  { name: 'the Sandbar stack', k: 4, s: 205, off: 23, r: 7, top: 28 },
+].map(st => { const [X, Z] = onLine(st.k, st.s, st.off); return { ...st, X, Z }; });
+// ---- the 5th's headland: the cliff brought out round the green, so the green sits up on it (9 m, 6 m over the
+// bar's crown) with a face on its left and its front, and a grassy ramp up its front-right corner from the bar
+export const HEAD5 = { o: se(852, 786, 56, 46, 0, 2.4), top: 9, ramp: { s0: LEN[4] - 96, s1: LEN[4] - 40, off: 21, hw: 8 } };
+function headland(X, Z) {
+  const sd = sdSE(HEAD5.o, X, Z) + 2 * noise2(X / 14, Z / 14, 81);
+  let y = sd < 0 ? HEAD5.top : sd < 4 ? lerp(HEAD5.top, 0, smooth(sd / 4)) : -Infinity, t = sd < -2 ? 'grass' : 'karst';
+  const c = lineCoord(4, X, Z), R = HEAD5.ramp;
+  if (c.s > R.s0 - 10 && c.s < R.s1 + 10 && Math.abs(c.off - R.off) < R.hw + 6) {
+    const yr = lerp(3.2, HEAD5.top, smooth((c.s - R.s0) / (R.s1 - R.s0))) - 3 * smooth((Math.abs(c.off - R.off) - R.hw) / 6);
+    if (yr > y) { y = yr; t = 'grass'; }
+  }
+  return y > -Infinity ? { y, t } : null;
+}
+export function V(X, Z) {
+  let g = V0(X, Z);
+  if (g.far) return g;
+  const h = headland(X, Z);
+  if (h && h.y > g.y) g = { ...g, y: h.y, t: h.t, flat: 'headland' };
+  for (const st of STACKS) {
+    const d = Math.hypot(X - st.X, Z - st.Z);
+    if (d < st.r + 2.5) { const y = lerp(st.top, Math.min(g.y, -1), smooth((d - st.r + 0.5) / 3)); if (y > g.y) g = { y, t: st.tee && d < st.r - 1.5 ? 'grass' : 'karst', stack: st.name }; }
+  }
+  return g;
+}
+
 // what the ground plays as at a tide: water under the sea, firm wet sand where intertidal sand is dry
 export function surfaceAt(X, Z, tide = 'low') {
   const g = V(X, Z), sea = TIDES[tide];

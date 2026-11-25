@@ -16,7 +16,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE,
 const D = JSON.parse(fs.readFileSync(`${OUT}/grid/holes.json`)), TEES = D.teeSets, YD = 0.9144;
 for (const h of D.pages) { const q = HH[h.n - 1]; h.words = q.words; h.card = q.card; h.green = { ...h.green, style: q.green.style }; }   // the words as holes.mjs has them now
 D.holes = D.pages.filter(h => !h.tideHole || h.tide === 'low');   // one row a hole (a tide hole's low-tide page)
-const ROUND = process.env.ROUND || '2', DATE = process.env.DATE || '24 November 2026', BACK = D.back;
+const ROUND = process.env.ROUND || '3', DATE = process.env.DATE || '24 November 2026', BACK = D.back;
 const tideName = h => h.tideHole ? (h.tide === 'low' ? 'low tide' : 'high tide') : '';
 const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : null;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -111,8 +111,8 @@ pages.push(`<div class="page">
       <p style="font-size:11pt; margin:4pt 0 10pt">A warm bay of whole limestone islands with open water between them: sheer cliffs, jungle on top, white sand and clear turquoise water below</p>
       <p class="small">Plan book · round ${ROUND} · ${DATE}<br>Par ${par} · ${tot(BACK).toLocaleString()} yd from the Marlin tees at low tide, ${HI.toLocaleString()} at high</p>
       <h3>What this round is</h3>
-      <p>Layout round 3 (approved 24 November, with the 4th on an inside shore) drawn for the first time: five whole islands spread out with open water between them, the golf on their outer shores on terraces, beaches and shelves at their feet, the 4th up B\'s inside wall over the channel, only the Drop\'s green inside the Maya island\'s horseshoe; the sea as a parameter (low water 0, high water 2.4 m); fairway outlines from the forms, green shapes, the four tee sets and the Shark tips spot on every hole, targets, and both tides on 3, 5 and 9.</p>
-      <p>Every drive is flown with the game's physics as round 0 settled it: dry sand plays as waste, wet sand as firm beach, bunkers as sand, water a stroke and a drop, cliff faces drop 45% of the balls that hit them at their foot, and the cave's roof and the overhang are solid. Page 4 lists what moved from the layout doc to pass the checks, and what is open for you.</p>
+      <p>Round 2 with your markup on it: the forward tees on sea stacks on the Drop and the Tongue; a sea stack in the Sandbar and the 5th\'s green up on a headland with a ramp at its front-right corner; more fall on the 1st, and the 7th\'s beach leaning to the sea; the 9th a true dogleg left round a spit, with an island fairway inside it that the high tide covers. The rest is round 2: five whole islands with open water between them, the golf on their outer shores, both tides on 3, 5 and 9.</p>
+      <p>Every drive is flown with the game's physics as round 0 settled it: dry sand plays as waste, wet sand as firm beach, bunkers as sand, water a stroke and a drop, cliff faces drop 45% of the balls that hit them at their foot, and the cave's roof and the overhang are solid. Page 4 lists what moved since round 2, and what is open for you.</p>
       <h3>Reading the plans</h3>
       <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', rough: 'Rough', jungle: 'Jungle (plays as rough)', rock: 'Rock and cliffs (native; a cliff gives the ball back)', sand: 'Bunker', drysand: 'Dry sand (plays as waste)', wetsand: 'Wet sand, dry at low tide (firm: it runs)', water: 'Water (a stroke and a drop)' }).map(([k, v]) => `<span><i style="background:${SWE[k]}"></i>${v}</span>`).join('')}</div>
       <p class="small" style="margin-top:6pt">North up. Dashed: the playing lines. The map is at low tide; the next page has both. Boxes: the stilt village, the beach shack, longtails. Contours at 10, 20, 40, 80 m and up.</p>
@@ -134,9 +134,9 @@ pages.push(`<div class="page"><h2>The course card</h2>
   <div class="notes" style="margin-top:8pt"><div class="t">Notes</div>${lines(3)}</div>
   <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>3</span></div></div>`);
 const OPEN = JSON.parse(fs.readFileSync(path.join(HERE, `round${ROUND}-notes.json`)));
-pages.push(`<div class="page"><h2>What moved from the layout doc, and what is open</h2>
+pages.push(`<div class="page"><h2>${ROUND === '2' ? 'What moved from the layout doc, and what is open' : `What changed since round ${+ROUND - 1}, and what is open`}</h2>
   <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.3in; margin-top:6pt">
-    <div><h3>Moved, to pass the checks (the lines and pins are the approved ones)</h3>${OPEN.moved.map(t => `<p>${esc(t)}</p>`).join('')}</div>
+    <div><h3>${ROUND === '2' ? 'Moved, to pass the checks (the lines and pins are the approved ones)' : 'From your markup'}</h3>${OPEN.moved.map(t => `<p>${esc(t)}</p>`).join('')}</div>
     <div><h3>Open for you</h3>${OPEN.open.map((t, i) => `<p><b>${i + 1}.</b> ${esc(t)}</p>`).join('')}<div class="notes" style="margin-top:8pt; min-height:1.6in"><div class="t">Notes</div>${lines(6)}</div></div>
   </div>
   <div class="foot"><span>Emerald Bay · plan book round ${ROUND}</span><span>4</span></div></div>`);

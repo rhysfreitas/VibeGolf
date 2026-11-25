@@ -120,7 +120,7 @@ const lanes = (B, p, dir) => {
   return out;
 };
 const TIDES2 = ['low', 'high'];
-R_(`Emerald Bay plan book round 2 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
+R_(`Emerald Bay plan book round 3 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
 R_(`  total: low tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[0].yards : h.yards)[BACK], 0)} yd, high tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[1].yards : h.yards)[BACK], 0)} yd; par ${HOLES.reduce((a, h) => a + h.par, 0)}`);
 for (const [k, h] of HOLES.entries()) {
   const B = built(k, 'low'), [x, z] = h.pin, d = 1, gx = (B.ground(x + d, z) - B.ground(x - d, z)) / (2 * d), gz = (B.ground(x, z + d) - B.ground(x, z - d)) / (2 * d);
@@ -183,6 +183,7 @@ for (const [k, h] of HOLES.entries()) {
       const tg = (v ? v.targets : h.targets).filter(q => !q.pin); const where = [];
       for (const q of tg) { const pr = project(h.line, ...q.at), hd = headingAt(h.line, pr.s) + Math.PI / 2, nx = Math.sin(hd), nz = -Math.cos(hd);
         const side = sg => { for (let a = 0; a <= 50; a += 1) { if (B.surface(q.at[0] + nx * a * sg, q.at[1] + nz * a * sg) === 'water') return a; } return null; };
+        if (q.island) { where.push(`${q.name}: an island fairway, water all round by design (the bold option; the spit is the way round)`); continue; }
         const L = side(-1), R = side(1); where.push(`${q.name}: ${L === null ? '-' : 'left ' + L + ' m'}, ${R === null ? '-' : 'right ' + R + ' m'}${L !== null && R !== null ? ' BOTH' : ''}`); }
       R_(`${where.some(q => /BOTH/.test(q)) ? '!' : ' '} ${h.n}${tag} water within 50 m of a landing target: ${where.join('; ')}`);
     }
@@ -305,8 +306,13 @@ const wd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
       const shots = d > 205 ? [['3 wood', WOOD3], ['hybrid', HYBRID]] : d > 150 ? [['hybrid', HYBRID], ['7 iron', IRON7]] : [['7 iron', IRON7], ['wedge', { Speed: 90, VLA: 26, TotalSpin: 9000 }]];
       const res = shots.map(([nm, sh]) => { seed = 77; const r = drive(Bt, q.at, dir, sh); return `${nm} ${Math.round(r.carry / YD)} carry, apex ${r.apex.toFixed(0)} m, ${r.rocks ? 'hits the roof, ' : ''}finishes ${r.rest} ${Math.round(wd(r.end, h.pin) / YD)} yd from the pin`; });
       R_(`  9 (${tide}) from "${q.name}" (${d} yd): the flag ${S.hid ? 'HIDDEN by ' + S.hid : 'in sight through the cave'} (${S.ang.toFixed(1)}°); ${res.join('; ')}`); } }
-  const lay = h.targets.find(q => q.name === 'The cave beach'), flats = h.targets.find(q => q.name === 'The flats');
-  R_(`  9 (low) the flats ${Math.round(wd(h.teePts[BACK], flats.at) / YD)} yd from the Marlin tee leave ${Math.round(wd(flats.at, h.pin) / YD)} yd; the lay-up leaves ${Math.round(wd(lay.at, h.pin) / YD)} yd`);
+  const lay = h.targets.find(q => q.name === 'The cave beach'), isl = h.versions[0].targets.find(q => q.island);
+  // the island: how far from each tee, the carry over the water to it, what it leaves; whether it is gone at high tide
+  const Bl = built(k, 'low'), Bh = built(k, 'high'), cr = {};
+  for (const [id, T] of Object.entries(h.teePts)) { const d = wd(T, isl.at); let c = null; for (let f = 0.3; f <= 1; f += 0.005) { const p = [T[0] + (isl.at[0] - T[0]) * f, T[1] + (isl.at[1] - T[1]) * f]; if (Bl.surface(...p, 'low') === 'fairway') { c = d * f; break; } } cr[id] = `${Math.round(d / YD)} yd (carry ${c ? Math.round(c / YD) : '?'})`; }
+  let dry = 0, all = 0; for (let x = -40; x <= 40; x += 2) for (let z = -40; z <= 40; z += 2) { const p = [isl.at[0] + x, isl.at[1] + z]; if (Bl.surface(...p, 'low') !== 'fairway') continue; all++; if (Bh.surface(...p, 'high') !== 'water') dry++; }
+  R_(`  9 (low) the island fairway from the tees: ${Object.entries(cr).map(([k2, v]) => k2 + ' ' + v).join(', ')}; it leaves ${Math.round(wd(isl.at, h.pin) / YD)} yd; the lay-up on the cave beach leaves ${Math.round(wd(lay.at, h.pin) / YD)} yd`);
+  R_(`  9 (high) the island fairway: ${all} cells, ${dry} still above the sea${dry ? ' !' : ' (gone)'}`);
 }
 // the 7th: the overhang against the highest shots; the bold drive across the cove
 {

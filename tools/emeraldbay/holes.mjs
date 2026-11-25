@@ -1,4 +1,7 @@
-// Emerald Bay, plan book round 2 (24 November 2026): the holes of layout round 3, approved by Rhys the same day
+// Emerald Bay, plan book round 3 (24 November 2026), from Rhys's markup on round 2: forward tees on sea stacks (2, 3),
+// a stack in the Sandbar and the 5th's green up on a headland, more fall on the 1st and the beaches leaning to the sea,
+// and the 9th a true dogleg left round a spit with an island fairway inside it that the high tide covers.
+// Round 2 (24 November 2026): the holes of layout round 3, approved by Rhys the same day
 // ("Approve, go to the plan book", after asking for one hole on an inside shore: the 4th). The islands are whole and
 // spread out with open water between them; the golf is on their outer shores, the 4th up B's inside wall over the
 // channel, only the Drop's green inside the Maya island's horseshoe. Par 36: 5 3 3 5 4 4 4 3 5 (as approved on 15
@@ -8,6 +11,7 @@
 // y up from the hole's `base`, the back tee's height). `route` turns the world line ([x east, n north]) into `legs`
 // and `place`; `L(x, n)` turns a world point into the hole's frame. The ground is the world's own (world.mjs V).
 import { lineOf, lengthOf, at, headingAt, YD } from './geo.mjs';
+import { ISLAND9 } from './world.mjs';
 import { LINES, TIDES } from './world.mjs';
 
 export const COURSE = {
@@ -27,12 +31,12 @@ export const COURSE = {
   card: {
     hook: 'A warm bay of whole limestone islands with open water between them: sheer walls streaked orange and black, jungle over them, white sand and clear turquoise water at their feet. The golf runs round their outer shores on beaches, terraces and shelves. Two logics: sand is always playable and water is a stroke (cliffs give the ball back), and the tide is high or low each round (holes 3, 5 and 9 play differently).',
     skeleton: 'Par 36: 5 3 3 5 4 4 4 3 5, three par 3s and three par 5s. Five islands spread over about 1.8 by 1.6 km, the channels between them 180-290 m: up the Maya island\'s west shore (1), into its horseshoe for the Drop (2), across the channel\'s mouth (3), up B\'s inside wall over the channel (4), across to C on the Sandbar (5), through the gap between C and the Sentinel (6), round C\'s north cove (7), out to the stack (8), across the flats and through the Hong\'s cave (9).',
-    classics: 'Cape (4: three coves to bite off). Short (8: a sea-stack green). Redan (3: the green falls away to the left, a bank kicks a ball on from the right). Set pieces: island green (2, an islet alone in the horseshoe\'s cove) and postage stamp (8). Its own: a sandbar fairway (5), a slot between sheer walls (6), a beach hole under a leaning cliff (7), a green in a hollow island (9).',
-    decisions: 'Four, four types: bite off what you dare (4: carry the coves and it is reachable in two), centre-line hazard (6: carry the pot in the middle of the slot or lay back short of it), drivable par 4 (7: straight across the cove), go or lay up (9: at low tide, the cave from the flats).',
-    landmarks: 'The sea stack and its spire (from 7, 9 and the boats; played at 8); the Sentinel and its gap (from 4 and 5; played through at 6); the leaning cliff (from 6 and 8; played under at 7); the Maya island\'s horseshoe (across the water from 3 and 4; played into at 2); the Hong (across the channel from 1; played into at 9). The reveals: the cove opening below the ledge (2) and the lagoon out of the cave (9).',
-    rhythm: 'A reachable par 5 to open up a quiet shore; the Drop; a par 3 the tide changes; the long shelf hole over the coves (the hardest); the Sandbar; the gap; a short beach hole; the stack; the Hong. Par 3s 135, 175 (plays about 150, 56 m down) and 220; par 4s 300, 385 and 430; par 5s 495, 545 and 565. Compass: N, WSW, ESE, N, NW, N then NW, W, SW, W.',
-    forms: 'Six fairways, six forms: 1 stepping stones (a piece of fairway on each coral terrace), 4 scalloped by its coves, 5 strip (the Sandbar: the course\'s one plain strip), 6 hourglass (pinched in the slot), 7 hook round the cove (alike.mjs reads a bowl), 9 broken (the flats and the spit).',
-    heights: '1 stepped (bold: coral terraces stepping down 4 m twice to the beach), 2 drop (the only one: 56 m from the ledge to the islet), 3 level across the water, 4 hillside bench (bold: 9% across and up into the wall, climbing 6 m), 5 level (the bar), 6 half-pipe (the slot\'s floor between walls 150 m tall), 7 level (a beach), 8 uphill to a rock top, 9 perched green (4 m up on a shelf just out of the cave).',
+    classics: 'Cape (4: three coves to bite off). Short (8: a sea-stack green). Redan (3: the green falls away to the left, a bank kicks a ball on from the right). Set pieces: island green (2, an islet alone in the horseshoe\'s cove) and postage stamp (8). Its own: tees on sea stacks (2, 3), a sandbar fairway with a stack in it to a perched green (5), a slot between sheer walls (6), a beach hole under a leaning cliff (7), an island fairway the tide covers and a green out of a sea cave (9).',
+    decisions: 'Four, four types: bite off what you dare (4: carry the coves and it is reachable in two), centre-line hazard (6: carry the pot in the middle of the slot or lay back short of it), drivable par 4 (7: straight across the cove), go or lay up (9: at low tide, onto the island fairway inside the dogleg and at the green through the cave).',
+    landmarks: 'The sea stack and its spire (from 7, 9 and the boats; played at 8); the Sandbar\'s stack (from 4, 5 and 6); the Sentinel and its gap (from 4 and 5; played through at 6); the leaning cliff (from 6 and 8; played under at 7); the Maya island\'s horseshoe (across the water from 3 and 4; played into at 2); the Hong (across the channel from 1; played into at 9). The reveals: the cove opening below the ledge (2) and the lagoon out of the cave (9).',
+    rhythm: 'A reachable par 5 to open up a quiet shore; the Drop; a par 3 the tide changes; the long shelf hole over the coves (the hardest); the Sandbar; the gap; a short beach hole; the stack; the Hong. Par 3s 135, 175 (plays about 150, 56 m down) and 220; par 4s 300, 385 and 430; par 5s 495, 565 and 565. Compass: N, WSW, ESE, N, NW, N then NW, W, SW, WNW then SW.',
+    forms: 'Six fairways, six forms: 1 stepping stones (a piece of fairway on each coral terrace), 4 scalloped by its coves, 5 strip (the Sandbar: the course\'s one plain strip), 6 hourglass (pinched in the slot), 7 hook round the cove (alike.mjs reads a bowl), 9 island (an island fairway inside the dogleg, the spit round it).',
+    heights: '1 stepped (bold: coral terraces stepping down 6 m twice to the beach, leaning to the channel), 2 drop (the only one: 56 m from the ledge to the islet), 3 level across the water, 4 hillside bench (bold: 9% across and up into the wall, climbing 6 m), 5 perched green (6 m up on a headland at the bar\'s end), 6 half-pipe (the slot\'s floor between walls 150 m tall, falling 5 m from the headland), 7 hillside bench (8% across, from the cliff\'s foot down to the sea), 8 uphill to a rock top, 9 perched green (4 m up on a shelf just out of the cave).',
     dials: 'One pushed on every hole: 1 length (a reachable par 5 to open), 2 height (56 m down: the course\'s one drop), 3 the tide (a sand tongue short of the green at low water), 4 one hazard\'s scale (three coves), 5 width (the bar: 42 m of grass, dry ground 100-150 m across at low tide), 6 width the other way (a slot 53 m wide between walls 150 m tall), 7 length (drivable, 270 yd straight across the cove), 8 green size (about 375 m² on a sea stack), 9 green size past anything real (about 1,400 m², perched just out of a sea cave).',
     newBorrowed: 'New to the register: the first tropical course; a tide that changes holes; a sandbar fairway; a green inside a hollow island; a sea-stack green; a beach hole under a leaning cliff; a slot between sheer walls. Borrowed (two): an island green, a postage stamp.',
   },
@@ -105,11 +109,11 @@ export const HOLES = [
       // a string of pots down the right, in the foot of the wall
       bunkers: [sand(P(248, -32), 9, 4.5, 0.3), sand(P(176, 25), 4.2, 3.6, 0, { kind: 'pot' }), sand(P(212, 28), 4, 3.4, 0, { kind: 'pot' }), sand(P(300, 37), 4.2, 3.6, 0, { kind: 'pot' }), sand(P(len - 16, 16), 5, 3.4, -0.4), sand(P(len - 2, -19), 4.2, 3, 0.2)],
       green: { k: 1, lobes: [[0, 0, 12, 15.5, 10], [6, -9, 8, 7.5], [-5, 9, 7.5, 7]], apron: 4, contour: [{ fall: 200, pct: 1.6 }, { ridge: [[-10, -2], [9, 2]], h: 0.28, w: 3 }], style: 'Long and open from the front, falling 1.6% toward the beach on the left, a low spine across its middle; sand short right and left' },
-      targets: [{ name: 'The top terrace', at: P(232, -4) }, { name: 'The second terrace', at: P(345, -2) }],
+      targets: [{ name: 'The top terrace', at: P(232, -4) }, { name: 'The second terrace', at: P(372, -2) }],
       words: {
         story: 'The village: from the stilt fishing village down the Maya island\'s outer shore in two coral terraces, the open channel on your left.',
-        plays: 'The round starts at the stilt village on the south tip of the Maya island\'s west arm. The hole runs north along the foot of the island\'s outer wall on old coral terraces of salt grass and palms, a low coral cliff to the open channel on the left with the Hong standing off across the water. The tee is on the top terrace, 12 m up; the second steps down 4 m at 270 m, the third 4 m more at 390 m to a green on the beach at the island\'s north-west corner. Each step comes after the shot before lands, so you always look down onto your landing.',
-        safe: 'Driver down the top terrace (232 m), a long iron to the second terrace (345 m), a wedge down to the green.',
+        plays: 'The round starts at the stilt village on the south tip of the Maya island\'s west arm. The hole runs north along the foot of the island\'s outer wall on old coral terraces of salt grass and palms, a low coral cliff to the open channel on the left with the Hong standing off across the water. The tee is on the top terrace, 16 m up; the second terrace steps down 6 m at 270 m, the third 6 m more at 390 m to a green on the beach at the island\'s north-west corner. Each terrace leans about 4.5% toward the channel, and each step comes after the shot before lands, so you always look down onto your landing.',
+        safe: 'Driver down the top terrace (232 m), a long iron to the second terrace\'s lip (372 m), a wedge down to the green.',
         bold: null,
         miss: 'Right: three pots in the foot of the wall, then jungle and rock that gives the ball back. Left: rough, then the coral cliff and the channel. At the green: sand short right and left; the beach behind.',
       },
@@ -117,7 +121,7 @@ export const HOLES = [
         type: 'Original (a reachable par 5 to open)', form: 'Stepping stones (a piece of fairway on each terrace)', feature: 'The coral terraces at the wall\'s foot; the open channel and the Hong across it', job: 'The wall is a helper (it gives a wild ball back); the pots a hazard on the right; the steps set the lies (each shot plays down); the Hong a frame',
         decision: 'None: the opener', miss: 'Small: rough on the terraces. Medium right: the pots, then jungle at the wall\'s foot; medium left: rough, then the coral cliff. Safe miss: middle',
         view: 'In front the top terrace running along the shore under the island\'s wall, the steps down beyond, the turquoise channel on the left and the Hong\'s cliffs across the water',
-        ground: 'Stepped: three coral terraces, 12, 8 and 4 m up, each step 4 m down past where the shot before lands',
+        ground: 'Stepped: three coral terraces, 16, 10 and 4 m up, each step 6 m down past where the shot before lands, each leaning 4.5% toward the channel',
         height: 'Stepped (bold)', dial: 'Length: a reachable par 5 to open (495 yd)', shots: { tee: 'Driver along a terrace, down onto the landing', approach: 'A long iron down a step, or a wood at the green from the top' }, hazard: 'Down the right: three pots in the wall\'s foot', surround: 'Sand short right and left; the beach behind',
         walk: 'From the green up a cliff path over the head of the island to the ledge on the cove\'s east wall',
       },
@@ -128,22 +132,22 @@ export const HOLES = [
   // Maya island's horseshoe, the only hole up top
   hole({ n: 2, name: 'The Drop', par: 3, world: LINES[1], padFront: 1, tips: [-22, 0], shape: 'Straight, ledge to islet',
     build: (P, L, len) => ({
-      tees: { marlin: 0, manta: [0, 10], turtle: [0, -10], clownfish: [78, -13] },
+      tees: { marlin: 0, manta: [0, 8], turtle: [31, 7], clownfish: [78, -13] },   // Turtle and Clownfish on sea stacks in the cove (Rhys, 24 November)
       bunkers: [],
       green: { k: 1, lobes: [[0, 0, 10.5, 13, 15], [-5, 7, 6, 6]], apron: 2.5, contour: [{ fall: 0, pct: 1.8 }, { bowl: [0, 0], r: 9, h: 0.22 }], style: 'Deeper than wide, tilted 1.8% toward the tee, a shallow dish in its middle; a ring of white sand round the islet' },
       targets: [],
       words: {
         story: 'The drop: off a ledge 60 m up the cove\'s wall to a green alone on an islet in the middle of the horseshoe.',
-        plays: 'A cliff path from the 1st green climbs over the head of the island to a notch at the lip of the cove\'s east wall, 60 m up. Below, the Maya island\'s horseshoe: the white beach at its head, the cove of turquoise water, and in the middle of it a little islet with the green on it, ringed with sand. All carry, 56 m down: it plays about 25 yd shorter than the card. The tee is right at the lip: step back and the islet drops out of sight. The forward tees play from a rock in the shallows at the wall\'s foot.',
+        plays: 'A cliff path from the 1st green climbs over the head of the island to a notch at the lip of the cove\'s east wall, 60 m up. Below, the Maya island\'s horseshoe: the white beach at its head, the cove of turquoise water, and in the middle of it a little islet with the green on it, ringed with sand. All carry, 56 m down: it plays about 25 yd shorter than the card. The tee is right at the lip: step back and the islet drops out of sight. The forward tees stand on two sea stacks in the cove, reached by ladder from a longtail: the Turtle on a tall one, 22 m up and 140 yd out, the Clownfish on a low one, 9 m up and 90 yd out.',
         safe: 'A mid iron to the middle of the green; the sand ring is the bail-out all round.',
         bold: null,
         miss: 'Short, long, either side: the sand ring round the islet, then the cove (a stroke and a drop). The safe miss is long (the islet is deepest behind the green).',
       },
       card: {
-        type: 'Island green (the set piece: an islet alone in the cove)', form: 'Par 3', feature: 'The notch at the lip; the horseshoe; the islet and its sand ring', job: 'The cove is the hazard (all carry); the sand ring a helper (it catches near misses); the horseshoe\'s walls a frame',
+        type: 'Island green (the set piece: an islet alone in the cove)', form: 'Par 3', feature: 'The notch at the lip; the horseshoe; the islet and its sand ring; the forward tees\' sea stacks', job: 'The cove is the hazard (all carry); the sand ring a helper (it catches near misses); the horseshoe\'s walls a frame',
         decision: 'None: one shot', miss: 'Small: the sand ring. Medium: the cove. Safe miss: long',
         view: 'From the lip the cove 56 m below, the islet and its green in the middle of it, the Maya beach to the right, the horseshoe\'s west wall across the water and the bay through its mouth to the left',
-        ground: 'Drop: 56 m from the ledge to the islet, the course\'s only drop par 3',
+        ground: 'Drop: 56 m from the ledge to the islet, the course\'s only drop par 3; 18 m from the Turtle stack, 5 m from the Clownfish',
         height: 'Drop (the only one)', dial: 'Height: 56 m down', shots: { tee: 'A mid iron that drops and stops', approach: '' }, hazard: 'All round: the cove', surround: 'A ring of white sand round the islet',
         setPiece: 'Island green (an islet alone in the horseshoe\'s cove)',
         walk: 'A longtail from the islet out through the cove\'s mouth to the east arm\'s tip (about 400 m)',
@@ -155,7 +159,7 @@ export const HOLES = [
   // a green on a small islet; at low tide a tongue of sand reaches back from the islet toward the tee
   hole({ n: 3, name: 'The Tongue', par: 3, world: LINES[2], tips: [-38, -4], shape: 'Straight, across the channel\'s mouth',
     build: (P, L, len) => ({
-      tees: { marlin: -20, manta: [-6, 8], turtle: [10, -6], clownfish: [98, 26] },
+      tees: { marlin: -20, manta: [-6, 8], turtle: [10, -6], clownfish: [92, 30] },   // Clownfish on a sea stack in the channel's mouth
       bunkers: [sand(P(len + 2, -17), 4.5, 3.2, 0.2), sand(P(len + 14, 10), 4, 3, -0.4)],
       green: { k: 1, lobes: [[0, 0, 12.5, 16, 12], [-8, -9, 7.5, 7.5], [7, 10, 7.5, 6.5]], apron: 3.5, contour: [{ fall: 270, pct: 1.7 }, { tier: [3, 0], up: 90, h: 0.4, w: 3.5 }], style: 'Big (about 700 m²), a Redan: it falls away to the left, a bank on the right kicks a ball on toward the pin; sand left and long right' },
       targets: [],
@@ -165,13 +169,13 @@ export const HOLES = [
       ],
       words: {
         story: 'The tongue: across the channel\'s mouth to an islet, a tongue of sand running out to meet you at low tide.',
-        plays: 'From the beach on the Maya island\'s east arm, across the mouth of the channel to B, to a big green on a small islet. At low tide a tongue of firm wet sand reaches 70 m back from the islet toward you: carry 105 yd to it and run the ball up. At high tide it is under the sea and the shot is all carry. The green is a Redan: it falls away to the left, and a bank on its right kicks a ball on toward a left pin.',
+        plays: 'From the beach on the Maya island\'s east arm, across the mouth of the channel to B, to a big green on a small islet. At low tide a tongue of firm wet sand reaches 70 m back from the islet toward you: carry 105 yd to it and run the ball up. At high tide it is under the sea and the shot is all carry. The Clownfish tee is a sea stack in the channel\'s mouth, a needle of rock like Ko Tapu 16 m tall, its top mown, 100 yd from the green. The green is a Redan: it falls away to the left, and a bank on its right kicks a ball on toward a left pin.',
         safe: 'Low tide: a hybrid or long iron landed on the tongue. High tide: a long iron or hybrid at the right half, off the bank.',
         bold: null,
         miss: 'Short: the tongue (low tide, firm sand) or the sea (high tide). Long: the islet\'s sand ring, then the sea. Left: sand, then the ring. Right: the bank feeds it on. The safe miss is right.',
       },
       card: {
-        type: 'Redan (a par 3 the tide changes)', form: 'Par 3', feature: 'The tongue of sand; the islet; B\'s wall across the channel', job: 'The tongue is a helper at low tide (a landing strip) and gone at high; the sea the hazard; the bank right a helper (it kicks the ball on)',
+        type: 'Redan (a par 3 the tide changes)', form: 'Par 3', feature: 'The tongue of sand; the islet; B\'s wall across the channel; the Clownfish tee\'s sea stack', job: 'The tongue is a helper at low tide (a landing strip) and gone at high; the sea the hazard; the bank right a helper (it kicks the ball on)',
         decision: 'None: one shot (the tide decides the shot: run it up or fly it)', miss: 'Small right: the bank. Small short: the tongue (low) or the sea (high). Safe miss: right',
         view: 'The channel\'s mouth in front, the tongue (at low tide) running in to the islet, B\'s cliffs across the water and the channel opening away to the left between the two islands',
         ground: 'Level across the water: tee and green within a metre of each other',
@@ -217,7 +221,8 @@ export const HOLES = [
     build: (P, L, len) => ({
       tees: { marlin: 0, manta: [16, -6], turtle: [44, 8], clownfish: [100, -34] },
       // a strip: the bar's crown of salt grass, mown
-      fw: [{ e: [[60, 17, 17], [110, 21, 21], [300, 21, 21], [332, 17, 19], [360, 12, 14]], wob: 1.5 }],
+      // the stack stands in the bar's right edge at 205 m: the fairway swells left past it
+      fw: [{ e: [[60, 17, 17], [110, 21, 21], [170, 23, 21], [205, 27, 15], [240, 25, 21], [300, 21, 21], [330, 17, 19], [346, 12, 14]], wob: 1.5 }],
       bunkers: [sand(P(len - 14, 15), 4.6, 3.2, -0.3), sand(P(len + 10, -12), 4, 2.8, 0.2)],
       green: { k: 1, lobes: [[0, 0, 11, 14, 10], [-6, 8, 6.5, 6]], apron: 3.5, contour: [{ fall: 0, pct: 1.6 }, { ridge: [[-10, -11], [9, -4]], h: 0.26, w: 3 }], style: 'On the beach at the gap\'s mouth, a spine across it; sand long left and short right; the Sentinel behind' },
       targets: [{ name: 'The bar', at: P(240, -2) }],
@@ -227,18 +232,18 @@ export const HOLES = [
       ],
       words: {
         story: 'The Sandbar: a bar of white sand and salt grass across the open channel, sea on both sides.',
-        plays: 'From B\'s north point a sandbar runs north-west across the open channel to island C: a crown of salt grass 42 m wide, dry sand either side and firm wet sand down to the sea at low tide. Ahead the gap between C and the Sentinel, the green on the beach at its mouth. At high tide the wet sand goes under: the open sea\'s side (right) is then 40 m of sand from the line; the channel\'s side keeps rough and sand to 58 m.',
-        safe: 'Driver down the bar (236 m), a short iron to the green.',
+        plays: 'From B\'s north point a sandbar runs north-west across the open channel to island C: a crown of salt grass 42 m wide, dry sand either side and firm wet sand down to the sea at low tide. At 205 m a sea stack 28 m tall stands in the bar\'s right edge; the fairway swells left past it. Ahead the gap between C and the Sentinel, and the cliff at its mouth brought out as a low headland: the green sits up on it, 6 m over the bar, with a grass ramp up its front-right corner. At high tide the wet sand goes under: the open sea\'s side (right) is then 40 m of sand from the line; the channel\'s side keeps rough and sand to 58 m.',
+        safe: 'Driver down the bar left of the stack (240 m), a short iron up onto the green.',
         bold: null,
-        miss: 'Either side: sand (playable). Right at high tide: the sea past 40 m. Left: rough, then sand. At the green: sand long left and short right; the Sentinel\'s wall behind gives a long ball back.',
+        miss: 'Either side: sand (playable). Right: the stack at 205 m (it gives the ball back to the sand at its foot), and the sea past 40 m at high tide. Left: rough, then sand. At the green: short and left the headland\'s face, which gives the ball back to the bar; front right the ramp runs a ball up; sand long left and short right.',
       },
       card: {
-        type: 'Original (a sandbar fairway)', form: 'Strip (a sandbar: the course\'s one plain strip)', feature: 'The bar; the sea both sides; the Sentinel and the gap ahead as the aim point', job: 'The sea is the hazard (both sides, beyond dry sand); the sand bands helpers; the Sentinel an aim point',
-        decision: 'None: two straight shots', miss: 'Small: sand (playable). Medium right at high tide: the sea. Medium left: rough and sand. Safe miss: left',
-        view: 'The bar running away across the channel between two seas, C\'s cliffs and the Sentinel ahead with the dark slot of the gap between them',
-        ground: 'Level: the bar\'s crown 3.3 m above low water, under a metre of fall to its edges',
-        height: 'Level', dial: 'Width: the bar 42 m of grass; dry ground 100-150 m across at low tide, 80 m at high', shots: { tee: 'Dead straight', approach: 'A short iron' }, hazard: 'Down both sides: the sea (beyond the sand)', surround: 'Sand long left and short right; the Sentinel\'s wall behind',
-        walk: 'Across the beach at the gap\'s mouth (25 m) to the 6th tee',
+        type: 'Original (a sandbar fairway with a sea stack in it, to a perched green)', form: 'Strip (a sandbar: the course\'s one plain strip)', feature: 'The bar; the sea both sides; the stack in the bar; the headland under the green; the Sentinel and the gap ahead as the aim point', job: 'The sea is the hazard (both sides, beyond dry sand); the stack an obstacle (drive left of it); the headland a frame and a lie-setter (the approach plays up); the sand bands helpers; the Sentinel an aim point',
+        decision: 'None: two shots, the stack to keep left of', miss: 'Small: sand (playable). Medium right: the stack; at high tide the sea. Medium left: rough and sand. Short of the green: the headland\'s face. Safe miss: left, and short right onto the ramp',
+        view: 'The bar running away across the channel between two seas, the stack standing in its right edge, C\'s cliffs and the Sentinel ahead with the dark slot of the gap between them and the headland under it',
+        ground: 'Perched green: the bar level, its crown 3.3 m above low water; the green on a headland 9 m up, 6 m over the bar, a ramp up its front-right corner',
+        height: 'Perched green (on a headland)', dial: 'Width: the bar 42 m of grass; dry ground 100-150 m across at low tide, 80 m at high', shots: { tee: 'Straight, left of a stack', approach: 'A short iron up onto a headland' }, hazard: 'Down both sides: the sea (beyond the sand); the stack in the right edge', surround: 'The headland\'s face short and left, a ramp front right; sand long left and short right',
+        walk: 'Across the headland (30 m) to the 6th tee on its north edge',
       },
     }),
   }),
@@ -253,20 +258,20 @@ export const HOLES = [
       fw: [{ e: [[84, 24, 24], [100, 24, 24], [126, 10, 10], [150, 10, 10], [178, 24, 24], [205, 25, 25], [230, 26, 27], [252, 30, 32], [276, 32, 30], [300, 30, 26], [322, 20, 18], [336, 12, 12]], wob: 2 }],
       bunkers: [sand(P(205, 0), 4.2, 3.6, 0, { kind: 'pot' }), sand(P(len - 15, -14), 5, 3.4, 0.3), sand(P(len + 10, 12), 4, 3)],
       green: { k: 1, lobes: [[0, 0, 11.5, 15, -8], [-6, -9, 7.5, 7], [6, 9, 7.5, 7]], apron: 3.5, contour: [{ fall: 0, pct: 1.9 }, { tier: [0, 6], up: 0, h: 0.45, w: 3 }], style: 'On C\'s north beach, a front tier up to a back shelf; sand short left and long right; the open sea beyond' },
-      targets: [{ name: 'Short of the pot', at: P(178, -4) }, { name: 'Past the pot', at: P(244, -6), bold: true }],
+      targets: [{ name: 'Short of the pot', at: P(178, -4) }, { name: 'Past the pot', at: P(232, 8), bold: true }],
       words: {
         story: 'The gap: through a slot 60 m wide between sheer walls 150 m tall, out onto the beach.',
-        plays: 'From the beach at its mouth the hole runs north through the gap between C and the Sentinel: a floor of sand and salt grass about 60 m wide between walls 150 m tall, like the longtail\'s channel in the photos. Short of where the slot opens onto C\'s north beach, 205 m out, a deep pot sits in the middle of the fairway; past it the beach is wide, the open sea ahead, and the hole turns left along it to the green.',
+        plays: 'From the headland at its mouth, 9 m up, the hole runs north and down through the gap between C and the Sentinel: a floor of sand and salt grass about 60 m wide between walls 150 m tall, like the longtail\'s channel in the photos. Short of where the slot opens onto C\'s north beach, 205 m out, a deep pot sits in the middle of the fairway; past it the beach is wide, the open sea ahead, and the hole turns left along it to the green.',
         safe: 'A hybrid or long iron short of the pot (178 m), then a mid iron round the corner.',
-        bold: 'Driver over the pot (a 210 m carry) to the slot\'s mouth (244 m): a short iron to the green with the whole of it in view.',
+        bold: 'Driver over the pot (a 210 m carry) to the slot\'s mouth (232 m): a short iron to the green with the whole of it in view.',
         miss: 'Either side in the slot: the walls give the ball back to the sand at their feet. In the middle at 205 m: the pot. Past it, right: the beach, then the sea. At the green: sand short left and long right.',
       },
       card: {
         type: 'Original (a slot between sheer walls)', form: 'Hourglass (the neck where the gap opens)', feature: 'The slot between C and the Sentinel; the pot at its exit; the open sea beyond', job: 'The walls are a frame and helpers (they give the ball back); the pot a centre-line hazard',
-        decision: 'Centre-line hazard: lay back short of the pot (178 m, a mid iron round the corner) or carry it to the slot\'s mouth (244 m, a short iron with the green in view)',
+        decision: 'Centre-line hazard: lay back short of the pot (178 m, a mid iron round the corner) or carry it to the slot\'s mouth (232 m, a short iron with the green in view)',
         miss: 'Small: rough on the slot\'s floor. Medium: the sand at the walls\' feet. In the middle at 205 m: the pot. Safe miss: short',
         view: 'In front the slot running away between two sheer walls, a strip of sky above it and the sea at its far end',
-        ground: 'Half-pipe: the slot\'s floor dishes 2 m to its middle and meets the walls; it falls 2 m out to the beach',
+        ground: 'Half-pipe: the slot\'s floor dishes 2 m to its middle and meets the walls; from the headland it falls 5 m through the slot to the beach',
         height: 'Half-pipe (the floor between the walls)', dial: 'Width: a slot 53 m wide between walls 150 m tall', shots: { tee: 'Straight down a corridor, to a number', approach: 'A short or mid iron left round a corner' }, hazard: 'In the middle at the neck: a deep pot', surround: 'Sand short left and long right; the beach and the sea beyond',
         walk: 'Along the beach (30 m) to the 7th tee',
       },
@@ -288,15 +293,15 @@ export const HOLES = [
         plays: 'Along C\'s outer north shore, the open sea on the right. The beach rounds a cove at the foot of a cliff that leans out 40 m overhead, hung with stalactites; the green sits on the beach beyond the cove. Round the sand it is an iron and a wedge; straight across the cove\'s mouth the green is about 270 yd away, open in front.',
         safe: 'A long iron round the corner (160 m), a wedge.',
         bold: 'Driver straight across the cove at the green (about 270 yd).',
-        miss: 'Right: the cove (a stroke and a drop), then the open sea. Left: the beach under the cliff, which gives a ball back. At the green: sand left and long right.',
+        miss: 'Right: the cove (a stroke and a drop), then the open sea; the beach leans that way, so a ball landed on the right runs on. Left: the beach under the cliff, which gives a ball back. At the green: sand left and long right.',
       },
       card: {
         type: 'Original (a drivable beach hole under a cliff)', form: 'Hook', feature: 'The leaning cliff and its stalactites; the cove; the open sea', job: 'The cliff is a frame and a helper (it gives a ball back); the cove the hazard (the bold line crosses it)',
         decision: 'Drivable par 4: driver across the cove (about 270 yd, the green open in front) or an iron round the sand and a wedge',
         miss: 'Small: the beach. Medium right: the cove. Safe miss: left (under the cliff)',
         view: 'The beach running away under the leaning cliff on the left, the cove on the right with the open sea past it, the green across the cove',
-        ground: 'Level: a beach, a metre or two above high water',
-        height: 'Level (a beach)', dial: 'Length: drivable across the cove (300 yd round, 270 straight)', shots: { tee: 'A long iron to a number, or driver over water', approach: 'A wedge' }, hazard: 'Inside the bend: the cove', surround: 'Sand left and long right',
+        ground: 'Hillside bench: level along, the landing area leaning about 8% across from the cliff\'s foot down toward the open sea; the beach a metre or two above high water',
+        height: 'Hillside bench (8% across, falling to the sea)', dial: 'Length: drivable across the cove (300 yd round, 270 straight)', shots: { tee: 'A long iron to a number, or driver over water', approach: 'A wedge' }, hazard: 'Inside the bend: the cove', surround: 'Sand left and long right',
         walk: 'Along C\'s west beach (200 m) to the point and the 8th tee',
       },
     }),
@@ -329,55 +334,55 @@ export const HOLES = [
     }),
   }),
 
-  // 9. THE HONG: across the tidal flats, over the creek, in through the sea cave in the Hong's east wall and out to a
-  // green on the lagoon's beach; at high tide the flats are under water and the hole plays along the spit to the right
-  hole({ n: 9, name: 'The Hong', par: 5, world: LINES[8], tips: [-24, 4], shape: 'Dogleg left (12°), through a sea cave',
-    build: (P, L, len, Lw) => ({
-      tees: { marlin: 0, manta: [10, -7], turtle: [18, 6], clownfish: [50, -8] },
-      // split: the flats (dry at low tide) and the spit's crown along the right; then the cave beach
-      fw: [{ lobes: [[150, -24, 46, 22], [228, -26, 52, 24, -6], [290, -22, 32, 22]], join: 14, wob: 3 },
-        { e: [[70, -14, 56], [110, -16, 60], [180, -14, 58], [240, -12, 56], [300, -4, 46], [340, 4, 38]], wob: 2 },
-        { lobes: [[370, 2, 18, 28, 0]], join: 10, wob: 2 }],
-      bunkers: [sand(P(len - 20, -20), 4.6, 3.2, 0.3), sand(P(len + 18, 16), 4.2, 3), sand(P(len + 4, -26), 3.6, 3, 0.5)],
-      green: { k: 1.2, lobes: [[0, 0, 15, 17, 8], [-9, -10, 9, 8.5], [8, 11, 9, 8]], apron: 4, contour: [{ fall: 40, pct: 1.6 }, { tier: [0, 3], up: 0, h: 0.4, w: 3.5 }], style: 'Huge (1,400 m²) on a shelf 4 m over the cave floor, a back tier, tilted toward the lagoon; sand short left, long right and left; the beach shack behind' },
-      targets: [{ name: 'The flats', at: P(252, -24) }, { name: 'The cave beach', at: P(372, 4) }, { name: 'Through the cave', at: L.at(-1), bold: true, pin: true }],
-      versions: [
-        { id: 'low', note: 'Low tide: the flats are firm wet sand. A good drive leaves about 250 yd through the cave to the green: go, or lay up over the creek to the beach at the cave\'s mouth (about 130 yd) and play a short iron through.' },
-        { id: 'high', note: 'High tide: the flats are under water. Three shots along the spit to the right, to the beach at the cave\'s mouth, then a short iron through the cave.', targets: null, route: null },
-      ],
-      words: {
-        story: 'The Hong: across the flats and in through a sea cave to a green in a hidden lagoon.',
-        plays: 'A longtail takes you to the cay. At low tide the flats run west from it, firm wet sand, to a creek in front of a beach at the foot of the Hong\'s east wall, and the dark mouth of the cave. Through the cave (40 m high, 80 m long) the green sits on a shelf of sand and roots 4 m up, just past its far end: 1,400 m², the lagoon ringed by cliffs below it. At high tide the flats are under the sea and it plays three shots along the spit to the right.',
-        safe: 'Low tide: driver on the flats (250 m), a short iron over the creek to the cave beach, a short iron through the cave. High tide: along the spit, to the cave beach, through.',
-        bold: 'Low tide: driver on the flats, then a wood straight through the cave at the green (about 250 yd).',
-        miss: 'Low tide: either side on the flats is more sand; the creek in front of the cave beach. High tide: the sea either side of the spit. Through the cave: the walls give a ball back; the roof is 40 m up. At the green: sand short left and long right; the lagoon left.',
-      },
-      card: {
-        type: 'Original (through a sea cave into a hidden lagoon)', form: 'Broken (the flats lane and the spit lane)', feature: 'The flats; the creek; the sea cave; the lagoon and the beach shack', job: 'The creek is a hazard (across the line); the cave an obstacle and the reveal; the lagoon\'s walls a frame',
-        decision: 'Go or lay up (low tide): a wood through the cave from the flats (about 250 yd) or a short iron over the creek to the cave beach; high tide: three shots along the spit',
-        miss: 'Small: sand on the flats. Medium: the creek, or the sea off the spit. Safe miss: short of the creek',
-        view: 'In front the flats (or the sea at high tide) and the spit right, the Hong\'s wall ahead with the dark mouth of the cave, the stack and its spire on the right',
-        ground: 'Perched green: the creek 1.6 m below the flats in front of the cave beach, the cave floor level, then a 4 m bank up to the green\'s shelf',
-        height: 'Perched green', dial: 'Green size past anything real: about 1,400 m², just out of a sea cave', shots: { tee: 'Driver across open flats, or along a spit', approach: 'A wood through a cave, or a short iron' }, hazard: 'Across: the creek; overhead: the cave\'s roof', surround: 'Sand short left and long right; the lagoon left',
-        walk: 'The beach shack, 30 m beyond the green; a longtail back round to the stilt village',
-      },
-    }),
+  // 9. THE HONG: a true dogleg left (Rhys, 24 November: "more of an actual dog leg left ... the second fairway an
+  // island fairway, low enough that if the tide is high it's gone"). From the cay the hole runs along a hook of sand
+  // and salt grass round to the beach at the mouth of the sea cave, then in through the cave to a green perched just
+  // out of it. Inside the dogleg an island fairway sits low in the water: at low tide a big drive onto it leaves about
+  // 240 yd through the cave, a real chance in two; at high tide it is under the sea and the hole plays the long way
+  // round, out of reach in two.
+  hole({ n: 9, name: 'The Hong', par: 5, world: LINES[8], tips: [-24, 4], shape: 'Dogleg left (70°), round a spit, then through a sea cave',
+    build: (P, L, len, Lw) => {
+      const O = ISLAND9.o, isl = [];
+      for (let k = 0; k < 28; k++) { const a = k / 28 * 2 * Math.PI; isl.push(Lw(O.x + 30 * Math.cos(a), -O.z + 18 * Math.sin(a))); }
+      const island = Lw(O.x, -O.z);
+      return {
+        tees: { marlin: 0, manta: [12, -6], turtle: [36, 6], clownfish: [74, -4] },
+        // the island form: the spit's fairway round the dogleg, and the island fairway inside it
+        fw: [{ e: [[100, 18, 18], [150, 20, 22], [200, 22, 25], [240, 22, 25], [280, 20, 22], [320, 18, 18], [350, 14, 14]], wob: 2 },
+          { lobes: [[372, 0, 16, 24, 0]], join: 10, wob: 2 },
+          { poly: isl, wob: 2.5 }],
+        bunkers: [sand(P(len - 20, -20), 4.6, 3.2, 0.3), sand(P(len + 18, 16), 4.2, 3), sand(P(len + 4, -26), 3.6, 3, 0.5)],
+        green: { k: 1.2, lobes: [[0, 0, 15, 17, 8], [-9, -10, 9, 8.5], [8, 11, 9, 8]], apron: 4, contour: [{ fall: 40, pct: 1.6 }, { tier: [0, 3], up: 0, h: 0.4, w: 3.5 }], style: 'Huge (1,400 m²) on a shelf 4 m over the cave floor, a back tier, tilted toward the lagoon; sand short left, long right and left; the beach shack behind' },
+        targets: [{ name: 'The corner', at: P(210, 8) }, { name: 'The cave beach', at: P(370, 0) }],
+        versions: [
+          { id: 'low', note: 'Low tide: the island fairway inside the dogleg is out of the water. A drive of about 255 yd (a 225 yd carry) finds it and leaves about 240 through the cave: go for it in two. Or play round the spit.',
+            targets: [{ name: 'The corner', at: P(210, 8) }, { name: 'The island', at: island, bold: true, island: true }, { name: 'The cave beach', at: P(370, 0) }, { name: 'Through the cave', at: L.at(-1), bold: true, pin: true }] },
+          { id: 'high', note: 'High tide: the island fairway is under the sea. Round the spit to the beach at the cave\'s mouth, then a short iron through the cave: out of reach in two.' },
+        ],
+        words: {
+          story: 'The Hong: a dogleg left round a spit to a sea cave, an island fairway inside the corner at low tide, the green in a hidden lagoon.',
+          plays: 'A longtail takes you to the cay. The hole runs west along a hook of sand and salt grass, turns left at 220 m and runs down to a beach under the Hong\'s east wall, at the dark mouth of a sea cave. Through the cave (40 m high, 80 m long) the green sits on a shelf of sand and roots 4 m up, just past its far end: 1,400 m², the lagoon ringed by cliffs below it. Inside the dogleg, low in the water, lies an island of salt grass. At low tide it is a fairway: carry about 225 yd onto it and the green is about 240 yd away, straight through the cave. At high tide it is gone under the sea.',
+          safe: 'Driver along the spit to the corner (230 m), a mid iron down to the cave beach, a short iron through the cave.',
+          bold: 'Low tide only: driver across the water onto the island fairway (a 225 yd carry, about 255 out), then a wood straight through the cave at the green (about 240 yd).',
+          miss: 'On the spit: dry sand on the outside, the water on the inside toward the island. Short of the island: the sea. Through the cave: the walls give a ball back; the roof is 40 m up. At the green: sand short left, long right and left; the lagoon left.',
+        },
+        card: {
+          type: 'Original (a dogleg round a spit to a sea cave; an island fairway that comes and goes with the tide)', form: 'Island (an island fairway inside the dogleg)', feature: 'The spit; the island fairway; the sea cave; the lagoon and the beach shack', job: 'The island is the bold line\'s landing (low tide only); the water inside the dogleg the hazard; the cave an obstacle and the reveal; the lagoon\'s walls a frame',
+          decision: 'Go or lay up (low tide): drive onto the island fairway and go at the green through the cave (about 240 yd), or play round the spit in three; at high tide it is three shots round',
+          miss: 'Small: dry sand on the spit\'s outside. Medium: the water inside the dogleg. Safe miss: right (the outside)',
+          view: 'From the cay the spit curving away right and round to the left, the Hong\'s wall ahead with the dark mouth of the cave, the island low in the water on the left (at low tide), the stack and its spire behind on the right',
+          ground: 'Perched green: the spit level, the cave floor level, then a 4 m bank up to the green\'s shelf',
+          height: 'Perched green', dial: 'Green size past anything real: about 1,400 m², just out of a sea cave', shots: { tee: 'Driver along a spit, or a carry onto an island', approach: 'A wood through a cave, or a short iron' }, hazard: 'Inside the dogleg: the water (and the island in it)', surround: 'Sand short left, long right and left; the lagoon left',
+          walk: 'The beach shack, 30 m beyond the green; a longtail back round to the stilt village',
+        },
+      };
+    },
   }),
 ];
-// the high-tide 9th: along the spit (right of the line) to the cave's beach
-{
-  const h = HOLES[8], P = (s, o = 0) => at(h.line, s, o);
-  const hi = h.versions.find(v => v.id === 'high');
-  hi.targets = [{ name: 'Along the spit', at: P(222, 34) }, { name: 'The cave beach', at: P(372, 10) }];
-  const Lb = hi.targets.map(t => t.at), extra = Math.hypot(Lb[0][0] - h.teePts[BACK][0], Lb[0][1] - h.teePts[BACK][1]) + Math.hypot(Lb[1][0] - Lb[0][0], Lb[1][1] - Lb[0][1]) + Math.hypot(h.pin[0] - Lb[1][0], h.pin[1] - Lb[1][1]) - h.len;
-  hi.yards = Object.fromEntries(Object.entries(h.yards).map(([k, y]) => [k, Math.round((y * YD + extra) / YD / 5) * 5]));
-  hi.tipsYards = Math.round((h.tipsYards * YD + extra) / YD / 5) * 5;
-  hi.route = Lb;
-}
-// the bold lines the plan book draws and flies: 4 over the first cove, 6 through the neck, 7 and 9 straight at the green
+// the bold lines the plan book draws and flies: 4 over the first cove, 6 over the pot, 7 straight at the green, 9 onto the island
 HOLES[3].boldPath = HOLES[3].targets.find(t => t.bold).at;
 HOLES[5].boldPath = HOLES[5].targets.find(t => t.bold).at;
 HOLES[6].boldPath = HOLES[6].pin;
-HOLES[8].boldPath = HOLES[8].pin;
+HOLES[8].boldPath = HOLES[8].versions[0].targets.find(t => t.island).at;
 // alike.mjs reads a hook against the straight line from tee to green, which its fairway wraps round
 HOLES[6].formLine = [HOLES[6].line[0], HOLES[6].pin];
