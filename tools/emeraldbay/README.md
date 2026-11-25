@@ -222,3 +222,17 @@ From Rhys's markup on round 2. `ROUND=3` is now the default in `book.mjs`; `roun
   and reports the carry from each tee and whether any of it stays dry at high tide). The flats, the creek and
   round 2's high-tide route are gone.
 - Checks: no `!` at either tide; relief (bold 1, 4, 7; perched greens 5 and 9), alike (0 of 15) and spread pass.
+
+## Plan book round 4 (25 November 2026)
+
+From Rhys's markup on round 3 ("use your judgment on 9"). `ROUND=4` is the default in `book.mjs`; `round4-notes.json`.
+
+- The 9th a real decision: the corner pushed out (`LINES[8]` through (-90, 855), 71°) so the long way round is a true
+  three-shotter (no drive on the spit has the cave in line within reach); the Marlin tee 35 m back on the grown cay, so
+  the island fairway is a 256 yd carry over water (289 yd to its middle, 238 left through the cave); a moat about 20 m
+  across all round the island (`V` pulls the ground under the sea between 3 and 30 m out from `ISLAND9`'s outline;
+  the cave beach's flat was cut back too); the spit's inside shelves off steeply (`SPIT.steep`). The cave's floor is
+  mown through to the green (`scene.mjs`: a fairway piece over the cave reads fairway, not dry sand).
+- The 8th's tees spread to 145, 130, 110, 95 yd; the Shark tips stay at 160 (15 yd behind the Marlin tee).
+- `book.mjs`: a hole page is a flex column, so a long card shrinks the plan instead of pushing it into the footer.
+- Checks: no `!` at either tide; relief, alike (0 of 15; the 9th reads as a split) and spread pass. 3,310 yd.

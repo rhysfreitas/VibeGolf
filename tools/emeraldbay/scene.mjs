@@ -101,8 +101,8 @@ export function buildHole(h) {
     for (const b of bunkers) if (inBunker(b)(x, z)) return 'sand';
     if (go < (h.green.apron || 3)) return 'fringe';
     if (v.t === 'karst' || slopeAt(x, z) > 0.75) return 'rock';
-    if (v.cave) return 'drysand';
     const fd = fwD(x, z);
+    if (v.cave) return fd < 0 ? 'fairway' : 'drysand';   // the cave's floor, mown through on the 9th (Rhys, 25 November)
     if (fd < 0 && v.t !== 'sea' && !(h.keepBeach && v.t === 'sand')) return 'fairway';   // keepBeach: a beach stays a beach where the fairway runs down to it (the 4th's cove heads)
     if (v.t === 'sand') return 'drysand';
     if (v.t === 'wet' || v.t === 'sea') return 'wetsand';

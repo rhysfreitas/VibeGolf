@@ -16,7 +16,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE,
 const D = JSON.parse(fs.readFileSync(`${OUT}/grid/holes.json`)), TEES = D.teeSets, YD = 0.9144;
 for (const h of D.pages) { const q = HH[h.n - 1]; h.words = q.words; h.card = q.card; h.green = { ...h.green, style: q.green.style }; }   // the words as holes.mjs has them now
 D.holes = D.pages.filter(h => !h.tideHole || h.tide === 'low');   // one row a hole (a tide hole's low-tide page)
-const ROUND = process.env.ROUND || '3', DATE = process.env.DATE || '24 November 2026', BACK = D.back;
+const ROUND = process.env.ROUND || '4', DATE = process.env.DATE || '25 November 2026', BACK = D.back;
 const tideName = h => h.tideHole ? (h.tide === 'low' ? 'low tide' : 'high tide') : '';
 const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : null;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -62,6 +62,9 @@ p { font-size: 8.6pt; line-height: 1.34; margin: 0 0 4pt; }
 .view .cap b { font-weight: 600; }
 .body { display: grid; grid-template-columns: 3.3in 1fr; gap: 0.2in; margin-top: 0.04in; height: 4.62in; }
 .plan img { width: 3.3in; height: 4.45in; object-fit: contain; object-position: center top; border: 0.6pt solid #888; display: block; }
+/* a hole page: the body takes what the header leaves, so a long card never pushes the plan into the footer */
+.hp { display: flex; flex-direction: column; } .hp .body { flex: 1; min-height: 0; height: auto; margin-bottom: 0.22in; }
+.hp .plan { display: flex; flex-direction: column; min-height: 0; } .hp .plan img { flex: 1 1 0; min-height: 0; height: auto !important; } .hp .plan img.xs { flex: none; height: var(--xs) !important; }
 .glance table.sc { font-size: 6.9pt; } .glance table.sc th, .glance table.sc td { padding: 1.2pt 3pt; } .glance .ov p { font-size: 7.2pt; }
 .side { display: flex; flex-direction: column; min-height: 0; }
 .side p { font-size: 6.5pt; line-height: 1.17; margin-bottom: 1.2pt; }
@@ -111,7 +114,7 @@ pages.push(`<div class="page">
       <p style="font-size:11pt; margin:4pt 0 10pt">A warm bay of whole limestone islands with open water between them: sheer cliffs, jungle on top, white sand and clear turquoise water below</p>
       <p class="small">Plan book · round ${ROUND} · ${DATE}<br>Par ${par} · ${tot(BACK).toLocaleString()} yd from the Marlin tees at low tide, ${HI.toLocaleString()} at high</p>
       <h3>What this round is</h3>
-      <p>Round 2 with your markup on it: the forward tees on sea stacks on the Drop and the Tongue; a sea stack in the Sandbar and the 5th\'s green up on a headland with a ramp at its front-right corner; more fall on the 1st, and the 7th\'s beach leaning to the sea; the 9th a true dogleg left round a spit, with an island fairway inside it that the high tide covers. The rest is round 2: five whole islands with open water between them, the golf on their outer shores, both tides on 3, 5 and 9.</p>
+      <p>Round 3 with your markup on it: the 9th made a real decision (the long way round the spit a true three-shotter; the only way to reach in two a carry of about 255 yd over the water onto the island fairway, which now has water all round it), the cave mown through to the green, and the 8th\'s tees spread out to 145, 130, 110 and 95 yd. The rest is round 3: five whole islands with open water between them, the golf on their outer shores, both tides on 3, 5 and 9.</p>
       <p>Every drive is flown with the game's physics as round 0 settled it: dry sand plays as waste, wet sand as firm beach, bunkers as sand, water a stroke and a drop, cliff faces drop 45% of the balls that hit them at their foot, and the cave's roof and the overhang are solid. Page 4 lists what moved since round 2, and what is open for you.</p>
       <h3>Reading the plans</h3>
       <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', rough: 'Rough', jungle: 'Jungle (plays as rough)', rock: 'Rock and cliffs (native; a cliff gives the ball back)', sand: 'Bunker', drysand: 'Dry sand (plays as waste)', wetsand: 'Wet sand, dry at low tide (firm: it runs)', water: 'Water (a stroke and a drop)' }).map(([k, v]) => `<span><i style="background:${SWE[k]}"></i>${v}</span>`).join('')}</div>
@@ -184,13 +187,13 @@ for (const h of D.pages) {
   const vs = viewsFor(h.n - 1, h.tide);
   const first = h.targets.filter(t => !t.bold)[0];
   const cap = v => ({ tee: `<b>From the back tee</b>${first ? ', toward ' + esc(first.name) : ''}`, land: h.par === 3 ? `<b>From the forward tee</b> (${h.yards.clownfish} yd)` : `<b>From the landing area</b> (${esc(first ? first.name : '')})`, green: `<b>Short of the green</b>, ${Math.round(Math.hypot(v.pos[0] - h.pin[0], v.pos[2] - h.pin[1]) / 5) * 5} m out` })[v.id];
-  pages.push(`<div class="page">
+  pages.push(`<div class="page hp">
     <div class="head"><div><div class="small">Hole ${h.n}${h.tideHole ? ` · <b style="color:${h.tide === 'low' ? '#7a5a2a' : '#1f5fa8'}">${tideName(h).toUpperCase()}</b>` : ''}</div><h2>${esc(h.name)}${h.tideHole ? ` <span style="font-size:11pt; color:${h.tide === 'low' ? '#7a5a2a' : '#1f5fa8'}">at ${tideName(h)}</span>` : ''}</h2>
       <div class="facts"><span><b>Par ${h.par}</b></span><span>${shape(h)}</span><span>${height(h)} tee to green (climbs ${h.rise} m, drops ${h.fall} m)</span></div></div>${card(h)}</div>
     ${h.tideHole && h.tide === 'high' ? `<div class="hc"><p class="st"><b>At high tide</b>${esc(h.note)}</p></div>` : hcard(h).replace('</p><p><b>Type', h.tideHole ? `</p><p class="st" style="color:#7a5a2a"><b>At low tide</b>${esc(h.note)}</p><p><b>Type` : '</p><p><b>Type')}
     <div class="views" style="grid-template-columns: repeat(${vs.length}, 1fr)">${vs.map(v => `<div class="view"><img src="${img('views/h' + h.id + '_' + v.id + '.jpg')}"><div class="cap">${cap(v)}</div></div>`).join('')}</div>
     <div class="body">
-      <div class="plan">${h.sections && h.sections.length ? `<img style="height:${4.45 - 0.36 * h.sections.length - 0.1}in" src="${img('plan' + h.id + '.jpg')}"><img style="height:${0.36 * h.sections.length + 0.06}in; margin-top:0.04in; border:0.6pt solid #ddd" src="${img('xsec' + h.id + '.png')}">` : `<img src="${img('plan' + h.id + '.jpg')}">`}</div>
+      <div class="plan">${h.sections && h.sections.length ? `<img style="height:${4.45 - 0.36 * h.sections.length - 0.1}in" src="${img('plan' + h.id + '.jpg')}"><img class="xs" style="--xs:${0.36 * h.sections.length + 0.06}in; margin-top:0.04in; border:0.6pt solid #ddd" src="${img('xsec' + h.id + '.png')}">` : `<img src="${img('plan' + h.id + '.jpg')}">`}</div>
       <div class="side">
         <p>${esc(w.plays)}</p>
         <p class="kv"><b>Safe</b> ${esc(w.safe)}</p>
