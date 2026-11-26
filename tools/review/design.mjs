@@ -98,7 +98,8 @@ for (const c of names) {
     // forced carry on each tee set's line
     for (const s of sets) {
       const tee = h.tees[s.id]; if (!tee) continue;
-      const drive = (s.minDrive || 150), aim = aimFrom(tee, drive * 1.05 * YD, safe), d = dist(tee, aim); let far = 0;
+      // a drivable green (a bold pin) has a way round: the carry is measured on the safe line
+      const drive = (s.minDrive || 150), aim = aimFrom(tee, drive * 1.05 * YD, safe, !!gBold), d = dist(tee, aim); let far = 0;
       for (let m = 8; m < d; m += 2) { const x = tee[0] + (aim[0] - tee[0]) * m / d, z = tee[1] + (aim[1] - tee[1]) * m / d, g = t.groundAt(x, z), sf = g === null ? 'void' : t.surfaceAt(x, z); if (sf === 'void' || sf === 'water') far = m + 2; }
       // a par 3's tee shot is its carry: only the forward set is held to the rule there
       if (yd(far) > 0.6 * drive) notes.push(`${h.par === 3 && s !== sets.at(-1) ? '' : '! '}${s.name} tees: forced carry ${yd(far)} yd, over 60% of a ${drive} yd drive`);

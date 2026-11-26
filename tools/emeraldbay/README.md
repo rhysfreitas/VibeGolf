@@ -292,3 +292,24 @@ the main fairway "isn't just a straight slot. Give it some irregular shape", and
   317 yd from the Marlin tee and leaves 281.
 - The cay is gone from `ISLETS`.
 - Checks: no `!` at either tide; relief, alike (0 of 15) and spread pass. 3,315 yd.
+
+## The blockout rebuilt (25 November 2026)
+
+Rhys on round 7: "This looks good. Time to build". `node tools/emeraldbay/emit.mjs` (about 4 minutes) writes
+`src/course/emeraldbay.js` from the round 7 world:
+
+- `COURSE.bay.landmarks`: the sea stacks (`STACKS`), the 8th's spire and the 5th's headland (round 1's pinnacle and
+  spires are gone with the old islands).
+- `COURSE.bay.roofDraw`: for the sea cave's roof and the 7th's overhang, a grid along the hole's line with the
+  underside at each point (null where there is none) and the rock's top (the overhang's cliff top; for the cave, the
+  island's height round it). bay-world.js draws each as one smooth sheet of rock in the ground shader (underside, top,
+  a face down every edge, wound to face out). The ball still meets the slabs in the hole's rocks; the overhang's are
+  2.5 m across (160 on the 7th) so they sit within a few metres under the drawn sheet.
+- Two targets the engine asked for: the 9th's "The cave's mouth" (after the intermediate fairway, both tides: from
+  the cave beach fairway's south part the south tower hides the flag, and auto-aim needs somewhere to go), and the
+  4th's "Past the second cove" 14 m nearer (`P(400, 8)`: a short hitter in the rough by the bold landing had nothing
+  in reach and found the third cove every time).
+- Checks: `npm test` (369, with the course tests for round 7: both totals 3,315, the island under the sea at high tide
+  and ringed by water at low, the flag in sight from its far part, a clear shot from anywhere on the cave beach, the
+  7th's driver through the corner into the overhang); `design.mjs` at both tides, worst hole +0.4, nothing unfinished;
+  the auto-aim play-through finishes every hole; the menu tile re-rendered.

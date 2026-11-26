@@ -195,7 +195,7 @@ export const HOLES = [
       fw: [{ e: [[96, 12, 13], [140, 18, 20], [168, 30, 22], [188, 66, 22], [212, 86, 22], [240, 92, 24], [270, 92, 26], [298, 88, 30], [322, 80, 32], [342, 58, 30], [358, 22, 28], [384, 20, 24], [410, 20, 24], [428, 20, 26], [440, 6, 28], [460, 4, 26], [484, 8, 20], [500, 10, 10]], wob: 1.6 }],
       bunkers: [sand(P(186, 32), 8, 4.2, 0.2), sand(P(len - 15, 15), 5, 3.4, -0.3), sand(P(len + 10, -14), 4.2, 3, 0.3)],
       green: { k: 1, lobes: [[0, 0, 11.5, 14.5, -15], [6, -8, 7, 7], [-5, 8, 7, 6.5]], apron: 3.5, contour: [{ fall: 260, pct: 1.8 }, { ridge: [[-10, 10], [9, 2]], h: 0.3, w: 3 }], style: 'Turned toward the bold line, falling 1.8% to the left with the shelf, a spine across it; sand right and long left; the third cove short left' },
-      targets: [{ name: 'The shelf', at: P(222, 4) }, { name: 'Between the coves', at: P(267, -72), bold: true }, { name: 'Past the second cove', at: P(414, 16) }],
+      targets: [{ name: 'The shelf', at: P(222, 4) }, { name: 'Between the coves', at: P(267, -72), bold: true }, { name: 'Past the second cove', at: P(400, 8) }],   // 14 m nearer the coves than in the plan book: a short hitter in the rough by the bold landing reaches it
       words: {
         story: 'The coves: up a shelf on B\'s inside wall, the channel below, three coves biting in.',
         plays: 'The long shore hole, and the one on an inside shore. It runs north up a shelf 9-15 m up B\'s west wall, leaning 9% up into the jungle bank on the right; below on the left the channel, 290 m of turquoise water, with the Maya island across it. Three coves bite in from the channel, each with a beach at its head. Skirt them along the shelf and it is three shots with no water crossed. The bold line runs straight from the tee to the green over all three coves.',
@@ -358,10 +358,10 @@ export const HOLES = [
           { poly: isl, wob: 2.5 }],
         bunkers: [sand(P(len - 20, -20), 4.6, 3.2, 0.3), sand(P(len + 18, 16), 4.2, 3), sand(P(len + 4, -26), 3.6, 3, 0.5)],
         green: { k: 1.2, lobes: [[0, 0, 15, 17, 8], [-9, -10, 9, 8.5], [8, 11, 9, 8]], apron: 4, contour: [{ fall: 40, pct: 1.6 }, { tier: [0, 3], up: 0, h: 0.4, w: 3.5 }], style: 'Huge (1,400 m²) on a shelf 4 m over the cave floor, a back tier, tilted toward the lagoon; sand short left, long right and left; the beach shack behind' },
-        targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The intermediate fairway', at: Lw(-158, 790) }],
+        targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The intermediate fairway', at: Lw(-158, 790) }, { name: "The cave's mouth", at: P(452, 0) }],
         versions: [
           { id: 'low', note: 'Low tide: the island fairway is out of the water, water all round it. Carry about 230 yd of open sea onto it; from its far part, 260 yd out and more, the green is about 225 yd away straight through the cave. By the right fairway it is three shots.',
-            targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The island', at: island, bold: true, island: true }, { name: 'The intermediate fairway', at: Lw(-158, 790) }, { name: 'Through the cave', at: L.at(-1), bold: true, pin: true, second: true }] },
+            targets: [{ name: 'The right fairway', at: P(232, 2) }, { name: 'The island', at: island, bold: true, island: true }, { name: 'The intermediate fairway', at: Lw(-158, 790) }, { name: "The cave's mouth", at: P(452, 0) }, { name: 'Through the cave', at: L.at(-1), bold: true, pin: true, second: true }] },
           { id: 'high', note: 'High tide: the island fairway is under the sea. Three shots: the right fairway, over the gap to the intermediate fairway at the cave\'s mouth, a short iron through the cave.' },
         ],
         words: {

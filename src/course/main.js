@@ -702,6 +702,7 @@ scrub = saltC;
 scrub = mix(scrub, jungC, clamp(s2.r + s2.a, 0.0, 1.0));   // steep ground painted as rock is still jungle until the normal says it is a wall
 scrub = mix(scrub, dryC, s2.g);
 scrub = mix(scrub, wetC, s2.b);
+scrub = mix(scrub, jungC, (1.0 - smoothstep(0.42, 0.66, vWN.y)) * max(s2.g, s2.b) * step(uBSea + 0.5, p.y));   // a steep face the coarse map paints as beach is the wall's jungle, not sand
 scrub = mix(scrub, mix(lin(vec3(0.32,0.55,0.18)), lin(vec3(0.38,0.6,0.21)), mid), bMown);
 dirt = scrub;
 #endif

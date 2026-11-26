@@ -23,7 +23,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE } from './holes.mjs';
 import { worldAt, toWorld, toLocal, WL, HD, OWN, PHYS } from './scene.mjs';
-import { V, SITES, TIDES, CAVE, OVER, caveRoofAt, overhangAt, onLine, STACK, PINNACLE, SPIRES } from './world.mjs';
+import { V, SITES, TIDES, CAVE, OVER, caveRoofAt, overhangAt, onLine, STACK, STACKS, HEAD5 } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { packHeights } from '../../src/course/field-code.js';
 
@@ -70,7 +70,22 @@ function slabs(k, s0, s1, ds, off0, off1, dof, under, what) {
 }
 const ROOF = [
   ...slabs(8, CAVE.s0 - 2, CAVE.s1 + 2, 10, -CAVE.hw - 6, CAVE.hw + 6, 8, caveRoofAt, "the sea cave's roof"),
-  ...slabs(6, OVER.s0, OVER.s1, 20, OVER.foot, OVER.lip, 5, overhangAt, 'the overhang'),
+  ...slabs(6, OVER.s0, OVER.s1, 20, OVER.foot, OVER.lip, 2.5, overhangAt, 'the overhang'),
+];
+// what bay-world.js draws of them: a grid over (s, off) along the line with the underside at each point (null where
+// there is none) and the rock's top above it (the overhang's cliff top; for the cave, the island's height round it)
+function roofGrid(k, s0, s1, ds, off0, off1, dof, under, top, what) {
+  const nu = Math.round((s1 - s0) / ds) + 1, nv = Math.round((off1 - off0) / dof) + 1, pts = [];
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) {
+    const [X, Z] = onLine(k, s0 + i * ds, off0 + j * dof), u = under(X, Z);
+    pts.push(u === null ? null : [r1(X), r1(Z), r1(u), r1(Math.max(u + 10, top(X, Z)))]);
+  }
+  return { what, nu, nv, pts };
+}
+const hongTop = (X, Z) => { let hi = -Infinity; for (const dx of [-60, 0, 60]) for (const dz of [-60, 0, 60]) hi = Math.max(hi, V(X + dx, Z + dz).y); return Math.min(hi - 3, CAVE.roof + 70); };
+const ROOFDRAW = [
+  roofGrid(8, CAVE.s0 - 2, CAVE.s1 + 2, 4, -CAVE.hw - 6, CAVE.hw + 6, 3, caveRoofAt, hongTop, 'cave'),
+  roofGrid(6, OVER.s0, OVER.s1, 6, OVER.foot, OVER.lip, 2, overhangAt, () => OVER.top, 'overhang'),
 ];
 const BOXES = SITES.filter(o => o.kind === 'shack' || o.kind === 'stilt').map(o => ({ X: o.at[0], Z: o.at[1], w: o.w, d: o.l, h: o.h, rot: o.rot || 0, what: o.name || o.kind }));
 
@@ -175,8 +190,9 @@ const sites = SITES.map(o => ({ kind: o.kind, name: o.name || null, at: [r1(o.at
 // (palms) keeps off the lines of play and clear of the tees
 const play = HOLES.map((h, k) => { const W = toWorld(h), P = q => W(...q).map(r1); return { line: [P(h.tipsPt), ...h.line.map(P)], tees: [...Object.values(h.teePts), h.tipsPt].map(P) }; });
 const roof = ROOF.map(R => ({ at: [r1(R.X), r1(R.Z)], a: [r2(R.ax), r2(R.az)], w: R.w, d: R.d, y: r1(R.y), h: R.h, what: /cave/.test(R.what) ? 'cave' : 'overhang' }));
-const landmarks = { stack: { at: [STACK.spire.X, STACK.spire.Z], r: STACK.spire.r, top: STACK.spire.top }, pinnacle: { at: [r1(PINNACLE.X), r1(PINNACLE.Z)], r: PINNACLE.r }, spires: SPIRES.map(s => ({ at: [r1(s.X), r1(s.Z)], r: s.r, top: s.top })) };
-const bay = { world, far, tides: TIDES, sites, play, roof, landmarks };
+// the sea stacks (Ko Tapu's look: narrow pinnacles standing in the water), the 8th's spire and the 5th's headland
+const landmarks = { stack: { at: [STACK.spire.X, STACK.spire.Z], r: STACK.spire.r, top: STACK.spire.top }, stacks: STACKS.map(st => ({ name: st.name, at: [r1(st.X), r1(st.Z)], r: st.r, top: st.top, tee: st.tee || null })), head5: { at: [r1(HEAD5.o.x), r1(HEAD5.o.z)], top: HEAD5.top } };
+const bay = { world, far, tides: TIDES, sites, play, roof, roofDraw: ROOFDRAW, landmarks };
 
 const res = HOLES.map((_, i) => { const o = holeOut(i); process.stdout.write(`${i + 1} `); return o; });
 const holes = res.map(r => r.out);

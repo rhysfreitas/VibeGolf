@@ -37,8 +37,8 @@ test('nine holes, par 36 (5 3 3 5 4 4 4 3 5), four tee sets, cliffs that soak, a
   assert.deepEqual(COURSE.rolls[0].options.map(o => [o.id, o.sea]), [['low', 0], ['high', 2.4]]);
   assert.deepEqual(HOLES.filter(h => h.versions).map(h => h.n), [3, 5, 9], 'the tide holes');
   for (const h of HOLES.filter(h => h.versions)) { assert.equal(h.versionBy, 'tide'); assert.deepEqual(h.versions.map(v => v.id), ['low', 'high']); }
-  atTide('low'); assert.equal(HOLES.reduce((a, h) => a + h.yards[BACK], 0), 3285);
-  atTide('high'); assert.equal(HOLES.reduce((a, h) => a + h.yards[BACK], 0), 3305, 'the 9th is 20 yd longer along the spit');
+  atTide('low'); assert.equal(HOLES.reduce((a, h) => a + h.yards[BACK], 0), 3315);
+  atTide('high'); assert.equal(HOLES.reduce((a, h) => a + h.yards[BACK], 0), 3315, 'the card is the same at both tides');
 });
 
 test('the tips tee (Shark) is in the data and switched off', () => {
@@ -75,7 +75,7 @@ test('the tide: the sea level from the roll; ground below it plays as water', ()
   let beachLo = 0, wetHi = 0;
   for (let s = 0; s < n; s++) { const x = back[0] + (pin[0] - back[0]) * s / n, z = back[1] + (pin[1] - back[1]) * s / n; if (lo[2].T.surfaceAt(x, z) === 'beach') beachLo++; if (hi[2].T.surfaceAt(x, z) === 'water') wetHi++; }
   assert.ok(beachLo > 40, `the tongue: ${beachLo} m of wet sand on the line at low tide`);
-  assert.ok(wetHi > 130, `at high tide ${wetHi} m of the line is water`);
+  assert.ok(wetHi > 110, `at high tide ${wetHi} m of the line is water`);
   // every cell between the tides is wet sand or the like at low tide and water at high
   let changed = 0;
   for (let i = 0; i < 9; i++) { const { T: Tl } = lo[i], { T: Th } = hi[i], F = HOLES[i].field;
@@ -83,12 +83,12 @@ test('the tide: the sea level from the roll; ground below it plays as water', ()
       if (g < lo[i].sea - 0.2) { assert.equal(Tl.surfaceAt(x, z), 'water'); assert.equal(Th.surfaceAt(x, z), 'water'); }
       else if (g > lo[i].sea + 0.2 && g < hi[i].sea - 0.2 && Tl.surfaceAt(x, z) !== 'green') { assert.equal(Th.surfaceAt(x, z), 'water', `${HOLES[i].name} ${x},${z}`); changed++; } } }
   assert.ok(changed > 50, `${changed} sampled cells change with the tide`);
-  // the 9th's flats: firm wet sand at low tide (its first target), under the sea at high
-  const flats = HOLES[8].versions.find(v => v.id === 'low').targets.find(t => t.name === 'The flats');
-  assert.ok(flats); assert.equal(lo[8].T.surfaceAt(flats.x, flats.z), 'fairway'); assert.equal(hi[8].T.surfaceAt(flats.x, flats.z), 'water');
+  // the 9th's island fairway: out of the water at low tide (the bold target), under the sea at high
+  const isl = HOLES[8].versions.find(v => v.id === 'low').targets.find(t => t.name === 'The island');
+  assert.ok(isl && isl.bold); assert.equal(lo[8].T.surfaceAt(isl.x, isl.z), 'fairway'); assert.equal(hi[8].T.surfaceAt(isl.x, isl.z), 'water');
   const hiT = HOLES[8].versions.find(v => v.id === 'high').targets;
-  assert.ok(!hiT.some(t => t.name === 'The flats'), 'no flats target at high tide');
-  assert.ok(hiT.some(t => t.name === 'Along the spit'));
+  assert.ok(!hiT.some(t => t.name === 'The island'), 'no island target at high tide');
+  assert.deepEqual(hiT.filter(t => !t.pin).map(t => t.name), ['The right fairway', 'The intermediate fairway', "The cave's mouth"], 'three shots at high tide');
 });
 
 test('sand always plays: dry sand as a waste area, wet sand as a firm beach, bunkers as sand', () => {
@@ -110,18 +110,52 @@ test("the sea cave's roof over the 9th and the 7th's overhang are solid, with ro
     assert.ok(!T.solidAt(R.x, g + 10, R.z), 'room under it');
   }
   // down the middle of the cave (within 12 m of the line) the roof is 30 m or more over the floor
-  const L = W[8].h.line, [a, b] = [L[1], L[2]], dLine = r => { const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((r.x - a[0]) * dx + (r.z - a[1]) * dz) / (dx * dx + dz * dz))); return Math.hypot(r.x - a[0] - dx * t, r.z - a[1] - dz * t); };
+  // the cave is on the line's last leg
+  const L = W[8].h.line, [a, b] = [L[2], L[3]], dLine = r => { const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((r.x - a[0]) * dx + (r.z - a[1]) * dz) / (dx * dx + dz * dz))); return Math.hypot(r.x - a[0] - dx * t, r.z - a[1] - dz * t); };
   const mid = W[8].h.rocks.filter(r => r.what === "the sea cave's roof" && dLine(r) < 12), lowest = Math.min(...mid.map(r => r.y - W[8].T.groundAt(r.x, r.z)));
   assert.ok(mid.length > 4 && lowest > 30, `the cave's roof at least ${lowest.toFixed(0)} m up down the middle`);
 });
 
-test('a tour drive down every par 4 and 5 from the back tee hits nothing in the air, at either tide', () => {
+const IRON6 = { Speed: 127, VLA: 14.1, TotalSpin: 6231 };   // a tour 6 iron, about 183 yd carry
+test('the club for the first target from the back tee (a tour drive, or a 6 iron to a short lay-up) hits nothing in the air, at either tide', () => {
   for (const tide of TIDES) {
     atTide(tide).forEach(({ h, T }) => {
       if (h.par === 3) return;
-      const t0 = h.targets.find(q => !q.pin), to = [t0.x, t0.z];
-      const pts = shoot(T, h.tees[BACK], to, DR), hit = pts.find(p => p.phase === 'flight' && p.hit);
+      const t0 = h.targets.find(q => !q.pin), to = [t0.x, t0.z], tee = h.tees[BACK];
+      const far = Math.hypot(to[0] - tee[0], to[1] - tee[1]) > 190;
+      const pts = shoot(T, tee, to, far ? DR : IRON6), hit = pts.find(p => p.phase === 'flight' && p.hit);
       assert.ok(!hit, `${h.name} at ${tide} tide: hit at ${hit && hit.x.toFixed(0)},${hit && hit.z.toFixed(0)}`);
     });
   }
+});
+
+test("the 7th: a driver blasted straight through the corner flies on under the cliff and hits the overhang", () => {
+  const { h, T } = atTide('low')[6], t0 = h.targets.find(q => !q.pin);
+  const pts = shoot(T, h.tees[BACK], [t0.x, t0.z], DR), hit = pts.find(p => p.phase === 'flight' && p.hit);
+  assert.ok(hit && hit.y - T.groundAt(hit.x, hit.z) > 8, 'it hits the rock overhead, not the ground');
+});
+
+test("the 9th: water all round the island fairway at low tide; from the island's far part the flag is in sight through the cave", () => {
+  const { h, T } = atTide('low')[8], isl = h.targets.find(t => t.name === 'The island');
+  // walk out from the island in 24 directions: fairway, then sand or rough, then water before any other land
+  for (let k = 0; k < 24; k++) {
+    const a = k * Math.PI / 12; let seen = 'fairway', wet = false;
+    for (let r = 2; r < 140; r += 1) { const s = T.surfaceAt(isl.x + Math.cos(a) * r, isl.z + Math.sin(a) * r); if (s === 'water') { wet = true; break; } if (s === 'fairway' && seen !== 'fairway') break; if (s !== 'fairway') seen = s; }
+    assert.ok(wet, `water off the island toward ${(a * 180 / Math.PI).toFixed(0)}°`);
+  }
+  // the pin is in sight from the bold target (nothing of the ground or the roof across the line)
+  const g0 = T.groundAt(isl.x, isl.z) + 1.6, p = h.pin, g1 = T.groundAt(...p) + 2.2, L = Math.hypot(p[0] - isl.x, p[1] - isl.z);
+  for (let s = 3; s < L - 3; s++) { const t = s / L, x = isl.x + (p[0] - isl.x) * t, z = isl.z + (p[1] - isl.z) * t, y = g0 + (g1 - g0) * t; assert.ok(T.groundAt(x, z) < y && !T.solidAt(x, y, z), `the line to the flag blocked ${s} m out`); }
+});
+
+test("the 9th: from anywhere on the cave beach's fairway there is a clear shot, at the pin or into the cave's mouth", async () => {
+  const { makePlayer } = await import('../tools/review/play.mjs');
+  const { clear } = makePlayer(COURSE), { h, T } = atTide('low')[8], mouth = h.targets.find(t => t.name === "The cave's mouth"), inter = h.targets.find(t => t.name === 'The intermediate fairway');
+  let n = 0;
+  for (let z = inter.z - 45; z <= inter.z + 45; z += 4) for (let x = inter.x - 60; x <= inter.x + 50; x += 4) {
+    if (T.surfaceAt(x, z) !== 'fairway' || Math.hypot(x - mouth.x, z - mouth.z) < 25) continue;
+    const o = { x, z, y: T.groundAt(x, z) }; n++;
+    assert.ok(clear(T, o, ...h.pin) || clear(T, o, mouth.x, mouth.z), `no way on from ${x},${z}`);
+  }
+  assert.ok(n > 80, `${n} spots`);
 });

@@ -62,7 +62,7 @@ function playHole(h, T, set, seed, opts = {}) {
     const flat = flyer(T, ball, yaw, false), live = flyer(T, ball, yaw, true);
     const sol = solveCustom(flat, CLUBS, { x: 0, z: -dist });
     const res = live(amateurMiss(sol.ball, R)); n++;
-    if (res.surf === 'void' || res.surf === 'water') { n++; pen++; log.push(`${res.surf}+1`); continue; } // a stroke, play again from here
+    if (res.surf === 'void' || res.surf === 'water') { n++; pen++; log.push(opts.trace ? `${res.surf}+1@${Math.round(res.x)},${Math.round(res.z)}(aim ${Math.round(aim[0])},${Math.round(aim[1])})` : `${res.surf}+1`); continue; } // a stroke, play again from here
     log.push(opts.trace ? `${res.surf}@${Math.round(res.x)},${Math.round(res.z)}(aim ${Math.round(aim[0])},${Math.round(aim[1])})` : res.surf); ball = res;
   }
   return { n, log, pen, stuck: true };

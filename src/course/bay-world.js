@@ -291,13 +291,45 @@ export function buildBay(hole, T, box, E, hi, { group, coarse, rockMat }) {
       } else if (o.kind === 'marker') { box3(x, z, y - 0.3, 0.5, 0.5, o.h + 0.3, r, white, white); box3(x, z, y + o.h - 1.2, 0.9, 0.9, 1.2, r, red, red); }
       else if (o.kind === 'tree') { box3(x, z, y - 0.3, 0.8, 0.8, o.h * 0.7, r + 0.4, woodD, woodD, 0.5); box3(x + 1.5, z, y + o.h * 0.55, 5, 4, 2.4, r, lin([52, 88, 44]), lin([40, 70, 36]), 0.6); }
     }
-    // the sea cave's roof and the 7th's overhang: the slabs the ball meets, the cave's built up to the island's top
-    for (const R of E.roof) {
-      const [x, z] = L(...R.at); if ((x - cx) ** 2 + (z - cz) ** 2 > 2400 ** 2) continue;
-      const [ux, uz] = LV(R.a[0], R.a[1]), r = Math.atan2(uz, ux);
-      box3(x, z, LY(R.y), R.w, R.d, R.what === 'cave' ? 115 - R.y : R.h, r, rockK, rockD);
-    }
     const m = B.mesh(vc({ flatShading: true, side: THREE.DoubleSide })); if (m) group.add(m);
+  }
+  // ---- the sea cave's roof and the 7th's overhang, drawn as rock in the ground shader (so they carry the walls'
+  // limestone, jungle on top): from the emitter's grids over each (roofDraw: the underside at each point, the rock's top
+  // above it), the underside as one smooth sheet, the top, and a face wherever the grid ends (the cave's mouths, the
+  // overhang's lip). The ball meets the slabs in the hole's rocks, laid under this surface.
+  {
+    const P = [], Wt = [], idx = [];
+    // a quad wound so its face points along d (down for the underside, up for the top, outward for an edge)
+    const quad = (a, b, c, e, w, d) => {
+      const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = e[0] - a[0], vy = e[1] - a[1], vz = e[2] - a[2];
+      const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+      if (n[0] * d[0] + n[1] * d[1] + n[2] * d[2] < 0) [b, e] = [e, b];
+      const k = P.length / 3; P.push(...a, ...b, ...c, ...e); for (let i = 0; i < 4; i++) Wt.push(0, 0, 0, w); idx.push(k, k + 1, k + 2, k, k + 2, k + 3);
+    };
+    for (const G of E.roofDraw || []) {
+      const at = (i, j) => (i < 0 || j < 0 || i >= G.nu || j >= G.nv) ? null : G.pts[j * G.nu + i];
+      const p0 = G.pts.find(q => q); if (!p0) continue;
+      { const [x, z] = L(p0[0], p0[1]); if ((x - cx) ** 2 + (z - cz) ** 2 > 2400 ** 2) continue; }
+      const V = (q, top) => { const [x, z] = L(q[0], q[1]); return [x, LY(top ? q[3] : q[2]), z]; };
+      for (let j = 0; j < G.nv - 1; j++) for (let i = 0; i < G.nu - 1; i++) {
+        const a = at(i, j), b = at(i + 1, j), c = at(i + 1, j + 1), e = at(i, j + 1);
+        if (!a || !b || !c || !e) continue;
+        quad(V(a), V(b), V(c), V(e), 1, [0, -1, 0]);           // the underside
+        quad(V(a, 1), V(b, 1), V(c, 1), V(e, 1), 1, [0, 1, 0]); // the top
+      }
+      // a face down every edge of the sheet: from the top to the underside, facing out from the sheet's middle
+      const ok = G.pts.filter(q => q), mx = ok.reduce((t, q) => t + q[0], 0) / ok.length, mz = ok.reduce((t, q) => t + q[1], 0) / ok.length;
+      const edge = (q1, q2) => { const [ox, oz] = LV((q1[0] + q2[0]) / 2 - mx, (q1[1] + q2[1]) / 2 - mz); quad(V(q1), V(q1, 1), V(q2, 1), V(q2), 1, [ox, 0, oz]); };
+      for (let j = 0; j < G.nv; j++) for (let i = 0; i < G.nu; i++) {
+        const q = at(i, j); if (!q) continue;
+        if (i + 1 < G.nu && at(i + 1, j)) { if (!at(i, j - 1) || !at(i + 1, j - 1)) edge(at(i + 1, j), q); if (!at(i, j + 1) || !at(i + 1, j + 1)) edge(q, at(i + 1, j)); }
+        if (j + 1 < G.nv && at(i, j + 1)) { if (!at(i - 1, j) || !at(i - 1, j + 1)) edge(q, at(i, j + 1)); if (!at(i + 1, j) || !at(i + 1, j + 1)) edge(at(i, j + 1), q); }
+      }
+    }
+    if (P.length) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aW', new THREE.Float32BufferAttribute(Wt, 4)); g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(P.length / 3), 1)); g.setIndex(idx); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, rockMat); m.castShadow = true; m.receiveShadow = true; group.add(m);
+    }
   }
 
   // ---- the jungle canopy: lumpy crowns on every jungle cell (the hole's field, then the 10 m map out to 1.6 km),
