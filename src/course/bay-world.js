@@ -335,7 +335,9 @@ export function buildBay(hole, T, box, E, hi, { group, coarse, rockMat }) {
   // ---- the jungle canopy: lumpy crowns on every jungle cell (the hole's field, then the 10 m map out to 1.6 km),
   // packed so the islands' slopes and ridgelines read as forest; none on bare rock, none within 6 m of the play
   {
-    const nearC = [], farC = [], pick = (x, z, y, r, far) => (far ? farC : nearC).push({ x, z, y, r });
+    // the finer crown only within 260 m of the hole's line (where the camera goes); further out the coarse one
+    const HL = hole.line || [], dLine = (x, z) => { let d = Infinity; for (let i = 0; i < HL.length - 1; i++) { const [ax, az] = HL[i], [bx, bz] = HL[i + 1], dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1))); d = Math.min(d, Math.hypot(x - ax - dx * t, z - az - dz * t)); } return d; };
+    const nearC = [], farC = [], pick = (x, z, y, r, far) => (far || dLine(x, z) > 260 ? farC : nearC).push({ x, z, y, r });
     if (Fd) {
       if (!Fd.mDec) Fd.mDec = dec(Fd.m, Uint8Array);
       const st = coarse ? 4 : 3, C = Fd.codes;

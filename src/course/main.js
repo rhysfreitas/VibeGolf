@@ -690,11 +690,17 @@ vec3 saltC = mix(lin(vec3(0.42,0.5,0.24)), lin(vec3(0.52,0.56,0.3)), mid) * (0.8
 // read across a slope on steep ground (along it and up it), so the crowns don't smear down a face
 float bJs = 1.0 - smoothstep(0.6, 0.72, vWN.y), bJu = mix(p.z, p.x, abs(vWN.z) / (abs(vWN.x) + abs(vWN.z) + 1e-4));
 // triplanar: from above, and from the two sides, weighted by the normal (no mixing of coordinates, which swirls)
+// under more than half a metre of the round's sea the water's colour covers everything (below), so the costly texture
+// reads are skipped there: most of the screen is sea floor
+bool bDeep = uBSea - p.y > 0.6;
+vec3 jungC = lin(vec3(0.14, 0.24, 0.09));
+if (!bDeep && (s2.r + s2.a > 0.004 || vWN.y < 0.68)) {   // and only where there is jungle or a slope steep enough to carry it
 vec3 bTw = pow(abs(vWN), vec3(4.0)); bTw /= bTw.x + bTw.y + bTw.z;
 vec3 bC1 = texture2D(uBCan, p.xz / 150.0).rgb * bTw.y + texture2D(uBCan, vec2(p.z, -p.y) / 150.0).rgb * bTw.x + texture2D(uBCan, vec2(p.x, -p.y) / 150.0).rgb * bTw.z;
 vec3 bC2 = texture2D(uBCan, p.xz / 560.0 + 0.31).rgb * bTw.y + texture2D(uBCan, vec2(p.z, -p.y) / 560.0 + 0.31).rgb * bTw.x + texture2D(uBCan, vec2(p.x, -p.y) / 560.0 + 0.31).rgb * bTw.z;
-vec3 jungC = lin(mix(bC1, bC2, 0.35)) * (0.62 + 0.24 * fb(p.xz*0.004 + 2.0));   // deep tropical greens, as in the photos
+jungC = lin(mix(bC1, bC2, 0.35)) * (0.62 + 0.24 * fb(p.xz*0.004 + 2.0));   // deep tropical greens, as in the photos
 jungC = mix(jungC, jungC * vec3(0.8, 0.9, 0.85), smoothstep(0.55, 0.8, fb(p.xz*0.012 + 9.0)) * 0.6);   // darker stands
+}
 vec3 dryC = mix(lin(vec3(0.9,0.87,0.78)), lin(vec3(0.95,0.92,0.84)), mid) * (0.93 + 0.1*fine);
 vec3 wetC = mix(lin(vec3(0.72,0.66,0.52)), lin(vec3(0.78,0.72,0.58)), mid) * (0.9 + 0.12*fine);
 vec3 limeC = mix(lin(vec3(0.62,0.6,0.55)), lin(vec3(0.72,0.69,0.62)), vn(p.xz*0.9)) * (0.84 + 0.24*fine);
@@ -996,7 +1002,8 @@ rock = mix(rock, rock * vec3(0.72, 0.76, 0.74), 1.0 - smoothstep(uCMist + 10.0, 
 // the lips, a dark notch at the waterline. Read along the wall (x or z, blended by its facing) against height, so a
 // streak runs straight down whichever way the wall faces
 float bwx = abs(vWN.z) / (abs(vWN.x) + abs(vWN.z) + 1e-4), bu = mix(p.z, p.x, bwx);
-float bStk = fb(vec2(bu*0.12, p.y*0.006)), bStk2 = fb(vec2(bu*0.4 + 4.0, p.y*0.016));
+bool bDeepR = uBSea - p.y > 0.6;
+if (!bDeepR && vWN.y < 0.36) {   // the rock only shows on faces steeper than about 70 degrees (rw below)
 // the painted limestone (bay-world.js), 64 m a repeat up close and 240 m for the large stains and streaks
 vec2 bwt = pow(abs(vWN.xz), vec2(4.0)); bwt /= bwt.x + bwt.y + 1e-5;
 vec3 bR1 = texture2D(uBRock, vec2(p.z, -p.y) / 64.0).rgb * bwt.x + texture2D(uBRock, vec2(p.x, -p.y) / 64.0).rgb * bwt.y;
@@ -1008,6 +1015,7 @@ float bNear = 1.0 - smoothstep(60.0, 220.0, camD);
 rock *= mix(1.0, 0.82 + 0.3 * fb(vec2(bu*1.3, p.y*1.3) + 5.0), bNear * 0.6);
 rock *= (0.86 + 0.24*fine) * (0.92 + 0.16*fb(vec2(bu*0.25, p.y*0.02)));
 rock = mix(rock, lin(vec3(0.11,0.12,0.1)), (1.0 - smoothstep(1.2, 3.6, p.y - uBSea)) * step(-1.0, p.y - uBSea));
+}
 #endif
 #ifdef CITY
 rock = mix(lin(vec3(0.34,0.33,0.31)), lin(vec3(0.44,0.43,0.4)), band) * (0.8 + 0.25*fine);
@@ -1403,7 +1411,7 @@ function buildHole(h) {
   if (MESA) {
     if (!CAVE && !FIELD) for (const I of MW.decoMesas(h, T, h.pinPos, coarse)) buildIsland(I, { seg: Math.max(40, Math.min(90, Math.round(I.rx * 0.6))), side: 10 }, holeGroup, trees);
     if (!FIELD) MW.buildFloor(T, box, islandMat, coarse, holeGroup, true, { gorgeEdge: CAVE });
-    MW.buildPlayfield(GROVE ? GW.drawTerrain(T, h) : T, box, playMat, coarse, holeGroup, { steepFine: CAVE || FIELD, snapEdges: CAVE || FIELD, levels: LEVELS, keepSteep: FIELD });   // the Stair's decks are grown wood: the playfield draws the floor under them
+    MW.buildPlayfield(GROVE ? GW.drawTerrain(T, h) : T, box, playMat, coarse, holeGroup, { steepFine: CAVE || FIELD, snapEdges: CAVE || FIELD, levels: LEVELS, keepSteep: FIELD, ...(BAY ? { steepStep: 2, deep: (Number.isFinite(h.sea) ? h.sea : 0) - 1.5 } : {}) });   // the Stair's decks are grown wood: the playfield draws the floor under them
     MW.buildWater(T, holeGroup);
     if (!ICE && !EMBER) MW.buildRocks(T, h, islandMat, holeGroup);   // ice-world.js and ember-world.js draw their own rocks
     if (CAVE) mesaCtx = CW.buildCave(h, T, box, { group: holeGroup, coarse, sunDir });

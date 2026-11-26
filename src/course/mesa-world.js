@@ -778,7 +778,10 @@ function splitLevels(T, tx, tz, n, step, H, pos, nrm, idx) {
   return true;
 }
 
-export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, snapEdges = false, levels = false, keepSteep = false } = {}) {
+// steepStep: a tile that is fine only for being steep (no feature in it) is drawn at this step instead (a sampled field
+// has no detail finer than its own cells: Emerald Bay's cliffs); deep: a tile whose ground is all below this height (well
+// under the sea) is drawn coarse, since the water hides its shape
+export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, snapEdges = false, levels = false, keepSteep = false, steepStep = 0, deep = null } = {}) {
   const FT = T.features, TILE = 24, fine = coarse ? 1 : 0.7, mid = coarse ? 3 : 2.2;
   const busy = [...FT.greens, ...FT.bunkers, ...FT.tees, ...FT.water, ...FT.rockfalls];
   // (caves: banks with no island wall to cover a dropped cell)
@@ -786,13 +789,17 @@ export function buildPlayfield(T, box, mat, coarse, group, { steepFine = false, 
   for (let tz = box.z0; tz < box.z1; tz += TILE) for (let tx = box.x0; tx < box.x1; tx += TILE) {
     // fine where a feature is, and wherever the ground is steep (banks down to water, rimstone steps): a
     // coarse tile there drops its tall cells and leaves jagged holes
-    const steep = () => { const S = 4, m = TILE / S; let prev = null;
+    let tmax = -Infinity;
+    const steep = (all = false) => { const S = 4, m = TILE / S; let prev = null, st = false;
       for (let j = 0; j <= m; j++) for (let i = 0; i <= m; i++) {
         const y = T.groundAt(tx + i * S, tz + j * S), l = i ? prev : null, u = j ? T.groundAt(tx + i * S, tz + (j - 1) * S) : null; prev = y;
-        if (y !== null && ((l !== null && Math.abs(y - l) > 2.2) || (u !== null && Math.abs(y - u) > 2.2))) return true;
-      } return false; };
-    const hot = busy.some(F => F.x + F.bound > tx && F.x - F.bound < tx + TILE && F.z + F.bound > tz && F.z - F.bound < tz + TILE) || (steepFine && steep());
-    const n = Math.max(2, Math.round(TILE / (hot ? fine : mid))), step = TILE / n, base = pos.length / 3, H = [];
+        if (y !== null) tmax = Math.max(tmax, y);
+        if (y !== null && ((l !== null && Math.abs(y - l) > 2.2) || (u !== null && Math.abs(y - u) > 2.2))) { st = true; if (!all) return true; }
+      } return st; };
+    const feat = busy.some(F => F.x + F.bound > tx && F.x - F.bound < tx + TILE && F.z + F.bound > tz && F.z - F.bound < tz + TILE);
+    const isSteep = steepFine && !feat && steep(deep !== null), hot = feat || isSteep;
+    const want = deep !== null && !feat && tmax < deep ? 6 : isSteep && steepStep ? steepStep : hot ? fine : mid;
+    const n = Math.max(2, Math.round(TILE / want)), step = TILE / n, base = pos.length / 3, H = [];
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
       const x = tx + i * step, z = tz + j * step, y = T.groundAt(x, z);
       H.push(y); pos.push(x, y ?? 0, z);
