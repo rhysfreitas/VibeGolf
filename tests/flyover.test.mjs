@@ -1,8 +1,9 @@
 // The intro flyover: the default shape, and the planned paths in flyovers.js still match their holes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultFlyover, plannedFlyover, flyoverFor } from '../src/course/flyover.js';
-import { FLYOVERS } from '../src/course/flyovers.js';
+import fs from 'node:fs';
+import { defaultFlyover, plannedFlyover, flyoverFor, courseStamp } from '../src/course/flyover.js';
+import { FLYOVERS, CHECKED } from '../src/course/flyovers.js';
 
 const MODULES = { aerie: 'aerie', redmesa: 'red-mesa', hollowmere: 'hollowmere', reclaim: 'reclaim', rimeholm: 'rimeholm', emberfell: 'emberfell', lostvalley: 'lostvalley', halcyon: 'halcyon', buriedkingdom: 'buriedkingdom', wreckersreach: 'wreckersreach', eldergrove: 'eldergrove', cloudrest: 'cloudrest', emeraldbay: 'emeraldbay' };
 
@@ -40,5 +41,24 @@ test('every planned flyover still matches its hole (else rerun tools/review/flyo
         assert.ok(e.dur >= 4 && e.dur <= 12);
       }
     }
+  }
+});
+
+// the game's own list of courses (main.js COURSES), so a new course is in this test the day it's playable
+function playable() {
+  const src = fs.readFileSync(new URL('../src/course/main.js', import.meta.url), 'utf8');
+  const m = src.match(/const COURSES = \{([^}]*)\}/); assert.ok(m, 'COURSES in main.js');
+  return [...new Set([...m[1].matchAll(/'\.\/([\w-]+)\.js'/g)].map(x => x[1]))];
+}
+
+test('every playable course has had its flyovers checked since it last changed', async () => {
+  const mods = playable(); assert.ok(mods.length >= 13);
+  for (const mod of mods) {
+    const file = new URL(`../src/course/${mod}.js`, import.meta.url);
+    const { COURSE } = await import(file);
+    assert.equal(CHECKED[COURSE.id], courseStamp(fs.readFileSync(file, 'utf8')),
+      `${COURSE.name}: its flyovers haven't been checked since the course last changed (or ever). Run ` +
+      `node tools/review/flyover.mjs ${COURSE.id} --write (add the course to MODULES in tools/review/page.mjs first if it's new), ` +
+      `look at any planned hole with flyover-frames.mjs, and commit src/course/flyovers.js`);
   }
 });

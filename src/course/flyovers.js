@@ -347,3 +347,20 @@ export const FLYOVERS = {
     },
   },
 };
+
+// each course as it was when every hole's flyover was last checked (courseStamp of its module)
+export const CHECKED = {
+  aerie: '6cdcb324',
+  buriedkingdom: '9cc50c38',
+  cloudrest: '69155679',
+  eldergrove: '08b5840a',
+  emberfell: '7b3e1791',
+  emeraldbay: '001af867',
+  halcyon: 'b562c6ad',
+  hollowmere: '6ce594c6',
+  lostvalley: '4b830c00',
+  reclaim: 'dec80d74',
+  redmesa: '2d581225',
+  rimeholm: '80819e2d',
+  wreckersreach: '03d3adc7',
+};

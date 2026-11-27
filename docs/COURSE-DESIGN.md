@@ -744,7 +744,15 @@ passed, and the rules against slab edges and steep climbs quietly ruled out anyt
 5. **Then the art pass**, once the layout is agreed: references (the owner's photos, or an art brief
    researched and written when there are none), the direction agreed in four picker questions, a build,
    and a check of every hole. The steps, techniques and tools are in `docs/ART-PASS.md`.
-6. **Make it playable**: targets on every hole, the gate passed, tests for the course, a tile on the menu.
+6. **Make it playable**: targets on every hole, the gate passed, tests for the course, a tile on the menu,
+   and **the intro flyovers checked** (Must, 27 November 2026: the owner found flyovers going through walls,
+   trees, cliffs and props on 60 of 117 holes): `node tools/review/flyover.mjs <course> --write` flies every
+   hole's flyover from every tee set through everything drawn and plans a clear path where the default
+   isn't; look at the planned holes with `flyover-frames.mjs`. Run it again whenever the course changes
+   after that (a re-emit, a moved tee or green, new scenery, an art pass): `tests/flyover.test.mjs` fails
+   until it has been. A course that rolls what stands each round (the Labyrinth's doors) needs every
+   version checked: the tool loads the first option, or the one `ROLLS=` names, and its table isn't yet
+   keyed by version, so add that before such a course goes playable.
 
 - When the owner circles a feature as "in the way", move it out of the line enough to leave a real shot
   (the grotto's mushrooms at the bend).

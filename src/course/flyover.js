@@ -35,3 +35,12 @@ export function plannedFlyover(table, courseId, holeIdx, teeId, tee, green) {
 export function flyoverFor(table, courseId, holeIdx, teeId, t, p, green) {
   return plannedFlyover(table, courseId, holeIdx, teeId, [t[0], t[2]], green) || defaultFlyover(t, p);
 }
+
+// a short stamp of a course module's source (FNV-1a, 32-bit hex): flyovers.js's CHECKED holds the stamp of each course
+// as it was when its flyovers were last checked, so any change to the course (re-emitted ground, tees, greens, scenery
+// placed from its data) asks for the check again (tests/flyover.test.mjs)
+export function courseStamp(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}

@@ -73,7 +73,7 @@ flag, and say so in the commit. What worked:
 
 ## 4. Check
 
-All four, every pass:
+All five, every pass:
 
 1. **Renders** of every hole: `node tools/review/views.mjs <course>` (tee, landing, green), then
    `python3 tools/review/sheet.py <course>` for a contact sheet. Look at each view for colour (too
@@ -86,6 +86,11 @@ All four, every pass:
    frame time, then and now. The Reclaim's first pass: +36% meshes (28 to 38), +8% triangles, +18% frame
    time in software. Keep real lights to two; ask the owner how it feels on the phone, since software
    timings aren't a phone.
+
+5. **Flyovers**: `node tools/review/flyover.mjs <course> --write`, since new trees, props and rock
+   faces can stand in a flyover's way (the default flew through Eldergrove's crowns and Hollowmere's roof
+   on every hole); `tests/flyover.test.mjs` fails until it's been run for the changed course. Look at
+   any newly planned hole with `flyover-frames.mjs <course> <hole>`.
 
 Then `npm test` and the play-through, `node tools/review/playthrough.mjs <course> --render=120` (the golf
 only; a tenth of the time), because art can play (new trees, solid props).
