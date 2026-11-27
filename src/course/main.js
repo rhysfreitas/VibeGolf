@@ -19,6 +19,8 @@ import { cumulusBanks, skyPines, clumpGeo, clumpMat } from '../world/sky-art.js'
 import { TRAJ_MUL } from '../minigames/aim.js';
 import { attachAimDrag } from '../aim-line.js';
 import { STANCE, stanceView } from '../stance.js';
+import { flyoverFor } from './flyover.js';
+import { FLYOVERS } from './flyovers.js';
 
 THREE.ColorManagement.legacyMode = false;
 
@@ -2242,16 +2244,11 @@ const camState = { pos: new THREE.Vector3(0, 30, 60), look: new THREE.Vector3(0,
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
 let fly = null;
 function setupFlyover() {
-  const t0 = new THREE.Vector3(HOLE.tee[0], groundAt(HOLE.tee[0], HOLE.tee[1]) ?? 0, HOLE.tee[1]), p = HOLE.pinPos, d = p.clone().sub(t0).setY(0), L = d.length(); d.normalize();
-  const side = new THREE.Vector3(-d.z, 0, d.x);
-  const mid = t0.clone().lerp(p, 0.5);
-  fly = {
-    pts: [t0.clone().addScaledVector(d, -55).add(new THREE.Vector3(0, 32, 0)).addScaledVector(side, -20),
-          mid.clone().addScaledVector(side, -L * 0.35).add(new THREE.Vector3(0, 70 + L * 0.08, 0)),
-          p.clone().addScaledVector(d, 50).addScaledVector(side, 35).add(new THREE.Vector3(0, 28, 0))],
-    looks: [t0.clone().addScaledVector(d, L * 0.45).setY(t0.y + (p.y - t0.y) * 0.45 - 10), mid.clone().setY(mid.y - 20), p.clone().setY(p.y - 2)],
-    dur: Math.min(9, 5.5 + L / 160),
-  };
+  // the default shape, or the path planned clear of everything drawn round this hole (flyover.js, tools/review/flyover.mjs)
+  const p = HOLE.pinPos, t = [HOLE.tee[0], groundAt(HOLE.tee[0], HOLE.tee[1]) ?? 0, HOLE.tee[1]];
+  const f = flyoverFor(FLYOVERS, COURSE.id, HOLES.indexOf(HOLE), cond.tee, t, [p.x, p.y, p.z], HOLE.green && Number.isFinite(HOLE.green.x) ? [HOLE.green.x, HOLE.green.z] : [p.x, p.z]);
+  const v = q => new THREE.Vector3(q[0], q[1], q[2]);
+  fly = { pts: f.pts.map(v), looks: f.looks.map(v), dur: f.dur };
   fly.curve = new THREE.CatmullRomCurve3(fly.pts); fly.lookCurve = new THREE.CatmullRomCurve3(fly.looks);
 }
 function hfovToV(h) { return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(h) / 2) / camera.aspect)); }
