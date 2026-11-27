@@ -200,12 +200,17 @@ export const CAVELAND = {
   shore: W(chaikin([[-216, 893], [-196, 894], [-173, 892], [-152, 883], [-136, 869], [-124, 853], [-115, 835], [-111, 816], [-115, 800], [-124, 789], [-134, 776], [-142, 761], [-149, 745], [-155, 728], [-159, 711], [-163, 694], [-168, 680], [-178, 668], [-194, 662], [-213, 657], [-240, 654]])),
   wall: W([[-240, 654], [-234, 700], [-224, 738], [-221, 770], [-225, 810], [-229, 860], [-216, 893]]),
   wet: 8, dry: 4, rough: 4,
+  // round 8 (Rhys: "more beach/sandbar area"): his red line, south to north; the beach runs dry from the high-water
+  // mark all the way in to it, so the sand comes up to the intermediate fairway's edge on the gap's side
+  inner: W([[-234, 649], [-226, 668], [-213, 687], [-198, 711], [-173, 728], [-148, 745], [-135, 758], [-130, 773], [-130, 796], [-134, 819], [-144, 838], [-162, 844], [-178, 847], [-192, 852], [-205, 861]]),
 };
 CAVELAND.poly = [...CAVELAND.shore, ...CAVELAND.wall.slice(1, -1)];
+CAVELAND.band = [...CAVELAND.inner, ...CAVELAND.shore.slice().reverse()];
 function caveLand(X, Z, gy) {
   const C = CAVELAND, d = polyD(C.shore, X, Z, false), a = (inPoly(C.poly, X, Z) ? d : -d) + 2.5 * noise2(X / 16, Z / 16, 91);
   if (a < 0) return a > -170 ? { y: shelf(-a, gy), t: 'sea' } : null;
   const g = C.wet + C.dry + C.rough;
+  if (a >= C.wet && inPoly(C.band, X, Z)) { const di = polyD(C.inner, X, Z, false) + 2 * noise2(X / 11, Z / 11, 93); return di > 2 ? beach(a, di, C.wet) : { y: 2.97, t: 'rough' }; }
   if (a < C.wet + C.dry) return beach(a, C.wet + C.dry - a, C.wet);
   if (a < g) return { y: 2.97, t: 'rough' };
   return { y: 3.0 + 0.3 * smooth((a - g) / 30) * smooth(polyD(C.wall, X, Z, false) / 25), t: 'grass' };   // level with the cave's floor where it meets the wall
@@ -287,7 +292,7 @@ export function overhangAt(X, Z) {
 }
 const underOver = (X, Z) => { const c = lineCoord(6, X, Z); return c.s > OVER.s0 - 10 && c.s < OVER.s1 + 10 && c.off > OVER.foot - 4 && c.off < 0; };
 // anything overhead at (X, Z): the cave's roof or the overhang (absolute height of the underside), or null
-export const roofAt = (X, Z) => caveRoofAt(X, Z) ?? overhangAt(X, Z);
+export const roofAt = (X, Z) => caveRoofAt(X, Z) ?? overhangAt(X, Z) ?? cenoteRoofAt(X, Z);
 
 // ---- the stack: the 8th green on its flat top, a rim of rock round its back half that holds a long ball, and a
 // spire on the rim's back edge, the landmark seen across the bay
@@ -304,7 +309,20 @@ const domes = (P, X, Z) => { let m = 0; for (const pk of P) m = Math.max(m, dome
 function massifY(I, X, Z, dIn, key) {
   const wall = I.wall[0] + (I.wall[1] - I.wall[0]) * smooth((noise2(X / 120, Z / 120, 34 + key) + 0.25) / 1.1);
   const body = I.body[0] + I.body[1] * fbm(X / 150, Z / 150, 38 + key, 3) + 18 * fbm(X / 60, Z / 60, 31, 3);
-  const climb = wall * smooth(dIn / 3.5) + (1.7 + 0.5 * noise2(X / 80, Z / 80, 39)) * Math.max(0, dIn - 3);
+  // round 8 (Rhys: the walls "seem a little plain"): a plinth at the foot, then the face set back in vertical flutes
+  // (grooves up to 5 m deep, the ribs between them standing out) and, where the noise says, a ledge part way up
+  // carrying jungle. The foot never moves (the plinth rises from the same line), so nothing in play changes.
+  const plinth = Math.min(wall * 0.45, 4 + 6 * smooth((noise2(X / 90, Z / 90, 71) + 0.6) / 1.2));
+  const keep = smooth((Math.hypot(X - LEDGE.x, Z + LEDGE.n) - 70) / 40);   // the 2nd's notch keeps its wall whole
+  const flute = 5 * keep * smooth((noise2(X / 15, Z / 15, 72) + 0.15) / 0.5);
+  const dI = dIn - flute, rest = wall - plinth;
+  let up = 0;
+  if (dI > 0) {
+    const lw = rest > 30 ? 8 * keep * smooth((noise2(X / 80, Z / 80, 74) - 0.05) / 0.3) : 0;
+    const lh = rest > 30 && keep > 0.5 ? clamp(rest * (0.38 + 0.18 * noise2(X / 140, Z / 140, 73)), 8, rest - 12) : rest;
+    up = lh * smooth(dI / 3) + (dI > 3 + lw ? (rest - lh) * smooth((dI - 3 - lw) / 3.5) : 0);
+  }
+  const climb = plinth * smooth(dIn / 2) + up + (1.7 + 0.5 * noise2(X / 80, Z / 80, 39)) * Math.max(0, dIn - 3);
   return Math.max(6, Math.min(climb, body + domes(I.peaks, X, Z))) + 2.8 * fbm(X / 10, Z / 10, 33, 2) * smooth(dIn / 6);
 }
 
@@ -407,6 +425,76 @@ function headland(X, Z) {
   }
   return y > -Infinity ? { y, t } : null;
 }
+// ---- round 8 (Rhys, 27 November: "A lot of areas we are coming down to beaches. It would be great if we made it
+// feel like thats the case"): beaches where he drew them. Each is his line on the landward side (`land`, layout
+// [x, n]) and an outer chain round the sea side (`out`); inside, the ground takes a beach's profile by its distance d
+// from his line: dry sand falling `s1` per metre from `top` to the high-water mark, wet sand falling `s2` to the low-
+// water mark, then a sandbar shelving 3 m over 45 m and on down, fading into the old sea bed past its foot; landward a
+// bank (`bank` per metre) where the ground stands higher. `pre` and `post` carry his line on to the old shore, so the
+// beach ends where the land does; `out` is the far edge round the sea side (rounded), toward which the sandbar fades
+// into the old sea bed.
+export const BEACHES = [
+  // the 1st: left of the green and behind it, out to the channel
+  { id: 'b1', hole: 1, top: 2.95, s1: 0.022, s2: 0.06, bank: 0.3,
+    land: [[-554, 303], [-534, 285], [-515, 267], [-514, 288], [-514, 310], [-514, 330], [-512, 347], [-500, 341], [-487, 332], [-472, 325], [-456, 328], [-441, 337], [-428, 347]],
+    out: [[-345, 423], [-428, 593], [-686, 560], [-794, 384], [-757, 258]] },
+  // the 4th: left of the green, where the shelf ran to a sheer edge, now a beach running down into the channel
+  { id: 'b4', hole: 4, top: 10, s1: 0.1, s2: 0.12, bank: 0.6,
+    pre: [[731, 318], [755, 323]], land: [[777, 324], [768, 339], [757, 352], [751, 367], [755, 384], [762, 401], [769, 411], [785, 416], [800, 422]],
+    post: [[791, 436], [765, 452], [725, 464]], out: [[649, 577], [519, 511], [492, 403], [646, 306]] },   // his line carried on at both ends (pre, post) to the old shore, so the beach ends where the land does
+  // the 7th: past the green and round its right side, the strip between the cliff and the open sea
+  { id: 'b7', hole: 7, top: 3.0, s1: 0.025, s2: 0.06, bank: 0.3,
+    land: [[345, 995], [376, 1020], [403, 1038], [413, 1052], [411, 1067], [403, 1081], [403, 1094], [414, 1105], [434, 1115], [444, 1127]],
+    out: [[398, 1244], [260, 1200], [215, 1090], [297, 959]] },
+].map(b => {
+  const chain = [...(b.pre || []), ...b.land, ...(b.post || [])], L = W(chain);
+  const O = W(chaikin([chain[chain.length - 1], ...b.out, chain[0]], 4)).slice(1, -1);
+  return { ...b, L, O, outer: [L[L.length - 1], ...O, L[0]], poly: [...L, ...O], box: (() => { const P = [...L, ...O]; return [Math.min(...P.map(p => p[0])), Math.min(...P.map(p => p[1])), Math.max(...P.map(p => p[0])), Math.max(...P.map(p => p[1]))]; })() };
+});
+function beachProf(b, d) {
+  if (d < 0) return b.top - b.bank * d;
+  const d1 = (b.top - HW) / b.s1; if (d < d1) return b.top - b.s1 * d;
+  const d2 = d1 + HW / b.s2; if (d < d2) return HW - b.s2 * (d - d1);
+  const dd = d - d2; return -3 * smooth(dd / 45) - 20 * smooth((dd - 45) / 140);
+}
+export function beachAt(g, X, Z) {
+  for (const b of BEACHES) {
+    if (X < b.box[0] - 60 || X > b.box[2] + 60 || Z < b.box[1] - 60 || Z > b.box[3] + 60) continue;
+    if ((g.t === 'karst' || g.t === 'jungle') && g.y > b.top + 2) continue;   // the cliffs stand
+    const dL = polyD(b.L, X, Z, false), ins = inPoly(b.poly, X, Z);
+    if (!ins) { if (dL < 60) { const p = b.top + b.bank * dL; if (g.y > p) g = { ...g, y: p, t: p < b.top + 0.8 ? 'sand' : g.t, beach: b.id }; } continue; }
+    const d = dL + 1.5 * noise2(X / 12, Z / 12, 95), p = beachProf(b, d);
+    if (g.y >= 0) {
+      if (p < 0 || (g.y < p - 1.2 && !g.beach)) continue;   // land out past the beach's foot, or low ground already below it (a cove), stays
+      g = { ...g, y: p, t: p < HW ? 'wet' : 'sand', beach: b.id };
+    } else {
+      const M = smooth((polyD(b.outer, X, Z, false) + 10 * noise2(X / 50, Z / 50, 94)) / 60), y = Math.max(g.y, lerp(g.y, p, M));   // the sea bed only rises, fading out toward the outer edge
+      if (y > g.y) g = { ...g, y, t: y < 0 ? 'sea' : y < HW ? 'wet' : 'sand', beach: b.id };
+    }
+  }
+  return g;
+}
+// ---- the 4th's cenote (round 8, Rhys: "a natural sea cave that comes thru under the fairway from the cove and ends
+// in somewhat of a cenote feeling sea cave area on the inland side of the fairway"): the water at the wall's foot right
+// of the green brought out into a pool cut into the cliff, sheer all round (the shelf drops 10-12 m to it on the
+// fairway's side), its near end kept 50 m off the lay-up (the cove is on the other side), the cliff leaning out over its back half; the sea cave runs under the fairway from the third cove's
+// head to the pool's fairway-side wall (`SEACAVE4`: the two mouths; the ground over it is solid, the cave is drawn)
+export const CENOTE = { poly: W([[823, 401], [838, 378], [853, 350], [868, 330], [880, 318], [897, 316], [909, 320], [919, 332], [925, 359], [901, 376], [870, 391], [840, 405]]),
+  edge: W([[823, 401], [838, 378], [853, 350], [868, 330], [880, 318]]), floor: -6, roofIn: 20, roofY: 24 };
+export const SEACAVE4 = { a: w([822, 332]), b: w([858, 344]), w: 9, h: 6 };
+function cenoteAt(g, X, Z) {
+  const C = CENOTE, d = polyD(C.poly, X, Z, true) + 1.5 * noise2(X / 9, Z / 9, 97), ins = inPoly(C.poly, X, Z);
+  if (!ins && d > 3) return g;
+  if (ins) { const y = lerp(g.y, C.floor + 1.5 * noise2(X / 14, Z / 14, 98), smooth(d / 2.5)); return { ...g, y, t: y < 0 ? 'sea' : 'karst', cenote: true }; }
+  return g.y > 1 ? { ...g, t: 'karst' } : g;
+}
+// the cliff over the cenote's back half: rock overhead from `roofIn` m in from the fairway-side edge, its underside
+// `roofY` m up, rising toward the wall
+export function cenoteRoofAt(X, Z) {
+  const C = CENOTE; if (!inPoly(C.poly, X, Z) && polyD(C.poly, X, Z, true) > 4) return null;
+  const e = polyD(C.edge, X, Z, false) + 3 * noise2(X / 11, Z / 11, 99); if (e < C.roofIn) return null;
+  return C.roofY + 0.5 * (e - C.roofIn) + 2 * noise2(X / 7, Z / 7, 96);
+}
 export function V(X, Z) {
   let g = V0(X, Z);
   if (g.far) return g;
@@ -414,6 +502,8 @@ export function V(X, Z) {
   if (h && h.y > g.y) g = { ...g, y: h.y, t: h.t, flat: 'headland' };
   // the 9th's land (round 6): the cave beach, the island and the right fairway's land, each shelving into the sea
   { const q = land9(X, Z, g.y); if (q && q.y > g.y) g = { ...g, ...q, cave: g.cave }; }
+  g = beachAt(g, X, Z);
+  g = cenoteAt(g, X, Z);
   if (g.y < 0) { const d = polyD(CHANNEL9, X, Z, false); if (d < 16) g = { ...g, y: Math.min(g.y, lerp(-2.4, g.y, smooth((d - 5) / 11))), t: 'sea' }; }
   for (const st of STACKS) {
     const d = Math.hypot(X - st.X, Z - st.Z);
@@ -444,4 +534,5 @@ export const LABELS = [
   [w([600, -385]), 'the Tongue islet'], [w([600, 120]), 'the channel'], [w([760, 220]), 'the coves'], [w([960, 600]), 'the Sandbar'],
   [w([835, 940]), 'the gap'], [w([935, 920]), 'the Sentinel'], [w([540, 1080]), 'the cove'], [w([224, 842]), 'the sea stack'],
   [w([-400, 800]), 'the lagoon'], [w([-70, 818]), 'the gap'], [w([150, 548]), 'the tee rock'], [w([-228, 755]), 'sea cave'],
+  [w([900, 335]), 'the cenote'], [w([845, 352]), 'sea cave (under the fairway)'],
 ];

@@ -10,7 +10,7 @@ import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { HOLES, BACK, FRONT, TIDE_HOLES } from './holes.mjs';
 import { built, toWorld, toLocal, worldAt } from './scene.mjs';
-import { LABELS, SITES, TIDES, WLINES, roofAt } from './world.mjs';
+import { LABELS, SITES, TIDES, WLINES, roofAt, SEACAVE4 } from './world.mjs';
 import { edgeSegs } from './shapes.mjs';
 import { at, headingAt, clamp, project } from './geo.mjs';
 
@@ -178,6 +178,17 @@ function renderView(hi, view, tide) {
     else if (o.kind === 'marker') prism({ ...bo, w: 0.5, l: 0.5 }, [210, 180, 90]);
     else if (o.kind === 'tree') prism({ ...bo, w: 1, l: 1, h: 6 }, [110, 90, 70]);
   }
+  // round 8: the 4th's sea cave, a dark arch at each end where the line between its mouths meets the rock
+  { const A = Lc(...SEACAVE4.a), Bm = Lc(...SEACAVE4.b);
+    for (const [p, q] of [[A, Bm], [Bm, A]]) {
+      const L = Math.hypot(q[0] - p[0], q[1] - p[1]), ux = (q[0] - p[0]) / L, uz = (q[1] - p[1]) / L; let f = null;
+      for (let t = 0; t < L; t += 0.5) { const x = p[0] + ux * t, z = p[1] + uz * t; if (gy(x, z) > SEA + 3) { f = [x - ux * 0.6, z - uz * 0.6]; break; } }
+      if (!f) continue;
+      const d0 = cam.hd([f[0], 0, f[1]]); if (d0 > FAR || !inView(f[0], f[1], 0.5)) continue;
+      const rx = -uz, rz = ux, P = [];
+      for (let i = 0; i <= 16; i++) { const a = Math.PI * i / 16; P.push([f[0] + rx * Math.cos(a) * SEACAVE4.w / 2, SEA + Math.sin(a) * SEACAVE4.h, f[1] + rz * Math.cos(a) * SEACAVE4.w / 2]); }
+      const Q = proj(P); if (Q) add(d0 - 1, `<polygon points="${fmt(Q)}" fill="${hex(mix([38, 46, 52], fogAt(d0) * 0.7))}" ${ink(d0)} stroke-width="0.9"/>`);
+    } }
   // the flag
   { const [px, pz] = h.pin, y = gy(px, pz), d = cam.hd([px, 0, pz]), p = projLine([[px, y, pz], [px, y + 2.4, pz]]);
     if (p) { const sc = (p[0][1] - p[1][1]) / 2.4; add(d - 0.4, `<line x1="${p[0][0].toFixed(1)}" y1="${p[0][1].toFixed(1)}" x2="${p[1][0].toFixed(1)}" y2="${p[1][1].toFixed(1)}" stroke="#333" stroke-width="${Math.max(1, sc * 0.05).toFixed(1)}"/><polygon points="${p[1][0].toFixed(1)},${p[1][1].toFixed(1)} ${(p[1][0] + Math.max(5, sc * 0.75)).toFixed(1)},${(p[1][1] + Math.max(2.5, sc * 0.28)).toFixed(1)} ${p[1][0].toFixed(1)},${(p[1][1] + Math.max(5, sc * 0.56)).toFixed(1)}" fill="#c0392b"/>`); } }

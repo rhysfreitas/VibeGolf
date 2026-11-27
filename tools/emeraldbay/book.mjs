@@ -16,7 +16,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE,
 const D = JSON.parse(fs.readFileSync(`${OUT}/grid/holes.json`)), TEES = D.teeSets, YD = 0.9144;
 for (const h of D.pages) { const q = HH[h.n - 1]; h.words = q.words; h.card = q.card; h.green = { ...h.green, style: q.green.style }; }   // the words as holes.mjs has them now
 D.holes = D.pages.filter(h => !h.tideHole || h.tide === 'low');   // one row a hole (a tide hole's low-tide page)
-const ROUND = process.env.ROUND || '7', DATE = process.env.DATE || '25 November 2026', BACK = D.back;
+const ROUND = process.env.ROUND || '8', DATE = process.env.DATE || '27 November 2026', BACK = D.back;
 const tideName = h => h.tideHole ? (h.tide === 'low' ? 'low tide' : 'high tide') : '';
 const NEW = process.env.NEW ? JSON.parse(fs.readFileSync(process.env.NEW)) : null;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -114,8 +114,8 @@ pages.push(`<div class="page">
       <p style="font-size:11pt; margin:4pt 0 10pt">A warm bay of whole limestone islands with open water between them: sheer cliffs, jungle on top, white sand and clear turquoise water below</p>
       <p class="small">Plan book · round ${ROUND} · ${DATE}<br>Par ${par} · ${tot(BACK).toLocaleString()} yd from the Marlin tees at low tide, ${HI.toLocaleString()} at high</p>
       <h3>What this round is</h3>
-      <p>The 9th from your markup on round 6: the island fairway carried down toward the tee rock, so the carry onto it is about 230 yd instead of 259; the right fairway no longer a straight slot (it swells right over its upper half, runs on to the land's end, and its left edge goes in and out); the leftover cay between the 9th and the 8th taken away. The rest is round 6.</p>
-      <p>Every drive is flown with the game's physics as round 0 settled it: dry sand plays as waste, wet sand as firm beach, bunkers as sand, water a stroke and a drop, cliff faces drop 45% of the balls that hit them at their foot, and the cave's roof and the overhang are solid. Page 4 lists what moved since round 6, and what is open for you.</p>
+      <p>Your markup on round 7: more beach where the holes come down to the sea (left of and behind the 1st green, left of the 4th green, behind and right of the 7th green, and the 9th's cave beach up to the intermediate fairway), a long bunker in the 7th's cliff foot under the overhang, and on the 4th a cenote at the wall's foot right of the green with a sea cave under the fairway from the third cove. The cliffs have more to them: a plinth at the foot, flutes up the face and ledges of jungle part way up.</p>
+      <p>Every drive is flown with the game's physics as round 0 settled it: dry sand plays as waste, wet sand as firm beach, bunkers as sand, water a stroke and a drop, cliff faces drop 45% of the balls that hit them at their foot, and the cave's roof, the overhang and the rock over the cenote are solid. Page 4 lists what moved since round 7, and what is open for you.</p>
       <h3>Reading the plans</h3>
       <div class="legend">${Object.entries({ fairway: 'Fairway', green: 'Green', rough: 'Rough', jungle: 'Jungle (plays as rough)', rock: 'Rock and cliffs (native; a cliff gives the ball back)', sand: 'Bunker', drysand: 'Dry sand (plays as waste)', wetsand: 'Wet sand, dry at low tide (firm: it runs)', water: 'Water (a stroke and a drop)' }).map(([k, v]) => `<span><i style="background:${SWE[k]}"></i>${v}</span>`).join('')}</div>
       <p class="small" style="margin-top:6pt">North up. Dashed: the playing lines. The map is at low tide; the next page has both. Boxes: the stilt village, the beach shack, longtails. Contours at 10, 20, 40, 80 m and up.</p>

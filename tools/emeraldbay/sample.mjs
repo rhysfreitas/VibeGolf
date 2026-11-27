@@ -11,7 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { HOLES, COURSE, BACK, FRONT, TIDE_HOLES } from './holes.mjs';
 import { built, SURF, PHYS, toWorld, worldAt, WL, LOC, WOR } from './scene.mjs';
-import { LABELS, SITES, TIDES, w, WLINES, V, CAVE, OVER, overhangAt, caveRoofAt, STACK, COVES, TONGUE, ISLAND9 } from './world.mjs';
+import { LABELS, SITES, TIDES, w, WLINES, V, CAVE, OVER, overhangAt, caveRoofAt, STACK, COVES, TONGUE, ISLAND9, SEACAVE4, CENOTE, cenoteRoofAt, BEACHES } from './world.mjs';
 import { project, at, lengthOf, YD, headingAt, distLine, lineOf } from './geo.mjs';
 import { simulate } from '../../src/physics.js';
 import { greenStats, leanAlong } from './greens.mjs';
@@ -85,7 +85,7 @@ for (const pg of PAGES) {
     teeY: tee0, pinY: B.ground(...h.pin), rise: Math.round(rise), fall: Math.round(fall), greenArea: gcells, sea: B.sea,
     targets: (targets || []).map(t => ({ name: t.name, p: t.at, bold: !!t.bold, pin: !!t.pin, d: Math.round(Math.hypot(t.at[0] - back[0], t.at[1] - back[1]) / YD), surf: B.surface(...t.at), width: B.surface(...t.at) === 'fairway' ? Math.round(lanesAt(t.at)) : 0, toPin: Math.round(Math.hypot(t.at[0] - h.pin[0], t.at[1] - h.pin[1]) / YD) })),
     sand: B.bunkers.map(b => ({ x: b.x, z: b.z, r: b.rx })),
-    prof, sections, drives, bold, route, words: h.words, card: h.card, shape: h.shape, green: h.green, base: B.base, place: h.place, labels });
+    prof, sections, drives, bold, route, extra: [...(h.n === 4 ? CENOTE.poly : []), ...BEACHES.filter(b => b.hole === h.n).flatMap(b => b.L)].map(p => LOC[k](...p)), seacave: h.n === 4 ? { a: LOC[k](...SEACAVE4.a), b: LOC[k](...SEACAVE4.b), w: SEACAVE4.w } : null, words: h.words, card: h.card, shape: h.shape, green: h.green, base: B.base, place: h.place, labels });
   lap(`page ${pg.id} sampled`);
 }
 
@@ -120,7 +120,7 @@ const lanes = (B, p, dir) => {
   return out;
 };
 const TIDES2 = ['low', 'high'];
-R_(`Emerald Bay plan book round 6 checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
+R_(`Emerald Bay plan book round ${process.env.ROUND || 8} checks (${new Date().toISOString().slice(0, 10)}). Every hole is checked at both tides; ! breaks a rule.`);
 R_(`  total: low tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[0].yards : h.yards)[BACK], 0)} yd, high tide ${HOLES.reduce((a, h) => a + (h.versions ? h.versions[1].yards : h.yards)[BACK], 0)} yd; par ${HOLES.reduce((a, h) => a + h.par, 0)}`);
 for (const [k, h] of HOLES.entries()) {
   const B = built(k, 'low'), [x, z] = h.pin, d = 1, gx = (B.ground(x + d, z) - B.ground(x - d, z)) / (2 * d), gz = (B.ground(x, z + d) - B.ground(x, z - d)) / (2 * d);

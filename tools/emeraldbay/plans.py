@@ -51,7 +51,7 @@ for h in D['pages']:
     rgb = shaded(hgt, srf, d=st, sea=sea)
     x0, z0 = h['x0'], h['z0']; ext = [x0, x0 + W * st, z0 + H * st, z0]
     L = np.array(h['line'])
-    E = np.vstack([L, np.array(list(h['tees'].values())), np.array([h['tips']])])   # the crop takes in every tee and the tips spot
+    E = np.vstack([L, np.array(list(h['tees'].values())), np.array([h['tips']])] + ([np.array(h['extra'])] if h.get('extra') else []))   # the crop takes in every tee and the tips spot
     cx0, cx1 = E[:, 0].min() - 95, E[:, 0].max() + 95; cz0, cz1 = E[:, 1].min() - 60, E[:, 1].max() + 34
     w, hh = cx1 - cx0, cz1 - cz0; asp = 7.3 / 5.2
     if hh / w < asp: d = (w * asp - hh) / 2; cz0 -= d; cz1 += d
@@ -102,8 +102,11 @@ for h in D['pages']:
         ax.plot(*t['p'], marker='o', ms=4, mfc='#e85d3f' if t['bold'] else '#26a6b8', mec=INK, mew=0.5, zorder=16)
         ax.annotate(f"{t['name']} · {t['d']}", t['p'], xytext=(6, 3), textcoords='offset points', fontsize=5.6, zorder=18,
                     bbox=dict(boxstyle='round,pad=0.15', fc='white', ec='none', alpha=0.85))
-    for p in h['sections']:
-        pass
+    # round 8: the 4th's sea cave under the fairway, the third cove to the cenote (dashed, its two walls; the mouths)
+    if h.get('seacave'):
+        sc = h['seacave']; a, b = np.array(sc['a']), np.array(sc['b']); u = (b - a) / np.hypot(*(b - a)); nv = np.array([-u[1], u[0]]) * sc['w'] / 2
+        for sg in (-1, 1): ax.plot([a[0] + nv[0] * sg, b[0] + nv[0] * sg], [a[1] + nv[1] * sg, b[1] + nv[1] * sg], color='#1f5fa8', lw=0.9, ls=(0, (3, 2)), zorder=13)
+        for p in (a, b): ax.add_patch(Polygon([p - nv - u * 2.5, p + nv - u * 2.5, p + nv + u * 2.5, p - nv + u * 2.5], fc='#26323a', ec='none', alpha=0.75, zorder=13))
     for p, t in h['labels']: label(ax, p, t, fs=5.8, color='#334')
     # where the cross sections cut
     for sec in h['sections']:

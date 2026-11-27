@@ -313,3 +313,32 @@ Rhys on round 7: "This looks good. Time to build". `node tools/emeraldbay/emit.m
   and ringed by water at low, the flag in sight from its far part, a clear shot from anywhere on the cave beach, the
   7th's driver through the corner into the overhang); `design.mjs` at both tides, worst hole +0.4, nothing unfinished;
   the auto-aim play-through finishes every hole; the menu tile re-rendered.
+
+## Plan book round 8 (27 November 2026)
+
+Rhys's markup on round 7: "A lot of areas we are coming down to beaches. It would be great if we made it feel like
+thats the case (more beach/sandbar area)", a big fairway bunker, the 4th's water brought out to his blue line, and "a
+natural sea cave that comes thru under the fairway from the cove (dashed lines) and ends in somewhat of a cenote feeling
+sea cave area on the inland side of the fairway"; then "add some more natural rock features to the walls of the rocks
+that make sense". `ROUND=8` is the default; `round8-notes.json`.
+
+- `BEACHES` (b1 the 1st's left and back, b4 the 4th's left with its water brought out, b7 the 7th's back and right):
+  each a `land` line, the run of shore it covers (`pre`, `post`), how far out (`out`) and the beach's `top`.
+  `beachProf` gives dry sand to the high-water mark, wet sand to low water, then a sandbar 3 m down over 45 m and on down;
+  `beachAt` lays it over the world after `land9`. Cliffs stand; the sea bed only rises, fading toward the outer edge.
+  `scene.mjs` doesn't let a fairway paint over these beaches.
+- `CAVELAND.inner` is the 9th's red line: inside the band between it and the shore, beach right up to it.
+- The 7th: a strip bunker along the cliff foot on the left of the second leg (`pts` and `hw` on a bunker in
+  `holes.mjs`: a ribbon of half-widths along points; `stripE` in `scene.mjs`), about 100 m by 18-22 m, 2,580 m²; two
+  small bunkers by the green.
+- The 4th: `CENOTE`, a pool 6 m down at the wall's foot right of the green, open over its front, rock overhanging its
+  back half 24 m up (`cenoteRoofAt`, in `roofAt`, solid); `SEACAVE4`, the cave from the third cove into it under the
+  fairway, 9 m wide and 6 m high, drawn only (the ground over it is solid).
+- The walls (`massifY`): a plinth at the foot, vertical flutes up to 5 m deep, jungle ledges part way up; the foot of
+  each wall unchanged, the 2nd's notch spared. In the game once the module is re-emitted.
+- `sample.mjs` puts the cenote's outline, the beach lines and the sea cave on each page (`extra`, `seacave`); `plans.py`
+  and `sketch.mjs` draw them.
+- Checks: no `!` at either tide; relief, alike (0 of 15) and spread pass (the 7th's strip the biggest bunker). 3,315 yd.
+- Sea life in clear water (manta rays, turtles, a whale shark in the channels, reefs, giant clams) is Rhys's pick for the
+  art pass.
+

@@ -50,16 +50,18 @@ export function buildHole(h) {
   const GR = makeGreen(h.pin, endHead, { seed: 70 + h.n, ...h.green });
   const gm = GR.gm, gUV = GR.uv;
   const fwD = makeFairway(h.line, h.fw || []);
-  const bunkers = (h.bunkers || []).map((b, i) => ({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, side: Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45, depth: b.kind === 'pot' ? 1.6 : 1.0, kind: b.kind }));
-  const bunkerE = (b, x, z) => seDist(b, x, z) + 0.1 * noise2(x / 3, z / 3, b.seed);
+  const bunkers = (h.bunkers || []).map((b, i) => ({ x: b.at[0], z: b.at[1], rx: b.rx, rz: b.rz, rot: b.rot || 0, seed: 40 + i + h.n * 9, side: !b.pts && Math.hypot(b.at[0] - h.pin[0], b.at[1] - h.pin[1]) < 45, depth: b.kind === 'pot' ? 1.6 : 1.0, kind: b.kind, pts: b.pts, hw: b.hw }));
+  // a strip bunker (round 8, the 7th's along the cliff's foot): a ragged band `hw` each side of a line of points
+  const stripE = (b, x, z) => { const d = distLine(b.pts, x, z), q = project(b.pts, x, z), L = lengthOf(b.pts), taper = Math.min(1, 0.55 + 0.45 * smooth(q.s / 25) * smooth((L - q.s) / 25)); return d / (b.hw[0] + (b.hw[1] - b.hw[0]) * clamp(q.s / L, 0, 1)) / taper + 0.06 * noise2(x / 7, z / 7, b.seed); };
+  const bunkerE = (b, x, z) => b.pts ? stripE(b, x, z) : seDist(b, x, z) + 0.1 * noise2(x / 3, z / 3, b.seed);
   for (const b of bunkers) {   // a greenside one sits at least 2.5 m outside the green's edge
     if (!b.side) continue;
     const clear = () => Math.min(gm(b.x, b.z), ...seOutline({ ...b, rx: b.rx * 1.15, rz: b.rz * 1.15 }, 32).map(p => gm(...p)));
     let dx = b.x - h.pin[0], dz = b.z - h.pin[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     for (let i = 0; i < 120 && clear() < 2.5; i++) { b.x += dx * 0.5; b.z += dz * 0.5; }
   }
-  const edgeM = (b, x, z) => (bunkerE(b, x, z) - 1) * Math.min(b.rx, b.rz);
-  for (const b of bunkers) b.box = [b.x - b.rx * 1.5 - b.rz, b.z - b.rz * 1.5 - b.rx, b.x + b.rx * 1.5 + b.rz, b.z + b.rz * 1.5 + b.rx];
+  const edgeM = (b, x, z) => (bunkerE(b, x, z) - 1) * (b.pts ? Math.max(...b.hw) : Math.min(b.rx, b.rz));
+  for (const b of bunkers) b.box = b.pts ? (() => { const m = Math.max(...b.hw) * 1.6; return [Math.min(...b.pts.map(p => p[0])) - m, Math.min(...b.pts.map(p => p[1])) - m, Math.max(...b.pts.map(p => p[0])) + m, Math.max(...b.pts.map(p => p[1])) + m]; })() : [b.x - b.rx * 1.5 - b.rz, b.z - b.rz * 1.5 - b.rx, b.x + b.rx * 1.5 + b.rz, b.z + b.rz * 1.5 + b.rx];
   const inBunker = b => (x, z) => x > b.box[0] && x < b.box[2] && z > b.box[1] && z < b.box[3] && edgeM(b, x, z) < 0;
   const teeHead = headingAt(h.line, 1), tc = Math.cos(teeHead), ts = Math.sin(teeHead);
   const teePads = Object.entries(h.teePts).map(([key, p]) => ({ k: key, x: p[0], z: p[1] }));
@@ -103,7 +105,7 @@ export function buildHole(h) {
     if (v.t === 'karst' || slopeAt(x, z) > 0.75) return 'rock';
     const fd = fwD(x, z);
     if (v.cave) return fd < 0 ? 'fairway' : 'drysand';   // the cave's floor, mown through on the 9th (Rhys, 25 November)
-    if (fd < 0 && v.t !== 'sea' && !(h.keepBeach && v.t === 'sand')) return 'fairway';   // keepBeach: a beach stays a beach where the fairway runs down to it (the 4th's cove heads)
+    if (fd < 0 && v.t !== 'sea' && !(h.keepBeach && v.t === 'sand') && !(v.beach && (v.t === 'sand' || v.t === 'wet'))) return 'fairway';   // and round 8's beaches stay beaches   // keepBeach: a beach stays a beach where the fairway runs down to it (the 4th's cove heads)
     if (v.t === 'sand') return 'drysand';
     if (v.t === 'wet' || v.t === 'sea') return 'wetsand';
     if (v.t === 'grass' || v.t === 'rough') return 'rough';
