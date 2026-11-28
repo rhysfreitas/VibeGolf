@@ -33,6 +33,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 h1 { margin: 0; font-family: var(--f-title); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1; letter-spacing: 0.02em; }
 .back { text-decoration: none; color: var(--mist); font-family: var(--f-data); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 12px; }
 .back:hover { color: var(--bone); }
+.cams { margin-top: 18px; font-size: 13px; } .cams a { color: var(--bone); }
 .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .tile { display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit; transition: transform .15s ease, border-color .15s ease, background .15s ease; }
 a.tile:hover { transform: translateY(-2px); border-color: rgba(245,197,66,0.55); background: var(--glass-hi); }
@@ -73,6 +74,7 @@ a.tile:hover { transform: translateY(-2px); border-color: rgba(245,197,66,0.55);
     <a class="tile glass" href="my-game.html" style="--a:#2c4a3a;--b:#0d1a16"><span class="thumb soon" role="img" aria-label="A ladder of carry distances, one bar per club"><svg viewBox="0 0 160 90" width="62%" aria-hidden="true"><g stroke-linecap="round" stroke-width="7"><path d="M24 76V58M44 76V50M64 76V42M84 76V34M104 76V27M124 76V20" stroke="rgba(242,239,230,0.35)"/><path d="M84 76V34" stroke="#f5c542"/></g><path d="M14 80h132" stroke="rgba(242,239,230,0.3)" stroke-width="1.5"/></svg></span>
       <span class="body"><h2>My game</h2><p>Your bag (every club's carry, total and spread), how you practise and how you play on the course, from your real shots.</p><span class="meta">Your numbers</span></span></a>
   </div>
+  <p class="lede cams">Cameras for putting and swing replay are being tested: <a href="cam-check.html">Camera check</a> pairs a phone as a camera and measures what it delivers.</p>
 </main>
 <script type="module" src="src/app.js"></script>
 </body>

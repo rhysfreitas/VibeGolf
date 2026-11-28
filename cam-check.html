@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1b17">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VibeGolf">
+<title>Camera check · VibeGolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles/cam-check.css">
+<link rel="stylesheet" href="styles/shared.css">
+</head>
+<body>
+<!-- Camera check: the Stage 0 test page for the camera link (claude/brief-camera-putting-coaching.md).
+     Shows this device's camera and up to two phone cameras side by side with their frame rates and timing,
+     pairs a phone with two QR scans, and measures what the later stages need to know. -->
+<div id="load"></div>
+<header id="top" class="glass">
+  <a class="menu-link" href="practice.html" aria-label="Practice"><span class="mlong">Practice</span><span class="mshort" aria-hidden="true">‹</span></a>
+  <b class="title">Camera check</b>
+  <button class="lm-btn status" id="lmBtn" title="Launch monitor"><i class="dot" id="lmDot"></i><span id="lmText">R10 offline</span></button>
+  <span class="pagefps" id="pageFps" title="This page's own frame rate">– fps</span>
+</header>
+
+<main id="tiles">
+  <section class="tile empty" id="startTile">
+    <p>Start with this device's camera: the face-on view, and the eye that reads a phone's QR code.</p>
+    <button class="go" id="btnLocal">Start this camera</button>
+    <p class="dim small" id="localErr"></p>
+  </section>
+</main>
+
+<nav id="bar" class="glass">
+  <button id="btnPhone" class="go"><span class="l">Add a phone camera</span><span class="s">Add phone</span></button>
+  <button id="btnDrop"><span class="l">Drop test</span><span class="s">Drop</span></button>
+  <button id="btnRec"><span class="l">Record 3 s</span><span class="s">Record</span></button>
+  <button id="btnLoad" aria-pressed="false">3D load</button>
+  <button id="btnClock" aria-pressed="false"><span class="l">Latency clock</span><span class="s">Clock</span></button>
+  <button id="btnShots"><span class="l">R10 shots</span><span class="s">Shots</span> <span id="shotN">0</span></button>
+  <button id="btnReport"><span class="l">Copy report</span><span class="s">Report</span></button>
+</nav>
+
+<section id="pairSheet" class="sheet glass" hidden>
+  <div class="sheet-head"><b>Add a phone camera</b><button class="x" data-close="pairSheet" aria-label="Close">×</button></div>
+  <div class="pair-body">
+    <canvas id="offerQR" aria-label="Pairing code"></canvas>
+    <ol class="steps">
+      <li>On the phone, open the <b>Camera</b> app and point it at this code. Tap the link it shows.</li>
+      <li>The phone's page starts its camera and shows its own code.</li>
+      <li>Hold the phone's screen up to <b>this device's camera</b>, about 30–50 cm away.</li>
+    </ol>
+    <p class="state" id="pairState">Making the code…</p>
+    <details><summary>Can't scan?</summary>
+      <p class="dim small">Open this link on the phone (AirDrop or a message):</p><input id="offerLink" readonly>
+      <p class="dim small">Then paste the phone's code here:</p><div class="paste"><input id="answerIn" placeholder="vgcam:a:…"><button id="answerGo">Link</button></div>
+    </details>
+  </div>
+</section>
+
+<section id="shotSheet" class="sheet glass" hidden>
+  <div class="sheet-head"><b>R10 shots</b><button class="x" data-close="shotSheet" aria-label="Close">×</button></div>
+  <p class="dim small">Connect the R10 (top left), then putt: does anything arrive? Every shot the R10 sends is listed here. With <code>?r10debug=1</code> the raw capture is in the R10 popover.</p>
+  <table class="shots"><thead><tr><th>Time</th><th>Ball mph</th><th>VLA</th><th>HLA</th><th>Spin</th><th>Club mph</th><th>From</th></tr></thead><tbody id="shotRows"></tbody></table>
+</section>
+
+<section id="dropSheet" class="sheet glass" hidden>
+  <div class="sheet-head"><b>Drop test · this device</b><button class="x" data-close="dropSheet" aria-label="Close">×</button></div>
+  <div id="dropBody"></div>
+</section>
+
+<section id="recSheet" class="sheet glass" hidden>
+  <div class="sheet-head"><b>Recording test</b><button class="x" data-close="recSheet" aria-label="Close">×</button></div>
+  <div id="recBody"></div>
+</section>
+
+<section id="reportSheet" class="sheet glass" hidden>
+  <div class="sheet-head"><b>Report</b><button class="x" data-close="reportSheet" aria-label="Close">×</button></div>
+  <p class="dim small" id="reportMsg"></p>
+  <textarea id="reportText" readonly></textarea>
+</section>
+
+<div id="clock" hidden><span id="clockMs">0</span><small>ms · point a phone camera at this</small></div>
+<div id="toast" hidden></div>
+
+<script src="vendor/qrcode-generator/qrcode.js"></script>
+<script src="vendor/jsqr/jsQR.js"></script>
+<script type="module" src="src/cam/check.js"></script>
+</body>
+</html>

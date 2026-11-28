@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1b17">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Camera · VibeGolf</title>
+<link rel="stylesheet" href="styles/camera.css">
+</head>
+<body>
+<!-- The camera page: open it on the phone that films down the line (or any phone used as a camera) by
+     scanning the QR code the game shows. It must run on an iPhone 6 (iOS 12 Safari): plain scripts only. -->
+<main id="intro" class="panel" hidden>
+  <h1>VibeGolf camera</h1>
+  <p>To link this phone as a camera, open <b>Camera check</b> on the game screen, tap <b>Add a phone camera</b>, and scan its QR code with this phone's own Camera app.</p>
+  <p class="dim">Or test this phone's camera on its own: frame rate, frame timing and a drop test.</p>
+  <div class="row"><button id="btnSolo" class="go">Test this camera</button></div>
+  <h2>This browser</h2>
+  <ul id="capsIntro" class="caps"></ul>
+</main>
+
+<main id="pair" class="panel" hidden>
+  <h1>Link to the game</h1>
+  <p id="pairMsg">Starting the camera…</p>
+  <div class="row"><button id="btnStart" class="go" hidden>Start camera</button></div>
+  <div class="qrbox" id="qrBox" hidden>
+    <canvas id="qr" aria-label="Answer code"></canvas>
+    <p class="big">Hold this up to the game screen's camera</p>
+    <p class="dim">About 30–50 cm away, screen brightness up. <button id="btnCode" class="link">Can't scan? Show the code</button></p>
+    <textarea id="codeText" readonly hidden></textarea>
+  </div>
+</main>
+
+<main id="live" hidden>
+  <div class="view"><video id="video" playsinline muted autoplay></video><canvas id="overlay" hidden></canvas>
+    <section id="drop" class="sheet" hidden>
+      <div class="sheet-head"><b>Drop test</b><button id="dropX" class="x" aria-label="Close">×</button></div>
+      <div id="dropBody"></div>
+    </section>
+  </div>
+  <aside class="side">
+    <div class="state"><i class="dot" id="linkDot"></i><b id="linkText">Camera only</b></div>
+    <dl class="stats" id="stats"></dl>
+    <div class="row">
+      <button id="btnDrop">Drop test</button>
+      <button id="btnFlip">Front / back</button>
+    </div>
+    <p class="note">Keep this phone plugged in. Turn Auto-Lock off (Settings › Display &amp; Brightness › Auto-Lock › Never): this page can't keep the screen on by itself.</p>
+    <details><summary>This browser</summary><ul id="capsLive" class="caps"></ul></details>
+  </aside>
+</main>
+
+<script src="vendor/qrcode-generator/qrcode.js"></script>
+<script src="src/cam/core.js"></script>
+<script src="src/cam/grab.js"></script>
+<script src="src/cam/camera-page.js"></script>
+</body>
+</html>
