@@ -60,6 +60,10 @@ a.mode:hover { background: var(--glass-hi); border-color: rgba(245,197,66,0.5); 
 .install-btn:hover { background: rgba(245,197,66,0.2); }
 .install-help { margin: 0; padding: 10px 12px; font-size: 14px; line-height: 1.45; color: #dfe7e9; max-width: 420px; }
 .install-help b { color: var(--bone); }
+.keep { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.keep-btn { appearance: none; border: 1px solid var(--line); background: var(--glass); color: var(--bone); border-radius: 9px; padding: 9px 14px; text-decoration: none; font-family: var(--f-data); font-weight: 600; font-size: 13.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.keep-btn:hover { border-color: rgba(245,197,66,0.5); background: var(--glass-hi); }
+.keep-note { font-size: 13px; color: var(--mist); }
 footer { font-family: var(--f-data); font-size: 12px; letter-spacing: 0.08em; color: var(--mist); }
 footer kbd { font-family: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 @media (max-width: 560px) {
@@ -101,15 +105,18 @@ footer kbd { font-family: inherit; border: 1px solid var(--line); border-radius:
     </a>
   </nav>
   <div class="install">
+    <div class="keep" id="keep"><a class="keep-btn" id="keepBtn" href="app.html" target="_top">Keep my R10 connected</a><span class="keep-note">Connect once; it stays up across menus, courses and games.</span></div>
     <button class="install-btn" id="installBtn" hidden>Install app</button>
     <p class="install-help glass" id="installHelp" hidden></p>
   </div>
   <footer>v0.1 · Ball flight fit to TrackMan tour averages</footer>
 </main>
 <script type="module">
-  import { mountLaunchMonitorUI } from './src/launch-monitor.js';
+  import { mountLaunchMonitorUI, launchMonitor } from './src/launch-monitor.js';
   import { mountInstallButton } from './src/install.js';
-  mountInstallButton(document.getElementById('installBtn'), document.getElementById('installHelp'));
+  // Inside the hub (app.html) the R10 already stays connected: no link to it, and no install from inside its frame.
+  if (launchMonitor.hubbed) document.getElementById('keep').hidden = true;
+  else mountInstallButton(document.getElementById('installBtn'), document.getElementById('installHelp'));
   mountLaunchMonitorUI({ dot: document.getElementById('lmDot'), text: document.getElementById('lmText'), button: document.getElementById('lmBtn') });
 </script>
 <script type="module" src="src/app.js"></script>

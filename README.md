@@ -58,6 +58,8 @@ If it won't connect, pair the R10 once in the phone's or PC's Bluetooth settings
 | iPhone or iPad | **Bluefy** (a free Web Bluetooth browser in the App Store; Safari has none) |
 | Safari on Mac, Firefox | no Web Bluetooth: use the bridge below |
 
+**Keep my R10 connected.** Normally each page holds its own link, so moving from the menu to the range or a course reconnects (a second or two, or a tap where the browser can't reconnect by itself, as in Bluefy). **Keep my R10 connected** on the home screen opens `app.html`, which holds one link for the whole session and plays every page inside it: connect once, and it stays up across menus, courses and games. Back, the course links and reloading all work as before (a reload comes back to the page you were on). On a notched phone the game sits inside the safe area there, so you may see thin black bands at the notch. Nothing changes if you don't use it. With the capture on, open `app.html?r10debug=1`.
+
 **Debugging.** Open any page with `?r10debug=1` (it stays on across pages until `?r10debug=0`). The popover then shows a **Capture** row: play a few shots, then **Save** (or **Copy**) and send the file. It holds the frames and decoded messages both ways; the R10's own identity (serial number, names) is left out.
 
 The protocol comes from [10over](https://github.com/divotmaker/10over) by Eric Thill (MIT or Apache-2.0), a reverse-engineered client for the R10. VibeGolf isn't affiliated with or endorsed by Garmin.
@@ -99,7 +101,8 @@ online.html           Online: the friends lobby (coming)
 range.html            the Practice Ground (?mode=range|coach)
 course.html           the courses (?c=aerie, ?c=redmesa, ?c=hollowmere, ?c=reclaim, ?c=rimeholm, ... ?c=wreckersreach)
 src/physics.js        ball flight, bounce, roll, cup (pure functions, SI units, no Three.js)
-src/launch-monitor.js live shot link (Bluetooth or bridge) + connection popover, shared by every page
+src/launch-monitor.js live shot link (Bluetooth or bridge) + connection popover, shared by every page; inside the hub it passes through to the hub's link
+app.html, src/hub.js  the hub: holds the R10 link for the whole session and plays the pages in a frame below it
 src/r10/protocol.js   the R10's wire protocol (pure: COBS, CRC, GFDI, protobuf, the session)
 src/r10/ble.js        the thin Web Bluetooth transport for it, and the ?r10debug capture
 src/range/main.js     range page: tracers, cameras, session stats, practice menu
@@ -156,4 +159,5 @@ tests/                physics calibration, coaching rules, mini games, bridge an
 - Course builder that reads and writes the hole format
 - Red Mesa's back nine
 - A putting green that uses the R10's putt data
-- Native wrappers (Capacitor/Tauri), so iPhone works without Bluefy: swap `src/r10/ble.js` for a native BLE plugin
+- A Windows app (Electron) round the hub: the R10 with no chooser, phone cameras paired by QR with nothing hosted, the projector as its own display (Stage A, the hub, is done)
+- Native wrappers for iPhone, so it works without Bluefy: swap `src/r10/ble.js` for a native BLE plugin (waiting on the Apple developer account)

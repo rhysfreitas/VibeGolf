@@ -30,7 +30,20 @@ function store(get, val, key = KEY) {
   return null;
 }
 
+// The hub (app.html) is a top frame that never reloads: it keeps the one real link for the whole session
+// and loads the game's pages in a full-window frame below it. A page inside it uses the hub's link
+// through a HubLink (below) instead of opening its own, so the R10 stays connected from page to page.
+function findHub() {
+  try {
+    if (typeof window === 'undefined' || window.top === window) return null;
+    const h = window.top.__vibegolfHub;
+    return h && h.launchMonitor ? h : null;
+  } catch (e) { return null; }   // a cross-origin parent: no hub
+}
+const HUB = findHub();
+
 // ?r10debug=1 turns the raw capture on (and keeps it on across pages); ?r10debug=0 turns it off.
+// Inside the hub the capture is the hub's (open app.html?r10debug=1 to turn it on there).
 const DEBUG = (() => {
   try {
     const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('r10debug') : null;
@@ -38,7 +51,7 @@ const DEBUG = (() => {
     return localStorage.getItem('vibegolf.r10debug') === '1';
   } catch (e) { return false; }
 })();
-export const r10Capture = createCapture(DEBUG);
+export const r10Capture = HUB ? HUB.capture : createCapture(DEBUG);
 
 // Accepts a GSPro Open Connect message, a bare BallData object, or { type: 'shot', ball: {...} }.
 export function parseShot(msg) {
@@ -202,7 +215,53 @@ class LaunchMonitor extends EventTarget {
   get live() { return this.status === 'ready' || this.status === 'bridge'; }
 }
 
-export const launchMonitor = new LaunchMonitor();
+// A page's view of the hub's link. Same surface as LaunchMonitor, so no page learns a second path:
+// `shot`, `status` and `fault` are passed on from the hub (as copies, so nothing from this page's realm is
+// kept by the hub, nor the other way round), and the popover's actions go to the hub's link. Listeners on
+// the hub are dropped when the page goes (pagehide) and put back if it comes back from the bfcache.
+// `win` is the page's window (an EventTarget in the tests).
+const EVENTS = ['shot', 'status', 'fault'];
+const copy = d => { if (d === null || typeof d !== 'object') return d; try { return structuredClone(d); } catch (e) { return JSON.parse(JSON.stringify(d)); } };
+export class HubLink extends EventTarget {
+  constructor(real, win) {
+    super();
+    this.real = real; this.hubbed = true; this.offs = null;
+    this.attach();
+    if (win) {
+      win.addEventListener('pagehide', () => this.detach());
+      win.addEventListener('pageshow', e => { if (e.persisted) this.attach(); });
+    }
+  }
+  attach() {
+    if (this.offs) return;
+    this.offs = EVENTS.map(type => {
+      const f = e => this.dispatchEvent(new CustomEvent(type, { detail: copy(e.detail) }));
+      this.real.addEventListener(type, f);
+      return () => this.real.removeEventListener(type, f);
+    });
+  }
+  detach() { if (this.offs) { for (const off of this.offs) off(); this.offs = null; } }
+  get source() { return this.real.source; }
+  get status() { return this.real.status; }
+  get detail() { return this.real.detail; }
+  get needsTap() { return this.real.needsTap; }
+  get notListed() { return this.real.notListed; }
+  get bluetooth() { return this.real.bluetooth; }
+  get url() { return this.real.url; }
+  get teeFt() { return this.real.teeFt; }
+  get wanted() { return this.real.wanted; }
+  get player() { return copy(this.real.player); }
+  get live() { return this.real.live; }
+  connect(url) { this.real.connect(url); }
+  connectBluetooth(choose = true) { return this.real.connectBluetooth(choose); }   // from this page's tap: the hub's frame shares the activation
+  disconnect(quiet) { this.real.disconnect(quiet); }
+  setTeeDistance(ft) { this.real.setTeeDistance(ft); }
+  environment() { return copy(this.real.environment()); }
+  setPlayer(p) { this.real.setPlayer(copy(p)); }
+  resume() { /* the hub resumes its own link once, when it loads */ }
+}
+
+export const launchMonitor = HUB ? new HubLink(HUB.launchMonitor, window) : new LaunchMonitor();
 
 // Status pill + connection popover: `dot` and `text` show the state, `button` opens the popover.
 export function mountLaunchMonitorUI({ dot, text, button, compact = false }) {
@@ -265,11 +324,15 @@ export function mountLaunchMonitorUI({ dot, text, button, compact = false }) {
     dbg.hidden = false;
     const count = () => { n.textContent = r10Capture.count; };
     r10Capture.addEventListener('change', count); count();
+    // inside the hub the capture is the hub's: let go of it when this page goes
+    if (lm.hubbed) addEventListener('pagehide', () => r10Capture.removeEventListener('change', count));
     $('#lmDbgSave').onclick = () => r10Capture.save();
     $('#lmDbgCopy').onclick = () => { navigator.clipboard?.writeText(r10Capture.text()).then(() => { $('#lmDbgCopy').textContent = 'Copied'; }, () => { $('#lmDbgCopy').textContent = 'No access'; }); };
     $('#lmDbgClear').onclick = () => r10Capture.clear();
   }
   render();
+  // Inside the hub the link isn't this page's: it stays up when the page goes.
+  if (lm.hubbed) return { render };
   // Hand the R10 back when leaving the page, so the next page can connect at once; come back from the
   // back/forward cache the same way we came in.
   addEventListener('pagehide', () => { if (lm.source === 'ble') lm.ble.release(); });
