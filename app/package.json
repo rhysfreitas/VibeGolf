@@ -1,0 +1,61 @@
+{
+  "name": "vibegolf-app",
+  "productName": "VibeGolf",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VibeGolf for Windows: the game in its own window, with the R10 kept connected.",
+  "author": "Rhys Freitas",
+  "license": "MIT",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "site": "node scripts/copy-site.mjs",
+    "start": "npm run site && electron .",
+    "test": "node --test test/*.test.mjs",
+    "dist": "npm run site && electron-builder --win nsis --publish never"
+  },
+  "build": {
+    "appId": "io.github.rhysfreitas.vibegolf",
+    "productName": "VibeGolf",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "chooser.html",
+      "chooser-preload.js",
+      "lib/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "site",
+        "to": "site"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png",
+      "artifactName": "VibeGolf-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "VibeGolf"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.5.0",
+    "electron-builder": "^26.18.0",
+    "playwright-core": "^1.65.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rhysfreitas/VibeGolf.git"
+  },
+  "homepage": "https://rhysfreitas.github.io/VibeGolf/"
+}

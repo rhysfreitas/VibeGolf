@@ -10,7 +10,7 @@
 //
 //   recorder.attach(launchMonitor, { mode: () => 'range', club: () => '7i' })   // records every live shot
 //   recorder.result(shot, { carry, total, offline })                      // when the shot comes to rest
-//   recorder.note(shot, { coach: [...] }) · recorder.tag(id, 'fat') · recorder.sessions · recorder.exportJSON()
+//   recorder.note(shot, { coach: [...] }) · recorder.tag(id, 'fat') · recorder.sessions · recorder.exportJSON() · recorder.importJSON(text)
 //
 // Live shots only. `?recsim=1` also records simulated ones (marked live: false), for testing.
 
@@ -92,6 +92,24 @@ export function createRecorder({ storage = null, now = () => Date.now(), recordS
       return JSON.stringify({ app: 'VibeGolf', kind: 'sessions', v: 1, exported: new Date(now()).toISOString(), sessions }, null, 1);
     },
     clear() { data = { v: 1, sessions: [] }; session = null; save(); },
+    // Sessions from an exported file (another browser, or the PC app's first run): merged by session id, so
+    // importing the same file twice adds nothing. Returns { added, shots, skipped } or { error }.
+    importJSON(text) {
+      let d; try { d = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) { d = null; }
+      if (!d || d.app !== 'VibeGolf' || d.kind !== 'sessions' || !Array.isArray(d.sessions)) return { error: 'That isn\'t a VibeGolf sessions file.' };
+      const have = new Set(data.sessions.map(x => x.id));
+      let added = 0, shots = 0, skipped = 0;
+      for (const x of d.sessions) {
+        if (!x || typeof x.id !== 'string' || !isFinite(x.start) || !Array.isArray(x.shots)) continue;
+        if (have.has(x.id)) { skipped++; continue; }
+        const ok = x.shots.filter(r => r && typeof r.id === 'string' && isFinite(r.t));
+        if (!ok.length) continue;
+        data.sessions.push({ ...x, shots: ok }); have.add(x.id); added++; shots += ok.length;
+      }
+      data.sessions.sort((a, b) => a.start - b.start);
+      session = null; save();
+      return { added, shots, skipped };
+    },
   };
 }
 

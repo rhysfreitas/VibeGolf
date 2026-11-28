@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Connect the R10</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 16px 18px; background: #101c22; color: #f2efe6; font: 14px "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; gap: 10px; }
+  h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  p { margin: 0; color: #a9bcc2; font-size: 13px; line-height: 1.45; }
+  ul { list-style: none; margin: 0; padding: 0; flex: 1; overflow: auto; border: 1px solid rgba(214,228,232,.16); border-radius: 10px; }
+  li button { width: 100%; text-align: left; appearance: none; border: 0; border-bottom: 1px solid rgba(214,228,232,.1); background: none; color: inherit; font: inherit; padding: 11px 12px; cursor: pointer; display: flex; justify-content: space-between; }
+  li button:hover, li button:focus-visible { background: rgba(245,197,66,.12); outline: none; }
+  li .tag { color: #f5c542; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .empty { padding: 14px 12px; color: #a9bcc2; }
+  .row { display: flex; justify-content: flex-end; }
+  .cancel { appearance: none; border: 1px solid rgba(214,228,232,.25); background: none; color: #f2efe6; border-radius: 8px; padding: 7px 16px; font: inherit; cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1>Pick your R10</h1>
+  <p>Switch the R10 on and close the Garmin Golf app on your phone (it holds the R10). The app remembers your pick and connects to it by itself from then on.</p>
+  <ul id="list"><li class="empty">Looking for Bluetooth devices…</li></ul>
+  <div class="row"><button class="cancel" id="cancel">Cancel</button></div>
+<script>
+  const ul = document.getElementById('list');
+  document.getElementById('cancel').onclick = () => window.chooser.cancel();
+  addEventListener('keydown', e => { if (e.key === 'Escape') window.chooser.cancel(); });
+  window.chooser.onList(list => {
+    ul.textContent = '';
+    if (!list.length) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'Looking for Bluetooth devices…'; ul.appendChild(li); return; }
+    for (const d of list) {
+      const li = document.createElement('li'), b = document.createElement('button');
+      const n = document.createElement('span'); n.textContent = d.name; b.appendChild(n);
+      if (d.r10) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'R10'; b.appendChild(t); }
+      b.onclick = () => window.chooser.pick(d.id);
+      li.appendChild(b); ul.appendChild(li);
+    }
+  });
+</script>
+</body>
+</html>

@@ -119,14 +119,19 @@ function renderCourse() {
 const groupDiff = d => { const m = new Map(); for (const x of d) { if (!m.has(x.name)) m.set(x.name, []); m.get(x.name).push(x); } return [...m]; };
 
 /* ---------- Sessions ---------- */
-let confirmDelete = false;
+let confirmDelete = false, importNote = '';
+const importBar = () => `<input type="file" accept=".json,application/json" id="impFile" hidden>${importNote ? `<p class="lede" id="impNote">${esc(importNote)}</p>` : ''}`;
 function renderSessions() {
   const list = DEMO ? [] : recorder.sessions.filter(s => s.shots.length).slice().reverse();
-  if (!list.length) { $('sessions').innerHTML = empty('No sessions yet', DEMO ? 'The example data has no sessions to list or export. Open My game without <code>?demo=1</code> to see yours.' : 'Every real shot you hit with the R10, in any mode, is kept on this device and grouped into sessions. Export them to keep a copy or send them for tuning the coach.'); return; }
+  if (!list.length) {
+    $('sessions').innerHTML = empty('No sessions yet', DEMO ? 'The example data has no sessions to list or export. Open My game without <code>?demo=1</code> to see yours.' : 'Every real shot you hit with the R10, in any mode, is kept on this device and grouped into sessions. Export them to keep a copy or send them for tuning the coach. Played in another browser before? Export there, then import the file here.')
+      + (DEMO ? '' : `<div class="bar"><button class="btn primary" type="button" data-x="imp">Import</button></div>${importBar()}`);
+    return;
+  }
   const tags = s => s.shots.filter(x => x.feel).length;
   $('sessions').innerHTML = `
     <p class="lede">Every real shot is kept on this device, grouped by session. Export a session (or all of them) as a file to keep a copy or to send for tuning the coach.</p>
-    <div class="bar"><button class="btn primary" type="button" data-x="all">Export all</button><button class="btn danger" type="button" data-x="del">Delete all</button></div>
+    <div class="bar"><button class="btn primary" type="button" data-x="all">Export all</button><button class="btn" type="button" data-x="imp">Import</button><button class="btn danger" type="button" data-x="del">Delete all</button></div>${importBar()}
     ${confirmDelete ? `<div class="confirm glass"><span>Delete every recorded shot on this device? Your bag and tendencies start again from empty.</span><button class="btn danger" type="button" data-x="delyes">Delete</button><button class="btn" type="button" data-x="delno">Keep them</button></div>` : ''}
     ${list.map(s => { const clubs = [...new Set(s.shots.map(x => x.club).filter(Boolean))].join(' · ');
       return `<div class="sess glass"><span><b>${day(s.start)} · ${time(s.start)}</b><br><span class="meta">${esc(MODE_NAMES[s.mode] || s.mode)} · ${s.shots.length} shot${s.shots.length === 1 ? '' : 's'}${tags(s) ? ` · ${tags(s)} tagged` : ''}</span></span><span class="meta">${esc(clubs)}</span><button class="btn" type="button" data-x="one" data-s="${esc(s.id)}">Export</button></div>`; }).join('')}`;
@@ -139,6 +144,14 @@ $('sessions').addEventListener('click', e => {
   else if (x === 'del') { confirmDelete = true; renderSessions(); }
   else if (x === 'delno') { confirmDelete = false; renderSessions(); }
   else if (x === 'delyes') { confirmDelete = false; recorder.clear(); render(); }
+  else if (x === 'imp') $('impFile').click();
+});
+// Import an exported file (from another browser, or into the PC app): merged by session, never duplicated.
+$('sessions').addEventListener('change', async e => {
+  if (e.target.id !== 'impFile' || !e.target.files.length) return;
+  const r = recorder.importJSON(await e.target.files[0].text());
+  importNote = r.error || (r.added ? `Imported ${r.added} session${r.added === 1 ? '' : 's'} (${r.shots} shots)${r.skipped ? `; ${r.skipped} already here` : ''}.` : `Nothing new: ${r.skipped} session${r.skipped === 1 ? ' was' : 's were'} already here.`);
+  render();
 });
 async function exportFile(json, tag) {
   const name = `vibegolf-sessions-${new Date().toISOString().slice(0, 10)}${tag === 'all' ? '' : '-' + tag}.json`;

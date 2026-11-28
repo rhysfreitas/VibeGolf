@@ -59,3 +59,21 @@ test('simulated shots are only kept when asked for, and the oldest sessions go p
   const out = JSON.parse(rec.exportJSON());
   assert.equal(out.app, 'VibeGolf'); assert.equal(out.kind, 'sessions'); assert.ok(out.sessions.length >= 1);
 });
+
+test('import merges an exported file by session, and never twice', async () => {
+  const { createRecorder } = await import('../src/recorder.js');
+  const mem = () => { const m = new Map(); return { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, v) }; };
+  let t = 1_000_000;
+  const a = createRecorder({ storage: mem(), now: () => (t += 1000) });
+  a.setContext({ mode: 'range', club: () => '7i' });
+  a.capture({ Speed: 120, VLA: 16, HLA: 0, TotalSpin: 6500, SpinAxis: 0 });
+  a.capture({ Speed: 121, VLA: 16, HLA: 1, TotalSpin: 6400, SpinAxis: 2 });
+  const file = a.exportJSON();
+  const b = createRecorder({ storage: mem(), now: () => 5_000_000 });
+  assert.deepEqual(b.importJSON(file), { added: 1, shots: 2, skipped: 0 });
+  assert.equal(b.shots.length, 2);
+  assert.deepEqual(b.importJSON(file), { added: 0, shots: 0, skipped: 1 });
+  assert.equal(b.shots.length, 2);
+  assert.ok(b.importJSON('{"app":"other"}').error);
+  assert.ok(b.importJSON('not json').error);
+});
