@@ -65,7 +65,7 @@ check('stillOurs', f.url().startsWith('vibegolf://game/courses.html'), f.url());
 check('windows', app.windows().length === 1, app.windows().length);
 // the window remembers its size
 const bw = await app.browserWindow(page);
-await bw.evaluate(w => w.setBounds({ x: 40, y: 30, width: 1100, height: 700 }));
+await bw.evaluate(w => w.setBounds({ x: 40, y: 30, width: 900, height: 600 }));
 await wait(300);
 // the "was connected" flags, as after a real first connect
 await page.evaluate(() => { localStorage.setItem('vibegolf.lm.auto', '1'); localStorage.setItem('vibegolf.lm.source', 'ble'); });
@@ -82,7 +82,7 @@ app = await launch();
 page = await app.firstWindow();
 await page.waitForLoadState('load');
 const b2 = await (await app.browserWindow(page)).evaluate(w => w.getBounds());
-check('bounds', b2.width === 1100 && b2.height === 700, b2);
+check('bounds', b2.width === 900 && b2.height === 600, b2);
 f = await gameFrame(page, 'index.html');   // a new start opens at home
 await wait(6000);
 const lm = await page.evaluate(() => { const l = window.__vibegolfHub.launchMonitor; return { status: l.status, detail: l.detail, requests: (window.__fakeR10.requests || []).length }; });
